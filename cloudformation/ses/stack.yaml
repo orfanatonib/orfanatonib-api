@@ -1,0 +1,118 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CloudFormation stack para configurar SES (Simple Email Service) para envio de emails'
+
+Parameters:
+  Domain:
+    Type: String
+    Description: Domínio para verificar no SES (ex: rodolfo-silva.com)
+    Default: rodolfo-silva.com
+  
+  Environment:
+    Type: String
+    Description: Ambiente de deploy (staging, production, dev)
+    Default: staging
+    AllowedValues:
+      - staging
+      - production
+      - dev
+  
+  RecipientEmails:
+    Type: CommaDelimitedList
+    Description: Lista de emails destinatários para verificar no SES (separados por vírgula, ex: email1@example.com,email2@example.com)
+    Default: rodolfo.diego.gomes@gmail.com
+
+Resources:
+  # Verificação de identidade de domínio no SES
+  DomainIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: !Ref Domain
+      MailFromAttributes:
+        BehaviorOnMxFailure: USE_DEFAULT_VALUE
+        MailFromDomain: !Sub 'mail.${Domain}'
+
+  # Verificação de identidade de email (para o email remetente)
+  FromEmailIdentity:
+    Type: AWS::SES::EmailIdentity
+    Properties:
+      EmailIdentity: !Sub 'no-reply@${Domain}'
+
+  # Verificação de identidade para cada email destinatário
+  # Email 1
+  RecipientEmailIdentity1:
+    Type: AWS::SES::EmailIdentity
+    Condition: HasRecipientEmail1
+    Properties:
+      EmailIdentity: !Select [0, !Ref RecipientEmails]
+
+  # Email 2
+  RecipientEmailIdentity2:
+    Type: AWS::SES::EmailIdentity
+    Condition: HasRecipientEmail2
+    Properties:
+      EmailIdentity: !Select [1, !Ref RecipientEmails]
+
+  # Email 3
+  RecipientEmailIdentity3:
+    Type: AWS::SES::EmailIdentity
+    Condition: HasRecipientEmail3
+    Properties:
+      EmailIdentity: !Select [2, !Ref RecipientEmails]
+
+  # Email 4
+  RecipientEmailIdentity4:
+    Type: AWS::SES::EmailIdentity
+    Condition: HasRecipientEmail4
+    Properties:
+      EmailIdentity: !Select [3, !Ref RecipientEmails]
+
+  # Email 5
+  RecipientEmailIdentity5:
+    Type: AWS::SES::EmailIdentity
+    Condition: HasRecipientEmail5
+    Properties:
+      EmailIdentity: !Select [4, !Ref RecipientEmails]
+
+Conditions:
+  HasRecipientEmail1: !Not [!Equals [!Join ['', !Select [0, !Ref RecipientEmails]], '']]
+  HasRecipientEmail2: !Not [!Equals [!Join ['', !Select [1, !Ref RecipientEmails]], '']]
+  HasRecipientEmail3: !Not [!Equals [!Join ['', !Select [2, !Ref RecipientEmails]], '']]
+  HasRecipientEmail4: !Not [!Equals [!Join ['', !Select [3, !Ref RecipientEmails]], '']]
+  HasRecipientEmail5: !Not [!Equals [!Join ['', !Select [4, !Ref RecipientEmails]], '']]
+
+Outputs:
+  DomainIdentity:
+    Description: Domínio verificado no SES
+    Value: !Ref DomainIdentity
+    Export:
+      Name: !Sub '${AWS::StackName}-DomainIdentity'
+  
+  DomainIdentityArn:
+    Description: ARN da identidade de domínio
+    Value: !GetAtt DomainIdentity.EmailIdentity
+    Export:
+      Name: !Sub '${AWS::StackName}-DomainIdentityArn'
+  
+  FromEmail:
+    Description: Email remetente verificado
+    Value: !Sub 'no-reply@${Domain}'
+    Export:
+      Name: !Sub '${AWS::StackName}-FromEmail'
+  
+  VerificationToken:
+    Description: Token de verificação do domínio (adicione este registro TXT no DNS do domínio)
+    Value: !GetAtt DomainIdentity.VerificationToken
+    Export:
+      Name: !Sub '${AWS::StackName}-VerificationToken'
+  
+  DKIMTokens:
+    Description: Tokens DKIM para autenticação (adicione estes registros CNAME no DNS)
+    Value: !Join [',', !GetAtt DomainIdentity.DkimSigningAttributes.Tokens]
+    Export:
+      Name: !Sub '${AWS::StackName}-DKIMTokens'
+  
+  RecipientEmailsList:
+    Description: Lista de emails destinatários verificados (use este valor para SES_DEFAULT_TO na aplicação)
+    Value: !Join [',', !Ref RecipientEmails]
+    Export:
+      Name: !Sub '${AWS::StackName}-RecipientEmailsList'

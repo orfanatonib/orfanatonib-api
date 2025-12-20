@@ -1,0 +1,11 @@
+[
+  {
+    "ParameterKey": "BucketName",
+    "ParameterValue": "your-bucket-name"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "staging"
+  }
+]
+

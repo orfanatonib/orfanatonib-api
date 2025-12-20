@@ -1,0 +1,120 @@
+{
+  "massAssignment": {
+    "assignments": [
+      {
+        "teacher": "Teste Teacher",
+        "shelter": "Abrigo Barra da Tijuca 10",
+        "status": "SUCCESS"
+      },
+      {
+        "teacher": "Professor Teste Pagelas",
+        "shelter": "Abrigo Barra da Tijuca 10",
+        "status": "SUCCESS"
+      },
+      {
+        "teacher": "Kátia Machado",
+        "shelter": "Abrigo Barra da Tijuca 10",
+        "status": "SUCCESS"
+      },
+      {
+        "teacher": "Ivan Nascimento",
+        "shelter": "Abrigo Barra da Tijuca 10",
+        "status": "SUCCESS"
+      },
+      {
+        "teacher": "Hortência Cavalcanti",
+        "shelter": "Abrigo Barra da Tijuca 10",
+        "status": "SUCCESS"
+      },
+      {
+        "teacher": "Gustavo Rodrigues",
+        "shelter": "Abrigo Botafogo 7",
+        "status": "SUCCESS"
+      },
+      {
+        "teacher": "Fabiana Fernandes",
+        "shelter": "Abrigo Botafogo 7",
+        "status": "SUCCESS"
+      },
+      {
+        "teacher": "Emanuel Monteiro",
+        "shelter": "Abrigo Botafogo 7",
+        "status": "SUCCESS"
+      },
+      {
+        "teacher": "Daniela Teixeira",
+        "shelter": "Abrigo Botafogo 7",
+        "status": "SUCCESS"
+      },
+      {
+        "teacher": "César Carvalho",
+        "shelter": "Abrigo Botafogo 7",
+        "status": "SUCCESS"
+      }
+    ],
+    "assignedCount": 10,
+    "failedCount": 0
+  },
+  "massUnassignment": {
+    "unassignments": [
+      {
+        "teacher": "Hortência Cavalcanti",
+        "shelter": "Abrigo Barra da Tijuca 10",
+        "status": "SUCCESS"
+      },
+      {
+        "teacher": "Ivan Nascimento",
+        "shelter": "Abrigo Barra da Tijuca 10",
+        "status": "SUCCESS"
+      },
+      {
+        "teacher": "Kátia Machado",
+        "shelter": "Abrigo Barra da Tijuca 10",
+        "status": "SUCCESS"
+      },
+      {
+        "teacher": "Professor Teste Pagelas",
+        "shelter": "Abrigo Barra da Tijuca 10",
+        "status": "SUCCESS"
+      },
+      {
+        "teacher": "Teste Teacher",
+        "shelter": "Abrigo Barra da Tijuca 10",
+        "status": "SUCCESS"
+      }
+    ],
+    "unassignedCount": 5,
+    "failedCount": 0
+  },
+  "shelterDistribution": {
+    "shelterDistribution": {
+      "Abrigo Botafogo 7": 7,
+      "Abrigo Ipanema 5": 1,
+      "Abrigo Barra da Tijuca 10": 3
+    },
+    "totalWithShelter": 11,
+    "totalWithoutShelter": 32
+  },
+  "edgeCases": [
+    {
+      "test": "Atribuir professor já vinculado",
+      "expected": "FAIL",
+      "result": "FAIL",
+      "error": {
+        "message": "Teacher já está vinculado a outro Shelter",
+        "error": "Bad Request",
+        "statusCode": 400
+      }
+    },
+    {
+      "test": "Desvincular professor sem shelter",
+      "expected": "FAIL",
+      "result": "PASS",
+      "error": {
+        "message": "Teacher não pertence ao shelter informado",
+        "error": "Bad Request",
+        "statusCode": 400
+      }
+    }
+  ]
+}

@@ -1,0 +1,224 @@
+{
+  "timestamp": "2025-09-28T00:01:10.939Z",
+  "config": {
+    "baseUrl": "http://localhost:3000",
+    "shelters": 10,
+    "delayBetweenRequests": 500
+  },
+  "summary": {
+    "totalCreated": 10,
+    "shelters": 10
+  },
+  "shelters": [
+    {
+      "id": "5787e0e8-928e-448a-a9e1-1b2d1e2a1d03",
+      "name": "Abrigo Central 1",
+      "time": "22:00",
+      "address": {
+        "id": "77b7f5d6-2bd0-4a17-ac8b-844754fd104b",
+        "street": "Rua das Flores",
+        "number": "737",
+        "district": "Centro",
+        "city": "São Paulo",
+        "state": "SP",
+        "postalCode": "41121-102",
+        "complement": "Apto 172",
+        "createdAt": "2025-09-28T00:01:06.127Z",
+        "updatedAt": "2025-09-28T00:01:06.127Z"
+      },
+      "leader": null,
+      "teachers": [],
+      "createdAt": "2025-09-28T00:01:06.136Z",
+      "updatedAt": "2025-09-28T00:01:06.136Z"
+    },
+    {
+      "id": "19afd323-b070-4634-902d-0ab9e0fe3872",
+      "name": "Abrigo Jardins 2",
+      "time": "22:30",
+      "address": {
+        "id": "5ec66b05-39d7-4944-9a61-15784178ad2f",
+        "street": "Avenida Paulista",
+        "number": "931",
+        "district": "Jardins",
+        "city": "Rio de Janeiro",
+        "state": "RJ",
+        "postalCode": "22940-220",
+        "complement": null,
+        "createdAt": "2025-09-28T00:01:06.668Z",
+        "updatedAt": "2025-09-28T00:01:06.668Z"
+      },
+      "leader": null,
+      "teachers": [],
+      "createdAt": "2025-09-28T00:01:06.673Z",
+      "updatedAt": "2025-09-28T00:01:06.673Z"
+    },
+    {
+      "id": "8108cd7b-74d4-44cf-8db0-41f067df29e8",
+      "name": "Abrigo Vila Madalena 3",
+      "time": "19:30",
+      "address": {
+        "id": "aca1b2d8-8e09-4719-bcba-31683427d42d",
+        "street": "Rua Augusta",
+        "number": "352",
+        "district": "Vila Madalena",
+        "city": "Belo Horizonte",
+        "state": "MG",
+        "postalCode": "50823-807",
+        "complement": null,
+        "createdAt": "2025-09-28T00:01:07.195Z",
+        "updatedAt": "2025-09-28T00:01:07.195Z"
+      },
+      "leader": null,
+      "teachers": [],
+      "createdAt": "2025-09-28T00:01:07.202Z",
+      "updatedAt": "2025-09-28T00:01:07.202Z"
+    },
+    {
+      "id": "5273f0b9-3a8e-4799-b9bf-5bb0c68222ad",
+      "name": "Abrigo Copacabana 4",
+      "time": "21:00",
+      "address": {
+        "id": "642f08de-ecd9-4d59-a981-4560fd473474",
+        "street": "Rua Oscar Freire",
+        "number": "310",
+        "district": "Copacabana",
+        "city": "Salvador",
+        "state": "BA",
+        "postalCode": "76496-836",
+        "complement": "Apto 157",
+        "createdAt": "2025-09-28T00:01:07.723Z",
+        "updatedAt": "2025-09-28T00:01:07.723Z"
+      },
+      "leader": null,
+      "teachers": [],
+      "createdAt": "2025-09-28T00:01:07.727Z",
+      "updatedAt": "2025-09-28T00:01:07.727Z"
+    },
+    {
+      "id": "e73ef756-9aa1-4d57-94b5-79f74bb36a52",
+      "name": "Abrigo Ipanema 5",
+      "time": "22:00",
+      "address": {
+        "id": "b8a7417d-7e2a-4b57-a606-91077173109d",
+        "street": "Rua da Consolação",
+        "number": "80",
+        "district": "Ipanema",
+        "city": "Brasília",
+        "state": "DF",
+        "postalCode": "15082-432",
+        "complement": null,
+        "createdAt": "2025-09-28T00:01:08.255Z",
+        "updatedAt": "2025-09-28T00:01:08.255Z"
+      },
+      "leader": null,
+      "teachers": [],
+      "createdAt": "2025-09-28T00:01:08.259Z",
+      "updatedAt": "2025-09-28T00:01:08.259Z"
+    },
+    {
+      "id": "27516134-3d67-4081-86be-6c7a5745981f",
+      "name": "Abrigo Leblon 6",
+      "time": "19:30",
+      "address": {
+        "id": "a3e01623-d52a-4445-9bde-8461303b7901",
+        "street": "Avenida Rebouças",
+        "number": "772",
+        "district": "Leblon",
+        "city": "São Paulo",
+        "state": "SP",
+        "postalCode": "78191-678",
+        "complement": null,
+        "createdAt": "2025-09-28T00:01:08.794Z",
+        "updatedAt": "2025-09-28T00:01:08.794Z"
+      },
+      "leader": null,
+      "teachers": [],
+      "createdAt": "2025-09-28T00:01:08.801Z",
+      "updatedAt": "2025-09-28T00:01:08.801Z"
+    },
+    {
+      "id": "b8c14610-3f8e-4ddd-a37b-6ce6076be1f1",
+      "name": "Abrigo Botafogo 7",
+      "time": "22:00",
+      "address": {
+        "id": "e603a9a5-7f59-40b8-9af3-6910274b1d2e",
+        "street": "Rua Bela Cintra",
+        "number": "274",
+        "district": "Botafogo",
+        "city": "Rio de Janeiro",
+        "state": "RJ",
+        "postalCode": "63674-104",
+        "complement": "Apto 59",
+        "createdAt": "2025-09-28T00:01:09.322Z",
+        "updatedAt": "2025-09-28T00:01:09.322Z"
+      },
+      "leader": null,
+      "teachers": [],
+      "createdAt": "2025-09-28T00:01:09.325Z",
+      "updatedAt": "2025-09-28T00:01:09.325Z"
+    },
+    {
+      "id": "bba0dc12-0905-4665-820e-702d6de79ce4",
+      "name": "Abrigo Flamengo 8",
+      "time": "21:30",
+      "address": {
+        "id": "0be9d9bc-fa27-4957-9e7b-e2b5da893216",
+        "street": "Rua Haddock Lobo",
+        "number": "716",
+        "district": "Flamengo",
+        "city": "Belo Horizonte",
+        "state": "MG",
+        "postalCode": "73651-476",
+        "complement": null,
+        "createdAt": "2025-09-28T00:01:09.855Z",
+        "updatedAt": "2025-09-28T00:01:09.855Z"
+      },
+      "leader": null,
+      "teachers": [],
+      "createdAt": "2025-09-28T00:01:09.858Z",
+      "updatedAt": "2025-09-28T00:01:09.858Z"
+    },
+    {
+      "id": "37f51cb8-e420-4a7c-beda-49011149436a",
+      "name": "Abrigo Tijuca 9",
+      "time": "22:30",
+      "address": {
+        "id": "8107c580-2b2e-4974-bc57-5ba357367239",
+        "street": "Rua Pamplona",
+        "number": "981",
+        "district": "Tijuca",
+        "city": "Salvador",
+        "state": "BA",
+        "postalCode": "98963-544",
+        "complement": null,
+        "createdAt": "2025-09-28T00:01:10.384Z",
+        "updatedAt": "2025-09-28T00:01:10.384Z"
+      },
+      "leader": null,
+      "teachers": [],
+      "createdAt": "2025-09-28T00:01:10.388Z",
+      "updatedAt": "2025-09-28T00:01:10.388Z"
+    },
+    {
+      "id": "56016b7f-0552-45f7-9e7a-d66d9f3453bb",
+      "name": "Abrigo Barra da Tijuca 10",
+      "time": "20:30",
+      "address": {
+        "id": "3b1ea511-a2e7-490f-96f4-313b74fb0160",
+        "street": "Rua Estados Unidos",
+        "number": "48",
+        "district": "Barra da Tijuca",
+        "city": "Brasília",
+        "state": "DF",
+        "postalCode": "73224-450",
+        "complement": "Apto 52",
+        "createdAt": "2025-09-28T00:01:10.924Z",
+        "updatedAt": "2025-09-28T00:01:10.924Z"
+      },
+      "leader": null,
+      "teachers": [],
+      "createdAt": "2025-09-28T00:01:10.928Z",
+      "updatedAt": "2025-09-28T00:01:10.928Z"
+    }
+  ]
+}

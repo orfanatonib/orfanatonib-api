@@ -1,0 +1,15 @@
+[
+  {
+    "ParameterKey": "Domain",
+    "ParameterValue": "yourdomain.com"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "staging"
+  },
+  {
+    "ParameterKey": "RecipientEmails",
+    "ParameterValue": "admin@yourdomain.com"
+  }
+]
+

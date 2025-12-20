@@ -1,0 +1,1889 @@
+{
+  "created_at": "2025-09-30T22:44:31.572Z",
+  "total_processed": 8100,
+  "total_created": 7634,
+  "total_skipped": 465,
+  "total_sheltered": 81,
+  "total_teachers": 43,
+  "years_processed": [
+    2025,
+    2024,
+    2023,
+    2022,
+    2021,
+    2020,
+    2019,
+    2018,
+    2017,
+    2016
+  ],
+  "success_rate": "94.25",
+  "pagelas": [
+    {
+      "id": "5a6f3352-b5b1-4470-8061-4f67ee5982df",
+      "createdAt": "2025-09-30T20:55:21.237Z",
+      "updatedAt": "2025-09-30T20:55:21.237Z",
+      "shelteredId": "97a61c48-92bd-4354-ae3e-a201c45a3095",
+      "teacherProfileId": "e9b194fd-7d50-44b9-bcde-210f9f716945",
+      "referenceDate": "2025-03-27",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "09e3da13-fb7b-49b0-8f6b-99f209051ce6",
+      "createdAt": "2025-09-30T20:55:21.333Z",
+      "updatedAt": "2025-09-30T20:55:21.333Z",
+      "shelteredId": "891adb4b-795e-4809-8de9-6f166792cd6a",
+      "teacherProfileId": "e518df00-aa71-40bd-b0d8-e19d2b566b86",
+      "referenceDate": "2025-02-03",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "5506d858-2ae4-411d-b250-9930a54ad099",
+      "createdAt": "2025-09-30T20:55:21.393Z",
+      "updatedAt": "2025-09-30T20:55:21.393Z",
+      "shelteredId": "d6bd60a1-5e32-49f2-9d21-48b44da36626",
+      "teacherProfileId": "33274313-3a66-4548-889e-27f68189e952",
+      "referenceDate": "2025-02-01",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Demonstrou responsabilidade"
+    },
+    {
+      "id": "4557db80-aa52-466d-8c79-ec04f034e22f",
+      "createdAt": "2025-09-30T20:55:21.441Z",
+      "updatedAt": "2025-09-30T20:55:21.441Z",
+      "shelteredId": "f3cdfacb-b381-4df5-9d50-e6ebcb8578d6",
+      "teacherProfileId": "fc46df69-1b50-4a2e-bff3-6756757dd729",
+      "referenceDate": "2025-12-16",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Foi muito atencioso"
+    },
+    {
+      "id": "ab9c523b-537f-497d-b656-a819c0a8e994",
+      "createdAt": "2025-09-30T20:55:21.502Z",
+      "updatedAt": "2025-09-30T20:55:21.502Z",
+      "shelteredId": "3d042937-20dd-4632-9202-0cc516dbb007",
+      "teacherProfileId": "d177c9f5-0821-44fa-989c-26191a733be8",
+      "referenceDate": "2025-01-22",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "8db46693-034a-4402-9495-a7038e87a498",
+      "createdAt": "2025-09-30T20:55:21.550Z",
+      "updatedAt": "2025-09-30T20:55:21.550Z",
+      "shelteredId": "ff9d9053-67fb-429f-9cc3-a5d7effed7f7",
+      "teacherProfileId": "c60857fd-f4a3-4864-a620-076351ed56a5",
+      "referenceDate": "2025-12-13",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "5828f2be-525f-4730-a4c7-fc407e3915f3",
+      "createdAt": "2025-09-30T20:55:21.613Z",
+      "updatedAt": "2025-09-30T20:55:21.613Z",
+      "shelteredId": "29205db3-035b-430f-aeeb-8831deec78c6",
+      "teacherProfileId": "c2887dbd-4bec-47ab-990e-f0e358a455a1",
+      "referenceDate": "2025-08-31",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "11ddaeb8-d2d1-498e-bbf4-57d0070421f3",
+      "createdAt": "2025-09-30T20:55:21.675Z",
+      "updatedAt": "2025-09-30T20:55:21.675Z",
+      "shelteredId": "c1f88f7c-3e4c-4ce3-9493-47d2143b1e7d",
+      "teacherProfileId": "c7145408-93a4-4362-b1bd-1eab8fb97b93",
+      "referenceDate": "2025-08-14",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Comportamento exemplar"
+    },
+    {
+      "id": "a95a607f-5d0c-4bf6-95d2-801953446859",
+      "createdAt": "2025-09-30T20:55:21.737Z",
+      "updatedAt": "2025-09-30T20:55:21.737Z",
+      "shelteredId": "7eccfac9-08dd-4d9a-9935-f79f2cf8fcf5",
+      "teacherProfileId": "ec208249-f690-4a17-ad24-fcc0d08050d3",
+      "referenceDate": "2025-09-16",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Recitou o versículo com clareza"
+    },
+    {
+      "id": "2c4668e2-afab-4bd9-86a2-a473238476ca",
+      "createdAt": "2025-09-30T20:55:21.784Z",
+      "updatedAt": "2025-09-30T20:55:21.784Z",
+      "shelteredId": "23264a4a-53b2-400e-a74f-fab3f76e7859",
+      "teacherProfileId": "d66b3be6-60ec-4954-bb8a-8c3862062c5e",
+      "referenceDate": "2025-06-26",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Precisou de disciplina"
+    },
+    {
+      "id": "9c844609-a381-4bfd-8dd3-29413bb8addc",
+      "createdAt": "2025-09-30T20:55:21.833Z",
+      "updatedAt": "2025-09-30T20:55:21.833Z",
+      "shelteredId": "638cf2ae-b26c-48ac-a557-d7d58ea344c9",
+      "teacherProfileId": "18316f8d-9326-44f8-957b-07e03c2f714d",
+      "referenceDate": "2025-12-08",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Colaborou com os colegas"
+    },
+    {
+      "id": "83cf757e-f798-484f-877a-9a78f2d29276",
+      "createdAt": "2025-09-30T20:55:21.878Z",
+      "updatedAt": "2025-09-30T20:55:21.878Z",
+      "shelteredId": "051a95e4-c4d6-4753-b1ee-8dd90e40c69e",
+      "teacherProfileId": "20a1d9bb-f3b7-4baf-95be-822fafb4c90a",
+      "referenceDate": "2025-02-28",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": "Demonstrou liderança"
+    },
+    {
+      "id": "11f02d4e-1bb5-4365-a20a-6b2b5ddcdb3e",
+      "createdAt": "2025-09-30T20:55:21.925Z",
+      "updatedAt": "2025-09-30T20:55:21.925Z",
+      "shelteredId": "7abcded4-419d-48ad-bfae-b51814496fee",
+      "teacherProfileId": "cb9b71cd-1280-4eb4-82b2-9bc8dfb7da74",
+      "referenceDate": "2025-07-09",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Foi um exemplo para os outros"
+    },
+    {
+      "id": "d4e5ad90-6d20-4d4a-8843-40360bd526fb",
+      "createdAt": "2025-09-30T20:55:21.974Z",
+      "updatedAt": "2025-09-30T20:55:21.974Z",
+      "shelteredId": "8b989018-40fd-42b2-8b33-7682a4a036c6",
+      "teacherProfileId": "8c3c26f9-5846-4094-80b4-f8df7316f76f",
+      "referenceDate": "2025-07-03",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "f405901f-1fb0-41a0-b03d-664e69ac53b0",
+      "createdAt": "2025-09-30T20:55:22.032Z",
+      "updatedAt": "2025-09-30T20:55:22.032Z",
+      "shelteredId": "03e4bc0d-8553-44a6-94c5-a472dd0da86b",
+      "teacherProfileId": "859f5a7e-ea03-4058-96dd-55434bf69e9e",
+      "referenceDate": "2025-08-31",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": "Mostrou crescimento pessoal"
+    },
+    {
+      "id": "3ca293aa-94df-414c-a6bb-b7c7df73a2e3",
+      "createdAt": "2025-09-30T20:55:22.083Z",
+      "updatedAt": "2025-09-30T20:55:22.083Z",
+      "shelteredId": "df9e20e4-de32-4124-900b-4834dc1d2562",
+      "teacherProfileId": "e9857eba-19be-42eb-b8f2-5ae072f631ca",
+      "referenceDate": "2025-07-02",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "4b4d5557-7199-4a46-9237-61350d6cd7e2",
+      "createdAt": "2025-09-30T20:55:22.146Z",
+      "updatedAt": "2025-09-30T20:55:22.146Z",
+      "shelteredId": "a7392a7a-9d5a-479f-89a3-8bd795c9d26b",
+      "teacherProfileId": "c4ca43e2-d305-4578-87ea-943be705512a",
+      "referenceDate": "2025-03-20",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "ecae83c5-a894-4c2b-98bf-2d869d9e507d",
+      "createdAt": "2025-09-30T20:55:22.207Z",
+      "updatedAt": "2025-09-30T20:55:22.207Z",
+      "shelteredId": "24d7aef1-d07d-48f6-aa3e-68c26baa5fc3",
+      "teacherProfileId": "d01a3407-8df4-4189-8b3e-f7c11e8a3815",
+      "referenceDate": "2025-06-21",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "7dd118b3-eb0a-4db8-ab8e-33f987acde3d",
+      "createdAt": "2025-09-30T20:55:22.270Z",
+      "updatedAt": "2025-09-30T20:55:22.270Z",
+      "shelteredId": "f7a2a89b-e7a8-4a4f-a495-a897f9987faa",
+      "teacherProfileId": "9891acaf-709e-4895-a33a-34169562645f",
+      "referenceDate": "2025-07-13",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "029018bb-bba6-42b0-ae45-fe1cef9f2771",
+      "createdAt": "2025-09-30T20:55:22.312Z",
+      "updatedAt": "2025-09-30T20:55:22.312Z",
+      "shelteredId": "10411596-62d2-48e0-ab9b-226e611d041c",
+      "teacherProfileId": "dca14be3-c181-423c-b972-0cf0edfa7f49",
+      "referenceDate": "2025-12-15",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "56e115a7-125a-4c52-8c86-29ccdf21d345",
+      "createdAt": "2025-09-30T20:55:22.363Z",
+      "updatedAt": "2025-09-30T20:55:22.363Z",
+      "shelteredId": "82ef2c18-94ec-4fad-917e-f35c7b5d4ff5",
+      "teacherProfileId": "008fc4d7-8f8a-4414-ab84-0fdd93fd300f",
+      "referenceDate": "2025-07-03",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Foi muito colaborativo"
+    },
+    {
+      "id": "687643f7-440f-4b8f-b098-e4e8bfaae620",
+      "createdAt": "2025-09-30T20:55:22.408Z",
+      "updatedAt": "2025-09-30T20:55:22.408Z",
+      "shelteredId": "14986306-1eea-4a24-9d35-d5f8fb541c39",
+      "teacherProfileId": "3f2c9632-266b-4c34-a965-08d5f5f1d31c",
+      "referenceDate": "2025-04-16",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": "Demonstrou liderança"
+    },
+    {
+      "id": "06670a19-dfdc-463f-9028-4ff9f59ac103",
+      "createdAt": "2025-09-30T20:55:22.456Z",
+      "updatedAt": "2025-09-30T20:55:22.456Z",
+      "shelteredId": "9e6a178d-3593-4112-aa8f-8cc6a303bb8c",
+      "teacherProfileId": "7c4527b1-4e74-4ddc-8c12-12de67c77783",
+      "referenceDate": "2025-11-23",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "6cc533d2-48e5-4cb2-836a-5696892d6a64",
+      "createdAt": "2025-09-30T20:55:22.507Z",
+      "updatedAt": "2025-09-30T20:55:22.507Z",
+      "shelteredId": "c66421f9-8724-4b0e-a9f3-1e784c5fd876",
+      "teacherProfileId": "46195c4e-2cf5-461f-9cc6-1bffc5eb9f17",
+      "referenceDate": "2025-01-27",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Mostrou dificuldade na concentração"
+    },
+    {
+      "id": "77684606-fc41-4682-9688-d2074e92fb26",
+      "createdAt": "2025-09-30T20:55:22.571Z",
+      "updatedAt": "2025-09-30T20:55:22.571Z",
+      "shelteredId": "5ccac15f-8596-4f32-a6c6-b38573f4ce85",
+      "teacherProfileId": "62b80594-3ae1-4360-bb2c-87aa3c225de1",
+      "referenceDate": "2025-10-05",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "5fc74717-d0f5-45c3-a79e-5fb294e86e38",
+      "createdAt": "2025-09-30T20:55:22.630Z",
+      "updatedAt": "2025-09-30T20:55:22.630Z",
+      "shelteredId": "af3a6093-f1a4-4a32-9fe8-3bc515887ef6",
+      "teacherProfileId": "cb05da9a-8397-46e1-aa39-198d6490c0c6",
+      "referenceDate": "2025-06-22",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Precisou de reforço positivo"
+    },
+    {
+      "id": "27524867-343c-4ecd-8175-fb4e7a081b84",
+      "createdAt": "2025-09-30T20:55:22.693Z",
+      "updatedAt": "2025-09-30T20:55:22.693Z",
+      "shelteredId": "48ea0ab3-28f3-4ddd-821d-0adbaf74154a",
+      "teacherProfileId": "d6c37e66-53b7-44c0-8e82-61d4b615ebeb",
+      "referenceDate": "2025-01-24",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": "Comportamento exemplar"
+    },
+    {
+      "id": "583291c8-c832-4e27-a70d-bbe944cde644",
+      "createdAt": "2025-09-30T20:55:22.757Z",
+      "updatedAt": "2025-09-30T20:55:22.757Z",
+      "shelteredId": "10eb2b44-4060-4140-8e2c-16d4c8ff3da2",
+      "teacherProfileId": "466c9a98-2d8d-4522-a3a2-47405aa7245f",
+      "referenceDate": "2025-06-02",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "ec1ae66f-d54b-4c4f-b1b1-5c1857399698",
+      "createdAt": "2025-09-30T20:55:22.802Z",
+      "updatedAt": "2025-09-30T20:55:22.802Z",
+      "shelteredId": "a603bcce-cfa9-43de-ae30-47dbeef54a1c",
+      "teacherProfileId": "3856e00a-e30e-42cb-b131-b093168b34c4",
+      "referenceDate": "2025-08-28",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": "Demonstrou responsabilidade"
+    },
+    {
+      "id": "60b5c40d-c4e0-4dd7-ad21-e455f0dbf736",
+      "createdAt": "2025-09-30T20:55:22.862Z",
+      "updatedAt": "2025-09-30T20:55:22.862Z",
+      "shelteredId": "94cf04b9-0f77-4ef8-8d0c-08a097d9ae21",
+      "teacherProfileId": "4decc20a-b82e-46c8-be37-368c62865de3",
+      "referenceDate": "2025-02-08",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "edaaf261-8ed6-4baa-8b6b-99a944f9f664",
+      "createdAt": "2025-09-30T20:55:22.911Z",
+      "updatedAt": "2025-09-30T20:55:22.911Z",
+      "shelteredId": "dfc47412-b37a-448d-b446-6c8a50317a29",
+      "teacherProfileId": "e679a7c5-1996-42f5-bc86-08b0a2dc1e32",
+      "referenceDate": "2025-04-26",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "4a0a2c31-910e-454b-a758-5ac46460f89c",
+      "createdAt": "2025-09-30T20:55:22.972Z",
+      "updatedAt": "2025-09-30T20:55:22.972Z",
+      "shelteredId": "f6fd90cb-474a-42b4-a868-24373593b008",
+      "teacherProfileId": "26ce6750-46e7-4387-8d70-da8162e094fe",
+      "referenceDate": "2025-07-13",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Foi muito atencioso"
+    },
+    {
+      "id": "b971cf0c-9f48-4941-a789-38ae04345292",
+      "createdAt": "2025-09-30T20:55:23.019Z",
+      "updatedAt": "2025-09-30T20:55:23.019Z",
+      "shelteredId": "1fddb17e-7d4a-47fa-91cb-6b7337403fab",
+      "teacherProfileId": "8ce653d5-81f4-465f-b2a7-11ccc32b5be8",
+      "referenceDate": "2025-06-15",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "128a2117-7d67-49bb-8c89-c7b5c22e2545",
+      "createdAt": "2025-09-30T20:55:23.067Z",
+      "updatedAt": "2025-09-30T20:55:23.067Z",
+      "shelteredId": "4e5a6e3e-697c-499e-bdc7-ea9c1d9041c7",
+      "teacherProfileId": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+      "referenceDate": "2025-01-02",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Demonstrou liderança"
+    },
+    {
+      "id": "832eabb4-27b6-4cca-97c1-15360ca1eff1",
+      "createdAt": "2025-09-30T20:55:23.131Z",
+      "updatedAt": "2025-09-30T20:55:23.131Z",
+      "shelteredId": "8511a28e-d0e2-4c2f-94ea-e47637323088",
+      "teacherProfileId": "b4ce290c-b024-48d5-a69c-7f5a430928e3",
+      "referenceDate": "2025-05-26",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Precisou de disciplina"
+    },
+    {
+      "id": "7644b3ea-1465-49c5-b4d9-551f5d456bc6",
+      "createdAt": "2025-09-30T20:55:23.187Z",
+      "updatedAt": "2025-09-30T20:55:23.187Z",
+      "shelteredId": "34e0a8ed-950e-4810-b511-65af95b5beec",
+      "teacherProfileId": "72e59ec4-984f-4bc3-afb1-f8221bc97d21",
+      "referenceDate": "2025-08-13",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "a745c024-696b-4cdf-8d47-a0d00fc8b76a",
+      "createdAt": "2025-09-30T20:55:23.234Z",
+      "updatedAt": "2025-09-30T20:55:23.234Z",
+      "shelteredId": "6f5d574b-ec61-4f8d-95f4-ff98d3d604e1",
+      "teacherProfileId": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+      "referenceDate": "2025-04-09",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "3bd4fdd2-d342-47c3-8f6a-7856a175bf47",
+      "createdAt": "2025-09-30T20:55:23.284Z",
+      "updatedAt": "2025-09-30T20:55:23.284Z",
+      "shelteredId": "c0ab8391-6194-4728-8b27-a183a3c78a83",
+      "teacherProfileId": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+      "referenceDate": "2025-07-24",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Participou com entusiasmo"
+    },
+    {
+      "id": "452ea3cd-e502-4fb1-8a72-5b6ddd92bbaa",
+      "createdAt": "2025-09-30T20:55:23.347Z",
+      "updatedAt": "2025-09-30T20:55:23.347Z",
+      "shelteredId": "bfcd3d04-6779-4142-b95d-7ecd0a50d629",
+      "teacherProfileId": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+      "referenceDate": "2025-08-22",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "69ce96c8-e578-4021-98a5-f557d1e24bdd",
+      "createdAt": "2025-09-30T20:55:23.409Z",
+      "updatedAt": "2025-09-30T20:55:23.409Z",
+      "shelteredId": "d5e5815c-1dac-48e9-9d89-63f02d457805",
+      "teacherProfileId": "12e84760-9d54-4e76-857b-2178fd03f305",
+      "referenceDate": "2025-05-28",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "54a7f25b-39c8-49c3-83dc-d89202f69fe1",
+      "createdAt": "2025-09-30T20:55:23.470Z",
+      "updatedAt": "2025-09-30T20:55:23.470Z",
+      "shelteredId": "c9fe74f8-9c5d-4a05-a8ef-44e6b1cee8f2",
+      "teacherProfileId": "135a1b26-4674-477f-9103-5f643c6e1d13",
+      "referenceDate": "2025-06-29",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "b0965bc5-18f4-4951-a406-e5678db9bae1",
+      "createdAt": "2025-09-30T20:55:23.534Z",
+      "updatedAt": "2025-09-30T20:55:23.534Z",
+      "shelteredId": "7eb09c06-8f9c-457c-962b-371898e0d2c0",
+      "teacherProfileId": "667a943d-39b4-4371-b643-a1d55e33d417",
+      "referenceDate": "2025-09-13",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "14105803-015b-4a78-ab0f-216bf37b2853",
+      "createdAt": "2025-09-30T20:55:23.590Z",
+      "updatedAt": "2025-09-30T20:55:23.590Z",
+      "shelteredId": "ad47a1b0-0fe7-4164-b84d-2a7c9eddd23d",
+      "teacherProfileId": "e9b194fd-7d50-44b9-bcde-210f9f716945",
+      "referenceDate": "2025-08-09",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "08c47b92-08cd-46f1-b681-4387f3961436",
+      "createdAt": "2025-09-30T20:55:23.639Z",
+      "updatedAt": "2025-09-30T20:55:23.639Z",
+      "shelteredId": "6c290d8d-e629-4361-bdb8-1443bfc3e479",
+      "teacherProfileId": "fbf1b067-d26e-464b-83ad-04a93697646d",
+      "referenceDate": "2025-12-30",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "2ba4c020-d538-4113-9ec8-1c7b4162abed",
+      "createdAt": "2025-09-30T20:55:23.701Z",
+      "updatedAt": "2025-09-30T20:55:23.701Z",
+      "shelteredId": "2c5bffae-930a-49c3-9e82-d7c020a14a55",
+      "teacherProfileId": "e518df00-aa71-40bd-b0d8-e19d2b566b86",
+      "referenceDate": "2025-02-04",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": "Colaborou com os colegas"
+    },
+    {
+      "id": "8cd1a3c0-1f1e-44fd-a995-9b1865c65bf6",
+      "createdAt": "2025-09-30T20:55:23.746Z",
+      "updatedAt": "2025-09-30T20:55:23.746Z",
+      "shelteredId": "657ce9cd-2271-449c-9bfa-eee3519734ed",
+      "teacherProfileId": "33274313-3a66-4548-889e-27f68189e952",
+      "referenceDate": "2025-08-03",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "9591cb5a-30e3-4bf9-9028-a825450bf42a",
+      "createdAt": "2025-09-30T20:55:23.792Z",
+      "updatedAt": "2025-09-30T20:55:23.792Z",
+      "shelteredId": "7e24464e-9cb6-4410-bcef-df23fbec0ab1",
+      "teacherProfileId": "fc46df69-1b50-4a2e-bff3-6756757dd729",
+      "referenceDate": "2025-01-09",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Colaborou com os colegas"
+    },
+    {
+      "id": "d8ccd3a8-ce82-4ba8-866a-31c6cae8f5a8",
+      "createdAt": "2025-09-30T20:55:23.841Z",
+      "updatedAt": "2025-09-30T20:55:23.841Z",
+      "shelteredId": "3b67d0e2-c7e3-4463-81d6-bd1988dec3a2",
+      "teacherProfileId": "d177c9f5-0821-44fa-989c-26191a733be8",
+      "referenceDate": "2025-10-06",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Precisou de orientação espiritual"
+    },
+    {
+      "id": "eb0dae79-a12c-4e58-adae-7448237e1b4f",
+      "createdAt": "2025-09-30T20:55:23.889Z",
+      "updatedAt": "2025-09-30T20:55:23.889Z",
+      "shelteredId": "b7a39e70-8ff3-410b-870d-8bfc048c689d",
+      "teacherProfileId": "c60857fd-f4a3-4864-a620-076351ed56a5",
+      "referenceDate": "2025-10-08",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "1bdc3f68-84c2-4c54-b886-423ea23ecceb",
+      "createdAt": "2025-09-30T20:55:23.936Z",
+      "updatedAt": "2025-09-30T20:55:23.936Z",
+      "shelteredId": "d7dec5fa-5e6f-4a38-b90c-5224351fabd3",
+      "teacherProfileId": "c2887dbd-4bec-47ab-990e-f0e358a455a1",
+      "referenceDate": "2025-10-04",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Comportamento exemplar"
+    },
+    {
+      "id": "077bd3d2-43e6-4dc6-a4a1-fb2685f55d05",
+      "createdAt": "2025-09-30T20:55:23.984Z",
+      "updatedAt": "2025-09-30T20:55:23.984Z",
+      "shelteredId": "fc79f1bd-0e77-41b1-a485-48a318119657",
+      "teacherProfileId": "c7145408-93a4-4362-b1bd-1eab8fb97b93",
+      "referenceDate": "2025-08-07",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Foi muito colaborativo"
+    },
+    {
+      "id": "a82e970a-4314-4310-a6ec-9dee872fb5c6",
+      "createdAt": "2025-09-30T20:55:24.059Z",
+      "updatedAt": "2025-09-30T20:55:24.059Z",
+      "shelteredId": "ca670a71-488b-455f-8ed8-2e2d534dfe2c",
+      "teacherProfileId": "ec208249-f690-4a17-ad24-fcc0d08050d3",
+      "referenceDate": "2025-12-23",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "167c55e0-f92e-4806-b7c4-7599ed7c750f",
+      "createdAt": "2025-09-30T20:55:24.154Z",
+      "updatedAt": "2025-09-30T20:55:24.154Z",
+      "shelteredId": "3761ca0f-0634-43dc-834d-18fe687c8372",
+      "teacherProfileId": "d66b3be6-60ec-4954-bb8a-8c3862062c5e",
+      "referenceDate": "2025-10-11",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Mostrou interesse em aprender"
+    },
+    {
+      "id": "aeeaf99c-490d-405a-8b49-c96e2cd6e0ef",
+      "createdAt": "2025-09-30T20:55:24.227Z",
+      "updatedAt": "2025-09-30T20:55:24.227Z",
+      "shelteredId": "2c3b3289-fb25-4f42-9b3e-00bec7120ef2",
+      "teacherProfileId": "18316f8d-9326-44f8-957b-07e03c2f714d",
+      "referenceDate": "2025-10-06",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "d03ee305-859a-4105-a796-8b04cbbc9025",
+      "createdAt": "2025-09-30T20:55:24.278Z",
+      "updatedAt": "2025-09-30T20:55:24.278Z",
+      "shelteredId": "277c9193-d3f6-472e-b3ae-af98f241a78d",
+      "teacherProfileId": "20a1d9bb-f3b7-4baf-95be-822fafb4c90a",
+      "referenceDate": "2025-11-02",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "a5f32fc0-9c85-4b52-bae9-ea2048536880",
+      "createdAt": "2025-09-30T20:55:24.326Z",
+      "updatedAt": "2025-09-30T20:55:24.326Z",
+      "shelteredId": "b5089e1b-9433-4480-925d-d2902e099da0",
+      "teacherProfileId": "cb9b71cd-1280-4eb4-82b2-9bc8dfb7da74",
+      "referenceDate": "2025-04-21",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "d9e223e2-5a9d-46ef-addf-7576b7e5b7f8",
+      "createdAt": "2025-09-30T20:55:24.392Z",
+      "updatedAt": "2025-09-30T20:55:24.392Z",
+      "shelteredId": "3703fef8-7619-4e2a-b6a7-4d6fb42ba100",
+      "teacherProfileId": "8c3c26f9-5846-4094-80b4-f8df7316f76f",
+      "referenceDate": "2025-12-24",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Mostrou interesse em aprender"
+    },
+    {
+      "id": "790c5d38-f861-4cae-b596-053420ebd874",
+      "createdAt": "2025-09-30T20:55:24.455Z",
+      "updatedAt": "2025-09-30T20:55:24.455Z",
+      "shelteredId": "0689c7c0-e617-4681-96d0-86ed07f6eb1c",
+      "teacherProfileId": "859f5a7e-ea03-4058-96dd-55434bf69e9e",
+      "referenceDate": "2025-08-03",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": "Mostrou dificuldade na concentração"
+    },
+    {
+      "id": "a2ff2f19-3515-4fff-9bce-d43e110ceb1f",
+      "createdAt": "2025-09-30T20:55:24.516Z",
+      "updatedAt": "2025-09-30T20:55:24.516Z",
+      "shelteredId": "2cedadbc-6173-4383-94fe-a39c78bd570b",
+      "teacherProfileId": "e9857eba-19be-42eb-b8f2-5ae072f631ca",
+      "referenceDate": "2025-02-17",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Comportamento exemplar"
+    },
+    {
+      "id": "a0a41ae5-0d44-4b24-8bed-7fdf664c769a",
+      "createdAt": "2025-09-30T20:55:24.575Z",
+      "updatedAt": "2025-09-30T20:55:24.575Z",
+      "shelteredId": "573e7a97-57fa-410e-9025-db72133ae5a4",
+      "teacherProfileId": "c4ca43e2-d305-4578-87ea-943be705512a",
+      "referenceDate": "2025-12-27",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "32b3a9d8-34c0-45cc-83f1-139ca1f6921e",
+      "createdAt": "2025-09-30T20:55:24.621Z",
+      "updatedAt": "2025-09-30T20:55:24.621Z",
+      "shelteredId": "309ca1da-a79f-41b2-86cf-df182c416b28",
+      "teacherProfileId": "d01a3407-8df4-4189-8b3e-f7c11e8a3815",
+      "referenceDate": "2025-04-15",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Participou com entusiasmo"
+    },
+    {
+      "id": "8f83aece-2b47-46e9-a59e-b87ded2af227",
+      "createdAt": "2025-09-30T20:55:24.671Z",
+      "updatedAt": "2025-09-30T20:55:24.671Z",
+      "shelteredId": "dbeb1f7e-e868-4cc8-a88c-32986ab64e31",
+      "teacherProfileId": "9891acaf-709e-4895-a33a-34169562645f",
+      "referenceDate": "2025-12-30",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "8d6c20fc-d647-465c-9aff-b7e74fa7464f",
+      "createdAt": "2025-09-30T20:55:24.735Z",
+      "updatedAt": "2025-09-30T20:55:24.735Z",
+      "shelteredId": "a68d9096-a21d-4020-b22f-96f8b33ef674",
+      "teacherProfileId": "dca14be3-c181-423c-b972-0cf0edfa7f49",
+      "referenceDate": "2025-09-19",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "92d364a9-8d0a-4c25-8844-3fb00a7ce686",
+      "createdAt": "2025-09-30T20:55:24.801Z",
+      "updatedAt": "2025-09-30T20:55:24.801Z",
+      "shelteredId": "9c734e9f-d815-4fd2-8db2-e5d6f50e1423",
+      "teacherProfileId": "008fc4d7-8f8a-4414-ab84-0fdd93fd300f",
+      "referenceDate": "2025-06-13",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "d6c1fc79-9357-4e96-8410-b7497bc62e11",
+      "createdAt": "2025-09-30T20:55:24.858Z",
+      "updatedAt": "2025-09-30T20:55:24.858Z",
+      "shelteredId": "485d7bfe-3c88-4f2d-b8f3-0bb6ee2ad639",
+      "teacherProfileId": "3f2c9632-266b-4c34-a965-08d5f5f1d31c",
+      "referenceDate": "2025-09-05",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": "Mostrou interesse em aprender"
+    },
+    {
+      "id": "9a7089b9-2805-46db-a987-79c9437f08d5",
+      "createdAt": "2025-09-30T20:55:24.918Z",
+      "updatedAt": "2025-09-30T20:55:24.918Z",
+      "shelteredId": "ad29064e-a784-4d41-bb79-dd53c1ea8682",
+      "teacherProfileId": "7c4527b1-4e74-4ddc-8c12-12de67c77783",
+      "referenceDate": "2025-05-28",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Comportamento exemplar"
+    },
+    {
+      "id": "dbcca27a-eebd-4d62-8b6a-e7a30205c49d",
+      "createdAt": "2025-09-30T20:55:24.966Z",
+      "updatedAt": "2025-09-30T20:55:24.966Z",
+      "shelteredId": "a7335f88-20ad-4e3c-b307-65e20b8d7f04",
+      "teacherProfileId": "46195c4e-2cf5-461f-9cc6-1bffc5eb9f17",
+      "referenceDate": "2025-04-15",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "6fff784d-f668-4773-bcb6-56768b989547",
+      "createdAt": "2025-09-30T20:55:25.032Z",
+      "updatedAt": "2025-09-30T20:55:25.032Z",
+      "shelteredId": "993a1f38-1125-4c02-965a-1d1eb1b8197d",
+      "teacherProfileId": "62b80594-3ae1-4360-bb2c-87aa3c225de1",
+      "referenceDate": "2025-03-15",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Foi muito colaborativo"
+    },
+    {
+      "id": "b90892c6-3be7-4b8d-90a1-181d4ef3cabe",
+      "createdAt": "2025-09-30T20:55:25.091Z",
+      "updatedAt": "2025-09-30T20:55:25.091Z",
+      "shelteredId": "ccdacf3c-33e9-4660-a687-2ea5829a9b1f",
+      "teacherProfileId": "cb05da9a-8397-46e1-aa39-198d6490c0c6",
+      "referenceDate": "2025-10-18",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "7d2570de-571d-49e8-a631-382063503baa",
+      "createdAt": "2025-09-30T20:55:25.151Z",
+      "updatedAt": "2025-09-30T20:55:25.151Z",
+      "shelteredId": "85212c9a-1f6c-40d0-abbd-9e542de4cf4b",
+      "teacherProfileId": "d6c37e66-53b7-44c0-8e82-61d4b615ebeb",
+      "referenceDate": "2025-09-05",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "fa460781-f9de-46d2-b6a9-b1e0095d247e",
+      "createdAt": "2025-09-30T20:55:25.195Z",
+      "updatedAt": "2025-09-30T20:55:25.195Z",
+      "shelteredId": "c2751b82-5b73-45eb-a846-aca411c4ce97",
+      "teacherProfileId": "466c9a98-2d8d-4522-a3a2-47405aa7245f",
+      "referenceDate": "2025-06-20",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "37075d36-70ed-489b-bf2d-d5762a9028e2",
+      "createdAt": "2025-09-30T20:55:25.672Z",
+      "updatedAt": "2025-09-30T20:55:25.672Z",
+      "shelteredId": "97a61c48-92bd-4354-ae3e-a201c45a3095",
+      "teacherProfileId": "e9b194fd-7d50-44b9-bcde-210f9f716945",
+      "referenceDate": "2025-08-31",
+      "year": 2025,
+      "visit": 2,
+      "present": false,
+      "notes": "Precisou de encorajamento"
+    },
+    {
+      "id": "d478d34f-70c5-465d-b844-a764dd9c38cd",
+      "createdAt": "2025-09-30T20:55:25.779Z",
+      "updatedAt": "2025-09-30T20:55:25.779Z",
+      "shelteredId": "891adb4b-795e-4809-8de9-6f166792cd6a",
+      "teacherProfileId": "e518df00-aa71-40bd-b0d8-e19d2b566b86",
+      "referenceDate": "2025-10-04",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": "Precisou de orientação espiritual"
+    },
+    {
+      "id": "2ec68495-4d47-44fb-ab0c-99b3d2b39913",
+      "createdAt": "2025-09-30T20:55:25.844Z",
+      "updatedAt": "2025-09-30T20:55:25.844Z",
+      "shelteredId": "d6bd60a1-5e32-49f2-9d21-48b44da36626",
+      "teacherProfileId": "33274313-3a66-4548-889e-27f68189e952",
+      "referenceDate": "2025-10-18",
+      "year": 2025,
+      "visit": 2,
+      "present": false,
+      "notes": "Foi muito colaborativo"
+    },
+    {
+      "id": "0f791bca-eb2e-4eb2-b71a-65ceb4d1887c",
+      "createdAt": "2025-09-30T20:55:25.906Z",
+      "updatedAt": "2025-09-30T20:55:25.906Z",
+      "shelteredId": "f3cdfacb-b381-4df5-9d50-e6ebcb8578d6",
+      "teacherProfileId": "fc46df69-1b50-4a2e-bff3-6756757dd729",
+      "referenceDate": "2025-09-15",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "800fd596-43c4-49d6-bbb9-9dda521466f1",
+      "createdAt": "2025-09-30T20:55:25.968Z",
+      "updatedAt": "2025-09-30T20:55:25.968Z",
+      "shelteredId": "3d042937-20dd-4632-9202-0cc516dbb007",
+      "teacherProfileId": "d177c9f5-0821-44fa-989c-26191a733be8",
+      "referenceDate": "2025-06-09",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "5672dcd7-3bdb-49b0-9c10-3306c61cba6c",
+      "createdAt": "2025-09-30T20:55:26.014Z",
+      "updatedAt": "2025-09-30T20:55:26.014Z",
+      "shelteredId": "ff9d9053-67fb-429f-9cc3-a5d7effed7f7",
+      "teacherProfileId": "c60857fd-f4a3-4864-a620-076351ed56a5",
+      "referenceDate": "2025-09-24",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": "Comportamento exemplar"
+    },
+    {
+      "id": "25151a4b-8e35-4d76-9b50-9457231526c7",
+      "createdAt": "2025-09-30T20:55:26.064Z",
+      "updatedAt": "2025-09-30T20:55:26.064Z",
+      "shelteredId": "29205db3-035b-430f-aeeb-8831deec78c6",
+      "teacherProfileId": "c2887dbd-4bec-47ab-990e-f0e358a455a1",
+      "referenceDate": "2025-01-12",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "d7c0f12f-da53-4f92-af82-9b72fc8edd73",
+      "createdAt": "2025-09-30T20:55:26.123Z",
+      "updatedAt": "2025-09-30T20:55:26.123Z",
+      "shelteredId": "c1f88f7c-3e4c-4ce3-9493-47d2143b1e7d",
+      "teacherProfileId": "c7145408-93a4-4362-b1bd-1eab8fb97b93",
+      "referenceDate": "2025-03-23",
+      "year": 2025,
+      "visit": 2,
+      "present": false,
+      "notes": "Precisou de reforço positivo"
+    },
+    {
+      "id": "f71b9200-9654-41da-8a90-a46baeb94a6a",
+      "createdAt": "2025-09-30T20:55:26.188Z",
+      "updatedAt": "2025-09-30T20:55:26.188Z",
+      "shelteredId": "7eccfac9-08dd-4d9a-9935-f79f2cf8fcf5",
+      "teacherProfileId": "ec208249-f690-4a17-ad24-fcc0d08050d3",
+      "referenceDate": "2025-09-01",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "19414dda-b434-4824-9e33-a0efe3282473",
+      "createdAt": "2025-09-30T20:55:26.249Z",
+      "updatedAt": "2025-09-30T20:55:26.249Z",
+      "shelteredId": "23264a4a-53b2-400e-a74f-fab3f76e7859",
+      "teacherProfileId": "d66b3be6-60ec-4954-bb8a-8c3862062c5e",
+      "referenceDate": "2025-08-03",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": "Comportamento exemplar"
+    },
+    {
+      "id": "7b3687b2-e1df-42ae-9b35-02380a741c51",
+      "createdAt": "2025-09-30T20:55:26.295Z",
+      "updatedAt": "2025-09-30T20:55:26.295Z",
+      "shelteredId": "638cf2ae-b26c-48ac-a557-d7d58ea344c9",
+      "teacherProfileId": "18316f8d-9326-44f8-957b-07e03c2f714d",
+      "referenceDate": "2025-07-03",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "951505ea-58ca-4fea-9dee-2f4f59d6799a",
+      "createdAt": "2025-09-30T20:55:26.361Z",
+      "updatedAt": "2025-09-30T20:55:26.361Z",
+      "shelteredId": "051a95e4-c4d6-4753-b1ee-8dd90e40c69e",
+      "teacherProfileId": "20a1d9bb-f3b7-4baf-95be-822fafb4c90a",
+      "referenceDate": "2025-04-30",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "0d264a3e-6722-42da-9762-9bd752138156",
+      "createdAt": "2025-09-30T20:55:26.421Z",
+      "updatedAt": "2025-09-30T20:55:26.421Z",
+      "shelteredId": "7abcded4-419d-48ad-bfae-b51814496fee",
+      "teacherProfileId": "cb9b71cd-1280-4eb4-82b2-9bc8dfb7da74",
+      "referenceDate": "2025-09-25",
+      "year": 2025,
+      "visit": 2,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "05552d47-faf4-435f-81d7-179a4a92e2df",
+      "createdAt": "2025-09-30T20:55:26.484Z",
+      "updatedAt": "2025-09-30T20:55:26.484Z",
+      "shelteredId": "8b989018-40fd-42b2-8b33-7682a4a036c6",
+      "teacherProfileId": "8c3c26f9-5846-4094-80b4-f8df7316f76f",
+      "referenceDate": "2025-05-21",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": "Precisou de orientação adicional"
+    },
+    {
+      "id": "9a532223-f94b-4bef-bec5-51dd593d2e74",
+      "createdAt": "2025-09-30T20:55:26.549Z",
+      "updatedAt": "2025-09-30T20:55:26.549Z",
+      "shelteredId": "03e4bc0d-8553-44a6-94c5-a472dd0da86b",
+      "teacherProfileId": "859f5a7e-ea03-4058-96dd-55434bf69e9e",
+      "referenceDate": "2025-01-28",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": "Demonstrou liderança"
+    },
+    {
+      "id": "ca5f0ca2-5e44-42c3-a6f8-93cac3a3b94d",
+      "createdAt": "2025-09-30T20:55:26.608Z",
+      "updatedAt": "2025-09-30T20:55:26.608Z",
+      "shelteredId": "df9e20e4-de32-4124-900b-4834dc1d2562",
+      "teacherProfileId": "e9857eba-19be-42eb-b8f2-5ae072f631ca",
+      "referenceDate": "2025-03-10",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": "Precisou de atenção especial"
+    },
+    {
+      "id": "cb90b2db-4739-498b-a17c-c982b22f8cab",
+      "createdAt": "2025-09-30T20:55:26.653Z",
+      "updatedAt": "2025-09-30T20:55:26.653Z",
+      "shelteredId": "a7392a7a-9d5a-479f-89a3-8bd795c9d26b",
+      "teacherProfileId": "c4ca43e2-d305-4578-87ea-943be705512a",
+      "referenceDate": "2025-12-04",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": "Mostrou dificuldade na concentração"
+    },
+    {
+      "id": "c1a35ea3-8a92-45f2-927b-2b91f2f750a9",
+      "createdAt": "2025-09-30T20:55:26.701Z",
+      "updatedAt": "2025-09-30T20:55:26.701Z",
+      "shelteredId": "24d7aef1-d07d-48f6-aa3e-68c26baa5fc3",
+      "teacherProfileId": "d01a3407-8df4-4189-8b3e-f7c11e8a3815",
+      "referenceDate": "2025-06-09",
+      "year": 2025,
+      "visit": 2,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "1db41d0b-29de-4e09-a51f-5ebff2b65f9b",
+      "createdAt": "2025-09-30T20:55:26.748Z",
+      "updatedAt": "2025-09-30T20:55:26.748Z",
+      "shelteredId": "f7a2a89b-e7a8-4a4f-a495-a897f9987faa",
+      "teacherProfileId": "9891acaf-709e-4895-a33a-34169562645f",
+      "referenceDate": "2025-01-16",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": "Comportamento exemplar"
+    },
+    {
+      "id": "c0db7ee9-b721-447b-b7ed-afb22d97eb7c",
+      "createdAt": "2025-09-30T20:55:26.813Z",
+      "updatedAt": "2025-09-30T20:55:26.813Z",
+      "shelteredId": "10411596-62d2-48e0-ab9b-226e611d041c",
+      "teacherProfileId": "dca14be3-c181-423c-b972-0cf0edfa7f49",
+      "referenceDate": "2025-01-14",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "ab326a19-71ad-4763-b84d-f809c118cfa1",
+      "createdAt": "2025-09-30T20:55:26.874Z",
+      "updatedAt": "2025-09-30T20:55:26.874Z",
+      "shelteredId": "82ef2c18-94ec-4fad-917e-f35c7b5d4ff5",
+      "teacherProfileId": "008fc4d7-8f8a-4414-ab84-0fdd93fd300f",
+      "referenceDate": "2025-01-10",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "096a27b5-02c3-442e-b5f4-3f61be56f475",
+      "createdAt": "2025-09-30T20:55:26.934Z",
+      "updatedAt": "2025-09-30T20:55:26.934Z",
+      "shelteredId": "14986306-1eea-4a24-9d35-d5f8fb541c39",
+      "teacherProfileId": "3f2c9632-266b-4c34-a965-08d5f5f1d31c",
+      "referenceDate": "2025-02-13",
+      "year": 2025,
+      "visit": 2,
+      "present": false,
+      "notes": "Precisou de orientação adicional"
+    },
+    {
+      "id": "60628bdb-3ebb-4f5b-b855-74ae3beccb8c",
+      "createdAt": "2025-09-30T20:55:26.980Z",
+      "updatedAt": "2025-09-30T20:55:26.980Z",
+      "shelteredId": "9e6a178d-3593-4112-aa8f-8cc6a303bb8c",
+      "teacherProfileId": "7c4527b1-4e74-4ddc-8c12-12de67c77783",
+      "referenceDate": "2025-05-11",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "ae2af6a2-f2e4-40d5-9dba-abc3ced65370",
+      "createdAt": "2025-09-30T20:55:27.029Z",
+      "updatedAt": "2025-09-30T20:55:27.029Z",
+      "shelteredId": "c66421f9-8724-4b0e-a9f3-1e784c5fd876",
+      "teacherProfileId": "46195c4e-2cf5-461f-9cc6-1bffc5eb9f17",
+      "referenceDate": "2025-05-27",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "3271b2df-5790-4e2f-8d65-286adc9ff851",
+      "createdAt": "2025-09-30T20:55:27.093Z",
+      "updatedAt": "2025-09-30T20:55:27.093Z",
+      "shelteredId": "5ccac15f-8596-4f32-a6c6-b38573f4ce85",
+      "teacherProfileId": "62b80594-3ae1-4360-bb2c-87aa3c225de1",
+      "referenceDate": "2025-02-11",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": "Demonstrou responsabilidade"
+    },
+    {
+      "id": "bb2ee797-934b-4e1b-83b1-c7d4bb8cf256",
+      "createdAt": "2025-09-30T20:55:27.156Z",
+      "updatedAt": "2025-09-30T20:55:27.156Z",
+      "shelteredId": "af3a6093-f1a4-4a32-9fe8-3bc515887ef6",
+      "teacherProfileId": "cb05da9a-8397-46e1-aa39-198d6490c0c6",
+      "referenceDate": "2025-01-29",
+      "year": 2025,
+      "visit": 2,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "8d483edf-587d-42ff-9969-563d4fbd6989",
+      "createdAt": "2025-09-30T20:55:27.216Z",
+      "updatedAt": "2025-09-30T20:55:27.216Z",
+      "shelteredId": "48ea0ab3-28f3-4ddd-821d-0adbaf74154a",
+      "teacherProfileId": "d6c37e66-53b7-44c0-8e82-61d4b615ebeb",
+      "referenceDate": "2025-05-14",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "76f069c4-a7f3-4f28-80b1-4ae59ee1814a",
+      "createdAt": "2025-09-30T20:55:27.262Z",
+      "updatedAt": "2025-09-30T20:55:27.262Z",
+      "shelteredId": "10eb2b44-4060-4140-8e2c-16d4c8ff3da2",
+      "teacherProfileId": "466c9a98-2d8d-4522-a3a2-47405aa7245f",
+      "referenceDate": "2025-04-24",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "06ebb2dd-bd38-4c6f-b22f-578a268dd60e",
+      "createdAt": "2025-09-30T20:55:27.309Z",
+      "updatedAt": "2025-09-30T20:55:27.309Z",
+      "shelteredId": "a603bcce-cfa9-43de-ae30-47dbeef54a1c",
+      "teacherProfileId": "3856e00a-e30e-42cb-b131-b093168b34c4",
+      "referenceDate": "2025-11-22",
+      "year": 2025,
+      "visit": 2,
+      "present": false,
+      "notes": null
+    }
+  ],
+  "summary": {
+    "sheltered_used": [
+      {
+        "id": "afd9ea58-2c02-482f-a8c0-a1ca572e4972",
+        "name": "Ana Silva"
+      },
+      {
+        "id": "f8019626-4e43-4f60-8a33-2a58b81db32f",
+        "name": "Ana Silva"
+      },
+      {
+        "id": "1f655a3d-a611-4cfe-a23b-b41fc28c9f0a",
+        "name": "Ana Silva"
+      },
+      {
+        "id": "7af5855e-2683-4825-abdb-ad3dcb975863",
+        "name": "Ana Silva"
+      },
+      {
+        "id": "901b7343-f695-459b-9c0b-a249698fb77e",
+        "name": "Bruno Santos"
+      },
+      {
+        "id": "75b1b3a4-e65a-4fa7-8eea-bb73471975ae",
+        "name": "Bruno Santos"
+      },
+      {
+        "id": "1a6b3422-db8f-443a-b0fc-a15932ef9567",
+        "name": "Bruno Santos"
+      },
+      {
+        "id": "fbc3786d-81cc-41d2-b7ec-4b510ef7c035",
+        "name": "Bruno Santos"
+      },
+      {
+        "id": "02acfc00-183d-4149-8541-6e5b4eb9bd67",
+        "name": "Carlos Oliveira"
+      },
+      {
+        "id": "97a61c48-92bd-4354-ae3e-a201c45a3095",
+        "name": "Carlos Oliveira"
+      },
+      {
+        "id": "3305a377-0e44-42f4-b97d-095288f920d7",
+        "name": "Carlos Oliveira"
+      },
+      {
+        "id": "891adb4b-795e-4809-8de9-6f166792cd6a",
+        "name": "Carlos Oliveira"
+      },
+      {
+        "id": "d6bd60a1-5e32-49f2-9d21-48b44da36626",
+        "name": "Criança Teste Pagelas Final"
+      },
+      {
+        "id": "f3cdfacb-b381-4df5-9d50-e6ebcb8578d6",
+        "name": "Diana Costa"
+      },
+      {
+        "id": "3d042937-20dd-4632-9202-0cc516dbb007",
+        "name": "Diana Costa"
+      },
+      {
+        "id": "ff9d9053-67fb-429f-9cc3-a5d7effed7f7",
+        "name": "Diana Costa"
+      },
+      {
+        "id": "29205db3-035b-430f-aeeb-8831deec78c6",
+        "name": "Diana Costa"
+      },
+      {
+        "id": "c1f88f7c-3e4c-4ce3-9493-47d2143b1e7d",
+        "name": "Eduardo Lima"
+      },
+      {
+        "id": "7eccfac9-08dd-4d9a-9935-f79f2cf8fcf5",
+        "name": "Eduardo Lima"
+      },
+      {
+        "id": "23264a4a-53b2-400e-a74f-fab3f76e7859",
+        "name": "Eduardo Lima"
+      },
+      {
+        "id": "638cf2ae-b26c-48ac-a557-d7d58ea344c9",
+        "name": "Eduardo Lima"
+      },
+      {
+        "id": "051a95e4-c4d6-4753-b1ee-8dd90e40c69e",
+        "name": "Fernanda Rocha"
+      },
+      {
+        "id": "7abcded4-419d-48ad-bfae-b51814496fee",
+        "name": "Fernanda Rocha"
+      },
+      {
+        "id": "8b989018-40fd-42b2-8b33-7682a4a036c6",
+        "name": "Fernanda Rocha"
+      },
+      {
+        "id": "03e4bc0d-8553-44a6-94c5-a472dd0da86b",
+        "name": "Fernanda Rocha"
+      },
+      {
+        "id": "df9e20e4-de32-4124-900b-4834dc1d2562",
+        "name": "Gabriel Alves"
+      },
+      {
+        "id": "a7392a7a-9d5a-479f-89a3-8bd795c9d26b",
+        "name": "Gabriel Alves"
+      },
+      {
+        "id": "24d7aef1-d07d-48f6-aa3e-68c26baa5fc3",
+        "name": "Gabriel Alves"
+      },
+      {
+        "id": "f7a2a89b-e7a8-4a4f-a495-a897f9987faa",
+        "name": "Gabriel Alves"
+      },
+      {
+        "id": "10411596-62d2-48e0-ab9b-226e611d041c",
+        "name": "Helena Pereira"
+      },
+      {
+        "id": "82ef2c18-94ec-4fad-917e-f35c7b5d4ff5",
+        "name": "Helena Pereira"
+      },
+      {
+        "id": "14986306-1eea-4a24-9d35-d5f8fb541c39",
+        "name": "Helena Pereira"
+      },
+      {
+        "id": "9e6a178d-3593-4112-aa8f-8cc6a303bb8c",
+        "name": "Helena Pereira"
+      },
+      {
+        "id": "c66421f9-8724-4b0e-a9f3-1e784c5fd876",
+        "name": "Igor Martins"
+      },
+      {
+        "id": "5ccac15f-8596-4f32-a6c6-b38573f4ce85",
+        "name": "Igor Martins"
+      },
+      {
+        "id": "af3a6093-f1a4-4a32-9fe8-3bc515887ef6",
+        "name": "Igor Martins"
+      },
+      {
+        "id": "48ea0ab3-28f3-4ddd-821d-0adbaf74154a",
+        "name": "Igor Martins"
+      },
+      {
+        "id": "10eb2b44-4060-4140-8e2c-16d4c8ff3da2",
+        "name": "Julia Ferreira"
+      },
+      {
+        "id": "a603bcce-cfa9-43de-ae30-47dbeef54a1c",
+        "name": "Julia Ferreira"
+      },
+      {
+        "id": "94cf04b9-0f77-4ef8-8d0c-08a097d9ae21",
+        "name": "Julia Ferreira"
+      },
+      {
+        "id": "dfc47412-b37a-448d-b446-6c8a50317a29",
+        "name": "Julia Ferreira"
+      },
+      {
+        "id": "f6fd90cb-474a-42b4-a868-24373593b008",
+        "name": "Kleber Souza"
+      },
+      {
+        "id": "1fddb17e-7d4a-47fa-91cb-6b7337403fab",
+        "name": "Kleber Souza"
+      },
+      {
+        "id": "4e5a6e3e-697c-499e-bdc7-ea9c1d9041c7",
+        "name": "Kleber Souza"
+      },
+      {
+        "id": "8511a28e-d0e2-4c2f-94ea-e47637323088",
+        "name": "Kleber Souza"
+      },
+      {
+        "id": "34e0a8ed-950e-4810-b511-65af95b5beec",
+        "name": "Larissa Barbosa"
+      },
+      {
+        "id": "6f5d574b-ec61-4f8d-95f4-ff98d3d604e1",
+        "name": "Larissa Barbosa"
+      },
+      {
+        "id": "c0ab8391-6194-4728-8b27-a183a3c78a83",
+        "name": "Larissa Barbosa"
+      },
+      {
+        "id": "bfcd3d04-6779-4142-b95d-7ecd0a50d629",
+        "name": "Larissa Barbosa"
+      },
+      {
+        "id": "d5e5815c-1dac-48e9-9d89-63f02d457805",
+        "name": "Marcos Dias"
+      },
+      {
+        "id": "c9fe74f8-9c5d-4a05-a8ef-44e6b1cee8f2",
+        "name": "Marcos Dias"
+      },
+      {
+        "id": "7eb09c06-8f9c-457c-962b-371898e0d2c0",
+        "name": "Marcos Dias"
+      },
+      {
+        "id": "ad47a1b0-0fe7-4164-b84d-2a7c9eddd23d",
+        "name": "Marcos Dias"
+      },
+      {
+        "id": "6c290d8d-e629-4361-bdb8-1443bfc3e479",
+        "name": "Natália Campos"
+      },
+      {
+        "id": "2c5bffae-930a-49c3-9e82-d7c020a14a55",
+        "name": "Natália Campos"
+      },
+      {
+        "id": "657ce9cd-2271-449c-9bfa-eee3519734ed",
+        "name": "Natália Campos"
+      },
+      {
+        "id": "7e24464e-9cb6-4410-bcef-df23fbec0ab1",
+        "name": "Natália Campos"
+      },
+      {
+        "id": "3b67d0e2-c7e3-4463-81d6-bd1988dec3a2",
+        "name": "Otávio Nunes"
+      },
+      {
+        "id": "b7a39e70-8ff3-410b-870d-8bfc048c689d",
+        "name": "Otávio Nunes"
+      },
+      {
+        "id": "d7dec5fa-5e6f-4a38-b90c-5224351fabd3",
+        "name": "Otávio Nunes"
+      },
+      {
+        "id": "fc79f1bd-0e77-41b1-a485-48a318119657",
+        "name": "Otávio Nunes"
+      },
+      {
+        "id": "ca670a71-488b-455f-8ed8-2e2d534dfe2c",
+        "name": "Patrícia Vieira"
+      },
+      {
+        "id": "3761ca0f-0634-43dc-834d-18fe687c8372",
+        "name": "Patrícia Vieira"
+      },
+      {
+        "id": "2c3b3289-fb25-4f42-9b3e-00bec7120ef2",
+        "name": "Patrícia Vieira"
+      },
+      {
+        "id": "277c9193-d3f6-472e-b3ae-af98f241a78d",
+        "name": "Patrícia Vieira"
+      },
+      {
+        "id": "b5089e1b-9433-4480-925d-d2902e099da0",
+        "name": "Rafael Mendes"
+      },
+      {
+        "id": "3703fef8-7619-4e2a-b6a7-4d6fb42ba100",
+        "name": "Rafael Mendes"
+      },
+      {
+        "id": "0689c7c0-e617-4681-96d0-86ed07f6eb1c",
+        "name": "Rafael Mendes"
+      },
+      {
+        "id": "2cedadbc-6173-4383-94fe-a39c78bd570b",
+        "name": "Rafael Mendes"
+      },
+      {
+        "id": "573e7a97-57fa-410e-9025-db72133ae5a4",
+        "name": "Sandra Gomes"
+      },
+      {
+        "id": "309ca1da-a79f-41b2-86cf-df182c416b28",
+        "name": "Sandra Gomes"
+      },
+      {
+        "id": "dbeb1f7e-e868-4cc8-a88c-32986ab64e31",
+        "name": "Sandra Gomes"
+      },
+      {
+        "id": "a68d9096-a21d-4020-b22f-96f8b33ef674",
+        "name": "Sandra Gomes"
+      },
+      {
+        "id": "9c734e9f-d815-4fd2-8db2-e5d6f50e1423",
+        "name": "Thiago Ramos"
+      },
+      {
+        "id": "485d7bfe-3c88-4f2d-b8f3-0bb6ee2ad639",
+        "name": "Thiago Ramos"
+      },
+      {
+        "id": "ad29064e-a784-4d41-bb79-dd53c1ea8682",
+        "name": "Thiago Ramos"
+      },
+      {
+        "id": "a7335f88-20ad-4e3c-b307-65e20b8d7f04",
+        "name": "Thiago Ramos"
+      },
+      {
+        "id": "993a1f38-1125-4c02-965a-1d1eb1b8197d",
+        "name": "Vanessa Lopes"
+      },
+      {
+        "id": "ccdacf3c-33e9-4660-a687-2ea5829a9b1f",
+        "name": "Vanessa Lopes"
+      },
+      {
+        "id": "85212c9a-1f6c-40d0-abbd-9e542de4cf4b",
+        "name": "Vanessa Lopes"
+      },
+      {
+        "id": "c2751b82-5b73-45eb-a846-aca411c4ce97",
+        "name": "Vanessa Lopes"
+      }
+    ],
+    "teachers_used": [
+      {
+        "id": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+        "name": "Teste Teacher"
+      },
+      {
+        "id": "b4ce290c-b024-48d5-a69c-7f5a430928e3",
+        "name": "Jéssica Freitas"
+      },
+      {
+        "id": "72e59ec4-984f-4bc3-afb1-f8221bc97d21",
+        "name": "Leonardo Andrade"
+      },
+      {
+        "id": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+        "name": "Mariana Cunha"
+      },
+      {
+        "id": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+        "name": "Nelson Moura"
+      },
+      {
+        "id": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+        "name": "Olívia Bezerra"
+      },
+      {
+        "id": "12e84760-9d54-4e76-857b-2178fd03f305",
+        "name": "Paulo Correia"
+      },
+      {
+        "id": "135a1b26-4674-477f-9103-5f643c6e1d13",
+        "name": "Professor Teste Pagelas"
+      },
+      {
+        "id": "667a943d-39b4-4371-b643-a1d55e33d417",
+        "name": "Kátia Machado"
+      },
+      {
+        "id": "e9b194fd-7d50-44b9-bcde-210f9f716945",
+        "name": "Ivan Nascimento"
+      },
+      {
+        "id": "fbf1b067-d26e-464b-83ad-04a93697646d",
+        "name": "Hortência Cavalcanti"
+      },
+      {
+        "id": "e518df00-aa71-40bd-b0d8-e19d2b566b86",
+        "name": "Gustavo Rodrigues"
+      },
+      {
+        "id": "33274313-3a66-4548-889e-27f68189e952",
+        "name": "Fabiana Fernandes"
+      },
+      {
+        "id": "fc46df69-1b50-4a2e-bff3-6756757dd729",
+        "name": "Emanuel Monteiro"
+      },
+      {
+        "id": "d177c9f5-0821-44fa-989c-26191a733be8",
+        "name": "Daniela Teixeira"
+      },
+      {
+        "id": "c60857fd-f4a3-4864-a620-076351ed56a5",
+        "name": "César Carvalho"
+      },
+      {
+        "id": "c2887dbd-4bec-47ab-990e-f0e358a455a1",
+        "name": "Beatriz Melo"
+      },
+      {
+        "id": "c7145408-93a4-4362-b1bd-1eab8fb97b93",
+        "name": "Adriano Araújo"
+      },
+      {
+        "id": "ec208249-f690-4a17-ad24-fcc0d08050d3",
+        "name": "Zélia Castro"
+      },
+      {
+        "id": "d66b3be6-60ec-4954-bb8a-8c3862062c5e",
+        "name": "Yuri Moreira"
+      },
+      {
+        "id": "18316f8d-9326-44f8-957b-07e03c2f714d",
+        "name": "Ximena Reis"
+      },
+      {
+        "id": "20a1d9bb-f3b7-4baf-95be-822fafb4c90a",
+        "name": "Wagner Cardoso"
+      },
+      {
+        "id": "cb9b71cd-1280-4eb4-82b2-9bc8dfb7da74",
+        "name": "Vanessa Lopes"
+      },
+      {
+        "id": "8c3c26f9-5846-4094-80b4-f8df7316f76f",
+        "name": "Thiago Ramos"
+      },
+      {
+        "id": "859f5a7e-ea03-4058-96dd-55434bf69e9e",
+        "name": "Sandra Gomes"
+      },
+      {
+        "id": "e9857eba-19be-42eb-b8f2-5ae072f631ca",
+        "name": "Rafael Mendes"
+      },
+      {
+        "id": "c4ca43e2-d305-4578-87ea-943be705512a",
+        "name": "Patrícia Vieira"
+      },
+      {
+        "id": "d01a3407-8df4-4189-8b3e-f7c11e8a3815",
+        "name": "Otávio Nunes"
+      },
+      {
+        "id": "9891acaf-709e-4895-a33a-34169562645f",
+        "name": "Natália Campos"
+      },
+      {
+        "id": "dca14be3-c181-423c-b972-0cf0edfa7f49",
+        "name": "Marcos Dias"
+      },
+      {
+        "id": "008fc4d7-8f8a-4414-ab84-0fdd93fd300f",
+        "name": "Larissa Barbosa"
+      },
+      {
+        "id": "3f2c9632-266b-4c34-a965-08d5f5f1d31c",
+        "name": "Kleber Souza"
+      },
+      {
+        "id": "7c4527b1-4e74-4ddc-8c12-12de67c77783",
+        "name": "Julia Ferreira"
+      },
+      {
+        "id": "46195c4e-2cf5-461f-9cc6-1bffc5eb9f17",
+        "name": "Igor Martins"
+      },
+      {
+        "id": "62b80594-3ae1-4360-bb2c-87aa3c225de1",
+        "name": "Helena Pereira"
+      },
+      {
+        "id": "cb05da9a-8397-46e1-aa39-198d6490c0c6",
+        "name": "Gabriel Alves"
+      },
+      {
+        "id": "d6c37e66-53b7-44c0-8e82-61d4b615ebeb",
+        "name": "Fernanda Rocha"
+      },
+      {
+        "id": "466c9a98-2d8d-4522-a3a2-47405aa7245f",
+        "name": "Eduardo Lima"
+      },
+      {
+        "id": "3856e00a-e30e-42cb-b131-b093168b34c4",
+        "name": "Diana Costa"
+      },
+      {
+        "id": "4decc20a-b82e-46c8-be37-368c62865de3",
+        "name": "Carlos Oliveira"
+      },
+      {
+        "id": "e679a7c5-1996-42f5-bc86-08b0a2dc1e32",
+        "name": "Bruno Santos"
+      },
+      {
+        "id": "26ce6750-46e7-4387-8d70-da8162e094fe",
+        "name": "Ana Silva"
+      },
+      {
+        "id": "8ce653d5-81f4-465f-b2a7-11ccc32b5be8",
+        "name": "João Silva"
+      }
+    ],
+    "years_created": [
+      2025,
+      2024,
+      2023,
+      2022,
+      2021,
+      2020,
+      2019,
+      2018,
+      2017,
+      2016
+    ],
+    "visits_per_year": [
+      {
+        "year": 2025,
+        "visits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "year": 2024,
+        "visits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "year": 2023,
+        "visits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "year": 2022,
+        "visits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "year": 2021,
+        "visits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "year": 2020,
+        "visits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "year": 2019,
+        "visits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "year": 2018,
+        "visits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "year": 2017,
+        "visits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      },
+      {
+        "year": 2016,
+        "visits": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10
+        ]
+      }
+    ]
+  }
+}
