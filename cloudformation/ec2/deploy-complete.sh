@@ -233,7 +233,7 @@ if [ "$SKIP_DEPLOY" = false ]; then
             'docker stop orfanato-nib-api || true',
             'docker rm orfanato-nib-api || true',
             'docker pull ${IMAGE_NAME}',
-            'docker run -d --name orfanato-nib-api --restart unless-stopped -p 80:3000 --env-file /opt/orfanato-nib-api/env/${ENV_FILE_NAME}.env ${IMAGE_NAME}',
+            'docker run -d --name orfanato-nib-api --restart unless-stopped -p 80:3000 -p 3000:3000 --env-file /opt/orfanato-nib-api/env/${ENV_FILE_NAME}.env ${IMAGE_NAME}',
             'sleep 2',
             'docker ps | grep orfanato-nib-api'
         ]" \
@@ -287,9 +287,9 @@ echo ""
 
 # Determinar URL da API
 if [ "$ENVIRONMENT" = "staging" ]; then
-    API_URL="http://staging-api.orfanatonib.com"
+    API_URL="https://staging-api.orfanatonib.com"
 else
-    API_URL="http://api.orfanatonib.com"
+    API_URL="https://api.orfanatonib.com"
 fi
 
 echo -e "${GREEN}📋 Resumo do Deploy:${NC}"

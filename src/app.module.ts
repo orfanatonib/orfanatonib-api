@@ -26,6 +26,8 @@ import { ShelteredModule } from './modules/sheltered/sheltered.module';
 import { PagelasModule } from './modules/pagelas/pagelas.module';
 import { AcceptedChristsModule } from './modules/accepted-christs/accepted-christs.module';
 import { TeamsModule } from './modules/teams/teams.module';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
 import * as path from 'path';
 
 // Determina qual arquivo de ambiente usar
@@ -73,5 +75,7 @@ function getEnvFilePath(): string {
     AcceptedChristsModule,
     TeamsModule
   ],
+  controllers: [AppController],
+  providers: [AppService],
 })
 export class AppModule { }

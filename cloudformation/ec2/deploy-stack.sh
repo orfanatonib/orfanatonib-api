@@ -137,24 +137,70 @@ update_dns() {
         SUBDOMAIN="${ENVIRONMENT}-api.${DOMAIN_NAME}"
     fi
     
-    # Atualizar DNS
-    if aws route53 change-resource-record-sets \
-        --hosted-zone-id "$hosted_zone_id" \
+    # Obter informações do ALB (se existir)
+    ALB_ARN=$(aws cloudformation describe-stacks \
+        --stack-name "$STACK_NAME" \
         --profile "$AWS_PROFILE" \
-        --change-batch "{
-            \"Changes\": [{
-                \"Action\": \"UPSERT\",
-                \"ResourceRecordSet\": {
-                    \"Name\": \"${SUBDOMAIN}\",
-                    \"Type\": \"A\",
-                    \"TTL\": 300,
-                    \"ResourceRecords\": [{\"Value\": \"${PUBLIC_IP}\"}]
-                }
-            }]
-        }" > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ DNS atualizado: ${SUBDOMAIN} -> ${PUBLIC_IP}${NC}"
+        --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerArn`].OutputValue' \
+        --output text 2>/dev/null || echo "")
+    
+    if [ ! -z "$ALB_ARN" ] && [ "$ALB_ARN" != "None" ]; then
+        # Usar ALB para DNS (recomendado)
+        ALB_DNS=$(aws elbv2 describe-load-balancers \
+            --load-balancer-arns "$ALB_ARN" \
+            --profile "$AWS_PROFILE" \
+            --query 'LoadBalancers[0].DNSName' \
+            --output text 2>/dev/null || echo "")
+        
+        if [ ! -z "$ALB_DNS" ]; then
+            # CanonicalHostedZoneID para ALB na região us-east-1
+            ALB_ZONE_ID="Z35SXDOTRQ7X7K"
+            
+            if aws route53 change-resource-record-sets \
+                --hosted-zone-id "$hosted_zone_id" \
+                --profile "$AWS_PROFILE" \
+                --change-batch "{
+                    \"Changes\": [{
+                        \"Action\": \"UPSERT\",
+                        \"ResourceRecordSet\": {
+                            \"Name\": \"${SUBDOMAIN}\",
+                            \"Type\": \"A\",
+                            \"AliasTarget\": {
+                                \"DNSName\": \"${ALB_DNS}\",
+                                \"HostedZoneId\": \"${ALB_ZONE_ID}\",
+                                \"EvaluateTargetHealth\": true
+                            }
+                        }
+                    }]
+                }" > /dev/null 2>&1; then
+                echo -e "${GREEN}✅ DNS atualizado: ${SUBDOMAIN} -> ALB (${ALB_DNS})${NC}"
+            else
+                echo -e "${YELLOW}⚠️  Erro ao atualizar DNS para ALB${NC}"
+            fi
+        else
+            echo -e "${YELLOW}⚠️  ALB DNS não disponível, pulando atualização DNS${NC}"
+        fi
     else
-        echo -e "${YELLOW}⚠️  Erro ao atualizar DNS (pode ser normal se já estiver atualizado)${NC}"
+        # Fallback: usar IP da instância (não recomendado quando ALB existe)
+        echo -e "${YELLOW}⚠️  ALB não encontrado, usando IP da instância (não recomendado)${NC}"
+        if aws route53 change-resource-record-sets \
+            --hosted-zone-id "$hosted_zone_id" \
+            --profile "$AWS_PROFILE" \
+            --change-batch "{
+                \"Changes\": [{
+                    \"Action\": \"UPSERT\",
+                    \"ResourceRecordSet\": {
+                        \"Name\": \"${SUBDOMAIN}\",
+                        \"Type\": \"A\",
+                        \"TTL\": 300,
+                        \"ResourceRecords\": [{\"Value\": \"${PUBLIC_IP}\"}]
+                    }
+                }]
+            }" > /dev/null 2>&1; then
+            echo -e "${GREEN}✅ DNS atualizado: ${SUBDOMAIN} -> ${PUBLIC_IP}${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Erro ao atualizar DNS (pode ser normal se já estiver atualizado)${NC}"
+        fi
     fi
 }
 

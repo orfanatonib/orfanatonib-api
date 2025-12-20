@@ -1,6 +1,32 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'CloudFormation stack para criar instância EC2 Spot para rodar a API Orfanato NIB'
 
+# Mappings para HostedZoneId do ALB por região
+Mappings:
+  ALBHostedZoneMap:
+    us-east-1:
+      HostedZoneId: Z35SXDOTRQ7X7K
+    us-east-2:
+      HostedZoneId: Z3AADJGX6KTTL2
+    us-west-1:
+      HostedZoneId: Z368ELLRRE2KJ0
+    us-west-2:
+      HostedZoneId: Z1D211KIGL8Z9D
+    eu-west-1:
+      HostedZoneId: Z3F0SRJ5LGBH90
+    eu-west-2:
+      HostedZoneId: Z3DZXE0Q2N3XK2
+    eu-central-1:
+      HostedZoneId: Z3F0SRJ5LGBH90
+    ap-southeast-1:
+      HostedZoneId: Z3L77VCNMTS9CI
+    ap-southeast-2:
+      HostedZoneId: Z1GM3OXH4ZPM65
+    ap-northeast-1:
+      HostedZoneId: Z14GRHDTWAIIQT
+    sa-east-1:
+      HostedZoneId: Z2P70J7HTTTPLU
+
 Parameters:
   Environment:
     Type: String
@@ -31,6 +57,16 @@ Parameters:
   SubnetId:
     Type: AWS::EC2::Subnet::Id
     Description: ID da subnet pública onde a instância será criada
+  
+  SubnetId2:
+    Type: AWS::EC2::Subnet::Id
+    Description: ID da segunda subnet pública para o ALB (deve estar em outra zona de disponibilidade)
+    Default: ''
+  
+  SubnetId3:
+    Type: AWS::EC2::Subnet::Id
+    Description: ID da terceira subnet pública para o ALB (opcional - para incluir subnet da instância)
+    Default: ''
   
   KeyPairName:
     Type: AWS::EC2::KeyPair::KeyName
@@ -125,6 +161,55 @@ Parameters:
     Type: String
     Description: ID da Hosted Zone do Route53 (deixe vazio se não tiver)
     Default: ''
+  
+  JwtSecret:
+    Type: String
+    Description: JWT Secret para autenticação
+    Default: ''
+    NoEcho: true
+  
+  JwtRefreshSecret:
+    Type: String
+    Description: JWT Refresh Secret
+    Default: ''
+    NoEcho: true
+  
+  TwilioAccountSid:
+    Type: String
+    Description: Twilio Account SID
+    Default: ''
+    NoEcho: true
+  
+  TwilioAuthToken:
+    Type: String
+    Description: Twilio Auth Token
+    Default: ''
+    NoEcho: true
+  
+  TwilioWhatsAppFrom:
+    Type: String
+    Description: 'Twilio WhatsApp From number (ex: whatsapp:+14155238886)'
+    Default: ''
+  
+  TwilioWhatsAppTo:
+    Type: String
+    Description: 'Twilio WhatsApp To number (ex: whatsapp:+559281553139)'
+    Default: ''
+  
+  GoogleClientId:
+    Type: String
+    Description: Google OAuth Client ID
+    Default: ''
+  
+  FeedClubinhoPageId:
+    Type: String
+    Description: Feed Clubinho Page ID
+    Default: ''
+  
+  SSLCertificateArn:
+    Type: String
+    Description: ARN do certificado SSL no AWS Certificate Manager (ACM) para o domínio
+    Default: ''
 
 Resources:
   # IAM Role para a instância EC2
@@ -199,6 +284,34 @@ Resources:
       Roles:
         - !Ref EC2InstanceRole
   
+  # Security Group para o Application Load Balancer
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub '${Environment}-orfanato-nib-alb-sg'
+      GroupDescription: Security Group for Application Load Balancer
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+          Description: HTTP
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+          Description: HTTPS
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Application
+          Value: orfanato-nib
+        - Key: Environment
+          Value: !Ref Environment
+  
   # Security Group para a instancia EC2
   EC2SecurityGroup:
     Type: AWS::EC2::SecurityGroup
@@ -208,12 +321,6 @@ Resources:
       VpcId: !Ref VpcId
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: 80
-          ToPort: 80
-          CidrIp: !Ref AllowedCIDR
-          Description: HTTP
-        # HTTPS removido para reduzir custos - pode adicionar depois se necessário
-        - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: !Ref AllowedCIDR
@@ -221,8 +328,8 @@ Resources:
         - IpProtocol: tcp
           FromPort: 3000
           ToPort: 3000
-          CidrIp: !Ref AllowedCIDR
-          Description: API Port
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+          Description: API Port from ALB
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
@@ -244,8 +351,15 @@ Resources:
         IamInstanceProfile:
           Name: !Ref EC2InstanceProfile
         KeyName: !Ref KeyPairName
-        SecurityGroupIds:
-          - !Ref EC2SecurityGroup
+        NetworkInterfaces:
+          - DeviceIndex: 0
+            SubnetId: !If
+              - HasThirdSubnet
+              - !Ref SubnetId3
+              - !Ref SubnetId
+            Groups:
+              - !Ref EC2SecurityGroup
+            AssociatePublicIpAddress: true
         InstanceMarketOptions:
           MarketType: spot
           SpotOptions:
@@ -259,67 +373,91 @@ Resources:
               DeleteOnTermination: true
               Encrypted: false
         UserData:
-          Fn::Base64: !Sub |
-            #!/bin/bash
-            set -e
-            
-            # Atualizar apenas pacotes de segurança (mais rápido e barato)
-            yum update-minimal --security -y
-            
-            # Instalar Docker
-            yum install -y docker
-            systemctl enable docker
-            systemctl start docker
-            usermod -aG docker ec2-user
-            
-            # Instalar AWS CLI v2 (mais recente)
-            if ! command -v aws &> /dev/null; then
-              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-              yum install -y unzip
-              unzip awscliv2.zip
-              ./aws/install
-            fi
-            
-            # Instalar SSM Agent (necessário para AWS Systems Manager)
-            yum install -y amazon-ssm-agent
-            systemctl enable amazon-ssm-agent
-            systemctl start amazon-ssm-agent
-            
-            # Criar diretório para arquivos de ambiente
-            mkdir -p /opt/orfanato-nib-api/env
-            
-            # Criar arquivo .env
-            cat > /opt/orfanato-nib-api/env/${Environment}.env <<EOF
-            ENVIRONMENT=${Environment}
-            
-            DB_HOST=${DBHost}
-            DB_PORT=${DBPort}
-            DB_USERNAME=${DBUsername}
-            DB_PASSWORD=${DBPassword}
-            DB_NAME=${DBName}
-            
-            AWS_REGION=${AWSRegion}
-            AWS_ACCESS_KEY_ID=${AWSAccessKeyId}
-            AWS_SECRET_ACCESS_KEY=${AWSSecretAccessKey}
-            AWS_S3_BUCKET_NAME=${S3BucketName}
-            
-            SES_DEFAULT_FROM=${SESDefaultFrom}
-            SES_DEFAULT_TO=${SESDefaultTo}
-            
-            JWT_SECRET=${JwtSecret}
-            JWT_EXPIRES_IN=7d
-            JWT_REFRESH_SECRET=${JwtRefreshSecret}
-            JWT_REFRESH_EXPIRES_IN=14d
-            
-            TWILIO_ACCOUNT_SID=${TwilioAccountSid}
-            TWILIO_AUTH_TOKEN=${TwilioAuthToken}
-            TWILIO_WHATSAPP_FROM=${TwilioWhatsAppFrom}
-            TWILIO_WHATSAPP_TO=${TwilioWhatsAppTo}
-            
-            FEED_CLUBINHO_PAGE_ID=${FeedClubinhoPageId}
-            
-            GOOGLE_CLIENT_ID=${GoogleClientId}
-            EOF
+          Fn::Base64: !Sub
+            - |
+              #!/bin/bash
+              set -e
+              
+              # Atualizar apenas pacotes de segurança (mais rápido e barato)
+              yum update-minimal --security -y
+              
+              # Instalar Docker
+              yum install -y docker
+              systemctl enable docker
+              systemctl start docker
+              usermod -aG docker ec2-user
+              
+              # Instalar AWS CLI v2 (mais recente)
+              if ! command -v aws &> /dev/null; then
+                curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+                yum install -y unzip
+                unzip awscliv2.zip
+                ./aws/install
+              fi
+              
+              # Instalar SSM Agent (necessário para AWS Systems Manager)
+              yum install -y amazon-ssm-agent
+              systemctl enable amazon-ssm-agent
+              systemctl start amazon-ssm-agent
+              
+              # Criar diretório para arquivos de ambiente
+              mkdir -p /opt/orfanato-nib-api/env
+              
+              # Criar arquivo .env
+              cat > /opt/orfanato-nib-api/env/${Environment}.env <<EOF
+              ENVIRONMENT=${Environment}
+              
+              DB_HOST=${DBHost}
+              DB_PORT=${DBPort}
+              DB_USERNAME=${DBUsername}
+              DB_PASSWORD=${DBPassword}
+              DB_NAME=${DBName}
+              
+              AWS_REGION=${AWSRegion}
+              AWS_ACCESS_KEY_ID=${AWSAccessKeyId}
+              AWS_SECRET_ACCESS_KEY=${AWSSecretAccessKey}
+              AWS_S3_BUCKET_NAME=${S3BucketName}
+              
+              SES_DEFAULT_FROM=${SESDefaultFrom}
+              SES_DEFAULT_TO=${SESDefaultTo}
+              
+              JWT_SECRET=${JwtSecret}
+              JWT_EXPIRES_IN=7d
+              JWT_REFRESH_SECRET=${JwtRefreshSecret}
+              JWT_REFRESH_EXPIRES_IN=14d
+              
+              TWILIO_ACCOUNT_SID=${TwilioAccountSid}
+              TWILIO_AUTH_TOKEN=${TwilioAuthToken}
+              TWILIO_WHATSAPP_FROM=${TwilioWhatsAppFrom}
+              TWILIO_WHATSAPP_TO=${TwilioWhatsAppTo}
+              
+              FEED_CLUBINHO_PAGE_ID=${FeedClubinhoPageId}
+              
+              GOOGLE_CLIENT_ID=${GoogleClientId}
+              EOF
+              
+              # Nota: A instância será registrada no Target Group manualmente após o deploy
+              # Execute: aws elbv2 register-targets --target-group-arn <ARN> --targets Id=<INSTANCE_ID>,Port=3000
+            - Environment: !Ref Environment
+              DBHost: !Ref DBHost
+              DBPort: !Ref DBPort
+              DBUsername: !Ref DBUsername
+              DBPassword: !Ref DBPassword
+              DBName: !Ref DBName
+              AWSRegion: !Ref AWSRegion
+              AWSAccessKeyId: !Ref AWSAccessKeyId
+              AWSSecretAccessKey: !Ref AWSSecretAccessKey
+              S3BucketName: !Ref S3BucketName
+              SESDefaultFrom: !Ref SESDefaultFrom
+              SESDefaultTo: !Ref SESDefaultTo
+              JwtSecret: !Ref JwtSecret
+              JwtRefreshSecret: !Ref JwtRefreshSecret
+              TwilioAccountSid: !Ref TwilioAccountSid
+              TwilioAuthToken: !Ref TwilioAuthToken
+              TwilioWhatsAppFrom: !Ref TwilioWhatsAppFrom
+              TwilioWhatsAppTo: !Ref TwilioWhatsAppTo
+              FeedClubinhoPageId: !Ref FeedClubinhoPageId
+              GoogleClientId: !Ref GoogleClientId
             
             # Nota: A imagem Docker será baixada e executada via script de deploy
             # Execute: bash docker-deploy-ec2.sh ${Environment} latest
@@ -357,37 +495,132 @@ Resources:
         - Key: CostOptimization
           Value: SpotInstance
 
-  # Registro DNS no Route53 (automático - criado após instância estar pronta)
+  # Application Load Balancer (otimizado para reduzir custos)
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: !Sub '${Environment}-orfanato-nib-alb'
+      Type: application
+      Scheme: internet-facing
+      IpAddressType: ipv4
+      Subnets:
+        - !Ref SubnetId
+        - !If
+          - HasSecondSubnet
+          - !Ref SubnetId2
+          - !Ref 'AWS::NoValue'
+        - !If
+          - HasThirdSubnet
+          - !Ref SubnetId3
+          - !Ref 'AWS::NoValue'
+      SecurityGroups:
+        - !Ref ALBSecurityGroup
+      # Otimizações para reduzir custos
+      LoadBalancerAttributes:
+        - Key: idle_timeout.timeout_seconds
+          Value: '60'
+        - Key: routing.http.drop_invalid_header_fields.enabled
+          Value: 'true'
+        - Key: routing.http2.enabled
+          Value: 'true'
+      Tags:
+        - Key: Application
+          Value: orfanato-nib
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Target Group para a aplicação (otimizado para reduzir custos)
+  ApplicationTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: !Sub '${Environment}-orfanato-nib-tg'
+      Port: 3000
+      Protocol: HTTP
+      VpcId: !Ref VpcId
+      TargetType: instance
+      HealthCheckPath: /health
+      HealthCheckProtocol: HTTP
+      # Health checks menos frequentes para reduzir custos
+      HealthCheckIntervalSeconds: 60
+      HealthCheckTimeoutSeconds: 5
+      HealthyThresholdCount: 2
+      UnhealthyThresholdCount: 3
+      Matcher:
+        HttpCode: '200'
+      Tags:
+        - Key: Application
+          Value: orfanato-nib
+        - Key: Environment
+          Value: !Ref Environment
+
+  # Listener HTTP (redireciona para HTTPS se tiver certificado)
+  HTTPListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 80
+      Protocol: HTTP
+      DefaultActions:
+        - !If
+          - HasSSLCertificate
+          - Type: redirect
+            RedirectConfig:
+              Protocol: HTTPS
+              Port: 443
+              StatusCode: HTTP_301
+          - Type: forward
+            TargetGroupArn: !Ref ApplicationTargetGroup
+
+  # Listener HTTPS
+  HTTPSListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Condition: HasSSLCertificate
+    Properties:
+      LoadBalancerArn: !Ref ApplicationLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates:
+        - CertificateArn: !Ref SSLCertificateArn
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref ApplicationTargetGroup
+
+  # Registro DNS no Route53 apontando para o ALB
   # DNS para Staging
   StagingAPIDNSRecord:
     Type: AWS::Route53::RecordSet
     Condition: HasHostedZoneAndStaging
-    DependsOn: EC2Instance
+    DependsOn: ApplicationLoadBalancer
     Properties:
       HostedZoneId: !Ref HostedZoneId
       Name: !Sub 'staging-api.${DomainName}'
       Type: A
-      TTL: 300
-      ResourceRecords:
-        - !GetAtt EC2Instance.PublicIp
+      AliasTarget:
+        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
+        HostedZoneId: !FindInMap [ALBHostedZoneMap, !Ref AWSRegion, HostedZoneId]
+        EvaluateTargetHealth: true
   
   # DNS para Production
   ProductionAPIDNSRecord:
     Type: AWS::Route53::RecordSet
     Condition: HasHostedZoneAndProduction
-    DependsOn: EC2Instance
+    DependsOn: ApplicationLoadBalancer
     Properties:
       HostedZoneId: !Ref HostedZoneId
       Name: !Sub 'api.${DomainName}'
       Type: A
-      TTL: 300
-      ResourceRecords:
-        - !GetAtt EC2Instance.PublicIp
+      AliasTarget:
+        DNSName: !GetAtt ApplicationLoadBalancer.DNSName
+        HostedZoneId: !FindInMap [ALBHostedZoneMap, !Ref AWSRegion, HostedZoneId]
+        EvaluateTargetHealth: true
 
 Conditions:
   HasGitHubRepo: !Not [!Equals [!Ref GitHubRepo, '']]
   HasSpotPrice: !Not [!Equals [!Ref SpotPrice, '']]
   HasHostedZone: !Not [!Equals [!Ref HostedZoneId, '']]
+  HasSSLCertificate: !Not [!Equals [!Ref SSLCertificateArn, '']]
+  HasSecondSubnet: !Not [!Equals [!Ref SubnetId2, '']]
+  HasThirdSubnet: !Not [!Equals [!Ref SubnetId3, '']]
   IsStaging: !Equals [!Ref Environment, 'staging']
   IsProduction: !Equals [!Ref Environment, 'production']
   HasHostedZoneAndStaging: !And
@@ -442,11 +675,11 @@ Outputs:
     Description: URL da API (atualize DNS manualmente após obter o IP)
     Value: !If
       - IsStaging
-      - !Sub 'http://staging-api.${DomainName}'
+      - !Sub 'https://staging-api.${DomainName}'
       - !If
         - IsProduction
-        - !Sub 'http://api.${DomainName}'
-        - !Sub 'http://${Environment}-api.${DomainName}'
+        - !Sub 'https://api.${DomainName}'
+        - !Sub 'https://${Environment}-api.${DomainName}'
   
   DNSUpdateNote:
     Description: Instruções para atualizar DNS
@@ -455,3 +688,15 @@ Outputs:
   Note:
     Description: Nota sobre acesso à instância
     Value: !Sub 'IP público disponível no output PublicIP. Para converter para Spot Instance, use o AWS Console ou CLI'
+  
+  LoadBalancerDNS:
+    Description: DNS do Application Load Balancer
+    Value: !GetAtt ApplicationLoadBalancer.DNSName
+    Export:
+      Name: !Sub '${AWS::StackName}-LoadBalancerDNS'
+  
+  LoadBalancerArn:
+    Description: ARN do Application Load Balancer
+    Value: !Ref ApplicationLoadBalancer
+    Export:
+      Name: !Sub '${AWS::StackName}-LoadBalancerArn'
