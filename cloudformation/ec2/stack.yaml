@@ -552,6 +552,9 @@ Resources:
           Value: orfanato-nib
         - Key: Environment
           Value: !Ref Environment
+      Targets:
+        - Id: !Ref EC2Instance
+          Port: 3000
 
   # Listener HTTP (redireciona para HTTPS se tiver certificado)
   HTTPListener:

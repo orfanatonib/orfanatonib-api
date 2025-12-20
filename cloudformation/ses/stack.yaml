@@ -4,7 +4,7 @@ Description: 'CloudFormation stack para configurar SES (Simple Email Service) pa
 Parameters:
   Domain:
     Type: String
-    Description: Domínio para verificar no SES (ex: rodolfo-silva.com)
+    Description: "Domínio para verificar no SES (ex: rodolfo-silva.com)"
     Default: rodolfo-silva.com
   
   Environment:
@@ -16,10 +16,36 @@ Parameters:
       - production
       - dev
   
-  RecipientEmails:
-    Type: CommaDelimitedList
-    Description: Lista de emails destinatários para verificar no SES (separados por vírgula, ex: email1@example.com,email2@example.com)
+  RecipientEmail1:
+    Type: String
+    Description: "Email destinatário 1 (opcional)"
     Default: rodolfo.diego.gomes@gmail.com
+
+  RecipientEmail2:
+    Type: String
+    Description: "Email destinatário 2 (opcional)"
+    Default: admin@orfanatonib.com
+
+  RecipientEmail3:
+    Type: String
+    Description: "Email destinatário 3 (opcional)"
+    Default: contato@orfanatonib.com
+
+  RecipientEmail4:
+    Type: String
+    Description: "Email destinatário 4 (opcional)"
+    Default: ''
+
+  RecipientEmail5:
+    Type: String
+    Description: "Email destinatário 5 (opcional)"
+    Default: ''
+
+  CreateRecipientIdentities:
+    Type: String
+    Description: "Cria identidades para emails destinatários? Use 'true' apenas se o email ainda não existir no SES"
+    AllowedValues: ['true', 'false']
+    Default: 'false'
 
 Resources:
   # Verificação de identidade de domínio no SES
@@ -41,44 +67,50 @@ Resources:
   # Email 1
   RecipientEmailIdentity1:
     Type: AWS::SES::EmailIdentity
-    Condition: HasRecipientEmail1
+    Condition: CreateRecipientEmail1
     Properties:
-      EmailIdentity: !Select [0, !Ref RecipientEmails]
+      EmailIdentity: !Ref RecipientEmail1
 
   # Email 2
   RecipientEmailIdentity2:
     Type: AWS::SES::EmailIdentity
-    Condition: HasRecipientEmail2
+    Condition: CreateRecipientEmail2
     Properties:
-      EmailIdentity: !Select [1, !Ref RecipientEmails]
+      EmailIdentity: !Ref RecipientEmail2
 
   # Email 3
   RecipientEmailIdentity3:
     Type: AWS::SES::EmailIdentity
-    Condition: HasRecipientEmail3
+    Condition: CreateRecipientEmail3
     Properties:
-      EmailIdentity: !Select [2, !Ref RecipientEmails]
+      EmailIdentity: !Ref RecipientEmail3
 
   # Email 4
   RecipientEmailIdentity4:
     Type: AWS::SES::EmailIdentity
-    Condition: HasRecipientEmail4
+    Condition: CreateRecipientEmail4
     Properties:
-      EmailIdentity: !Select [3, !Ref RecipientEmails]
+      EmailIdentity: !Ref RecipientEmail4
 
   # Email 5
   RecipientEmailIdentity5:
     Type: AWS::SES::EmailIdentity
-    Condition: HasRecipientEmail5
+    Condition: CreateRecipientEmail5
     Properties:
-      EmailIdentity: !Select [4, !Ref RecipientEmails]
+      EmailIdentity: !Ref RecipientEmail5
 
 Conditions:
-  HasRecipientEmail1: !Not [!Equals [!Join ['', !Select [0, !Ref RecipientEmails]], '']]
-  HasRecipientEmail2: !Not [!Equals [!Join ['', !Select [1, !Ref RecipientEmails]], '']]
-  HasRecipientEmail3: !Not [!Equals [!Join ['', !Select [2, !Ref RecipientEmails]], '']]
-  HasRecipientEmail4: !Not [!Equals [!Join ['', !Select [3, !Ref RecipientEmails]], '']]
-  HasRecipientEmail5: !Not [!Equals [!Join ['', !Select [4, !Ref RecipientEmails]], '']]
+  HasRecipientEmail1: !Not [!Equals [!Ref RecipientEmail1, '']]
+  HasRecipientEmail2: !Not [!Equals [!Ref RecipientEmail2, '']]
+  HasRecipientEmail3: !Not [!Equals [!Ref RecipientEmail3, '']]
+  HasRecipientEmail4: !Not [!Equals [!Ref RecipientEmail4, '']]
+  HasRecipientEmail5: !Not [!Equals [!Ref RecipientEmail5, '']]
+  ShouldCreateRecipientIdentities: !Equals [!Ref CreateRecipientIdentities, 'true']
+  CreateRecipientEmail1: !And [HasRecipientEmail1, ShouldCreateRecipientIdentities]
+  CreateRecipientEmail2: !And [HasRecipientEmail2, ShouldCreateRecipientIdentities]
+  CreateRecipientEmail3: !And [HasRecipientEmail3, ShouldCreateRecipientIdentities]
+  CreateRecipientEmail4: !And [HasRecipientEmail4, ShouldCreateRecipientIdentities]
+  CreateRecipientEmail5: !And [HasRecipientEmail5, ShouldCreateRecipientIdentities]
 
 Outputs:
   DomainIdentity:
@@ -89,7 +121,7 @@ Outputs:
   
   DomainIdentityArn:
     Description: ARN da identidade de domínio
-    Value: !GetAtt DomainIdentity.EmailIdentity
+    Value: !GetAtt DomainIdentity.Arn
     Export:
       Name: !Sub '${AWS::StackName}-DomainIdentityArn'
   
@@ -99,20 +131,44 @@ Outputs:
     Export:
       Name: !Sub '${AWS::StackName}-FromEmail'
   
-  VerificationToken:
-    Description: Token de verificação do domínio (adicione este registro TXT no DNS do domínio)
-    Value: !GetAtt DomainIdentity.VerificationToken
+  DkimRecord1Name:
+    Description: Nome do registro CNAME DKIM 1
+    Value: !GetAtt DomainIdentity.DkimDNSTokenName1
     Export:
-      Name: !Sub '${AWS::StackName}-VerificationToken'
-  
-  DKIMTokens:
-    Description: Tokens DKIM para autenticação (adicione estes registros CNAME no DNS)
-    Value: !Join [',', !GetAtt DomainIdentity.DkimSigningAttributes.Tokens]
+      Name: !Sub '${AWS::StackName}-DkimRecord1Name'
+
+  DkimRecord1Value:
+    Description: Valor do registro CNAME DKIM 1
+    Value: !GetAtt DomainIdentity.DkimDNSTokenValue1
     Export:
-      Name: !Sub '${AWS::StackName}-DKIMTokens'
+      Name: !Sub '${AWS::StackName}-DkimRecord1Value'
+
+  DkimRecord2Name:
+    Description: Nome do registro CNAME DKIM 2
+    Value: !GetAtt DomainIdentity.DkimDNSTokenName2
+    Export:
+      Name: !Sub '${AWS::StackName}-DkimRecord2Name'
+
+  DkimRecord2Value:
+    Description: Valor do registro CNAME DKIM 2
+    Value: !GetAtt DomainIdentity.DkimDNSTokenValue2
+    Export:
+      Name: !Sub '${AWS::StackName}-DkimRecord2Value'
+
+  DkimRecord3Name:
+    Description: Nome do registro CNAME DKIM 3
+    Value: !GetAtt DomainIdentity.DkimDNSTokenName3
+    Export:
+      Name: !Sub '${AWS::StackName}-DkimRecord3Name'
+
+  DkimRecord3Value:
+    Description: Valor do registro CNAME DKIM 3
+    Value: !GetAtt DomainIdentity.DkimDNSTokenValue3
+    Export:
+      Name: !Sub '${AWS::StackName}-DkimRecord3Value'
   
   RecipientEmailsList:
     Description: Lista de emails destinatários verificados (use este valor para SES_DEFAULT_TO na aplicação)
-    Value: !Join [',', !Ref RecipientEmails]
+    Value: !Join [',', [!Ref RecipientEmail1, !Ref RecipientEmail2, !Ref RecipientEmail3, !Ref RecipientEmail4, !Ref RecipientEmail5]]
     Export:
       Name: !Sub '${AWS::StackName}-RecipientEmailsList'

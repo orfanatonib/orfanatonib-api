@@ -20,10 +20,10 @@ cd "$SCRIPT_DIR"
 # Profile AWS (pode ser sobrescrito com variável de ambiente)
 AWS_PROFILE=${AWS_PROFILE:-clubinho-aws}
 
-# Nome da stack
+# Nome da stack e arquivos (no próprio diretório)
 STACK_NAME="orfanato-nib-ses"
-TEMPLATE_FILE="stacks/ses-stack.yaml"
-PARAMS_FILE="params/ses-params.json"
+TEMPLATE_FILE="stack.yaml"
+PARAMS_FILE="params.json"
 
 echo -e "${BLUE}🚀 Deploy da Stack SES - Orfanatonib${NC}"
 echo ""

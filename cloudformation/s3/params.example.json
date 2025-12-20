@@ -1,7 +1,15 @@
 [
   {
     "ParameterKey": "BucketName",
-    "ParameterValue": "your-bucket-name"
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "ExistingBucketName",
+    "ParameterValue": "your-bucket-name-if-existing"
+  },
+  {
+    "ParameterKey": "ApplyBucketPolicyToExistingBucket",
+    "ParameterValue": "false"
   },
   {
     "ParameterKey": "Environment",
