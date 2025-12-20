@@ -1,0 +1,552 @@
+[
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Ana Silva",
+    "email": "ana.silva.teacher.0@example.com",
+    "phone": "+5581233059719",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Bruno Santos",
+    "email": "bruno.santos.teacher.1@example.com",
+    "phone": "+5531520353875",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Carlos Oliveira",
+    "email": "carlos.oliveira.teacher.2@example.com",
+    "phone": "+5521408859594",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Diana Costa",
+    "email": "diana.costa.teacher.3@example.com",
+    "phone": "+5571410071266",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Eduardo Lima",
+    "email": "eduardo.lima.teacher.4@example.com",
+    "phone": "+5581732691727",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Fernanda Rocha",
+    "email": "fernanda.rocha.teacher.5@example.com",
+    "phone": "+5511793271679",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Gabriel Alves",
+    "email": "gabriel.alves.teacher.6@example.com",
+    "phone": "+5581343242906",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Helena Pereira",
+    "email": "helena.pereira.teacher.7@example.com",
+    "phone": "+5571430434686",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Igor Martins",
+    "email": "igor.martins.teacher.8@example.com",
+    "phone": "+5521846741866",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Julia Ferreira",
+    "email": "julia.ferreira.teacher.9@example.com",
+    "phone": "+5531490791522",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Kleber Souza",
+    "email": "kleber.souza.teacher.10@example.com",
+    "phone": "+5585837098977",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Larissa Barbosa",
+    "email": "larissa.barbosa.teacher.11@example.com",
+    "phone": "+5541955946808",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Marcos Dias",
+    "email": "marcos.dias.teacher.12@example.com",
+    "phone": "+5561164843195",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Natália Campos",
+    "email": "natlia.campos.teacher.13@example.com",
+    "phone": "+5595810048446",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Otávio Nunes",
+    "email": "otvio.nunes.teacher.14@example.com",
+    "phone": "+5551711875180",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Patrícia Vieira",
+    "email": "patrcia.vieira.teacher.15@example.com",
+    "phone": "+5595218299413",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Rafael Mendes",
+    "email": "rafael.mendes.teacher.16@example.com",
+    "phone": "+5581324544845",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Sandra Gomes",
+    "email": "sandra.gomes.teacher.17@example.com",
+    "phone": "+5595948947386",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Thiago Ramos",
+    "email": "thiago.ramos.teacher.18@example.com",
+    "phone": "+5581454339373",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Vanessa Lopes",
+    "email": "vanessa.lopes.teacher.19@example.com",
+    "phone": "+5595656561163",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Wagner Cardoso",
+    "email": "wagner.cardoso.teacher.20@example.com",
+    "phone": "+5561331624016",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Ximena Reis",
+    "email": "ximena.reis.teacher.21@example.com",
+    "phone": "+5581191200567",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Yuri Moreira",
+    "email": "yuri.moreira.teacher.22@example.com",
+    "phone": "+5531305115615",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Zélia Castro",
+    "email": "zlia.castro.teacher.23@example.com",
+    "phone": "+5571732589999",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Adriano Araújo",
+    "email": "adriano.arajo.teacher.24@example.com",
+    "phone": "+5585172245649",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Beatriz Melo",
+    "email": "beatriz.melo.teacher.25@example.com",
+    "phone": "+5531470409013",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "César Carvalho",
+    "email": "csar.carvalho.teacher.26@example.com",
+    "phone": "+5585877071505",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Daniela Teixeira",
+    "email": "daniela.teixeira.teacher.27@example.com",
+    "phone": "+5541854567667",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Emanuel Monteiro",
+    "email": "emanuel.monteiro.teacher.28@example.com",
+    "phone": "+5571241175104",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Fabiana Fernandes",
+    "email": "fabiana.fernandes.teacher.29@example.com",
+    "phone": "+5561673671831",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Gustavo Rodrigues",
+    "email": "gustavo.rodrigues.teacher.30@example.com",
+    "phone": "+5595578273150",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Hortência Cavalcanti",
+    "email": "hortncia.cavalcanti.teacher.31@example.com",
+    "phone": "+5511103803856",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Ivan Nascimento",
+    "email": "ivan.nascimento.teacher.32@example.com",
+    "phone": "+5561587646407",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Jéssica Freitas",
+    "email": "jssica.freitas.teacher.33@example.com",
+    "phone": "+5551702345110",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Kátia Machado",
+    "email": "ktia.machado.teacher.34@example.com",
+    "phone": "+5571559162179",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Leonardo Andrade",
+    "email": "leonardo.andrade.teacher.35@example.com",
+    "phone": "+5581323304787",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Mariana Cunha",
+    "email": "mariana.cunha.teacher.36@example.com",
+    "phone": "+5581697224002",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Nelson Moura",
+    "email": "nelson.moura.teacher.37@example.com",
+    "phone": "+5551321360128",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Olívia Bezerra",
+    "email": "olvia.bezerra.teacher.38@example.com",
+    "phone": "+5561135677532",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Paulo Correia",
+    "email": "paulo.correia.teacher.39@example.com",
+    "phone": "+5581603707299",
+    "role": "teacher",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Quitéria Silva",
+    "email": "quitria.silva.leader.40@example.com",
+    "phone": "+5585952910783",
+    "role": "leader",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Roberto Santos",
+    "email": "roberto.santos.leader.41@example.com",
+    "phone": "+5585680832740",
+    "role": "leader",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Silvia Oliveira",
+    "email": "silvia.oliveira.leader.42@example.com",
+    "phone": "+5585229015899",
+    "role": "leader",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Tatiana Costa",
+    "email": "tatiana.costa.leader.43@example.com",
+    "phone": "+5561136399576",
+    "role": "leader",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Ulisses Lima",
+    "email": "ulisses.lima.leader.44@example.com",
+    "phone": "+5571437221361",
+    "role": "leader",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Vera Rocha",
+    "email": "vera.rocha.leader.45@example.com",
+    "phone": "+5561331044152",
+    "role": "leader",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Wilson Alves",
+    "email": "wilson.alves.leader.46@example.com",
+    "phone": "+5581347207271",
+    "role": "leader",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Xavier Pereira",
+    "email": "xavier.pereira.leader.47@example.com",
+    "phone": "+5595269875948",
+    "role": "leader",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Yara Martins",
+    "email": "yara.martins.leader.48@example.com",
+    "phone": "+5581861793513",
+    "role": "leader",
+    "success": false
+  },
+  {
+    "error": {
+      "statusCode": 500,
+      "message": "Internal server error"
+    },
+    "name": "Zeca Ferreira",
+    "email": "zeca.ferreira.leader.49@example.com",
+    "phone": "+5561806999237",
+    "role": "leader",
+    "success": false
+  }
+]

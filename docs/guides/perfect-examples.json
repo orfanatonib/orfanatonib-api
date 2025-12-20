@@ -1,0 +1,240 @@
+{
+  "leaderProfile": {
+    "id": "uuid-leader-1",
+    "active": true,
+    "user": {
+      "id": "uuid-user-1",
+      "name": "João Silva",
+      "email": "joao.silva@example.com",
+      "phone": "+5511999999999",
+      "active": true,
+      "completed": true,
+      "commonUser": false
+    },
+    "shelter": {
+      "id": "uuid-shelter-1",
+      "name": "Abrigo Central",
+      "address": {
+        "id": "uuid-address-1",
+        "street": "Rua das Flores",
+        "number": "123",
+        "district": "Centro",
+        "city": "São Paulo",
+        "state": "SP",
+        "postalCode": "01234-567",
+        "complement": "Apto 45"
+      },
+      "teachers": [
+        {
+          "id": "uuid-teacher-1",
+          "active": true,
+          "user": {
+            "id": "uuid-teacher-user-1",
+            "name": "Maria Santos",
+            "email": "maria.santos@example.com",
+            "phone": "+5511888888888",
+            "active": true,
+            "completed": true,
+            "commonUser": false
+          }
+        }
+      ]
+    },
+    "createdAt": "2025-09-27T21:00:00.000Z",
+    "updatedAt": "2025-09-27T21:00:00.000Z"
+  },
+  "teacherProfile": {
+    "id": "uuid-teacher-1",
+    "active": true,
+    "user": {
+      "id": "uuid-user-2",
+      "name": "Maria Santos",
+      "email": "maria.santos@example.com",
+      "phone": "+5511888888888",
+      "active": true,
+      "completed": true,
+      "commonUser": false
+    },
+    "shelter": {
+      "id": "uuid-shelter-1",
+      "name": "Abrigo Central",
+      "leader": {
+        "id": "uuid-leader-1",
+        "active": true,
+        "user": {
+          "id": "uuid-user-1",
+          "name": "João Silva",
+          "email": "joao.silva@example.com",
+          "phone": "+5511999999999",
+          "active": true,
+          "completed": true,
+          "commonUser": false
+        }
+      }
+    },
+    "createdAt": "2025-09-27T21:00:00.000Z",
+    "updatedAt": "2025-09-27T21:00:00.000Z"
+  },
+  "sheltered": {
+    "id": "uuid-sheltered-1",
+    "name": "Ana Silva",
+    "birthDate": "2010-05-15",
+    "guardianName": "Maria Silva",
+    "gender": "feminino",
+    "guardianPhone": "+5511777777777",
+    "joinedAt": "2023-01-15",
+    "shelter": {
+      "id": "uuid-shelter-1",
+      "name": "Abrigo Central"
+    },
+    "address": {
+      "id": "uuid-address-1",
+      "street": "Rua das Flores",
+      "number": "123",
+      "district": "Centro",
+      "city": "São Paulo",
+      "state": "SP",
+      "postalCode": "01234-567",
+      "complement": "Apto 45"
+    },
+    "pagelas": [
+      {
+        "id": "uuid-pagela-1",
+        "year": 2024,
+        "visit": 1,
+        "referenceDate": "2024-01-15",
+        "present": true,
+        "notes": "Participou ativamente da aula"
+      },
+      {
+        "id": "uuid-pagela-2",
+        "year": 2024,
+        "visit": 2,
+        "referenceDate": "2024-01-22",
+        "present": false,
+        "notes": "Ausente por motivo médico"
+      }
+    ],
+    "createdAt": "2025-09-27T21:00:00.000Z",
+    "updatedAt": "2025-09-27T21:00:00.000Z"
+  },
+  "pagela": {
+    "id": "uuid-pagela-1",
+    "createdAt": "2025-09-27T21:00:00.000Z",
+    "updatedAt": "2025-09-27T21:00:00.000Z",
+    "sheltered": {
+      "id": "uuid-sheltered-1",
+      "name": "Ana Silva",
+      "gender": "feminino",
+      "birthDate": "2010-05-15"
+    },
+    "teacher": {
+      "id": "uuid-teacher-1",
+      "active": true,
+      "user": {
+        "id": "uuid-user-2",
+        "name": "Maria Santos",
+        "email": "maria.santos@example.com",
+        "phone": "+5511888888888"
+      }
+    },
+    "referenceDate": "2024-01-15",
+    "year": 2024,
+    "visit": 1,
+    "present": true,
+    "notes": "Participou ativamente da aula"
+  },
+  "shelter": {
+    "id": "uuid-shelter-1",
+    "name": "Abrigo Central",
+    "address": {
+      "id": "uuid-address-1",
+      "street": "Rua das Flores",
+      "number": "123",
+      "district": "Centro",
+      "city": "São Paulo",
+      "state": "SP",
+      "postalCode": "01234-567",
+      "complement": "Apto 45"
+    },
+    "leaders": [
+      {
+        "id": "uuid-leader-1",
+        "active": true,
+        "user": {
+          "id": "uuid-user-1",
+          "name": "João Silva",
+          "email": "joao.silva@example.com",
+          "phone": "+5511999999999",
+          "active": true,
+          "completed": true,
+          "commonUser": false
+        }
+      },
+      {
+        "id": "uuid-leader-2",
+        "active": true,
+        "user": {
+          "id": "uuid-user-3",
+          "name": "Pedro Costa",
+          "email": "pedro.costa@example.com",
+          "phone": "+5511777777777",
+          "active": true,
+          "completed": true,
+          "commonUser": false
+        }
+      }
+    ],
+    "teachers": [
+      {
+        "id": "uuid-teacher-1",
+        "active": true,
+        "user": {
+          "id": "uuid-user-2",
+          "name": "Maria Santos",
+          "email": "maria.santos@example.com",
+          "phone": "+5511888888888",
+          "active": true,
+          "completed": true,
+          "commonUser": false
+        }
+      }
+    ],
+    "createdAt": "2025-09-27T21:00:00.000Z",
+    "updatedAt": "2025-09-27T21:00:00.000Z"
+  },
+  "authLogin": {
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "user": {
+      "id": "uuid-user-1",
+      "email": "joao.silva@example.com",
+      "phone": "+5511999999999",
+      "name": "João Silva",
+      "active": true,
+      "completed": true,
+      "commonUser": false,
+      "role": "admin",
+      "teacherProfile": null,
+      "leaderProfile": {
+        "id": "uuid-leader-1",
+        "active": true,
+        "shelter": {
+          "id": "uuid-shelter-1",
+          "name": "Abrigo Central"
+        }
+      }
+    }
+  },
+  "user": {
+    "id": "uuid-user-1",
+    "name": "João Silva",
+    "email": "joao.silva@example.com",
+    "phone": "+5511999999999",
+    "role": "admin",
+    "active": true,
+    "completed": true,
+    "commonUser": false,
+    "createdAt": "2025-09-27T21:00:00.000Z",
+    "updatedAt": "2025-09-27T21:00:00.000Z"
+  }
+}

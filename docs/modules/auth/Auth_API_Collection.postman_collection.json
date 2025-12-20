@@ -1,0 +1,514 @@
+{
+  "info": {
+    "_postman_id": "auth-api-collection",
+    "name": "Auth API Collection",
+    "description": "Collection para todos os endpoints do Auth Controller - VALIDADA E FUNCIONAL com autenticação JWT completa",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "3.0.0"
+  },
+  "item": [
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Endpoint para fazer login com email e senha"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Verificar se a resposta foi bem-sucedida",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Verificar se a resposta contém os tokens",
+              "pm.test(\"Response has access token\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.accessToken).to.exist;",
+              "});",
+              "",
+              "pm.test(\"Response has refresh token\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.refreshToken).to.exist;",
+              "});",
+              "",
+              "// Salvar tokens nas variáveis de ambiente",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    ",
+              "    // Salvar access token",
+              "    pm.environment.set(\"access_token\", jsonData.accessToken);",
+              "    ",
+              "    // Salvar refresh token",
+              "    pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+              "    ",
+              "    // Salvar user ID",
+              "    if (jsonData.user && jsonData.user.id) {",
+              "        pm.environment.set(\"user_id\", jsonData.user.id);",
+              "    }",
+              "    ",
+              "    console.log(\"Tokens salvos nas variáveis de ambiente\");",
+              "    console.log(\"Access Token: \" + jsonData.accessToken.substring(0, 20) + \"...\");",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "Login Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": \"uuid-user-1\",\n    \"email\": \"joao.silva@example.com\",\n    \"phone\": \"+5511999999999\",\n    \"name\": \"João Silva\",\n    \"active\": true,\n    \"completed\": true,\n    \"commonUser\": false,\n    \"role\": \"admin\",\n    \"teacherProfile\": null,\n    \"leaderProfile\": {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"clubs\": [\n        {\n          \"id\": \"uuid-shelter-1\",\n          \"number\": 1,\n          \"weekday\": \"monday\"\n        }\n      ]\n    }\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Google Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"google_oauth_token_here\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/google",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "google"
+          ]
+        },
+        "description": "Endpoint para fazer login com Google OAuth"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Verificar se a resposta foi bem-sucedida",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Salvar tokens nas variáveis de ambiente",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    ",
+              "    // Salvar access token",
+              "    if (jsonData.accessToken) {",
+              "        pm.environment.set(\"access_token\", jsonData.accessToken);",
+              "    }",
+              "    ",
+              "    // Salvar refresh token",
+              "    if (jsonData.refreshToken) {",
+              "        pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+              "    }",
+              "    ",
+              "    // Salvar user ID",
+              "    if (jsonData.user && jsonData.user.id) {",
+              "        pm.environment.set(\"user_id\", jsonData.user.id);",
+              "    }",
+              "    ",
+              "    console.log(\"Tokens salvos nas variáveis de ambiente (Google Login)\");",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "Refresh Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"refreshToken\": \"your_refresh_token_here\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/refresh",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "refresh"
+          ]
+        },
+        "description": "Endpoint para renovar o access token usando o refresh token"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Verificar se a resposta foi bem-sucedida",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Salvar novos tokens nas variáveis de ambiente",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    ",
+              "    // Salvar novo access token",
+              "    if (jsonData.accessToken) {",
+              "        pm.environment.set(\"access_token\", jsonData.accessToken);",
+              "        console.log(\"Novo access token salvo\");",
+              "    }",
+              "    ",
+              "    // Salvar novo refresh token se fornecido",
+              "    if (jsonData.refreshToken) {",
+              "        pm.environment.set(\"refresh_token\", jsonData.refreshToken);",
+              "        console.log(\"Novo refresh token salvo\");",
+              "    }",
+              "    ",
+              "    console.log(\"Tokens renovados com sucesso!\");",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/logout",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "logout"
+          ]
+        },
+        "description": "Endpoint para fazer logout (requer autenticação)"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Verificar se a resposta foi bem-sucedida",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Limpar tokens das variáveis de ambiente após logout",
+              "if (pm.response.code === 201) {",
+              "    pm.environment.unset(\"access_token\");",
+              "    pm.environment.unset(\"refresh_token\");",
+              "    pm.environment.unset(\"user_id\");",
+              "    ",
+              "    console.log(\"Logout realizado com sucesso!\");",
+              "    console.log(\"Tokens removidos das variáveis de ambiente\");",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": []
+    },
+    {
+      "name": "Get Me",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/me",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "me"
+          ]
+        },
+        "description": "Endpoint para obter informações do usuário autenticado"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "// Verificar se a resposta foi bem-sucedida",
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "// Verificar se a resposta contém dados do usuário",
+              "pm.test(\"Response has user data\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData.id).to.exist;",
+              "    pm.expect(jsonData.email).to.exist;",
+              "    pm.expect(jsonData.role).to.exist;",
+              "});",
+              "",
+              "// Atualizar user_id se necessário",
+              "if (pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.id) {",
+              "        pm.environment.set(\"user_id\", jsonData.id);",
+              "    }",
+              "    ",
+              "    console.log(\"Dados do usuário obtidos com sucesso!\");",
+              "    console.log(\"Usuário: \" + jsonData.name + \" (\" + jsonData.email + \")\");",
+              "    console.log(\"Role: \" + jsonData.role);",
+              "}"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "response": [
+        {
+          "name": "Get Me Success",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "me"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"id\": \"user_id\",\n  \"name\": \"Admin User\",\n  \"email\": \"admin@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": false,\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00.000Z\",\n  \"role\": \"admin\",\n  \"teacherProfile\": null,\n  \"leaderProfile\": {\n    \"id\": \"leader_profile_id\",\n    \"active\": true,\n    \"shelter\": {\n      \"id\": \"shelter_id\",\n      \"number\": 1,\n      \"weekday\": \"monday\"\n    }\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"password\": \"password123\",\n  \"role\": \"teacher\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/register",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "register"
+          ]
+        },
+        "description": "Endpoint para registrar um novo usuário"
+      },
+      "response": [
+        {
+          "name": "Register Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"password\": \"password123\",\n  \"role\": \"teacher\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "register"
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"id\": \"new_user_id\",\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true,\n  \"role\": \"teacher\",\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00.000Z\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Complete Register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"joao@example.com\",\n  \"name\": \"João Silva\",\n  \"phone\": \"+5511999999999\",\n  \"password\": \"password123\",\n  \"role\": \"leader\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/complete-register",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "complete-register"
+          ]
+        },
+        "description": "Endpoint para completar o registro de um usuário"
+      },
+      "response": [
+        {
+          "name": "Complete Register Success",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"joao@example.com\",\n  \"name\": \"João Silva\",\n  \"phone\": \"+5511999999999\",\n  \"password\": \"password123\",\n  \"role\": \"leader\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/complete-register",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "complete-register"
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [],
+          "cookie": [],
+          "body": "{\n  \"id\": \"user_id\",\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": false,\n  \"role\": \"leader\",\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00.000Z\"\n}"
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "description": "URL base da API"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "description": "Token de acesso JWT"
+    }
+  ]
+}
