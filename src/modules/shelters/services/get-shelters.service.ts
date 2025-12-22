@@ -55,6 +55,69 @@ export class GetSheltersService {
     return shelters;
   }
 
+  private async populateUserMediaItemsForShelter(shelter: ShelterEntity): Promise<void> {
+    const teams: any[] = Array.isArray((shelter as any).teams) ? (shelter as any).teams : [];
+    if (!teams.length) return;
+
+    const userIdsSet = new Set<string>();
+
+    teams.forEach((team: any) => {
+      const leaders = Array.isArray(team?.leaders) ? team.leaders : [];
+      const teachers = Array.isArray(team?.teachers) ? team.teachers : [];
+
+      leaders.forEach((leader: any) => {
+        const userId = leader?.user?.id;
+        if (typeof userId === 'string' && userId) userIdsSet.add(userId);
+      });
+
+      teachers.forEach((teacher: any) => {
+        const userId = teacher?.user?.id;
+        if (typeof userId === 'string' && userId) userIdsSet.add(userId);
+      });
+    });
+
+    const userIds = Array.from(userIdsSet);
+    if (!userIds.length) return;
+
+    const mediaItems = await this.mediaItemProcessor.findManyMediaItemsByTargets(
+      userIds,
+      'UserEntity',
+    );
+
+    // Mapa por userId escolhendo a mídia mais recente (se houver múltiplas)
+    const mediaMap = new Map<string, any>();
+    mediaItems.forEach((item: any) => {
+      const prev = mediaMap.get(item.targetId);
+      if (!prev) {
+        mediaMap.set(item.targetId, item);
+        return;
+      }
+      const prevTs = prev?.createdAt ? new Date(prev.createdAt).getTime() : 0;
+      const curTs = item?.createdAt ? new Date(item.createdAt).getTime() : 0;
+      if (curTs >= prevTs) {
+        mediaMap.set(item.targetId, item);
+      }
+    });
+
+    // Popular mediaItem em cada user do payload (leaders/teachers dentro das teams)
+    teams.forEach((team: any) => {
+      const leaders = Array.isArray(team?.leaders) ? team.leaders : [];
+      const teachers = Array.isArray(team?.teachers) ? team.teachers : [];
+
+      leaders.forEach((leader: any) => {
+        const userId = leader?.user?.id;
+        if (!leader?.user || typeof userId !== 'string') return;
+        leader.user.mediaItem = mediaMap.get(userId) || null;
+      });
+
+      teachers.forEach((teacher: any) => {
+        const userId = teacher?.user?.id;
+        if (!teacher?.user || typeof userId !== 'string') return;
+        teacher.user.mediaItem = mediaMap.get(userId) || null;
+      });
+    });
+  }
+
   async findAllPaginated(q: QuerySheltersDto, req: Request): Promise<Paginated<ShelterResponseDto>> {
     const ctx = await this.getCtx(req);
     if (!ctx.role || ctx.role === 'teacher') throw new ForbiddenException('Acesso negado');
@@ -85,6 +148,9 @@ export class GetSheltersService {
     
     // Popular media item
     await this.populateMediaItems([shelter]);
+
+    // Popular media item dos usuários (leaders/teachers) quando existir
+    await this.populateUserMediaItemsForShelter(shelter);
     
     return toShelterDto(shelter);
   }

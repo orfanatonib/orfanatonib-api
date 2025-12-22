@@ -12,6 +12,15 @@ class UserMiniDto {
   @Expose() active!: boolean;
   @Expose() completed!: boolean;
   @Expose() commonUser!: boolean;
+
+  /**
+   * Imagem/mídia vinculada ao usuário (ex: foto de perfil), quando existir.
+   * Mesmo formato de `mediaItem` usado no abrigo.
+   */
+  @Expose()
+  @Type(() => MediaItemResponseDto)
+  @Transform(({ value }) => (value ? MediaItemResponseDto.fromEntity(value) : null))
+  mediaItem?: MediaItemResponseDto | null;
 }
 
 @Exclude()
