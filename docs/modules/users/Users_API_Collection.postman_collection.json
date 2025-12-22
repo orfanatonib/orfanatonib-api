@@ -1,0 +1,1050 @@
+{
+  "info": {
+    "name": "Users API Collection",
+    "description": "Collection completa para o módulo Users - ORQUESTRADOR PRINCIPAL de Teacher e Leader Profiles\n\n🎯 Funcionalidades:\n- CRUD completo de usuários\n- Orquestração automática de Teacher/Leader profiles\n- Mudança de roles com migração automática\n- Filtros avançados e paginação\n- Controle de acesso por roles (apenas admin)",
+    "version": "2.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Users - Listagem Paginada",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/users?page=1&limit=12&sort=updatedAt&order=DESC",
+          "host": ["{{base_url}}"],
+          "path": ["users"],
+          "query": [
+            {
+              "key": "page",
+              "value": "1",
+              "description": "Número da página"
+            },
+            {
+              "key": "limit",
+              "value": "12",
+              "description": "Itens por página (máximo 100)"
+            },
+            {
+              "key": "q",
+              "value": "",
+              "description": "Termo de busca (nome, email, telefone, role)"
+            },
+            {
+              "key": "role",
+              "value": "",
+              "description": "Filtro por role (teacher, leader, admin, user)"
+            },
+            {
+              "key": "active",
+              "value": "",
+              "description": "Filtro por status ativo (true/false)"
+            },
+            {
+              "key": "completed",
+              "value": "",
+              "description": "Filtro por status completado (true/false)"
+            },
+            {
+              "key": "sort",
+              "value": "updatedAt",
+              "description": "Campo de ordenação (name, email, phone, role, createdAt, updatedAt)"
+            },
+            {
+              "key": "order",
+              "value": "DESC",
+              "description": "Direção da ordenação (ASC/DESC)"
+            }
+          ]
+        },
+        "description": "Lista usuários com paginação, filtros e ordenação. Exclui admins da listagem."
+      },
+      "response": [
+        {
+          "name": "Listagem de Usuários",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": ["{{base_url}}"],
+              "path": ["users"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"items\": [\n    {\n      \"id\": \"uuid-user\",\n      \"name\": \"João Silva\",\n      \"email\": \"joao@example.com\",\n      \"phone\": \"+5511999999999\",\n      \"role\": \"teacher\",\n      \"active\": true,\n      \"completed\": true,\n      \"commonUser\": true,\n      \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n      \"updatedAt\": \"2025-09-27T21:30:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 12,\n    \"total\": 50,\n    \"totalPages\": 5,\n    \"sort\": \"updatedAt\",\n    \"order\": \"DESC\"\n  }\n}"
+        }
+      ]
+    },
+    {
+      "name": "Users - Buscar por ID",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/users/{{user_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["users", "{{user_id}}"]
+        },
+        "description": "Busca um usuário específico pelo ID"
+      },
+      "response": [
+        {
+          "name": "Usuário Encontrado",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/uuid-user",
+              "host": ["{{base_url}}"],
+              "path": ["users", "uuid-user"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:30:00.000Z\"\n}"
+        },
+        {
+          "name": "Usuário Não Encontrado",
+          "originalRequest": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/invalid-id",
+              "host": ["{{base_url}}"],
+              "path": ["users", "invalid-id"]
+            }
+          },
+          "status": "Not Found",
+          "code": 404,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"statusCode\": 404,\n  \"message\": \"UserEntity not found\",\n  \"error\": \"Not Found\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Users - Criar Usuário",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/users",
+          "host": ["{{base_url}}"],
+          "path": ["users"]
+        },
+        "description": "Cria um novo usuário. Se role for 'teacher' ou 'leader', cria automaticamente o profile correspondente."
+      },
+      "response": [
+        {
+          "name": "Usuário Criado com Sucesso",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": ["{{base_url}}"],
+              "path": ["users"]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
+        },
+        {
+          "name": "Erro de Validação",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"A\",\n  \"email\": \"invalid-email\",\n  \"password\": \"123\",\n  \"phone\": \"123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": ["{{base_url}}"],
+              "path": ["users"]
+            }
+          },
+          "status": "Bad Request",
+          "code": 400,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"statusCode\": 400,\n  \"message\": [\n    \"name must be longer than or equal to 2 characters\",\n    \"email must be an email\",\n    \"password must be longer than or equal to 6 characters\",\n    \"phone must be longer than or equal to 2 characters\"\n  ],\n  \"error\": \"Bad Request\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Users - Atualizar Usuário",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"João Silva Atualizado\",\n  \"phone\": \"+5511888888888\",\n  \"active\": false,\n  \"completed\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/users/{{user_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["users", "{{user_id}}"]
+        },
+        "description": "Atualiza um usuário existente. Suporta mudança de role com orquestração automática de profiles."
+      },
+      "response": [
+        {
+          "name": "Usuário Atualizado",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"João Silva Atualizado\",\n  \"phone\": \"+5511888888888\",\n  \"active\": false,\n  \"completed\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users/uuid-user",
+              "host": ["{{base_url}}"],
+              "path": ["users", "uuid-user"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"João Silva Atualizado\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511888888888\",\n  \"role\": \"teacher\",\n  \"active\": false,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:45:00.000Z\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Users - Mudança de Role",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"role\": \"leader\",\n  \"active\": true\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/users/{{user_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["users", "{{user_id}}"]
+        },
+        "description": "Muda o role do usuário. Remove profile antigo e cria novo automaticamente."
+      },
+      "response": [
+        {
+          "name": "Role Alterado com Sucesso",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"leader\",\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users/uuid-user",
+              "host": ["{{base_url}}"],
+              "path": ["users", "uuid-user"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"leader\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:50:00.000Z\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Users - Deletar Usuário",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/users/{{user_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["users", "{{user_id}}"]
+        },
+        "description": "Remove um usuário e seus profiles associados automaticamente."
+      },
+      "response": [
+        {
+          "name": "Usuário Removido",
+          "originalRequest": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/uuid-user",
+              "host": ["{{base_url}}"],
+              "path": ["users", "uuid-user"]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "_postman_previewlanguage": "json",
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "cookie": [],
+          "body": "{\n  \"message\": \"Usuário removido com sucesso\"\n}"
+        }
+      ]
+    },
+    {
+      "name": "Users - Filtros Específicos",
+      "item": [
+        {
+          "name": "Filtrar por Role Teacher",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users?role=teacher",
+              "host": ["{{base_url}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "teacher"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filtrar por Role Leader",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users?role=leader",
+              "host": ["{{base_url}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "role",
+                  "value": "leader"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filtrar por Status Ativo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users?active=true",
+              "host": ["{{base_url}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "active",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Filtrar por Completado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users?completed=true",
+              "host": ["{{base_url}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "completed",
+                  "value": "true"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Busca por Termo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users?q=João",
+              "host": ["{{base_url}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "João"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users - Orquestração de Profiles",
+      "item": [
+        {
+          "name": "Criar Teacher (Profile Automático)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Professor Teste\",\n  \"email\": \"professor.teste@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": ["{{base_url}}"],
+              "path": ["users"]
+            },
+            "description": "Cria usuário teacher e automaticamente cria Teacher Profile"
+          },
+          "response": [
+            {
+              "name": "Teacher Criado com Profile",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Professor Teste\",\n  \"email\": \"professor.teste@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/users",
+                  "host": ["{{base_url}}"],
+                  "path": ["users"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"uuid-teacher\",\n  \"name\": \"Professor Teste\",\n  \"email\": \"professor.teste@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Criar Leader (Profile Automático)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Líder Teste\",\n  \"email\": \"lider.teste@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511888888888\",\n  \"role\": \"leader\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users",
+              "host": ["{{base_url}}"],
+              "path": ["users"]
+            },
+            "description": "Cria usuário leader e automaticamente cria Leader Profile"
+          },
+          "response": [
+            {
+              "name": "Leader Criado com Profile",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Líder Teste\",\n  \"email\": \"lider.teste@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511888888888\",\n  \"role\": \"leader\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/users",
+                  "host": ["{{base_url}}"],
+                  "path": ["users"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"uuid-leader\",\n  \"name\": \"Líder Teste\",\n  \"email\": \"lider.teste@example.com\",\n  \"phone\": \"+5511888888888\",\n  \"role\": \"leader\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Teacher → Leader (Migração Automática)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"leader\",\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{user_id}}"]
+            },
+            "description": "Muda role de teacher para leader. Remove Teacher Profile e cria Leader Profile automaticamente."
+          },
+          "response": [
+            {
+              "name": "Migração Teacher → Leader",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"role\": \"leader\",\n  \"active\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/users/uuid-user",
+                  "host": ["{{base_url}}"],
+                  "path": ["users", "uuid-user"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"Usuário Teste\",\n  \"email\": \"usuario@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"leader\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:45:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Leader → Teacher (Migração Automática)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"teacher\",\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{user_id}}"]
+            },
+            "description": "Muda role de leader para teacher. Remove Leader Profile e cria Teacher Profile automaticamente."
+          },
+          "response": [
+            {
+              "name": "Migração Leader → Teacher",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"role\": \"teacher\",\n  \"active\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/users/uuid-user",
+                  "host": ["{{base_url}}"],
+                  "path": ["users", "uuid-user"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"Usuário Teste\",\n  \"email\": \"usuario@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:50:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Desativar Usuário (Remove Profile)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{user_id}}"]
+            },
+            "description": "Desativa usuário e remove automaticamente o Teacher/Leader Profile.\n\n⚠️ IMPORTANTE: Usuário desativado NÃO aparece nas listagens de Teacher/Leader Profiles!"
+          },
+          "response": [
+            {
+              "name": "Usuário Desativado",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"active\": false\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/users/uuid-user",
+                  "host": ["{{base_url}}"],
+                  "path": ["users", "uuid-user"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"Usuário Teste\",\n  \"email\": \"usuario@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": false,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:55:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Ativar Usuário (Recria Profile)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["users", "{{user_id}}"]
+            },
+            "description": "Ativa usuário e recria automaticamente o Teacher/Leader Profile baseado no role.\n\n⚠️ IMPORTANTE: Usuários com active=false NÃO aparecem nas listagens de Teacher/Leader Profiles!"
+          },
+          "response": [
+            {
+              "name": "Usuário Ativado",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"active\": true\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/users/uuid-user",
+                  "host": ["{{base_url}}"],
+                  "path": ["users", "uuid-user"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"Usuário Teste\",\n  \"email\": \"usuario@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T22:00:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "⚠️ Controle de Visibilidade",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users?active=false",
+              "host": ["{{base_url}}"],
+              "path": ["users"],
+              "query": [
+                {
+                  "key": "active",
+                  "value": "false"
+                }
+              ]
+            },
+            "description": "Lista usuários desativados. Estes usuários NÃO aparecem nas listagens de Teacher/Leader Profiles devido ao filtro automático 'user.active = true' aplicado nos repositories."
+          },
+          "response": [
+            {
+              "name": "Usuários Desativados",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/users?active=false",
+                  "host": ["{{base_url}}"],
+                  "path": ["users"],
+                  "query": [
+                    {
+                      "key": "active",
+                      "value": "false"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"items\": [\n    {\n      \"id\": \"uuid-user\",\n      \"name\": \"Usuário Desativado\",\n      \"email\": \"desativado@example.com\",\n      \"phone\": \"+5511999999999\",\n      \"role\": \"teacher\",\n      \"active\": false,\n      \"completed\": true,\n      \"commonUser\": true,\n      \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n      \"updatedAt\": \"2025-09-27T21:55:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 12,\n    \"total\": 1,\n    \"totalPages\": 1,\n    \"sort\": \"updatedAt\",\n    \"order\": \"DESC\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Verificar se o token de acesso existe",
+          "if (!pm.environment.get('access_token')) {",
+          "    console.log('⚠️ Token de acesso não encontrado. Faça login primeiro.');",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Salvar user_id se a resposta contém um usuário",
+          "if (pm.response.code === 200 || pm.response.code === 201) {",
+          "    const responseJson = pm.response.json();",
+          "    if (responseJson.id) {",
+          "        pm.environment.set('user_id', responseJson.id);",
+          "        console.log('✅ User ID salvo: ' + responseJson.id);",
+          "    }",
+          "}",
+          "",
+          "// Verificar se a resposta foi bem-sucedida",
+          "pm.test('Status code is successful', function () {",
+          "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
+          "});",
+          "",
+          "// Verificar se a resposta contém dados válidos",
+          "pm.test('Response has valid data', function () {",
+          "    if (pm.response.code === 200 || pm.response.code === 201) {",
+          "        const jsonData = pm.response.json();",
+          "        pm.expect(jsonData).to.not.be.null;",
+          "    }",
+          "});"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+[
+  {
+    "name": "Abrigo Esperança",
+    "description": "Abrigo dedicado ao cuidado e desenvolvimento de crianças em situação de vulnerabilidade social. Oferecemos educação, alimentação e suporte emocional.",
+    "imageUrl": "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800",
+    "address": {
+      "street": "Rua das Flores",
+      "number": "123",
+      "district": "Centro",
+      "city": "São Paulo",
+      "state": "SP",
+      "postalCode": "01234-567",
+      "complement": "Próximo ao mercado"
+    }
+  },
+  {
+    "name": "Lar Feliz",
+    "description": "Instituição comprometida com o bem-estar e educação de jovens em busca de um futuro melhor. Programas educacionais e profissionalizantes.",
+    "imageUrl": "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800",
+    "address": {
+      "street": "Avenida da Alegria",
+      "number": "456",
+      "district": "Vila Nova",
+      "city": "Rio de Janeiro",
+      "state": "RJ",
+      "postalCode": "20000-000",
+      "complement": "Esquina com Rua Principal"
+    }
+  },
+  {
+    "name": "Casa do Sorriso",
+    "description": "Lar acolhedor que proporciona amor, educação e oportunidades para crianças carentes. Ambiente familiar e afetuoso.",
+    "imageUrl": "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=800",
+    "address": {
+      "street": "Rua do Carinho",
+      "number": "789",
+      "district": "Jardim Primavera",
+      "city": "Belo Horizonte",
+      "state": "MG",
+      "postalCode": "30000-000",
+      "complement": "Fundos"
+    }
+  },
+  {
+    "name": "Refúgio das Crianças",
+    "description": "Centro de acolhimento que oferece suporte integral para o desenvolvimento infantil. Equipe multidisciplinar dedicada.",
+    "imageUrl": "https://images.unsplash.com/photo-1544776193-352d25ca82cd?w=800",
+    "address": {
+      "street": "Rua da Paz",
+      "number": "321",
+      "district": "Bairro Alto",
+      "city": "Curitiba",
+      "state": "PR",
+      "postalCode": "80000-000",
+      "complement": "Casa amarela"
+    }
+  },
+  {
+    "name": "Lar São José",
+    "description": "Espaço seguro e afetuoso dedicado à formação de cidadãos conscientes e preparados para a vida. Valores cristãos e humanitários.",
+    "imageUrl": "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800",
+    "address": {
+      "street": "Avenida dos Santos",
+      "number": "654",
+      "district": "Centro Histórico",
+      "city": "Salvador",
+      "state": "BA",
+      "postalCode": "40000-000",
+      "complement": "Próximo à igreja"
+    }
+  },
+  {
+    "name": "Abrigo Nova Vida",
+    "description": "Instituição que oferece acolhimento, educação e oportunidades de desenvolvimento para crianças e adolescentes em situação de risco.",
+    "imageUrl": "https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800",
+    "address": {
+      "street": "Rua Renascer",
+      "number": "111",
+      "district": "Novo Horizonte",
+      "city": "Recife",
+      "state": "PE",
+      "postalCode": "50000-000",
+      "complement": "Entrada lateral"
+    }
+  },
+  {
+    "name": "Casa Luz do Amanhã",
+    "description": "Lar dedicado ao cuidado integral de crianças, proporcionando educação de qualidade, alimentação nutritiva e ambiente acolhedor.",
+    "imageUrl": "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?w=800",
+    "address": {
+      "street": "Rua do Futuro",
+      "number": "222",
+      "district": "Jardim das Acácias",
+      "city": "Porto Alegre",
+      "state": "RS",
+      "postalCode": "90000-000",
+      "complement": "Portão verde"
+    }
+  },
+  {
+    "name": "Abrigo Estrela Guia",
+    "description": "Centro de acolhimento que proporciona suporte psicológico, educacional e social para crianças em situação de vulnerabilidade.",
+    "imageUrl": "https://images.unsplash.com/photo-1497486751825-1233686d5d80?w=800",
+    "address": {
+      "street": "Avenida das Estrelas",
+      "number": "333",
+      "district": "Parque Imperial",
+      "city": "Brasília",
+      "state": "DF",
+      "postalCode": "70000-000",
+      "complement": "Bloco A"
+    }
+  },
+  {
+    "name": "Lar Doce Lar",
+    "description": "Ambiente familiar que acolhe crianças com amor e dedicação, oferecendo estrutura para um desenvolvimento saudável e feliz.",
+    "imageUrl": "https://images.unsplash.com/photo-1544776193-352d25ca82cd?w=800",
+    "address": {
+      "street": "Rua Aconchego",
+      "number": "444",
+      "district": "Vila Esperança",
+      "city": "Fortaleza",
+      "state": "CE",
+      "postalCode": "60000-000",
+      "complement": "Casa 2"
+    }
+  },
+  {
+    "name": "Abrigo Raio de Sol",
+    "description": "Instituição que promove o bem-estar integral de crianças e adolescentes através de programas educacionais, culturais e esportivos.",
+    "imageUrl": "https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?w=800",
+    "address": {
+      "street": "Rua Brilhante",
+      "number": "555",
+      "district": "Jardim Solar",
+      "city": "Manaus",
+      "state": "AM",
+      "postalCode": "69000-000",
+      "complement": "Ao lado do parque"
+    }
+  }
+]

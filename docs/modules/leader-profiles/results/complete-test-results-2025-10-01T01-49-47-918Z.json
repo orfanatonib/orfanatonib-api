@@ -1,0 +1,188 @@
+{
+  "success": 8,
+  "failed": 2,
+  "details": [
+    {
+      "name": "POST /leader-profiles/create-for-user/:userId (criar leader profile)",
+      "status": "SUCCESS",
+      "result": {
+        "status": 201,
+        "userId": "d80040f8-3b13-4f76-97ba-f8826835665a",
+        "userName": "Zeca Ferreira",
+        "leaderId": "f50a8eb6-30b9-4bfe-8eec-f710c1d210a1"
+      }
+    },
+    {
+      "name": "GET /leader-profiles (listagem paginada)",
+      "status": "SUCCESS",
+      "result": {
+        "status": 200,
+        "total": 10,
+        "items": 10,
+        "firstLeader": "Zeca Ferreira"
+      }
+    },
+    {
+      "name": "GET /leader-profiles/simple (listagem simples)",
+      "status": "SUCCESS",
+      "result": {
+        "status": 200,
+        "count": 10
+      }
+    },
+    {
+      "name": "GET /leader-profiles/:id (buscar por ID)",
+      "status": "SUCCESS",
+      "result": {
+        "status": 200,
+        "leaderId": "f50a8eb6-30b9-4bfe-8eec-f710c1d210a1",
+        "leaderName": "Zeca Ferreira",
+        "sheltersCount": 0
+      }
+    },
+    {
+      "name": "GET /leader-profiles/by-shelter/:shelterId (buscar por shelter)",
+      "status": "SUCCESS",
+      "result": {
+        "status": 200,
+        "shelterId": "14bf7db7-8ee7-44d8-b1c2-2f319c477774",
+        "shelterName": "Abrigo Barra da Tijuca 10",
+        "leaderName": "Xavier Pereira"
+      }
+    },
+    {
+      "name": "PATCH /leader-profiles/:id/assign-shelter (atribuir shelter)",
+      "status": "SUCCESS",
+      "result": {
+        "status": 200,
+        "leaderId": "f50a8eb6-30b9-4bfe-8eec-f710c1d210a1",
+        "leaderName": "Zeca Ferreira",
+        "shelterId": "14bf7db7-8ee7-44d8-b1c2-2f319c477774",
+        "shelterName": "Abrigo Barra da Tijuca 10"
+      }
+    },
+    {
+      "name": "PATCH /leader-profiles/:id/unassign-shelter (remover shelter)",
+      "status": "FAILED",
+      "error": "Leader não possui shelter para desvincular"
+    },
+    {
+      "name": "PATCH /leader-profiles/:id/move-shelter (mover shelter)",
+      "status": "FAILED",
+      "error": {
+        "message": "O Shelter já está vinculado ao líder de destino",
+        "error": "Bad Request",
+        "statusCode": 400
+      }
+    },
+    {
+      "name": "Filtros avançados",
+      "status": "SUCCESS",
+      "result": {
+        "filters": [
+          {
+            "filter": "Busca por nome",
+            "status": 200,
+            "total": 0
+          },
+          {
+            "filter": "Filtro por ativo",
+            "status": 200,
+            "count": 10,
+            "total": 10
+          },
+          {
+            "filter": "Filtro por inativo",
+            "status": 200,
+            "count": 10,
+            "total": 10
+          },
+          {
+            "filter": "Filtro com shelters",
+            "status": 200,
+            "count": 3,
+            "total": 3
+          },
+          {
+            "filter": "Filtro sem shelters",
+            "status": 200,
+            "count": 3,
+            "total": 3
+          },
+          {
+            "filter": "Ordenação por nome ASC",
+            "status": 200,
+            "count": 10,
+            "total": 10
+          },
+          {
+            "filter": "Ordenação por data DESC",
+            "status": 200,
+            "count": 10,
+            "total": 10
+          },
+          {
+            "filter": "Paginação",
+            "status": 200,
+            "count": 5,
+            "total": 10
+          },
+          {
+            "filter": "Filtros combinados",
+            "status": 200,
+            "count": 3,
+            "total": 3
+          }
+        ]
+      }
+    },
+    {
+      "name": "Cenários de erro",
+      "status": "SUCCESS",
+      "result": {
+        "errorTests": [
+          {
+            "name": "Buscar leader inexistente",
+            "status": 404,
+            "error": {
+              "message": "LeaderProfile não encontrado",
+              "error": "Not Found",
+              "statusCode": 404
+            },
+            "success": true
+          },
+          {
+            "name": "Criar leader para usuário inexistente",
+            "status": 404,
+            "error": {
+              "message": "User não encontrado",
+              "error": "Not Found",
+              "statusCode": 404
+            },
+            "success": true
+          },
+          {
+            "name": "Atribuir shelter inexistente",
+            "status": 404,
+            "error": {
+              "message": "Shelter não encontrado",
+              "error": "Not Found",
+              "statusCode": 404
+            },
+            "success": true
+          },
+          {
+            "name": "Buscar shelter inexistente",
+            "status": 404,
+            "error": {
+              "message": "Shelter não encontrado",
+              "error": "Not Found",
+              "statusCode": 404
+            },
+            "success": true
+          }
+        ]
+      }
+    }
+  ]
+}

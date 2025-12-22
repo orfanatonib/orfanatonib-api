@@ -1,0 +1,192 @@
+[
+  {
+    "id": "f50a8eb6-30b9-4bfe-8eec-f710c1d210a1",
+    "active": true,
+    "user": {
+      "id": "d80040f8-3b13-4f76-97ba-f8826835665a",
+      "name": "Zeca Ferreira",
+      "email": "zeca.ferreira.leader.49@example.com",
+      "phone": "+5561259679940",
+      "active": true,
+      "completed": true,
+      "commonUser": false
+    },
+    "shelter": null,
+    "createdAt": "2025-09-27T22:36:03.314Z",
+    "updatedAt": "2025-09-27T22:36:03.314Z",
+    "userId": "d80040f8-3b13-4f76-97ba-f8826835665a",
+    "userName": "Zeca Ferreira",
+    "success": true
+  },
+  {
+    "id": "ac449139-9bad-49e0-89a1-4165eb6405c5",
+    "active": true,
+    "user": {
+      "id": "d0fbe03f-381b-4804-9dbb-707a47b308a5",
+      "name": "Yara Martins",
+      "email": "yara.martins.leader.48@example.com",
+      "phone": "+5585388860138",
+      "active": true,
+      "completed": true,
+      "commonUser": false
+    },
+    "shelter": null,
+    "createdAt": "2025-09-27T22:36:03.013Z",
+    "updatedAt": "2025-09-27T22:36:03.013Z",
+    "userId": "d0fbe03f-381b-4804-9dbb-707a47b308a5",
+    "userName": "Yara Martins",
+    "success": true
+  },
+  {
+    "id": "66eb6db0-bd22-4d65-b33f-6db729004582",
+    "active": true,
+    "user": {
+      "id": "071a4feb-1447-42c7-9b9a-a1599239c4f3",
+      "name": "Xavier Pereira",
+      "email": "xavier.pereira.leader.47@example.com",
+      "phone": "+5571322924288",
+      "active": true,
+      "completed": true,
+      "commonUser": false
+    },
+    "shelter": null,
+    "createdAt": "2025-09-27T22:36:02.708Z",
+    "updatedAt": "2025-09-27T22:36:02.708Z",
+    "userId": "071a4feb-1447-42c7-9b9a-a1599239c4f3",
+    "userName": "Xavier Pereira",
+    "success": true
+  },
+  {
+    "id": "bfb0456e-c4c2-46c4-b209-610ce7b67564",
+    "active": true,
+    "user": {
+      "id": "3ef3ad7f-316a-479f-9ec7-95ca94a7f0a3",
+      "name": "Wilson Alves",
+      "email": "wilson.alves.leader.46@example.com",
+      "phone": "+5585440568086",
+      "active": true,
+      "completed": true,
+      "commonUser": false
+    },
+    "shelter": null,
+    "createdAt": "2025-09-27T22:36:02.391Z",
+    "updatedAt": "2025-09-27T22:36:02.391Z",
+    "userId": "3ef3ad7f-316a-479f-9ec7-95ca94a7f0a3",
+    "userName": "Wilson Alves",
+    "success": true
+  },
+  {
+    "id": "9c0e1eb2-e319-49f4-ad07-d1552fd3eefa",
+    "active": true,
+    "user": {
+      "id": "49c7d441-d507-4102-9821-45a52d5b79cf",
+      "name": "Vera Rocha",
+      "email": "vera.rocha.leader.45@example.com",
+      "phone": "+5551145009941",
+      "active": true,
+      "completed": true,
+      "commonUser": false
+    },
+    "shelter": null,
+    "createdAt": "2025-09-27T22:36:02.115Z",
+    "updatedAt": "2025-09-27T22:36:02.115Z",
+    "userId": "49c7d441-d507-4102-9821-45a52d5b79cf",
+    "userName": "Vera Rocha",
+    "success": true
+  },
+  {
+    "id": "cfa2965a-4fc8-41e4-bf72-ffbc05fd5c4e",
+    "active": true,
+    "user": {
+      "id": "7630a065-620b-46a2-bc63-17c366318a44",
+      "name": "Ulisses Lima",
+      "email": "ulisses.lima.leader.44@example.com",
+      "phone": "+5541454309577",
+      "active": true,
+      "completed": true,
+      "commonUser": false
+    },
+    "shelter": null,
+    "createdAt": "2025-09-27T22:36:01.863Z",
+    "updatedAt": "2025-09-27T22:36:01.863Z",
+    "userId": "7630a065-620b-46a2-bc63-17c366318a44",
+    "userName": "Ulisses Lima",
+    "success": true
+  },
+  {
+    "id": "efa413c9-825f-41fc-ae2f-9b628ec71ebe",
+    "active": true,
+    "user": {
+      "id": "ce176c7b-5bb1-4b25-8cff-4de23924443d",
+      "name": "Tatiana Costa",
+      "email": "tatiana.costa.leader.43@example.com",
+      "phone": "+5541678811222",
+      "active": true,
+      "completed": true,
+      "commonUser": false
+    },
+    "shelter": null,
+    "createdAt": "2025-09-27T22:36:01.605Z",
+    "updatedAt": "2025-09-27T22:36:01.605Z",
+    "userId": "ce176c7b-5bb1-4b25-8cff-4de23924443d",
+    "userName": "Tatiana Costa",
+    "success": true
+  },
+  {
+    "id": "c4d0e303-d9f1-4f18-b7ad-c55ca8d47188",
+    "active": true,
+    "user": {
+      "id": "45c0fb50-875c-4cb1-9d57-d927b4d5a68a",
+      "name": "Silvia Oliveira",
+      "email": "silvia.oliveira.leader.42@example.com",
+      "phone": "+5551512144326",
+      "active": true,
+      "completed": true,
+      "commonUser": false
+    },
+    "shelter": null,
+    "createdAt": "2025-09-27T22:36:01.336Z",
+    "updatedAt": "2025-09-27T22:36:01.336Z",
+    "userId": "45c0fb50-875c-4cb1-9d57-d927b4d5a68a",
+    "userName": "Silvia Oliveira",
+    "success": true
+  },
+  {
+    "id": "acef25bb-1542-4d7c-93be-e82cec66a09e",
+    "active": true,
+    "user": {
+      "id": "15b8ea52-b99f-40af-9621-09887b545a4d",
+      "name": "Roberto Santos",
+      "email": "roberto.santos.leader.41@example.com",
+      "phone": "+5585600743122",
+      "active": true,
+      "completed": true,
+      "commonUser": false
+    },
+    "shelter": null,
+    "createdAt": "2025-09-27T22:36:01.044Z",
+    "updatedAt": "2025-09-27T22:36:01.044Z",
+    "userId": "15b8ea52-b99f-40af-9621-09887b545a4d",
+    "userName": "Roberto Santos",
+    "success": true
+  },
+  {
+    "id": "7bd75692-fc50-49ce-be78-50c2650b6f89",
+    "active": true,
+    "user": {
+      "id": "2e08bb82-49d0-4bde-b602-a155d46ea84c",
+      "name": "Quitéria Silva",
+      "email": "quitria.silva.leader.40@example.com",
+      "phone": "+5531538897346",
+      "active": true,
+      "completed": true,
+      "commonUser": false
+    },
+    "shelter": null,
+    "createdAt": "2025-09-27T22:36:00.747Z",
+    "updatedAt": "2025-09-27T22:36:00.747Z",
+    "userId": "2e08bb82-49d0-4bde-b602-a155d46ea84c",
+    "userName": "Quitéria Silva",
+    "success": true
+  }
+]

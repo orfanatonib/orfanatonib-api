@@ -1,0 +1,568 @@
+{
+  "timestamp": "2025-09-27T22:18:25.243Z",
+  "total": 20,
+  "successful": 20,
+  "failed": 0,
+  "results": [
+    {
+      "id": "1a30bd51-abca-43cb-bad8-78896c92e07f",
+      "name": "Ana Silva",
+      "birthDate": "2011-04-13",
+      "guardianName": "Maria Silva",
+      "gender": "Masculino",
+      "guardianPhone": "+5541254803324",
+      "joinedAt": "2023-11-23",
+      "shelter": {
+        "id": "a8077e50-3d24-477d-b68c-0c6110ebd3ca",
+        "name": "Abrigo Tijuca 9"
+      },
+      "address": {
+        "id": "2dc44202-a4cb-4d00-9ae6-21d3ae84459a",
+        "street": "Rua Ana",
+        "number": "789",
+        "district": "Jardins",
+        "city": "Salvador",
+        "state": "BA",
+        "postalCode": "89363-796",
+        "complement": "Apto 184"
+      },
+      "createdAt": "2025-09-27T22:18:14.517Z",
+      "updatedAt": "2025-09-27T22:18:14.517Z",
+      "city": "Salvador",
+      "state": "BA",
+      "shelterId": "a8077e50-3d24-477d-b68c-0c6110ebd3ca"
+    },
+    {
+      "id": "050fc76e-25d3-4b82-be3b-f1c0e738780c",
+      "name": "Bruno Santos",
+      "birthDate": "2006-05-14",
+      "guardianName": "João Santos",
+      "gender": "Masculino",
+      "guardianPhone": "+5511478597226",
+      "joinedAt": "2020-08-23",
+      "shelter": {
+        "id": "81673420-910f-4406-a9f7-e3a2c62fec2a",
+        "name": "Abrigo Central 1"
+      },
+      "address": {
+        "id": "a2cb9b36-7b4d-4b99-950c-de4e22169a82",
+        "street": "Rua Bruno",
+        "number": "332",
+        "district": "Centro",
+        "city": "Fortaleza",
+        "state": "CE",
+        "postalCode": "60952-951",
+        "complement": "Apto 41"
+      },
+      "createdAt": "2025-09-27T22:18:15.074Z",
+      "updatedAt": "2025-09-27T22:18:15.074Z",
+      "city": "Fortaleza",
+      "state": "CE",
+      "shelterId": "81673420-910f-4406-a9f7-e3a2c62fec2a"
+    },
+    {
+      "id": "97b3c121-03f0-4d14-958a-be2f88bb5ab7",
+      "name": "Carlos Oliveira",
+      "birthDate": "2006-11-14",
+      "guardianName": "Ana Oliveira",
+      "gender": "Masculino",
+      "guardianPhone": "+5581132582208",
+      "joinedAt": "2020-12-07",
+      "shelter": {
+        "id": "2884b711-0613-4734-8af7-0164441e7aef",
+        "name": "Abrigo Leblon 6"
+      },
+      "address": {
+        "id": "09ac0a6d-1d64-4950-afc1-58420e6ce6cc",
+        "street": "Rua Carlos",
+        "number": "308",
+        "district": "Copacabana",
+        "city": "Fortaleza",
+        "state": "CE",
+        "postalCode": "73894-384",
+        "complement": "Apto 188"
+      },
+      "createdAt": "2025-09-27T22:18:15.621Z",
+      "updatedAt": "2025-09-27T22:18:15.621Z",
+      "city": "Fortaleza",
+      "state": "CE",
+      "shelterId": "2884b711-0613-4734-8af7-0164441e7aef"
+    },
+    {
+      "id": "9ea8cb8d-cb49-44cd-b1dd-131ee7bd5162",
+      "name": "Diana Costa",
+      "birthDate": "2006-05-13",
+      "guardianName": "Pedro Costa",
+      "gender": "Não informado",
+      "guardianPhone": "+5531383425455",
+      "joinedAt": "2022-07-14",
+      "shelter": {
+        "id": "776bdcb6-1370-4eeb-a599-66be6b40a6d8",
+        "name": "Abrigo Vila Madalena 3"
+      },
+      "address": {
+        "id": "473f7c5e-7413-4884-9c73-da9cb09f1777",
+        "street": "Rua Diana",
+        "number": "896",
+        "district": "Leblon",
+        "city": "São Paulo",
+        "state": "SP",
+        "postalCode": "19323-979",
+        "complement": "Apto 30"
+      },
+      "createdAt": "2025-09-27T22:18:16.161Z",
+      "updatedAt": "2025-09-27T22:18:16.161Z",
+      "city": "São Paulo",
+      "state": "SP",
+      "shelterId": "776bdcb6-1370-4eeb-a599-66be6b40a6d8"
+    },
+    {
+      "id": "01f72119-4819-400a-ac27-324066e212e6",
+      "name": "Eduardo Lima",
+      "birthDate": "2000-04-06",
+      "guardianName": "Carla Lima",
+      "gender": "Não informado",
+      "guardianPhone": "+5531256130604",
+      "joinedAt": "2020-07-24",
+      "shelter": {
+        "id": "c5e8940f-25d0-4dc1-90bb-05ef85c1e799",
+        "name": "Abrigo Ipanema 5"
+      },
+      "address": {
+        "id": "5b9e69fd-a687-4cb1-a4d5-f1be1ef5eefc",
+        "street": "Rua Eduardo",
+        "number": "768",
+        "district": "Centro",
+        "city": "Manaus",
+        "state": "AM",
+        "postalCode": "14893-482",
+        "complement": "Apto 45"
+      },
+      "createdAt": "2025-09-27T22:18:16.709Z",
+      "updatedAt": "2025-09-27T22:18:16.709Z",
+      "city": "Manaus",
+      "state": "AM",
+      "shelterId": "c5e8940f-25d0-4dc1-90bb-05ef85c1e799"
+    },
+    {
+      "id": "8888bb0d-3529-474f-baff-ead8bae456fe",
+      "name": "Fernanda Rocha",
+      "birthDate": "2009-03-27",
+      "guardianName": "Roberto Rocha",
+      "gender": "Não informado",
+      "guardianPhone": "+5521410569311",
+      "joinedAt": "2021-10-05",
+      "shelter": {
+        "id": "c5e8940f-25d0-4dc1-90bb-05ef85c1e799",
+        "name": "Abrigo Ipanema 5"
+      },
+      "address": {
+        "id": "0f5c9ac3-39ff-4735-8b63-efd9059cd1c9",
+        "street": "Rua Fernanda",
+        "number": "839",
+        "district": "Copacabana",
+        "city": "Porto Alegre",
+        "state": "RS",
+        "postalCode": "53828-705",
+        "complement": "Apto 167"
+      },
+      "createdAt": "2025-09-27T22:18:17.249Z",
+      "updatedAt": "2025-09-27T22:18:17.249Z",
+      "city": "Porto Alegre",
+      "state": "RS",
+      "shelterId": "c5e8940f-25d0-4dc1-90bb-05ef85c1e799"
+    },
+    {
+      "id": "c7aa9e76-ad81-4bc9-ae39-c8458ed8cedd",
+      "name": "Gabriel Alves",
+      "birthDate": "2006-09-09",
+      "guardianName": "Lucia Alves",
+      "gender": "Feminino",
+      "guardianPhone": "+557136788639",
+      "joinedAt": "2022-12-04",
+      "shelter": {
+        "id": "776bdcb6-1370-4eeb-a599-66be6b40a6d8",
+        "name": "Abrigo Vila Madalena 3"
+      },
+      "address": {
+        "id": "42c5f643-82ac-4924-9457-839fd115360f",
+        "street": "Rua Gabriel",
+        "number": "946",
+        "district": "Centro",
+        "city": "Fortaleza",
+        "state": "CE",
+        "postalCode": "21364-985",
+        "complement": "Apto 20"
+      },
+      "createdAt": "2025-09-27T22:18:17.777Z",
+      "updatedAt": "2025-09-27T22:18:17.777Z",
+      "city": "Fortaleza",
+      "state": "CE",
+      "shelterId": "776bdcb6-1370-4eeb-a599-66be6b40a6d8"
+    },
+    {
+      "id": "4930aed4-992d-4b68-ad26-80cff002d000",
+      "name": "Helena Pereira",
+      "birthDate": "2006-10-10",
+      "guardianName": "Antonio Pereira",
+      "gender": "Não informado",
+      "guardianPhone": "+5585487443347",
+      "joinedAt": "2021-04-17",
+      "shelter": {
+        "id": "f9f7ee1e-8fae-4f6d-9769-7b435eaa603a",
+        "name": "Abrigo Copacabana 4"
+      },
+      "address": {
+        "id": "f5f27fa9-ec92-42b0-8dab-55e785c4941f",
+        "street": "Rua Helena",
+        "number": "476",
+        "district": "Flamengo",
+        "city": "Porto Alegre",
+        "state": "RS",
+        "postalCode": "59667-140",
+        "complement": "Apto 199"
+      },
+      "createdAt": "2025-09-27T22:18:18.313Z",
+      "updatedAt": "2025-09-27T22:18:18.313Z",
+      "city": "Porto Alegre",
+      "state": "RS",
+      "shelterId": "f9f7ee1e-8fae-4f6d-9769-7b435eaa603a"
+    },
+    {
+      "id": "3b635673-2ab4-4938-b1c1-09e5c7d3831e",
+      "name": "Igor Martins",
+      "birthDate": "2009-07-27",
+      "guardianName": "Rosa Martins",
+      "gender": "Não informado",
+      "guardianPhone": "+5595394771942",
+      "joinedAt": "2022-10-16",
+      "shelter": {
+        "id": "81673420-910f-4406-a9f7-e3a2c62fec2a",
+        "name": "Abrigo Central 1"
+      },
+      "address": {
+        "id": "4a9af2db-995f-47be-b6a2-6aec2233b016",
+        "street": "Rua Igor",
+        "number": "83",
+        "district": "Jardins",
+        "city": "Salvador",
+        "state": "BA",
+        "postalCode": "19331-637",
+        "complement": "Apto 156"
+      },
+      "createdAt": "2025-09-27T22:18:18.851Z",
+      "updatedAt": "2025-09-27T22:18:18.851Z",
+      "city": "Salvador",
+      "state": "BA",
+      "shelterId": "81673420-910f-4406-a9f7-e3a2c62fec2a"
+    },
+    {
+      "id": "f47815e9-1c61-4e98-8dde-460f66d82da2",
+      "name": "Julia Ferreira",
+      "birthDate": "2011-05-18",
+      "guardianName": "Paulo Ferreira",
+      "gender": "Masculino",
+      "guardianPhone": "+5561707802898",
+      "joinedAt": "2020-11-16",
+      "shelter": {
+        "id": "2884b711-0613-4734-8af7-0164441e7aef",
+        "name": "Abrigo Leblon 6"
+      },
+      "address": {
+        "id": "c4079dec-7d62-4d31-b5f2-06b31d735740",
+        "street": "Rua Julia",
+        "number": "98",
+        "district": "Moema",
+        "city": "Recife",
+        "state": "PE",
+        "postalCode": "74932-941",
+        "complement": "Apto 103"
+      },
+      "createdAt": "2025-09-27T22:18:19.382Z",
+      "updatedAt": "2025-09-27T22:18:19.382Z",
+      "city": "Recife",
+      "state": "PE",
+      "shelterId": "2884b711-0613-4734-8af7-0164441e7aef"
+    },
+    {
+      "id": "a9499ca4-6bf4-40fe-9a9e-a2ba84700a7f",
+      "name": "Kleber Souza",
+      "birthDate": "2000-06-27",
+      "guardianName": "Silvia Souza",
+      "gender": "Feminino",
+      "guardianPhone": "+5531760469535",
+      "joinedAt": "2024-05-27",
+      "shelter": {
+        "id": "2884b711-0613-4734-8af7-0164441e7aef",
+        "name": "Abrigo Leblon 6"
+      },
+      "address": {
+        "id": "51b451b9-8f64-4e5a-bcb9-a56b27420660",
+        "street": "Rua Kleber",
+        "number": "708",
+        "district": "Botafogo",
+        "city": "Fortaleza",
+        "state": "CE",
+        "postalCode": "35782-622",
+        "complement": "Apto 172"
+      },
+      "createdAt": "2025-09-27T22:18:19.912Z",
+      "updatedAt": "2025-09-27T22:18:19.912Z",
+      "city": "Fortaleza",
+      "state": "CE",
+      "shelterId": "2884b711-0613-4734-8af7-0164441e7aef"
+    },
+    {
+      "id": "9ce766bd-cd75-4726-9de2-7732804b8ea4",
+      "name": "Larissa Barbosa",
+      "birthDate": "2009-04-23",
+      "guardianName": "Carlos Barbosa",
+      "gender": "Masculino",
+      "guardianPhone": "+5561383075519",
+      "joinedAt": "2024-11-03",
+      "shelter": {
+        "id": "f9f7ee1e-8fae-4f6d-9769-7b435eaa603a",
+        "name": "Abrigo Copacabana 4"
+      },
+      "address": {
+        "id": "05e11f24-bfa9-41cb-b262-973e49f695d6",
+        "street": "Rua Larissa",
+        "number": "415",
+        "district": "Pinheiros",
+        "city": "São Paulo",
+        "state": "SP",
+        "postalCode": "97723-543",
+        "complement": "Apto 177"
+      },
+      "createdAt": "2025-09-27T22:18:20.452Z",
+      "updatedAt": "2025-09-27T22:18:20.452Z",
+      "city": "São Paulo",
+      "state": "SP",
+      "shelterId": "f9f7ee1e-8fae-4f6d-9769-7b435eaa603a"
+    },
+    {
+      "id": "ed020406-9142-4aea-9df2-cf3588ce4ed1",
+      "name": "Marcos Dias",
+      "birthDate": "2003-04-01",
+      "guardianName": "Marina Dias",
+      "gender": "Feminino",
+      "guardianPhone": "+5541106819790",
+      "joinedAt": "2021-07-23",
+      "shelter": {
+        "id": "2884b711-0613-4734-8af7-0164441e7aef",
+        "name": "Abrigo Leblon 6"
+      },
+      "address": {
+        "id": "d302fbe6-eddf-4829-87d6-77353cd18913",
+        "street": "Rua Marcos",
+        "number": "942",
+        "district": "Copacabana",
+        "city": "Rio de Janeiro",
+        "state": "RJ",
+        "postalCode": "26879-734",
+        "complement": "Apto 131"
+      },
+      "createdAt": "2025-09-27T22:18:20.982Z",
+      "updatedAt": "2025-09-27T22:18:20.982Z",
+      "city": "Rio de Janeiro",
+      "state": "RJ",
+      "shelterId": "2884b711-0613-4734-8af7-0164441e7aef"
+    },
+    {
+      "id": "09ab1f91-9313-4419-bb3e-dbf4bc516917",
+      "name": "Natália Campos",
+      "birthDate": "2004-02-22",
+      "guardianName": "Fernando Campos",
+      "gender": "Feminino",
+      "guardianPhone": "+5511518844335",
+      "joinedAt": "2024-11-20",
+      "shelter": {
+        "id": "c5e8940f-25d0-4dc1-90bb-05ef85c1e799",
+        "name": "Abrigo Ipanema 5"
+      },
+      "address": {
+        "id": "60b75e7d-2451-4ed6-a2b5-4e8f5466b3ff",
+        "street": "Rua Natália",
+        "number": "790",
+        "district": "Moema",
+        "city": "Porto Alegre",
+        "state": "RS",
+        "postalCode": "78438-246",
+        "complement": "Apto 11"
+      },
+      "createdAt": "2025-09-27T22:18:21.514Z",
+      "updatedAt": "2025-09-27T22:18:21.514Z",
+      "city": "Porto Alegre",
+      "state": "RS",
+      "shelterId": "c5e8940f-25d0-4dc1-90bb-05ef85c1e799"
+    },
+    {
+      "id": "0e4f2961-a9a2-464a-85da-af257b46f607",
+      "name": "Otávio Nunes",
+      "birthDate": "2001-11-03",
+      "guardianName": "Beatriz Nunes",
+      "gender": "Não informado",
+      "guardianPhone": "+5531516693969",
+      "joinedAt": "2022-06-17",
+      "shelter": {
+        "id": "5fd6fd54-950d-421a-88cc-90aeb35915e5",
+        "name": "Abrigo Jardins 2"
+      },
+      "address": {
+        "id": "ce7d9e52-a7e8-4e81-ba8b-c3ca76348cfa",
+        "street": "Rua Otávio",
+        "number": "940",
+        "district": "Pinheiros",
+        "city": "Porto Alegre",
+        "state": "RS",
+        "postalCode": "63687-304",
+        "complement": "Apto 57"
+      },
+      "createdAt": "2025-09-27T22:18:22.043Z",
+      "updatedAt": "2025-09-27T22:18:22.043Z",
+      "city": "Porto Alegre",
+      "state": "RS",
+      "shelterId": "5fd6fd54-950d-421a-88cc-90aeb35915e5"
+    },
+    {
+      "id": "14ac87de-2dc1-4b29-abcf-55813fc61dfc",
+      "name": "Patrícia Vieira",
+      "birthDate": "2005-08-04",
+      "guardianName": "Ricardo Vieira",
+      "gender": "Masculino",
+      "guardianPhone": "+552111381675",
+      "joinedAt": "2022-07-22",
+      "shelter": {
+        "id": "5fd6fd54-950d-421a-88cc-90aeb35915e5",
+        "name": "Abrigo Jardins 2"
+      },
+      "address": {
+        "id": "a6e2e2ac-e618-4c99-831e-d0669a0d1c69",
+        "street": "Rua Patrícia",
+        "number": "678",
+        "district": "Vila Olímpia",
+        "city": "Recife",
+        "state": "PE",
+        "postalCode": "39352-223",
+        "complement": "Apto 154"
+      },
+      "createdAt": "2025-09-27T22:18:22.570Z",
+      "updatedAt": "2025-09-27T22:18:22.570Z",
+      "city": "Recife",
+      "state": "PE",
+      "shelterId": "5fd6fd54-950d-421a-88cc-90aeb35915e5"
+    },
+    {
+      "id": "77a7d3af-c6bc-4a8b-938d-a6b818994630",
+      "name": "Rafael Mendes",
+      "birthDate": "2014-01-10",
+      "guardianName": "Camila Mendes",
+      "gender": "Masculino",
+      "guardianPhone": "+5511478572206",
+      "joinedAt": "2022-02-04",
+      "shelter": {
+        "id": "c5e8940f-25d0-4dc1-90bb-05ef85c1e799",
+        "name": "Abrigo Ipanema 5"
+      },
+      "address": {
+        "id": "55c50270-ddc3-4e4f-907c-dafa8eb2a020",
+        "street": "Rua Rafael",
+        "number": "854",
+        "district": "Leblon",
+        "city": "Belo Horizonte",
+        "state": "MG",
+        "postalCode": "20891-940",
+        "complement": "Apto 141"
+      },
+      "createdAt": "2025-09-27T22:18:23.103Z",
+      "updatedAt": "2025-09-27T22:18:23.103Z",
+      "city": "Belo Horizonte",
+      "state": "MG",
+      "shelterId": "c5e8940f-25d0-4dc1-90bb-05ef85c1e799"
+    },
+    {
+      "id": "7f68a92c-84f0-4651-a6b2-c26c9c6ab955",
+      "name": "Sandra Gomes",
+      "birthDate": "2007-01-14",
+      "guardianName": "Diego Gomes",
+      "gender": "Feminino",
+      "guardianPhone": "+5595872732997",
+      "joinedAt": "2023-02-20",
+      "shelter": {
+        "id": "81673420-910f-4406-a9f7-e3a2c62fec2a",
+        "name": "Abrigo Central 1"
+      },
+      "address": {
+        "id": "5575ec17-7a71-417a-8e2e-1ae6c909da04",
+        "street": "Rua Sandra",
+        "number": "314",
+        "district": "Pinheiros",
+        "city": "São Paulo",
+        "state": "SP",
+        "postalCode": "18041-797",
+        "complement": "Apto 17"
+      },
+      "createdAt": "2025-09-27T22:18:23.640Z",
+      "updatedAt": "2025-09-27T22:18:23.640Z",
+      "city": "São Paulo",
+      "state": "SP",
+      "shelterId": "81673420-910f-4406-a9f7-e3a2c62fec2a"
+    },
+    {
+      "id": "bc9f8e06-7a1b-45da-a80a-b9c9def3c496",
+      "name": "Thiago Ramos",
+      "birthDate": "2002-11-08",
+      "guardianName": "Luciana Ramos",
+      "gender": "Masculino",
+      "guardianPhone": "+5581291103634",
+      "joinedAt": "2024-07-28",
+      "shelter": {
+        "id": "81673420-910f-4406-a9f7-e3a2c62fec2a",
+        "name": "Abrigo Central 1"
+      },
+      "address": {
+        "id": "8f33e4a8-526f-46f4-883d-feaa7c0ac0d4",
+        "street": "Rua Thiago",
+        "number": "480",
+        "district": "Copacabana",
+        "city": "Recife",
+        "state": "PE",
+        "postalCode": "53502-846",
+        "complement": "Apto 18"
+      },
+      "createdAt": "2025-09-27T22:18:24.178Z",
+      "updatedAt": "2025-09-27T22:18:24.178Z",
+      "city": "Recife",
+      "state": "PE",
+      "shelterId": "81673420-910f-4406-a9f7-e3a2c62fec2a"
+    },
+    {
+      "id": "f0656b7c-e98d-458a-8d6c-d003aeb2476b",
+      "name": "Vanessa Lopes",
+      "birthDate": "2009-10-24",
+      "guardianName": "Felipe Lopes",
+      "gender": "Masculino",
+      "guardianPhone": "+5585617551827",
+      "joinedAt": "2020-12-03",
+      "shelter": {
+        "id": "3425badf-a4e8-42bd-9350-00627726b608",
+        "name": "Abrigo Flamengo 8"
+      },
+      "address": {
+        "id": "3e76aeb1-15dc-4906-8bb2-c61c3acbb65d",
+        "street": "Rua Vanessa",
+        "number": "960",
+        "district": "Moema",
+        "city": "Manaus",
+        "state": "AM",
+        "postalCode": "94587-899",
+        "complement": "Apto 179"
+      },
+      "createdAt": "2025-09-27T22:18:24.719Z",
+      "updatedAt": "2025-09-27T22:18:24.719Z",
+      "city": "Manaus",
+      "state": "AM",
+      "shelterId": "3425badf-a4e8-42bd-9350-00627726b608"
+    }
+  ]
+}

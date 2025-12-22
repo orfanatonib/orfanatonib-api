@@ -1,0 +1,40 @@
+# Use a imagem base do Node.js
+FROM node:22-alpine AS builder
+
+# Defina o diretório de trabalho
+WORKDIR /app
+
+# Copie apenas o package.json primeiro para otimizar o cache
+COPY package.json ./
+
+# Instale TODAS as dependências (incluindo devDependencies para fazer o build)
+# Não copiamos package-lock.json para evitar problemas com dependências desatualizadas
+RUN npm install
+
+# Copie o restante do código da aplicação
+COPY . .
+
+# Construa a aplicação
+RUN npm run build
+
+# Verificar se o build foi bem-sucedido
+RUN test -f dist/src/main.js || (echo "Erro: dist/src/main.js não encontrado após build" && exit 1)
+
+# Use uma imagem mais leve para rodar a aplicação
+FROM node:22-alpine
+
+# Defina o diretório de trabalho
+WORKDIR /app
+
+# Copie apenas o package.json da build anterior (sem package-lock.json para evitar problemas)
+COPY --from=builder /app/package.json ./
+# Instalar apenas dependências de produção na imagem final (sem lock file)
+RUN npm install --only=production --no-package-lock && npm cache clean --force
+COPY --from=builder /app/dist ./dist
+
+# Exponha a porta em que a aplicação será executada
+EXPOSE 3000
+
+# Comando para iniciar a aplicação
+# Variáveis de ambiente são passadas via docker run -e ou --env-file
+CMD ["node", "dist/src/main.js"]

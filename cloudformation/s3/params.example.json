@@ -1,0 +1,19 @@
+[
+  {
+    "ParameterKey": "BucketName",
+    "ParameterValue": "orfanato-nib-storage"
+  },
+  {
+    "ParameterKey": "ExistingBucketName",
+    "ParameterValue": ""
+  },
+  {
+    "ParameterKey": "ApplyBucketPolicyToExistingBucket",
+    "ParameterValue": "false"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "staging"
+  }
+]
+

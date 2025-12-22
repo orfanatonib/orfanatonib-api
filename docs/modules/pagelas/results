@@ -1,0 +1,1064 @@
+{
+  "created_at": "2025-09-28T01:02:47.807Z",
+  "total_created": 80,
+  "pagelas": [
+    {
+      "id": "86b758c6-9440-4f78-bb8e-de7db178c02c",
+      "createdAt": "2025-09-28T01:02:36.702Z",
+      "updatedAt": "2025-09-28T01:02:36.702Z",
+      "shelteredId": "1f655a3d-a611-4cfe-a23b-b41fc28c9f0a",
+      "teacherProfileId": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+      "referenceDate": "2025-03-24",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "a47cb66e-64c9-4b94-88c7-913939083d01",
+      "createdAt": "2025-09-28T01:02:36.852Z",
+      "updatedAt": "2025-09-28T01:02:36.852Z",
+      "shelteredId": "7af5855e-2683-4825-abdb-ad3dcb975863",
+      "teacherProfileId": "12e84760-9d54-4e76-857b-2178fd03f305",
+      "referenceDate": "2025-10-18",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "7a8c745f-3630-4c81-809e-05e2e6999ec0",
+      "createdAt": "2025-09-28T01:02:36.987Z",
+      "updatedAt": "2025-09-28T01:02:36.987Z",
+      "shelteredId": "afd9ea58-2c02-482f-a8c0-a1ca572e4972",
+      "teacherProfileId": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+      "referenceDate": "2025-09-07",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "3ea215be-af09-42e9-85a7-46978337659e",
+      "createdAt": "2025-09-28T01:02:37.128Z",
+      "updatedAt": "2025-09-28T01:02:37.128Z",
+      "shelteredId": "f8019626-4e43-4f60-8a33-2a58b81db32f",
+      "teacherProfileId": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+      "referenceDate": "2025-01-23",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "6891c2b5-f586-49a1-aaad-36a0dac540a3",
+      "createdAt": "2025-09-28T01:02:37.277Z",
+      "updatedAt": "2025-09-28T01:02:37.277Z",
+      "shelteredId": "1a6b3422-db8f-443a-b0fc-a15932ef9567",
+      "teacherProfileId": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+      "referenceDate": "2025-08-19",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "bd708617-b174-4e90-9903-a60bbabe1cf1",
+      "createdAt": "2025-09-28T01:02:37.434Z",
+      "updatedAt": "2025-09-28T01:02:37.434Z",
+      "shelteredId": "75b1b3a4-e65a-4fa7-8eea-bb73471975ae",
+      "teacherProfileId": "72e59ec4-984f-4bc3-afb1-f8221bc97d21",
+      "referenceDate": "2025-12-22",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Precisou de atenção especial"
+    },
+    {
+      "id": "7cb0a5e0-9f9d-4ad0-9274-98c310b22914",
+      "createdAt": "2025-09-28T01:02:37.578Z",
+      "updatedAt": "2025-09-28T01:02:37.578Z",
+      "shelteredId": "901b7343-f695-459b-9c0b-a249698fb77e",
+      "teacherProfileId": "667a943d-39b4-4371-b643-a1d55e33d417",
+      "referenceDate": "2025-11-24",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": "Mostrou dificuldade na concentração"
+    },
+    {
+      "id": "58e926fb-ad29-4cc1-aba7-cbee0e9a51e4",
+      "createdAt": "2025-09-28T01:02:37.717Z",
+      "updatedAt": "2025-09-28T01:02:37.717Z",
+      "shelteredId": "fbc3786d-81cc-41d2-b7ec-4b510ef7c035",
+      "teacherProfileId": "b4ce290c-b024-48d5-a69c-7f5a430928e3",
+      "referenceDate": "2025-11-24",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": "Recitou o versículo com clareza"
+    },
+    {
+      "id": "0d79fecd-7338-4110-a83d-74e2af11b497",
+      "createdAt": "2025-09-28T01:02:37.854Z",
+      "updatedAt": "2025-09-28T01:02:37.854Z",
+      "shelteredId": "02acfc00-183d-4149-8541-6e5b4eb9bd67",
+      "teacherProfileId": "e9b194fd-7d50-44b9-bcde-210f9f716945",
+      "referenceDate": "2025-01-26",
+      "year": 2025,
+      "visit": 1,
+      "present": false,
+      "notes": "Precisou de reforço positivo"
+    },
+    {
+      "id": "385ef8e3-d470-4055-ad0f-1d2e40db62c2",
+      "createdAt": "2025-09-28T01:02:37.999Z",
+      "updatedAt": "2025-09-28T01:02:37.999Z",
+      "shelteredId": "3305a377-0e44-42f4-b97d-095288f920d7",
+      "teacherProfileId": "fbf1b067-d26e-464b-83ad-04a93697646d",
+      "referenceDate": "2025-12-19",
+      "year": 2025,
+      "visit": 1,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "a007cc92-a3a5-4bdd-9fd6-83019fa229b5",
+      "createdAt": "2025-09-28T01:02:38.136Z",
+      "updatedAt": "2025-09-28T01:02:38.136Z",
+      "shelteredId": "1f655a3d-a611-4cfe-a23b-b41fc28c9f0a",
+      "teacherProfileId": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+      "referenceDate": "2025-02-28",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "15e292e1-0a4e-41b8-a394-496d3587f175",
+      "createdAt": "2025-09-28T01:02:38.289Z",
+      "updatedAt": "2025-09-28T01:02:38.289Z",
+      "shelteredId": "7af5855e-2683-4825-abdb-ad3dcb975863",
+      "teacherProfileId": "12e84760-9d54-4e76-857b-2178fd03f305",
+      "referenceDate": "2025-08-10",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "7d0e5953-d4f9-43d8-9268-e83051c7fce9",
+      "createdAt": "2025-09-28T01:02:38.422Z",
+      "updatedAt": "2025-09-28T01:02:38.422Z",
+      "shelteredId": "afd9ea58-2c02-482f-a8c0-a1ca572e4972",
+      "teacherProfileId": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+      "referenceDate": "2025-03-14",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "f62cfa4c-f392-4a0a-86e5-d61cf3f9588d",
+      "createdAt": "2025-09-28T01:02:38.562Z",
+      "updatedAt": "2025-09-28T01:02:38.562Z",
+      "shelteredId": "f8019626-4e43-4f60-8a33-2a58b81db32f",
+      "teacherProfileId": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+      "referenceDate": "2025-08-09",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "fe34f00c-7dac-4e8a-b4aa-2be4d2defe28",
+      "createdAt": "2025-09-28T01:02:38.707Z",
+      "updatedAt": "2025-09-28T01:02:38.707Z",
+      "shelteredId": "1a6b3422-db8f-443a-b0fc-a15932ef9567",
+      "teacherProfileId": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+      "referenceDate": "2025-05-07",
+      "year": 2025,
+      "visit": 2,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "0ca76ea2-f973-4a9f-8c19-086d16ab1a66",
+      "createdAt": "2025-09-28T01:02:38.840Z",
+      "updatedAt": "2025-09-28T01:02:38.840Z",
+      "shelteredId": "75b1b3a4-e65a-4fa7-8eea-bb73471975ae",
+      "teacherProfileId": "72e59ec4-984f-4bc3-afb1-f8221bc97d21",
+      "referenceDate": "2025-01-31",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "3476c81a-c690-4c19-9fc4-6ed8c7899b6e",
+      "createdAt": "2025-09-28T01:02:38.982Z",
+      "updatedAt": "2025-09-28T01:02:38.982Z",
+      "shelteredId": "901b7343-f695-459b-9c0b-a249698fb77e",
+      "teacherProfileId": "667a943d-39b4-4371-b643-a1d55e33d417",
+      "referenceDate": "2025-08-24",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "d8d252b8-a2af-4e41-a199-fff72e963a12",
+      "createdAt": "2025-09-28T01:02:39.122Z",
+      "updatedAt": "2025-09-28T01:02:39.122Z",
+      "shelteredId": "fbc3786d-81cc-41d2-b7ec-4b510ef7c035",
+      "teacherProfileId": "b4ce290c-b024-48d5-a69c-7f5a430928e3",
+      "referenceDate": "2025-05-21",
+      "year": 2025,
+      "visit": 2,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "2e1770b4-82bc-4fb1-bf28-1da9bc503e69",
+      "createdAt": "2025-09-28T01:02:39.268Z",
+      "updatedAt": "2025-09-28T01:02:39.268Z",
+      "shelteredId": "02acfc00-183d-4149-8541-6e5b4eb9bd67",
+      "teacherProfileId": "e9b194fd-7d50-44b9-bcde-210f9f716945",
+      "referenceDate": "2025-01-01",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "b76c4888-ebb5-44a8-8956-0395297422a7",
+      "createdAt": "2025-09-28T01:02:39.402Z",
+      "updatedAt": "2025-09-28T01:02:39.402Z",
+      "shelteredId": "3305a377-0e44-42f4-b97d-095288f920d7",
+      "teacherProfileId": "fbf1b067-d26e-464b-83ad-04a93697646d",
+      "referenceDate": "2025-05-26",
+      "year": 2025,
+      "visit": 2,
+      "present": true,
+      "notes": "Mostrou dificuldade na concentração"
+    },
+    {
+      "id": "41fe723c-c0ce-42b5-8e6c-467250f739e4",
+      "createdAt": "2025-09-28T01:02:39.530Z",
+      "updatedAt": "2025-09-28T01:02:39.530Z",
+      "shelteredId": "1f655a3d-a611-4cfe-a23b-b41fc28c9f0a",
+      "teacherProfileId": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+      "referenceDate": "2025-12-23",
+      "year": 2025,
+      "visit": 3,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "2e1df4cd-672a-4487-b066-4b52ff286e34",
+      "createdAt": "2025-09-28T01:02:39.668Z",
+      "updatedAt": "2025-09-28T01:02:39.668Z",
+      "shelteredId": "7af5855e-2683-4825-abdb-ad3dcb975863",
+      "teacherProfileId": "12e84760-9d54-4e76-857b-2178fd03f305",
+      "referenceDate": "2025-07-27",
+      "year": 2025,
+      "visit": 3,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "9e5c506f-75f7-4555-9b24-cc0a53e9d713",
+      "createdAt": "2025-09-28T01:02:39.820Z",
+      "updatedAt": "2025-09-28T01:02:39.820Z",
+      "shelteredId": "afd9ea58-2c02-482f-a8c0-a1ca572e4972",
+      "teacherProfileId": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+      "referenceDate": "2025-09-14",
+      "year": 2025,
+      "visit": 3,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "318ad4ff-369d-4ef1-8dde-b915ab6e0c52",
+      "createdAt": "2025-09-28T01:02:39.966Z",
+      "updatedAt": "2025-09-28T01:02:39.966Z",
+      "shelteredId": "f8019626-4e43-4f60-8a33-2a58b81db32f",
+      "teacherProfileId": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+      "referenceDate": "2025-04-15",
+      "year": 2025,
+      "visit": 3,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "9959a85a-fa81-4662-9710-1441e4087ef3",
+      "createdAt": "2025-09-28T01:02:40.103Z",
+      "updatedAt": "2025-09-28T01:02:40.103Z",
+      "shelteredId": "1a6b3422-db8f-443a-b0fc-a15932ef9567",
+      "teacherProfileId": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+      "referenceDate": "2025-01-08",
+      "year": 2025,
+      "visit": 3,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "00963747-5ec5-4c03-b9b8-b190159befa8",
+      "createdAt": "2025-09-28T01:02:40.252Z",
+      "updatedAt": "2025-09-28T01:02:40.252Z",
+      "shelteredId": "75b1b3a4-e65a-4fa7-8eea-bb73471975ae",
+      "teacherProfileId": "72e59ec4-984f-4bc3-afb1-f8221bc97d21",
+      "referenceDate": "2025-09-03",
+      "year": 2025,
+      "visit": 3,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "9d602834-d9e8-4708-9045-0058c8fe90d9",
+      "createdAt": "2025-09-28T01:02:40.389Z",
+      "updatedAt": "2025-09-28T01:02:40.389Z",
+      "shelteredId": "901b7343-f695-459b-9c0b-a249698fb77e",
+      "teacherProfileId": "667a943d-39b4-4371-b643-a1d55e33d417",
+      "referenceDate": "2025-09-06",
+      "year": 2025,
+      "visit": 3,
+      "present": false,
+      "notes": "Comportamento exemplar"
+    },
+    {
+      "id": "a61c5eb0-9284-4cbc-856b-977bd175996d",
+      "createdAt": "2025-09-28T01:02:40.529Z",
+      "updatedAt": "2025-09-28T01:02:40.529Z",
+      "shelteredId": "fbc3786d-81cc-41d2-b7ec-4b510ef7c035",
+      "teacherProfileId": "b4ce290c-b024-48d5-a69c-7f5a430928e3",
+      "referenceDate": "2025-01-21",
+      "year": 2025,
+      "visit": 3,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "f1cdeca1-31c1-4f1a-85ba-4cd840e140e1",
+      "createdAt": "2025-09-28T01:02:40.670Z",
+      "updatedAt": "2025-09-28T01:02:40.670Z",
+      "shelteredId": "02acfc00-183d-4149-8541-6e5b4eb9bd67",
+      "teacherProfileId": "e9b194fd-7d50-44b9-bcde-210f9f716945",
+      "referenceDate": "2025-11-17",
+      "year": 2025,
+      "visit": 3,
+      "present": false,
+      "notes": "Participou ativamente da aula"
+    },
+    {
+      "id": "382e4fad-b0dd-438f-98e4-ad8f68b37e17",
+      "createdAt": "2025-09-28T01:02:40.812Z",
+      "updatedAt": "2025-09-28T01:02:40.812Z",
+      "shelteredId": "3305a377-0e44-42f4-b97d-095288f920d7",
+      "teacherProfileId": "fbf1b067-d26e-464b-83ad-04a93697646d",
+      "referenceDate": "2025-05-02",
+      "year": 2025,
+      "visit": 3,
+      "present": true,
+      "notes": "Colaborou com os colegas"
+    },
+    {
+      "id": "23f8794e-70c7-4df9-b150-20e726842ecd",
+      "createdAt": "2025-09-28T01:02:40.949Z",
+      "updatedAt": "2025-09-28T01:02:40.949Z",
+      "shelteredId": "1f655a3d-a611-4cfe-a23b-b41fc28c9f0a",
+      "teacherProfileId": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+      "referenceDate": "2025-09-09",
+      "year": 2025,
+      "visit": 4,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "1437550d-e9ce-43b9-abb5-5c0d8039554f",
+      "createdAt": "2025-09-28T01:02:41.088Z",
+      "updatedAt": "2025-09-28T01:02:41.088Z",
+      "shelteredId": "7af5855e-2683-4825-abdb-ad3dcb975863",
+      "teacherProfileId": "12e84760-9d54-4e76-857b-2178fd03f305",
+      "referenceDate": "2025-05-22",
+      "year": 2025,
+      "visit": 4,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "83c2e813-1437-4159-bb07-9659b7ea0393",
+      "createdAt": "2025-09-28T01:02:41.226Z",
+      "updatedAt": "2025-09-28T01:02:41.226Z",
+      "shelteredId": "afd9ea58-2c02-482f-a8c0-a1ca572e4972",
+      "teacherProfileId": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+      "referenceDate": "2025-06-15",
+      "year": 2025,
+      "visit": 4,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "8ad927e8-d461-425b-9981-0a68bfeb9115",
+      "createdAt": "2025-09-28T01:02:41.354Z",
+      "updatedAt": "2025-09-28T01:02:41.354Z",
+      "shelteredId": "f8019626-4e43-4f60-8a33-2a58b81db32f",
+      "teacherProfileId": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+      "referenceDate": "2025-11-20",
+      "year": 2025,
+      "visit": 4,
+      "present": true,
+      "notes": "Precisou de reforço positivo"
+    },
+    {
+      "id": "bdf6da17-59a7-4a9b-93d2-eb5fd6353321",
+      "createdAt": "2025-09-28T01:02:41.500Z",
+      "updatedAt": "2025-09-28T01:02:41.500Z",
+      "shelteredId": "1a6b3422-db8f-443a-b0fc-a15932ef9567",
+      "teacherProfileId": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+      "referenceDate": "2025-04-03",
+      "year": 2025,
+      "visit": 4,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "dfbfdd9a-69eb-496b-b3df-14cf16458d94",
+      "createdAt": "2025-09-28T01:02:41.639Z",
+      "updatedAt": "2025-09-28T01:02:41.639Z",
+      "shelteredId": "75b1b3a4-e65a-4fa7-8eea-bb73471975ae",
+      "teacherProfileId": "72e59ec4-984f-4bc3-afb1-f8221bc97d21",
+      "referenceDate": "2025-12-25",
+      "year": 2025,
+      "visit": 4,
+      "present": false,
+      "notes": "Demonstrou interesse na meditação"
+    },
+    {
+      "id": "17ec37dd-46d5-4ff6-baa5-3e4d917c38a9",
+      "createdAt": "2025-09-28T01:02:41.773Z",
+      "updatedAt": "2025-09-28T01:02:41.773Z",
+      "shelteredId": "901b7343-f695-459b-9c0b-a249698fb77e",
+      "teacherProfileId": "667a943d-39b4-4371-b643-a1d55e33d417",
+      "referenceDate": "2025-07-23",
+      "year": 2025,
+      "visit": 4,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "899264be-e2e0-4d22-84c6-0997ff94f3af",
+      "createdAt": "2025-09-28T01:02:41.900Z",
+      "updatedAt": "2025-09-28T01:02:41.900Z",
+      "shelteredId": "fbc3786d-81cc-41d2-b7ec-4b510ef7c035",
+      "teacherProfileId": "b4ce290c-b024-48d5-a69c-7f5a430928e3",
+      "referenceDate": "2025-10-04",
+      "year": 2025,
+      "visit": 4,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "7cd15118-271f-4c77-a446-a18242122828",
+      "createdAt": "2025-09-28T01:02:42.030Z",
+      "updatedAt": "2025-09-28T01:02:42.030Z",
+      "shelteredId": "02acfc00-183d-4149-8541-6e5b4eb9bd67",
+      "teacherProfileId": "e9b194fd-7d50-44b9-bcde-210f9f716945",
+      "referenceDate": "2025-08-14",
+      "year": 2025,
+      "visit": 4,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "720b56c1-6153-4a98-8bf1-53a71a604bb1",
+      "createdAt": "2025-09-28T01:02:42.162Z",
+      "updatedAt": "2025-09-28T01:02:42.162Z",
+      "shelteredId": "3305a377-0e44-42f4-b97d-095288f920d7",
+      "teacherProfileId": "fbf1b067-d26e-464b-83ad-04a93697646d",
+      "referenceDate": "2025-05-12",
+      "year": 2025,
+      "visit": 4,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "338783f3-2e38-4756-917f-1904f20670ff",
+      "createdAt": "2025-09-28T01:02:42.301Z",
+      "updatedAt": "2025-09-28T01:02:42.301Z",
+      "shelteredId": "1f655a3d-a611-4cfe-a23b-b41fc28c9f0a",
+      "teacherProfileId": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+      "referenceDate": "2025-11-14",
+      "year": 2025,
+      "visit": 5,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "b47a8b35-815f-4bd8-b115-b226c38ce7de",
+      "createdAt": "2025-09-28T01:02:42.441Z",
+      "updatedAt": "2025-09-28T01:02:42.441Z",
+      "shelteredId": "7af5855e-2683-4825-abdb-ad3dcb975863",
+      "teacherProfileId": "12e84760-9d54-4e76-857b-2178fd03f305",
+      "referenceDate": "2025-01-15",
+      "year": 2025,
+      "visit": 5,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "e58f1b9d-8c73-45fe-98be-68a4c7d0c9d6",
+      "createdAt": "2025-09-28T01:02:42.583Z",
+      "updatedAt": "2025-09-28T01:02:42.583Z",
+      "shelteredId": "afd9ea58-2c02-482f-a8c0-a1ca572e4972",
+      "teacherProfileId": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+      "referenceDate": "2025-10-30",
+      "year": 2025,
+      "visit": 5,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "0f1e3b41-78eb-4aca-b122-f42274f945a0",
+      "createdAt": "2025-09-28T01:02:42.720Z",
+      "updatedAt": "2025-09-28T01:02:42.720Z",
+      "shelteredId": "f8019626-4e43-4f60-8a33-2a58b81db32f",
+      "teacherProfileId": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+      "referenceDate": "2025-08-05",
+      "year": 2025,
+      "visit": 5,
+      "present": true,
+      "notes": "Excelente participação"
+    },
+    {
+      "id": "c1144140-160b-49d5-b201-17f55bd9f4fd",
+      "createdAt": "2025-09-28T01:02:42.851Z",
+      "updatedAt": "2025-09-28T01:02:42.851Z",
+      "shelteredId": "1a6b3422-db8f-443a-b0fc-a15932ef9567",
+      "teacherProfileId": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+      "referenceDate": "2025-02-11",
+      "year": 2025,
+      "visit": 5,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "8d21a1b4-f07f-4afc-be5a-114f6df5c166",
+      "createdAt": "2025-09-28T01:02:42.988Z",
+      "updatedAt": "2025-09-28T01:02:42.988Z",
+      "shelteredId": "75b1b3a4-e65a-4fa7-8eea-bb73471975ae",
+      "teacherProfileId": "72e59ec4-984f-4bc3-afb1-f8221bc97d21",
+      "referenceDate": "2025-12-16",
+      "year": 2025,
+      "visit": 5,
+      "present": true,
+      "notes": "Precisou de orientação adicional"
+    },
+    {
+      "id": "27c44bd6-8d7c-499d-bc7f-90961df6ecc5",
+      "createdAt": "2025-09-28T01:02:43.133Z",
+      "updatedAt": "2025-09-28T01:02:43.133Z",
+      "shelteredId": "901b7343-f695-459b-9c0b-a249698fb77e",
+      "teacherProfileId": "667a943d-39b4-4371-b643-a1d55e33d417",
+      "referenceDate": "2025-07-05",
+      "year": 2025,
+      "visit": 5,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "19766834-27cf-4a9c-95d2-057dc77d9b19",
+      "createdAt": "2025-09-28T01:02:43.273Z",
+      "updatedAt": "2025-09-28T01:02:43.273Z",
+      "shelteredId": "fbc3786d-81cc-41d2-b7ec-4b510ef7c035",
+      "teacherProfileId": "b4ce290c-b024-48d5-a69c-7f5a430928e3",
+      "referenceDate": "2025-01-01",
+      "year": 2025,
+      "visit": 5,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "63abbc80-b0b9-477c-b124-c2e965dd5a70",
+      "createdAt": "2025-09-28T01:02:43.421Z",
+      "updatedAt": "2025-09-28T01:02:43.421Z",
+      "shelteredId": "02acfc00-183d-4149-8541-6e5b4eb9bd67",
+      "teacherProfileId": "e9b194fd-7d50-44b9-bcde-210f9f716945",
+      "referenceDate": "2025-04-12",
+      "year": 2025,
+      "visit": 5,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "8942f9f2-435f-41f1-bacf-3b594c7e51c9",
+      "createdAt": "2025-09-28T01:02:43.551Z",
+      "updatedAt": "2025-09-28T01:02:43.551Z",
+      "shelteredId": "3305a377-0e44-42f4-b97d-095288f920d7",
+      "teacherProfileId": "fbf1b067-d26e-464b-83ad-04a93697646d",
+      "referenceDate": "2025-05-09",
+      "year": 2025,
+      "visit": 5,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "70d8ce14-7526-47f2-aed8-6c2c8c8f190c",
+      "createdAt": "2025-09-28T01:02:43.687Z",
+      "updatedAt": "2025-09-28T01:02:43.687Z",
+      "shelteredId": "1f655a3d-a611-4cfe-a23b-b41fc28c9f0a",
+      "teacherProfileId": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+      "referenceDate": "2024-10-05",
+      "year": 2024,
+      "visit": 10,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "3431aa1d-fc65-4d4a-ba00-6b44963f7e97",
+      "createdAt": "2025-09-28T01:02:43.817Z",
+      "updatedAt": "2025-09-28T01:02:43.817Z",
+      "shelteredId": "7af5855e-2683-4825-abdb-ad3dcb975863",
+      "teacherProfileId": "12e84760-9d54-4e76-857b-2178fd03f305",
+      "referenceDate": "2024-07-21",
+      "year": 2024,
+      "visit": 10,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "1e1fcc5a-2902-45fb-ab88-d08034436939",
+      "createdAt": "2025-09-28T01:02:43.958Z",
+      "updatedAt": "2025-09-28T01:02:43.958Z",
+      "shelteredId": "afd9ea58-2c02-482f-a8c0-a1ca572e4972",
+      "teacherProfileId": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+      "referenceDate": "2024-01-19",
+      "year": 2024,
+      "visit": 10,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "bf8b6538-d343-42b0-812d-86b02259f048",
+      "createdAt": "2025-09-28T01:02:44.089Z",
+      "updatedAt": "2025-09-28T01:02:44.089Z",
+      "shelteredId": "f8019626-4e43-4f60-8a33-2a58b81db32f",
+      "teacherProfileId": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+      "referenceDate": "2024-12-13",
+      "year": 2024,
+      "visit": 10,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "0f468364-1fce-42cd-ba16-b57bcd6e159c",
+      "createdAt": "2025-09-28T01:02:44.222Z",
+      "updatedAt": "2025-09-28T01:02:44.222Z",
+      "shelteredId": "1a6b3422-db8f-443a-b0fc-a15932ef9567",
+      "teacherProfileId": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+      "referenceDate": "2024-05-31",
+      "year": 2024,
+      "visit": 10,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "e392b952-35cd-4bb9-b3e9-1ba938e8e5ee",
+      "createdAt": "2025-09-28T01:02:44.348Z",
+      "updatedAt": "2025-09-28T01:02:44.348Z",
+      "shelteredId": "1f655a3d-a611-4cfe-a23b-b41fc28c9f0a",
+      "teacherProfileId": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+      "referenceDate": "2024-12-30",
+      "year": 2024,
+      "visit": 15,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "279c4867-146e-48c8-afc1-143687b0bc54",
+      "createdAt": "2025-09-28T01:02:44.488Z",
+      "updatedAt": "2025-09-28T01:02:44.488Z",
+      "shelteredId": "7af5855e-2683-4825-abdb-ad3dcb975863",
+      "teacherProfileId": "12e84760-9d54-4e76-857b-2178fd03f305",
+      "referenceDate": "2024-01-11",
+      "year": 2024,
+      "visit": 15,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "3523cc14-63d9-499b-9ab0-306bca2ef01d",
+      "createdAt": "2025-09-28T01:02:44.626Z",
+      "updatedAt": "2025-09-28T01:02:44.626Z",
+      "shelteredId": "afd9ea58-2c02-482f-a8c0-a1ca572e4972",
+      "teacherProfileId": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+      "referenceDate": "2024-05-11",
+      "year": 2024,
+      "visit": 15,
+      "present": false,
+      "notes": "Precisou de orientação adicional"
+    },
+    {
+      "id": "b06ed61a-26e8-4db7-8885-3322393544de",
+      "createdAt": "2025-09-28T01:02:44.756Z",
+      "updatedAt": "2025-09-28T01:02:44.756Z",
+      "shelteredId": "f8019626-4e43-4f60-8a33-2a58b81db32f",
+      "teacherProfileId": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+      "referenceDate": "2024-04-11",
+      "year": 2024,
+      "visit": 15,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "509b1fca-fba5-49cc-8313-0a3259fe2e7f",
+      "createdAt": "2025-09-28T01:02:44.900Z",
+      "updatedAt": "2025-09-28T01:02:44.900Z",
+      "shelteredId": "1a6b3422-db8f-443a-b0fc-a15932ef9567",
+      "teacherProfileId": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+      "referenceDate": "2024-01-02",
+      "year": 2024,
+      "visit": 15,
+      "present": true,
+      "notes": "Precisou de orientação adicional"
+    },
+    {
+      "id": "264516af-9ea2-479a-8668-8dadf8331802",
+      "createdAt": "2025-09-28T01:02:45.029Z",
+      "updatedAt": "2025-09-28T01:02:45.029Z",
+      "shelteredId": "1f655a3d-a611-4cfe-a23b-b41fc28c9f0a",
+      "teacherProfileId": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+      "referenceDate": "2024-05-10",
+      "year": 2024,
+      "visit": 20,
+      "present": true,
+      "notes": "Excelente participação"
+    },
+    {
+      "id": "47f53d12-99d5-48a7-8dc2-4f6831197099",
+      "createdAt": "2025-09-28T01:02:45.160Z",
+      "updatedAt": "2025-09-28T01:02:45.160Z",
+      "shelteredId": "7af5855e-2683-4825-abdb-ad3dcb975863",
+      "teacherProfileId": "12e84760-9d54-4e76-857b-2178fd03f305",
+      "referenceDate": "2024-02-01",
+      "year": 2024,
+      "visit": 20,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "eed3340c-1ada-4465-9dad-cbd6603bcf67",
+      "createdAt": "2025-09-28T01:02:45.304Z",
+      "updatedAt": "2025-09-28T01:02:45.304Z",
+      "shelteredId": "afd9ea58-2c02-482f-a8c0-a1ca572e4972",
+      "teacherProfileId": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+      "referenceDate": "2024-08-21",
+      "year": 2024,
+      "visit": 20,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "c426210f-4f4d-4555-b2df-9b53c7a24f6a",
+      "createdAt": "2025-09-28T01:02:45.438Z",
+      "updatedAt": "2025-09-28T01:02:45.438Z",
+      "shelteredId": "f8019626-4e43-4f60-8a33-2a58b81db32f",
+      "teacherProfileId": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+      "referenceDate": "2024-11-12",
+      "year": 2024,
+      "visit": 20,
+      "present": false,
+      "notes": "Participou ativamente da aula"
+    },
+    {
+      "id": "f1f9dbe4-1c9a-49b3-98cf-55ea5685fd84",
+      "createdAt": "2025-09-28T01:02:45.582Z",
+      "updatedAt": "2025-09-28T01:02:45.582Z",
+      "shelteredId": "1a6b3422-db8f-443a-b0fc-a15932ef9567",
+      "teacherProfileId": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+      "referenceDate": "2024-07-19",
+      "year": 2024,
+      "visit": 20,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "ea20caaa-8ec7-4123-8c84-f94f5e91b3be",
+      "createdAt": "2025-09-28T01:02:45.723Z",
+      "updatedAt": "2025-09-28T01:02:45.723Z",
+      "shelteredId": "1f655a3d-a611-4cfe-a23b-b41fc28c9f0a",
+      "teacherProfileId": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+      "referenceDate": "2023-02-28",
+      "year": 2023,
+      "visit": 10,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "26561540-8bda-4fe8-b4ed-ce9a5873dee9",
+      "createdAt": "2025-09-28T01:02:45.867Z",
+      "updatedAt": "2025-09-28T01:02:45.867Z",
+      "shelteredId": "7af5855e-2683-4825-abdb-ad3dcb975863",
+      "teacherProfileId": "12e84760-9d54-4e76-857b-2178fd03f305",
+      "referenceDate": "2023-05-15",
+      "year": 2023,
+      "visit": 10,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "e2d7bfd6-b188-435c-9d7a-f6c9e6a55c7c",
+      "createdAt": "2025-09-28T01:02:45.998Z",
+      "updatedAt": "2025-09-28T01:02:45.998Z",
+      "shelteredId": "afd9ea58-2c02-482f-a8c0-a1ca572e4972",
+      "teacherProfileId": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+      "referenceDate": "2023-02-11",
+      "year": 2023,
+      "visit": 10,
+      "present": false,
+      "notes": "Comportamento exemplar"
+    },
+    {
+      "id": "5f4a4a1b-ff0d-45c3-9b64-098aacc8ef64",
+      "createdAt": "2025-09-28T01:02:46.123Z",
+      "updatedAt": "2025-09-28T01:02:46.123Z",
+      "shelteredId": "f8019626-4e43-4f60-8a33-2a58b81db32f",
+      "teacherProfileId": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+      "referenceDate": "2023-03-23",
+      "year": 2023,
+      "visit": 10,
+      "present": true,
+      "notes": "Excelente participação"
+    },
+    {
+      "id": "e86fcab7-28b0-412c-97db-091419d52e89",
+      "createdAt": "2025-09-28T01:02:46.253Z",
+      "updatedAt": "2025-09-28T01:02:46.253Z",
+      "shelteredId": "1a6b3422-db8f-443a-b0fc-a15932ef9567",
+      "teacherProfileId": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+      "referenceDate": "2023-10-09",
+      "year": 2023,
+      "visit": 10,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "dc59c8ac-6ae3-45e9-a88e-26a5250d1af4",
+      "createdAt": "2025-09-28T01:02:46.391Z",
+      "updatedAt": "2025-09-28T01:02:46.391Z",
+      "shelteredId": "1f655a3d-a611-4cfe-a23b-b41fc28c9f0a",
+      "teacherProfileId": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+      "referenceDate": "2023-11-13",
+      "year": 2023,
+      "visit": 15,
+      "present": true,
+      "notes": "Precisou de atenção especial"
+    },
+    {
+      "id": "43e003fd-5f3c-4f68-b10e-3f638a99df3b",
+      "createdAt": "2025-09-28T01:02:46.538Z",
+      "updatedAt": "2025-09-28T01:02:46.538Z",
+      "shelteredId": "7af5855e-2683-4825-abdb-ad3dcb975863",
+      "teacherProfileId": "12e84760-9d54-4e76-857b-2178fd03f305",
+      "referenceDate": "2023-10-25",
+      "year": 2023,
+      "visit": 15,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "f38484dd-de1a-4956-a3d1-ca17afaf3e85",
+      "createdAt": "2025-09-28T01:02:46.671Z",
+      "updatedAt": "2025-09-28T01:02:46.671Z",
+      "shelteredId": "afd9ea58-2c02-482f-a8c0-a1ca572e4972",
+      "teacherProfileId": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+      "referenceDate": "2023-02-15",
+      "year": 2023,
+      "visit": 15,
+      "present": true,
+      "notes": "Demonstrou interesse na meditação"
+    },
+    {
+      "id": "219e46bb-cf4c-4dca-8907-c215a890fba9",
+      "createdAt": "2025-09-28T01:02:46.808Z",
+      "updatedAt": "2025-09-28T01:02:46.808Z",
+      "shelteredId": "f8019626-4e43-4f60-8a33-2a58b81db32f",
+      "teacherProfileId": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+      "referenceDate": "2023-11-18",
+      "year": 2023,
+      "visit": 15,
+      "present": false,
+      "notes": "Recitou o versículo com clareza"
+    },
+    {
+      "id": "b8e74b34-905d-4a46-8fe5-a7f911e8c8d4",
+      "createdAt": "2025-09-28T01:02:46.956Z",
+      "updatedAt": "2025-09-28T01:02:46.956Z",
+      "shelteredId": "1a6b3422-db8f-443a-b0fc-a15932ef9567",
+      "teacherProfileId": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+      "referenceDate": "2023-01-24",
+      "year": 2023,
+      "visit": 15,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "f41a6d20-b06d-48ee-9cf9-435012237d92",
+      "createdAt": "2025-09-28T01:02:47.091Z",
+      "updatedAt": "2025-09-28T01:02:47.091Z",
+      "shelteredId": "1f655a3d-a611-4cfe-a23b-b41fc28c9f0a",
+      "teacherProfileId": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+      "referenceDate": "2023-10-26",
+      "year": 2023,
+      "visit": 20,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "2c561df0-17db-4361-87ae-3e565d5639a0",
+      "createdAt": "2025-09-28T01:02:47.231Z",
+      "updatedAt": "2025-09-28T01:02:47.231Z",
+      "shelteredId": "7af5855e-2683-4825-abdb-ad3dcb975863",
+      "teacherProfileId": "12e84760-9d54-4e76-857b-2178fd03f305",
+      "referenceDate": "2023-04-11",
+      "year": 2023,
+      "visit": 20,
+      "present": true,
+      "notes": null
+    },
+    {
+      "id": "5f1b154d-0244-4c13-b853-3a60f86fac93",
+      "createdAt": "2025-09-28T01:02:47.372Z",
+      "updatedAt": "2025-09-28T01:02:47.372Z",
+      "shelteredId": "afd9ea58-2c02-482f-a8c0-a1ca572e4972",
+      "teacherProfileId": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+      "referenceDate": "2023-01-16",
+      "year": 2023,
+      "visit": 20,
+      "present": false,
+      "notes": null
+    },
+    {
+      "id": "a879f7d4-b369-4953-91ba-dc20e8f699fe",
+      "createdAt": "2025-09-28T01:02:47.509Z",
+      "updatedAt": "2025-09-28T01:02:47.509Z",
+      "shelteredId": "f8019626-4e43-4f60-8a33-2a58b81db32f",
+      "teacherProfileId": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+      "referenceDate": "2023-09-26",
+      "year": 2023,
+      "visit": 20,
+      "present": false,
+      "notes": "Mostrou dificuldade na concentração"
+    },
+    {
+      "id": "f3a987e7-b643-40c3-a037-6f886a6b3a76",
+      "createdAt": "2025-09-28T01:02:47.696Z",
+      "updatedAt": "2025-09-28T01:02:47.696Z",
+      "shelteredId": "1a6b3422-db8f-443a-b0fc-a15932ef9567",
+      "teacherProfileId": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+      "referenceDate": "2023-05-06",
+      "year": 2023,
+      "visit": 20,
+      "present": true,
+      "notes": null
+    }
+  ],
+  "summary": {
+    "sheltered_used": [
+      {
+        "id": "1f655a3d-a611-4cfe-a23b-b41fc28c9f0a",
+        "name": "Ana Silva"
+      },
+      {
+        "id": "7af5855e-2683-4825-abdb-ad3dcb975863",
+        "name": "Ana Silva"
+      },
+      {
+        "id": "afd9ea58-2c02-482f-a8c0-a1ca572e4972",
+        "name": "Ana Silva"
+      },
+      {
+        "id": "f8019626-4e43-4f60-8a33-2a58b81db32f",
+        "name": "Ana Silva"
+      },
+      {
+        "id": "1a6b3422-db8f-443a-b0fc-a15932ef9567",
+        "name": "Bruno Santos"
+      },
+      {
+        "id": "75b1b3a4-e65a-4fa7-8eea-bb73471975ae",
+        "name": "Bruno Santos"
+      },
+      {
+        "id": "901b7343-f695-459b-9c0b-a249698fb77e",
+        "name": "Bruno Santos"
+      },
+      {
+        "id": "fbc3786d-81cc-41d2-b7ec-4b510ef7c035",
+        "name": "Bruno Santos"
+      },
+      {
+        "id": "02acfc00-183d-4149-8541-6e5b4eb9bd67",
+        "name": "Carlos Oliveira"
+      },
+      {
+        "id": "3305a377-0e44-42f4-b97d-095288f920d7",
+        "name": "Carlos Oliveira"
+      }
+    ],
+    "teachers_used": [
+      {
+        "id": "6ee8970b-ebbb-4bef-af5a-714683e24196",
+        "name": "Teste Teacher"
+      },
+      {
+        "id": "12e84760-9d54-4e76-857b-2178fd03f305",
+        "name": "Paulo Correia"
+      },
+      {
+        "id": "38ba4e6c-1855-4967-bdc4-2dbc4b19213b",
+        "name": "Olívia Bezerra"
+      },
+      {
+        "id": "9d01c70f-ffce-448c-8f54-0ce2909cd128",
+        "name": "Nelson Moura"
+      },
+      {
+        "id": "658ccbc3-0bba-48c7-a11b-5959cc61fd1a",
+        "name": "Mariana Cunha"
+      },
+      {
+        "id": "72e59ec4-984f-4bc3-afb1-f8221bc97d21",
+        "name": "Leonardo Andrade"
+      },
+      {
+        "id": "667a943d-39b4-4371-b643-a1d55e33d417",
+        "name": "Kátia Machado"
+      },
+      {
+        "id": "b4ce290c-b024-48d5-a69c-7f5a430928e3",
+        "name": "Jéssica Freitas"
+      },
+      {
+        "id": "e9b194fd-7d50-44b9-bcde-210f9f716945",
+        "name": "Ivan Nascimento"
+      },
+      {
+        "id": "fbf1b067-d26e-464b-83ad-04a93697646d",
+        "name": "Hortência Cavalcanti"
+      }
+    ],
+    "visits_created": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "years_created": [
+      2025,
+      2024,
+      2023
+    ]
+  }
+}
