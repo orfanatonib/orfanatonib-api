@@ -229,6 +229,7 @@ if [ "$SKIP_DEPLOY" = false ]; then
 
     # Fazer deploy via SSM
     echo -e "${CYAN}🔧 Fazendo deploy via SSM...${NC}"
+    DEPLOY_OK=false
     
     # Normalizar environment para o arquivo .env
     ENV_FILE_NAME="$ENVIRONMENT"
@@ -310,8 +311,19 @@ if [ "$SKIP_DEPLOY" = false ]; then
         [ -n "$SSM_STDOUT" ] && [ "$SSM_STDOUT" != "None" ] && echo "" && echo "Output:" && echo "$SSM_STDOUT"
         [ -n "$SSM_STDERR" ] && [ "$SSM_STDERR" != "None" ] && echo "" && echo "Error:" && echo "$SSM_STDERR"
 
+        if [ "$SSM_STATUS" = "Success" ]; then
+            DEPLOY_OK=true
+        else
+            DEPLOY_OK=false
+        fi
+
         echo ""
-        echo -e "${GREEN}✅ Deploy concluído!${NC}"
+        if [ "$DEPLOY_OK" = true ]; then
+            echo -e "${GREEN}✅ Deploy concluído!${NC}"
+        else
+            echo -e "${RED}❌ Deploy falhou (SSM Status: ${SSM_STATUS}).${NC}"
+            exit 1
+        fi
     fi
 else
     echo -e "${YELLOW}⏭️  Pulando deploy (--skip-deploy)${NC}"
