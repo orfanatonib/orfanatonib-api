@@ -2,9 +2,12 @@
 
 # Script COMPLETO para build, push e deploy da aplicação
 # Faz TUDO: cria imagem Docker -> push para ECR (staging/prod) -> deploy na EC2 (staging/prod)
-# Uso: ./deploy-complete.sh [staging|production|prod] [tag] [--skip-build] [--skip-deploy]
-# Exemplo: ./deploy-complete.sh staging latest
-#          ./deploy-complete.sh prod v1.0.0
+# Uso: ./deploy-complete.sh [staging|production|prod] [tag(opcional)] [--skip-build] [--skip-deploy]
+# Nota: por padrão este script SEMPRE publica e faz deploy usando a tag "latest".
+# A tag informada (se existir) é usada apenas como tag extra (opcional) para rastreabilidade.
+# Exemplo: ./deploy-complete.sh staging
+#          ./deploy-complete.sh staging a1b2c3d
+#          ./deploy-complete.sh prod
 
 set -e
 
@@ -26,7 +29,7 @@ PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 # Parâmetros
 ENVIRONMENT=${1:-staging}
-TAG=${2:-latest}
+EXTRA_TAG=${2:-}
 SKIP_BUILD=false
 SKIP_DEPLOY=false
 
@@ -66,7 +69,10 @@ echo -e "${MAGENTA}║   🚀 Deploy Completo - Orfanato NIB API              �
 echo -e "${MAGENTA}╚════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "${CYAN}📋 Ambiente: ${ENVIRONMENT}${NC}"
-echo -e "${CYAN}🏷️  Tag: ${TAG}${NC}"
+echo -e "${CYAN}🏷️  Tag (deploy): latest${NC}"
+if [ -n "${EXTRA_TAG}" ] && [ "${EXTRA_TAG}" != "latest" ]; then
+    echo -e "${CYAN}🏷️  Tag extra (push): ${EXTRA_TAG}${NC}"
+fi
 echo -e "${CYAN}🔐 AWS Profile: ${AWS_PROFILE}${NC}"
 echo ""
 
@@ -139,11 +145,18 @@ if [ "$SKIP_BUILD" = false ]; then
     # Obter informações do ECR
     echo -e "${CYAN}🔍 Obtendo informações do ECR...${NC}"
     REPOSITORY_URI=$(get_ecr_repository)
-    IMAGE_NAME="${REPOSITORY_URI}:${TAG}"
+    IMAGE_NAME_LATEST="${REPOSITORY_URI}:latest"
+    IMAGE_NAME_EXTRA=""
+    if [ -n "${EXTRA_TAG}" ] && [ "${EXTRA_TAG}" != "latest" ]; then
+        IMAGE_NAME_EXTRA="${REPOSITORY_URI}:${EXTRA_TAG}"
+    fi
     REGION=$(aws configure get region --profile "$AWS_PROFILE" || echo "us-east-1")
 
     echo -e "${GREEN}✅ Repositório ECR: ${REPOSITORY_URI}${NC}"
-    echo -e "${GREEN}✅ Imagem: ${IMAGE_NAME}${NC}"
+    echo -e "${GREEN}✅ Imagem (latest): ${IMAGE_NAME_LATEST}${NC}"
+    if [ -n "${IMAGE_NAME_EXTRA}" ]; then
+        echo -e "${GREEN}✅ Imagem (extra): ${IMAGE_NAME_EXTRA}${NC}"
+    fi
     echo -e "${GREEN}✅ Região: ${REGION}${NC}"
     echo ""
 
@@ -175,9 +188,12 @@ if [ "$SKIP_BUILD" = false ]; then
     # Build da imagem
     echo -e "${CYAN}🔨 Construindo imagem Docker...${NC}"
     echo -e "${BLUE}   Dockerfile: DockerFile${NC}"
-    echo -e "${BLUE}   Imagem: ${IMAGE_NAME}${NC}"
+    echo -e "${BLUE}   Imagem (latest): ${IMAGE_NAME_LATEST}${NC}"
+    if [ -n "${IMAGE_NAME_EXTRA}" ]; then
+        echo -e "${BLUE}   Imagem (extra): ${IMAGE_NAME_EXTRA}${NC}"
+    fi
     echo ""
-    if $DOCKER_CMD build -f DockerFile -t "$IMAGE_NAME" .; then
+    if $DOCKER_CMD build -f DockerFile -t "$IMAGE_NAME_LATEST" .; then
         echo ""
         echo -e "${GREEN}✅ Build concluído com sucesso!${NC}"
     else
@@ -185,18 +201,33 @@ if [ "$SKIP_BUILD" = false ]; then
         echo -e "${RED}❌ Erro ao fazer build da imagem${NC}"
         exit 1
     fi
+
+    # Tag extra (opcional)
+    if [ -n "${IMAGE_NAME_EXTRA}" ]; then
+        $DOCKER_CMD tag "$IMAGE_NAME_LATEST" "$IMAGE_NAME_EXTRA"
+    fi
     echo ""
 
     # Push da imagem
     echo -e "${CYAN}📤 Fazendo push da imagem para o ECR...${NC}"
-    if $DOCKER_CMD push "$IMAGE_NAME"; then
+    if $DOCKER_CMD push "$IMAGE_NAME_LATEST"; then
         echo ""
         echo -e "${GREEN}✅ Push concluído com sucesso!${NC}"
-        echo -e "${GREEN}📋 Imagem disponível em: ${IMAGE_NAME}${NC}"
+        echo -e "${GREEN}📋 Imagem disponível em: ${IMAGE_NAME_LATEST}${NC}"
     else
         echo ""
         echo -e "${RED}❌ Erro ao fazer push da imagem${NC}"
         exit 1
+    fi
+
+    if [ -n "${IMAGE_NAME_EXTRA}" ]; then
+        echo ""
+        echo -e "${CYAN}📤 Fazendo push da tag extra...${NC}"
+        if $DOCKER_CMD push "$IMAGE_NAME_EXTRA"; then
+            echo -e "${GREEN}✅ Push da tag extra concluído!${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Falhou push da tag extra (continuando).${NC}"
+        fi
     fi
     echo ""
 else
@@ -204,7 +235,7 @@ else
     echo ""
     # Ainda precisamos obter as informações do ECR para o deploy
     REPOSITORY_URI=$(get_ecr_repository)
-    IMAGE_NAME="${REPOSITORY_URI}:${TAG}"
+    IMAGE_NAME_LATEST="${REPOSITORY_URI}:latest"
     REGION=$(aws configure get region --profile "$AWS_PROFILE" || echo "us-east-1")
 fi
 
@@ -258,8 +289,8 @@ if [ "$SKIP_DEPLOY" = false ]; then
             'echo ${ENV_B64} | base64 -d > /opt/orfanato-nib-api/env/${ENV_FILE_NAME}.env',
             'docker stop orfanato-nib-api || true',
             'docker rm orfanato-nib-api || true',
-            'docker pull ${IMAGE_NAME}',
-            'docker run -d --name orfanato-nib-api --restart unless-stopped -p 80:3000 -p 3000:3000 --env-file /opt/orfanato-nib-api/env/${ENV_FILE_NAME}.env ${IMAGE_NAME}',
+            'docker pull ${IMAGE_NAME_LATEST}',
+            'docker run -d --name orfanato-nib-api --restart unless-stopped -p 80:3000 -p 3000:3000 --env-file /opt/orfanato-nib-api/env/${ENV_FILE_NAME}.env ${IMAGE_NAME_LATEST}',
             'sleep 2',
             'docker ps | grep orfanato-nib-api'
         ]" \
@@ -347,7 +378,7 @@ fi
 
 echo -e "${GREEN}📋 Resumo do Deploy:${NC}"
 echo -e "${CYAN}   Ambiente: ${ENVIRONMENT}${NC}"
-echo -e "${CYAN}   Tag: ${TAG}${NC}"
+        echo -e "${CYAN}   Tag (deploy): latest${NC}"
 if [ "$SKIP_BUILD" = false ]; then
     echo -e "${CYAN}   Build: ✅${NC}"
     echo -e "${CYAN}   Push ECR: ✅${NC}"
