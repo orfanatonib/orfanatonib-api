@@ -283,16 +283,32 @@ if [ "$SKIP_DEPLOY" = false ]; then
 
         echo ""
         echo -e "${CYAN}📋 Resultado do deploy:${NC}"
-        aws ssm get-command-invocation \
+        # NOTE: Avoid piping into `while read ...` because EOF makes `read` return non-zero and,
+        # under `set -e`, can incorrectly fail the script even when the command succeeded.
+        SSM_STATUS=$(aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
             --instance-id "$INSTANCE_ID" \
             --profile "$AWS_PROFILE" \
-            --query '[Status, StandardOutputContent, StandardErrorContent]' \
-            --output text 2>/dev/null | while read status output error; do
-                echo "Status: $status"
-                [ ! -z "$output" ] && [ "$output" != "None" ] && echo "Output: $output"
-                [ ! -z "$error" ] && [ "$error" != "None" ] && echo "Error: $error"
-            done
+            --query 'Status' \
+            --output text 2>/dev/null || echo "UNKNOWN")
+
+        SSM_STDOUT=$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --profile "$AWS_PROFILE" \
+            --query 'StandardOutputContent' \
+            --output text 2>/dev/null || echo "")
+
+        SSM_STDERR=$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --profile "$AWS_PROFILE" \
+            --query 'StandardErrorContent' \
+            --output text 2>/dev/null || echo "")
+
+        echo "Status: $SSM_STATUS"
+        [ -n "$SSM_STDOUT" ] && [ "$SSM_STDOUT" != "None" ] && echo "" && echo "Output:" && echo "$SSM_STDOUT"
+        [ -n "$SSM_STDERR" ] && [ "$SSM_STDERR" != "None" ] && echo "" && echo "Error:" && echo "$SSM_STDERR"
 
         echo ""
         echo -e "${GREEN}✅ Deploy concluído!${NC}"
