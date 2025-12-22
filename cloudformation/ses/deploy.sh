@@ -24,6 +24,70 @@ AWS_PROFILE=${AWS_PROFILE:-clubinho-aws}
 STACK_NAME="orfanato-nib-ses"
 TEMPLATE_FILE="stack.yaml"
 PARAMS_FILE="params.json"
+TMP_PARAMS=""
+# Gerar arquivo de parâmetros temporário (preenche HostedZoneId automaticamente se vazio)
+build_params() {
+    local domain
+    local hosted_zone
+
+    # Extrair Domain e HostedZoneId atuais
+    readarray -t extracted < <(python3 - <<'PY'
+import json
+import sys
+params = json.load(open("params.json"))
+domain = ""
+hosted = ""
+for item in params:
+    if item.get("ParameterKey") == "Domain":
+        domain = item.get("ParameterValue", "")
+    if item.get("ParameterKey") == "HostedZoneId":
+        hosted = item.get("ParameterValue", "")
+print(domain)
+print(hosted)
+PY
+)
+    domain="${extracted[0]}"
+    hosted_zone="${extracted[1]}"
+
+    # Se não houver HostedZoneId, buscar no Route53
+    if [ -z "$hosted_zone" ] || [ "$hosted_zone" = "None" ]; then
+        if [ -n "$domain" ]; then
+            hosted_zone=$(aws route53 list-hosted-zones-by-name \
+                --dns-name "$domain" \
+                --query 'HostedZones[0].Id' \
+                --output text \
+                --profile "$AWS_PROFILE" 2>/dev/null | sed 's#.*/##')
+        fi
+    fi
+
+    # Gerar params temporário
+    TMP_PARAMS=$(mktemp)
+    export TMP_PARAMS
+    AWS_PROFILE="$AWS_PROFILE" DOMAIN="$domain" HOSTED_ZONE="$hosted_zone" python3 - <<'PY'
+import json, os
+params = json.load(open("params.json"))
+domain = os.environ.get("DOMAIN","")
+hz = os.environ.get("HOSTED_ZONE","")
+for item in params:
+    if item.get("ParameterKey") == "HostedZoneId":
+        if hz:
+            item["ParameterValue"] = hz
+    if item.get("ParameterKey") == "Domain" and domain:
+        item["ParameterValue"] = domain
+json.dump(params, open(os.environ["TMP_PARAMS"], "w"), indent=2)
+PY
+    PARAMS_FILE="$TMP_PARAMS"
+}
+
+# Limpar TMP em saída
+cleanup() {
+    if [ -n "$TMP_PARAMS" ] && [ -f "$TMP_PARAMS" ]; then
+        rm -f "$TMP_PARAMS"
+    fi
+}
+trap cleanup EXIT
+
+build_params
 
 echo -e "${BLUE}🚀 Deploy da Stack SES - Orfanatonib${NC}"
 echo ""

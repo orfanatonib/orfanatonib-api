@@ -248,7 +248,7 @@ async function createIdeasPage() {
     sections.push({
       title: `${getRandomElement(SECTION_TITLES)} ${i + 1}`,
       description: getRandomElement(SECTION_DESCRIPTIONS),
-      public: Math.random() > 0.2, // 80% públicos
+      public: false, // Privado
       medias: medias
     });
   }
@@ -257,7 +257,7 @@ async function createIdeasPage() {
     title: getRandomElement(PAGE_TITLES),
     subtitle: getRandomElement(SUBTITLES),
     description: getRandomElement(DESCRIPTIONS),
-    public: Math.random() > 0.3, // 70% públicos
+    public: false, // Privado
     sections: sections
   };
 

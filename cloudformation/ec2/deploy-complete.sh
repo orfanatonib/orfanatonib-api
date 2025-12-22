@@ -30,6 +30,9 @@ TAG=${2:-latest}
 SKIP_BUILD=false
 SKIP_DEPLOY=false
 
+# Caminho dos envs locais
+ENV_DIR="$PROJECT_ROOT/env"
+
 # Normalizar environment
 if [ "$ENVIRONMENT" = "prod" ]; then
     ENVIRONMENT="production"
@@ -53,8 +56,8 @@ for arg in "$@"; do
     esac
 done
 
-# Constantes
-STACK_NAME="orfanato-nib-ec2-spot-${ENVIRONMENT}"
+# Constantes (stack única multi-ambiente)
+STACK_NAME="orfanato-nib-ec2"
 ECR_STACK_NAME="orfanato-nib-ecr"
 
 # Banner
@@ -90,25 +93,34 @@ get_ecr_repository() {
 
 # Função para obter informações da EC2
 get_ec2_info() {
+    local id_key=""
+    local ip_key=""
+    if [ "$ENVIRONMENT" = "production" ]; then
+        id_key="InstanceIdProd"
+        ip_key="PublicIPProd"
+    else
+        id_key="InstanceIdStaging"
+        ip_key="PublicIPStaging"
+    fi
+
     INSTANCE_ID=$(aws cloudformation describe-stacks \
         --stack-name "$STACK_NAME" \
         --profile "$AWS_PROFILE" \
-        --query 'Stacks[0].Outputs[?OutputKey==`InstanceId`].OutputValue' \
+        --query "Stacks[0].Outputs[?OutputKey==\`${id_key}\`].OutputValue" \
+        --output text 2>/dev/null || echo "")
+
+    PUBLIC_IP=$(aws cloudformation describe-stacks \
+        --stack-name "$STACK_NAME" \
+        --profile "$AWS_PROFILE" \
+        --query "Stacks[0].Outputs[?OutputKey==\`${ip_key}\`].OutputValue" \
         --output text 2>/dev/null || echo "")
 
     if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ]; then
-        echo -e "${RED}❌ Erro: Stack EC2 não encontrada ou Instance ID não disponível${NC}"
-        echo -e "${YELLOW}💡 Execute primeiro: ENVIRONMENT=${ENVIRONMENT} bash deploy-stack.sh${NC}"
+        echo -e "${RED}❌ Erro: InstanceId não encontrado na stack única${NC}"
         exit 1
     fi
-
-    PUBLIC_IP=$(aws ec2 describe-instances --profile "$AWS_PROFILE" \
-        --instance-ids "$INSTANCE_ID" \
-        --query 'Reservations[0].Instances[0].PublicIpAddress' \
-        --output text 2>/dev/null || echo "")
-
     if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" = "None" ]; then
-        echo -e "${RED}❌ Erro: IP público não encontrado para a instância${NC}"
+        echo -e "${YELLOW}⚠️  IP público não encontrado; tente novamente após a criação completar${NC}"
         exit 1
     fi
 
@@ -224,12 +236,25 @@ if [ "$SKIP_DEPLOY" = false ]; then
         ENV_FILE_NAME="prod"
     fi
 
+    LOCAL_ENV_FILE="${ENV_DIR}/${ENV_FILE_NAME}.env"
+    if [ ! -f "$LOCAL_ENV_FILE" ]; then
+        echo -e "${RED}❌ Erro: Arquivo de env não encontrado: ${LOCAL_ENV_FILE}${NC}"
+        exit 1
+    fi
+
+    # Preparar env em base64 para enviar via SSM
+    ENV_B64=$(base64 -w0 "$LOCAL_ENV_FILE")
+
+    # Enviar env e subir o container
     COMMAND_ID=$(aws ssm send-command \
         --instance-ids "$INSTANCE_ID" \
         --profile "$AWS_PROFILE" \
         --document-name "AWS-RunShellScript" \
         --parameters "commands=[
+            'set -e',
             'aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${REPOSITORY_URI}',
+            'mkdir -p /opt/orfanato-nib-api/env',
+            'echo ${ENV_B64} | base64 -d > /opt/orfanato-nib-api/env/${ENV_FILE_NAME}.env',
             'docker stop orfanato-nib-api || true',
             'docker rm orfanato-nib-api || true',
             'docker pull ${IMAGE_NAME}',

@@ -1,0 +1,463 @@
+{
+  "timestamp": "2025-12-21T20:06:25.031Z",
+  "endpoints": {
+    "Usuários": {
+      "success": true,
+      "data": {
+        "items": [
+          {
+            "id": "e318f92b-8c82-4c07-b84b-4b0faa279151",
+            "createdAt": "2025-12-22T00:02:38.858Z",
+            "updatedAt": "2025-12-22T00:02:38.858Z",
+            "email": "beatriz.almeida.1766347358538@orfanatonib.com",
+            "phone": "+5587915974416",
+            "name": "Beatriz Almeida",
+            "active": false,
+            "completed": false,
+            "commonUser": true,
+            "role": "teacher"
+          },
+          {
+            "id": "9b9759a6-70d5-451c-bdea-bc298b408a61",
+            "createdAt": "2025-12-22T00:02:36.003Z",
+            "updatedAt": "2025-12-22T00:02:36.003Z",
+            "email": "gabriel.martins.1766347355697@orfanatonib.com",
+            "phone": "+5593255645341",
+            "name": "Gabriel Martins",
+            "active": false,
+            "completed": false,
+            "commonUser": true,
+            "role": "leader"
+          },
+          {
+            "id": "315a3cea-8c03-4243-bd52-0f8cf8b2f583",
+            "createdAt": "2025-12-22T00:02:32.714Z",
+            "updatedAt": "2025-12-22T00:02:32.714Z",
+            "email": "larissa.almeida.1766347352338@orfanatonib.com",
+            "phone": "+5525987263703",
+            "name": "Larissa Almeida",
+            "active": false,
+            "completed": false,
+            "commonUser": true,
+            "role": "teacher"
+          },
+          {
+            "id": "f89cb14f-66ff-411a-a5b8-d9045023816c",
+            "createdAt": "2025-12-22T00:02:30.562Z",
+            "updatedAt": "2025-12-22T00:02:30.562Z",
+            "email": "ana.rodrigues.1766347350137@orfanatonib.com",
+            "phone": "+5595156532216",
+            "name": "Ana Rodrigues",
+            "active": false,
+            "completed": false,
+            "commonUser": true,
+            "role": "leader"
+          },
+          {
+            "id": "01f83352-024b-4ca1-a318-a7e2804c7090",
+            "createdAt": "2025-12-22T00:02:27.707Z",
+            "updatedAt": "2025-12-22T00:02:27.707Z",
+            "email": "pedro.monteiro.1766347347117@orfanatonib.com",
+            "phone": "+5587237107574",
+            "name": "Pedro Monteiro",
+            "active": false,
+            "completed": false,
+            "commonUser": true,
+            "role": "teacher"
+          },
+          {
+            "id": "736e5331-9712-4566-9c57-0eba3fe6a76c",
+            "createdAt": "2025-12-22T00:02:25.567Z",
+            "updatedAt": "2025-12-22T00:02:25.567Z",
+            "email": "mariana.monteiro.1766347345246@orfanatonib.com",
+            "phone": "+5519659227175",
+            "name": "Mariana Monteiro",
+            "active": false,
+            "completed": false,
+            "commonUser": true,
+            "role": "leader"
+          },
+          {
+            "id": "04a016b1-1fc3-47b5-9ba6-5fb0552773c8",
+            "createdAt": "2025-12-22T00:02:21.671Z",
+            "updatedAt": "2025-12-22T00:02:21.671Z",
+            "email": "juliana.mendes.1766347341352@orfanatonib.com",
+            "phone": "+5531674746028",
+            "name": "Juliana Mendes",
+            "active": false,
+            "completed": false,
+            "commonUser": true,
+            "role": "teacher"
+          },
+          {
+            "id": "8a8d7667-1f01-4db2-b86f-012f807dee67",
+            "createdAt": "2025-12-22T00:02:19.712Z",
+            "updatedAt": "2025-12-22T00:02:19.712Z",
+            "email": "camila.gomes.1766347339303@orfanatonib.com",
+            "phone": "+5594972396797",
+            "name": "Camila Gomes",
+            "active": false,
+            "completed": false,
+            "commonUser": true,
+            "role": "leader"
+          },
+          {
+            "id": "8906a08d-f5ca-4cdd-ba23-4a3dccacad6e",
+            "createdAt": "2025-12-22T00:02:17.659Z",
+            "updatedAt": "2025-12-22T00:02:17.659Z",
+            "email": "mariana.rodrigues.1766347337253@orfanatonib.com",
+            "phone": "+5541365556029",
+            "name": "Mariana Rodrigues",
+            "active": false,
+            "completed": false,
+            "commonUser": true,
+            "role": "leader"
+          },
+          {
+            "id": "9bffce22-5133-41de-aa6a-d7c5d20b2d9c",
+            "createdAt": "2025-12-22T00:02:15.408Z",
+            "updatedAt": "2025-12-22T00:02:15.408Z",
+            "email": "maria.fernandes.1766347335001@orfanatonib.com",
+            "phone": "+5598128943013",
+            "name": "Maria Fernandes",
+            "active": false,
+            "completed": false,
+            "commonUser": true,
+            "role": "leader"
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "limit": 10,
+          "total": 198,
+          "totalPages": 20,
+          "sort": "updatedAt",
+          "order": "DESC"
+        }
+      },
+      "count": "N/A"
+    },
+    "Abrigos": {
+      "success": true,
+      "data": {
+        "items": [],
+        "total": 0,
+        "page": 1,
+        "limit": 10,
+        "pageCount": 0
+      },
+      "count": "N/A"
+    },
+    "Abrigados": {
+      "success": true,
+      "data": {
+        "data": [
+          {
+            "id": "23f820ac-c187-4eae-9e3f-cc7db311eb45",
+            "name": "Amanda Alves",
+            "birthDate": "2014-03-21",
+            "guardianName": "José Silva",
+            "gender": "F",
+            "guardianPhone": "+5586507529417",
+            "joinedAt": "2022-11-11",
+            "active": true,
+            "shelter": null,
+            "address": {
+              "id": "f85ed2a2-c8f6-4d2c-94d8-733a19f86fed",
+              "street": "Avenida dos Abrigos",
+              "number": "5717",
+              "district": "Bairro São Paulo",
+              "city": "São Paulo",
+              "state": "SP",
+              "postalCode": "22556-548",
+              "complement": "Apto 60"
+            },
+            "createdAt": "2025-12-21T23:39:23.427Z",
+            "updatedAt": "2025-12-21T23:39:23.427Z"
+          },
+          {
+            "id": "2cda4685-f6b1-4171-82af-603daff9cf37",
+            "name": "Amanda Araújo",
+            "birthDate": "2015-11-15",
+            "guardianName": null,
+            "gender": "M",
+            "guardianPhone": null,
+            "joinedAt": "2022-09-09",
+            "active": true,
+            "shelter": null,
+            "address": {
+              "id": "853ef8ae-1725-4267-9e47-398a9cdf13a4",
+              "street": "Avenida dos Abrigos",
+              "number": "6568",
+              "district": "Bairro Belo Horizonte",
+              "city": "Belo Horizonte",
+              "state": "MG",
+              "postalCode": "78579-946",
+              "complement": "Apto 32"
+            },
+            "createdAt": "2025-12-21T23:47:23.307Z",
+            "updatedAt": "2025-12-21T23:47:23.307Z"
+          },
+          {
+            "id": "68e68570-e7a4-44ae-a63d-c8d62a0237d4",
+            "name": "Amanda Gomes",
+            "birthDate": "2013-01-28",
+            "guardianName": "João Oliveira",
+            "gender": "F",
+            "guardianPhone": "+5559718722512",
+            "joinedAt": "2022-09-03",
+            "active": true,
+            "shelter": null,
+            "address": {
+              "id": "b2c970eb-3dd3-4820-b1df-f27ec0fc8dff",
+              "street": "Avenida dos Abrigos",
+              "number": "7469",
+              "district": "Bairro Porto Alegre",
+              "city": "Porto Alegre",
+              "state": "RS",
+              "postalCode": "59696-951"
+            },
+            "createdAt": "2025-12-21T23:39:25.929Z",
+            "updatedAt": "2025-12-21T23:39:25.929Z"
+          },
+          {
+            "id": "835b0695-eaba-48a7-a93f-a72171a8e98b",
+            "name": "Amanda Martins",
+            "birthDate": "2015-11-14",
+            "guardianName": "Pedro Souza",
+            "gender": "M",
+            "guardianPhone": "+5564124852957",
+            "joinedAt": "2023-09-25",
+            "active": true,
+            "shelter": null,
+            "address": {
+              "id": "7e4312e6-ecbd-432e-b839-a1273a1f20a2",
+              "street": "Avenida Central",
+              "number": "1188",
+              "district": "Bairro Rio de Janeiro",
+              "city": "Rio de Janeiro",
+              "state": "RJ",
+              "postalCode": "10431-264",
+              "complement": "Apto 200"
+            },
+            "createdAt": "2025-12-22T00:00:10.066Z",
+            "updatedAt": "2025-12-22T00:00:10.066Z"
+          },
+          {
+            "id": "cdd52aef-5606-4925-b7a1-cb3378b9e7b8",
+            "name": "Amanda Martins",
+            "birthDate": "2016-06-20",
+            "guardianName": "Patricia Almeida",
+            "gender": "F",
+            "guardianPhone": "+5563853746076",
+            "joinedAt": "2022-04-15",
+            "active": true,
+            "shelter": null,
+            "address": {
+              "id": "79166af9-16de-47f5-af21-97b5184468d9",
+              "street": "Rua da Esperança",
+              "number": "7983",
+              "district": "Bairro São Paulo",
+              "city": "São Paulo",
+              "state": "SP",
+              "postalCode": "17967-681"
+            },
+            "createdAt": "2025-12-21T23:46:08.591Z",
+            "updatedAt": "2025-12-21T23:46:08.591Z"
+          },
+          {
+            "id": "a00faeee-1825-4026-bdea-9f9db7ebc808",
+            "name": "Amanda Nascimento",
+            "birthDate": "2017-10-24",
+            "guardianName": "Maria Santos",
+            "gender": "F",
+            "guardianPhone": "+5526920366974",
+            "joinedAt": "2022-11-18",
+            "active": true,
+            "shelter": null,
+            "address": {
+              "id": "9c982105-66ac-4d82-8503-bb249043ce30",
+              "street": "Rua Principal",
+              "number": "1025",
+              "district": "Bairro Fortaleza",
+              "city": "Fortaleza",
+              "state": "CE",
+              "postalCode": "74359-131",
+              "complement": "Apto 78"
+            },
+            "createdAt": "2025-12-21T23:56:51.207Z",
+            "updatedAt": "2025-12-21T23:56:51.207Z"
+          },
+          {
+            "id": "fe6f3f5b-40fa-4a8f-a919-71b95c421a90",
+            "name": "Amanda Santos",
+            "birthDate": "2013-10-25",
+            "guardianName": "Fernando Lima",
+            "gender": "F",
+            "guardianPhone": "+5583906787365",
+            "joinedAt": "2024-09-12",
+            "active": true,
+            "shelter": null,
+            "address": {
+              "id": "e777218d-aafc-4e12-9685-100ef0b18b1f",
+              "street": "Rua Principal",
+              "number": "689",
+              "district": "Bairro Recife",
+              "city": "Recife",
+              "state": "PE",
+              "postalCode": "71850-700"
+            },
+            "createdAt": "2025-12-21T23:56:54.186Z",
+            "updatedAt": "2025-12-21T23:56:54.186Z"
+          },
+          {
+            "id": "ba901bb4-ddef-4c8d-abc9-4f6c1dfa0c05",
+            "name": "Amanda Silva",
+            "birthDate": "2011-04-21",
+            "guardianName": "Ana Costa",
+            "gender": "F",
+            "guardianPhone": "+5538980262424",
+            "joinedAt": "2020-01-24",
+            "active": true,
+            "shelter": null,
+            "address": {
+              "id": "ffb9d2ba-0392-484a-8902-fea8ee503314",
+              "street": "Avenida Central",
+              "number": "6100",
+              "district": "Bairro Recife",
+              "city": "Recife",
+              "state": "PE",
+              "postalCode": "94370-408"
+            },
+            "createdAt": "2025-12-21T23:47:40.032Z",
+            "updatedAt": "2025-12-21T23:47:40.032Z"
+          },
+          {
+            "id": "38d0e1e9-9c97-4da9-b010-265fed3b9647",
+            "name": "Ana Costa",
+            "birthDate": "2017-08-14",
+            "guardianName": "Juliana Pereira",
+            "gender": "M",
+            "guardianPhone": "+5524873652425",
+            "joinedAt": "2023-05-04",
+            "active": true,
+            "shelter": null,
+            "address": {
+              "id": "e3439c10-04ee-4e73-a1f4-1f456535ce2a",
+              "street": "Avenida Central",
+              "number": "5822",
+              "district": "Bairro Brasília",
+              "city": "Brasília",
+              "state": "DF",
+              "postalCode": "51575-213"
+            },
+            "createdAt": "2025-12-21T23:46:03.572Z",
+            "updatedAt": "2025-12-21T23:46:03.572Z"
+          },
+          {
+            "id": "fe8b8e30-d136-4936-b80d-fdfbd50157be",
+            "name": "Ana Mendes",
+            "birthDate": "2014-03-21",
+            "guardianName": "Pedro Souza",
+            "gender": "F",
+            "guardianPhone": null,
+            "joinedAt": "2022-11-08",
+            "active": true,
+            "shelter": null,
+            "address": {
+              "id": "b45c06f9-fa5c-4402-9387-311cbb0dfb29",
+              "street": "Rua da Esperança",
+              "number": "1140",
+              "district": "Bairro Fortaleza",
+              "city": "Fortaleza",
+              "state": "CE",
+              "postalCode": "62019-532",
+              "complement": "Apto 52"
+            },
+            "createdAt": "2025-12-21T23:46:02.336Z",
+            "updatedAt": "2025-12-21T23:46:02.336Z"
+          }
+        ],
+        "meta": {
+          "page": 1,
+          "limit": 10,
+          "totalItems": 254,
+          "totalPages": 26,
+          "orderBy": "name",
+          "order": "ASC"
+        }
+      },
+      "count": 10
+    },
+    "Pagelas": {
+      "success": true,
+      "data": [],
+      "count": 0
+    },
+    "Eventos": {
+      "success": true,
+      "data": [],
+      "count": 0
+    },
+    "Páginas de Ideias": {
+      "success": true,
+      "data": [],
+      "count": 0
+    },
+    "Páginas de Imagens": {
+      "success": true,
+      "data": [],
+      "count": 0
+    },
+    "Páginas de Vídeos": {
+      "success": true,
+      "data": [],
+      "count": 0
+    },
+    "Materiais de Visita": {
+      "success": true,
+      "data": [],
+      "count": 0
+    },
+    "Comentários": {
+      "success": true,
+      "data": [],
+      "count": 0
+    },
+    "Contatos": {
+      "success": false,
+      "error": {
+        "message": "Cannot GET /contacts",
+        "error": "Not Found",
+        "statusCode": 404
+      }
+    },
+    "Documentos": {
+      "success": true,
+      "data": [],
+      "count": 0
+    },
+    "Feedbacks": {
+      "success": true,
+      "data": [],
+      "count": 0
+    },
+    "Informativos": {
+      "success": true,
+      "data": [],
+      "count": 0
+    },
+    "Meditações": {
+      "success": true,
+      "data": [],
+      "count": 0
+    }
+  },
+  "fixes": {
+    "usersActivated": true,
+    "shelteredRelationships": true
+  },
+  "integrity": [
+    "100 abrigados sem abrigo"
+  ]
+}

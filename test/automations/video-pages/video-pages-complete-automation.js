@@ -156,7 +156,7 @@ async function createVideoPage() {
   const pageData = {
     title: getRandomElement(PAGE_TITLES),
     description: getRandomElement(DESCRIPTIONS),
-    public: Math.random() > 0.3, // 70% públicos
+    public: false, // Privado
     videos: selectedVideos.map((url, index) => ({
       title: VIDEO_TITLES[index % VIDEO_TITLES.length] || `Vídeo ${index + 1}`,
       description: VIDEO_DESCRIPTIONS[index % VIDEO_DESCRIPTIONS.length] || `Descrição do vídeo ${index + 1}`,

@@ -1,0 +1,16 @@
+[
+  { "ParameterKey": "VpcId", "ParameterValue": "vpc-033d33f8fbd957488" },
+  { "ParameterKey": "SubnetStaging", "ParameterValue": "subnet-0deeff91e83763a4a" },
+  { "ParameterKey": "SubnetProd", "ParameterValue": "subnet-0098aedaa711fdbc3" },
+  { "ParameterKey": "HostedZoneId", "ParameterValue": "Z0258077265U2L3HPAGYP" },
+  { "ParameterKey": "DomainName", "ParameterValue": "orfanatonib.com" },
+  { "ParameterKey": "SSLCertificateArn", "ParameterValue": "arn:aws:acm:us-east-1:697760557838:certificate/ed5a8ceb-7c5d-4337-990c-e090782abaf1" },
+  { "ParameterKey": "AMIId", "ParameterValue": "ami-08d7aabbb50c2c24e" },
+  { "ParameterKey": "KeyPairName", "ParameterValue": "clubinho-nib-api" },
+  { "ParameterKey": "AllowedCIDR", "ParameterValue": "0.0.0.0/0" },
+  { "ParameterKey": "InstanceTypeStaging", "ParameterValue": "t3.micro" },
+  { "ParameterKey": "InstanceTypeProd", "ParameterValue": "t3.micro" },
+  { "ParameterKey": "AWSRegion", "ParameterValue": "us-east-1" },
+  { "ParameterKey": "S3BucketName", "ParameterValue": "orfanato-nib-storage" }
+]
+

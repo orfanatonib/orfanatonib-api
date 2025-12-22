@@ -221,7 +221,7 @@ async function createOrphanSection() {
   const sectionData = {
     title: getRandomElement(SECTION_TITLES),
     description: getRandomElement(SECTION_DESCRIPTIONS),
-    public: Math.random() > 0.2, // 80% públicos
+    public: false, // Privado
     medias: medias
   };
 

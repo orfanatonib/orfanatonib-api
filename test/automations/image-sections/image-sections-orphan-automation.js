@@ -176,7 +176,7 @@ async function createOrphanSection() {
   const sectionData = {
     caption: getRandomElement(SECTION_CAPTIONS),
     description: getRandomElement(SECTION_DESCRIPTIONS),
-    public: Math.random() > 0.2, // 80% públicos
+    public: false, // Privado
     mediaItems: selectedImages.map((url, index) => ({
       title: IMAGE_TITLES[index % IMAGE_TITLES.length] || `Imagem ${index + 1}`,
       description: IMAGE_DESCRIPTIONS[index % IMAGE_DESCRIPTIONS.length] || `Descrição da imagem ${index + 1}`,

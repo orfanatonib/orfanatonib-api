@@ -155,4 +155,7 @@ Conditions:
   HasBucketName: !Not [!Equals [!Ref BucketName, '']]
   NoExistingBucket: !Equals [!Ref ExistingBucketName, '']
   ApplyPolicyExisting: !Equals [!Ref ApplyBucketPolicyToExistingBucket, 'true']
-  ShouldCreateBucketPolicy: !Or [NoExistingBucket, ApplyPolicyExisting]
+  ShouldCreateBucketPolicy:
+    Fn::Or:
+      - !Condition NoExistingBucket
+      - !Condition ApplyPolicyExisting

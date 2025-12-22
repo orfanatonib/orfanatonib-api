@@ -18,20 +18,13 @@ AWS_PROFILE=${AWS_PROFILE:-clubinho-aws}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-# Nome da stack (pode ser sobrescrito com variável de ambiente)
-ENVIRONMENT=${ENVIRONMENT:-staging}
-STACK_NAME="orfanato-nib-ec2-spot-${ENVIRONMENT}"
+# Nome da stack única
+STACK_NAME="orfanato-nib-ec2"
 TEMPLATE_FILE="stack.yaml"
+PARAMS_FILE="params.json"
+DOMAIN_NAME="orfanatonib.com"
 
-# Determinar arquivo de parâmetros baseado no ambiente
-if [ "$ENVIRONMENT" = "production" ] || [ "$ENVIRONMENT" = "prod" ]; then
-    PARAMS_FILE="params-prod.json"
-else
-    PARAMS_FILE="params-staging.json"
-fi
-
-echo -e "${BLUE}🚀 Deploy da Stack EC2 Spot - Orfanatonib${NC}"
-echo -e "${CYAN}Ambiente: ${ENVIRONMENT}${NC}"
+echo -e "${BLUE}🚀 Deploy da Stack EC2 (multi-ambiente) - Orfanatonib${NC}"
 echo -e "${CYAN}AWS Profile: ${AWS_PROFILE}${NC}"
 echo ""
 
@@ -103,86 +96,23 @@ update_dns() {
         return 0
     fi
     
-    echo -e "${CYAN}🌐 Atualizando registro DNS...${NC}"
-    
-    # Obter informações da EC2
-    INSTANCE_ID=$(aws cloudformation describe-stacks \
+    echo -e "${CYAN}🌐 Atualizando registros DNS (staging e prod) para o ALB...${NC}"
+
+    ALB_DNS=$(aws cloudformation describe-stacks \
         --stack-name "$STACK_NAME" \
         --profile "$AWS_PROFILE" \
-        --query 'Stacks[0].Outputs[?OutputKey==`InstanceId`].OutputValue' \
+        --query 'Stacks[0].Outputs[?OutputKey==`ALBDNS`].OutputValue' \
         --output text 2>/dev/null || echo "")
-    
-    if [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ]; then
-        echo -e "${YELLOW}⚠️  Instance ID não disponível, pulando atualização DNS${NC}"
+
+    if [ -z "$ALB_DNS" ] || [ "$ALB_DNS" = "None" ]; then
+        echo -e "${YELLOW}⚠️  DNS do ALB não encontrado, pulando DNS${NC}"
         return 0
     fi
-    
-    PUBLIC_IP=$(aws ec2 describe-instances --profile "$AWS_PROFILE" \
-        --instance-ids "$INSTANCE_ID" \
-        --query 'Reservations[0].Instances[0].PublicIpAddress' \
-        --output text 2>/dev/null || echo "")
-    
-    if [ -z "$PUBLIC_IP" ] || [ "$PUBLIC_IP" = "None" ]; then
-        echo -e "${YELLOW}⚠️  IP público não disponível, pulando atualização DNS${NC}"
-        return 0
-    fi
-    
-    # Determinar subdomínio
-    DOMAIN_NAME="orfanatonib.com"
-    if [ "$ENVIRONMENT" = "staging" ]; then
-        SUBDOMAIN="staging-api.${DOMAIN_NAME}"
-    elif [ "$ENVIRONMENT" = "production" ] || [ "$ENVIRONMENT" = "prod" ]; then
-        SUBDOMAIN="api.${DOMAIN_NAME}"
-    else
-        SUBDOMAIN="${ENVIRONMENT}-api.${DOMAIN_NAME}"
-    fi
-    
-    # Obter informações do ALB (se existir)
-    ALB_ARN=$(aws cloudformation describe-stacks \
-        --stack-name "$STACK_NAME" \
-        --profile "$AWS_PROFILE" \
-        --query 'Stacks[0].Outputs[?OutputKey==`LoadBalancerArn`].OutputValue' \
-        --output text 2>/dev/null || echo "")
-    
-    if [ ! -z "$ALB_ARN" ] && [ "$ALB_ARN" != "None" ]; then
-        # Usar ALB para DNS (recomendado)
-        ALB_DNS=$(aws elbv2 describe-load-balancers \
-            --load-balancer-arns "$ALB_ARN" \
-            --profile "$AWS_PROFILE" \
-            --query 'LoadBalancers[0].DNSName' \
-            --output text 2>/dev/null || echo "")
-        
-        if [ ! -z "$ALB_DNS" ]; then
-            # CanonicalHostedZoneID para ALB na região us-east-1
-            ALB_ZONE_ID="Z35SXDOTRQ7X7K"
-            
-            if aws route53 change-resource-record-sets \
-                --hosted-zone-id "$hosted_zone_id" \
-                --profile "$AWS_PROFILE" \
-                --change-batch "{
-                    \"Changes\": [{
-                        \"Action\": \"UPSERT\",
-                        \"ResourceRecordSet\": {
-                            \"Name\": \"${SUBDOMAIN}\",
-                            \"Type\": \"A\",
-                            \"AliasTarget\": {
-                                \"DNSName\": \"${ALB_DNS}\",
-                                \"HostedZoneId\": \"${ALB_ZONE_ID}\",
-                                \"EvaluateTargetHealth\": true
-                            }
-                        }
-                    }]
-                }" > /dev/null 2>&1; then
-                echo -e "${GREEN}✅ DNS atualizado: ${SUBDOMAIN} -> ALB (${ALB_DNS})${NC}"
-            else
-                echo -e "${YELLOW}⚠️  Erro ao atualizar DNS para ALB${NC}"
-            fi
-        else
-            echo -e "${YELLOW}⚠️  ALB DNS não disponível, pulando atualização DNS${NC}"
-        fi
-    else
-        # Fallback: usar IP da instância (não recomendado quando ALB existe)
-        echo -e "${YELLOW}⚠️  ALB não encontrado, usando IP da instância (não recomendado)${NC}"
+
+    # CanonicalHostedZoneID para ALB na região us-east-1
+    ALB_ZONE_ID="Z35SXDOTRQ7X7K"
+
+    for name in "staging-api.${DOMAIN_NAME}" "api.${DOMAIN_NAME}"; do
         if aws route53 change-resource-record-sets \
             --hosted-zone-id "$hosted_zone_id" \
             --profile "$AWS_PROFILE" \
@@ -190,18 +120,21 @@ update_dns() {
                 \"Changes\": [{
                     \"Action\": \"UPSERT\",
                     \"ResourceRecordSet\": {
-                        \"Name\": \"${SUBDOMAIN}\",
+                        \"Name\": \"${name}\",
                         \"Type\": \"A\",
-                        \"TTL\": 300,
-                        \"ResourceRecords\": [{\"Value\": \"${PUBLIC_IP}\"}]
+                        \"AliasTarget\": {
+                            \"DNSName\": \"${ALB_DNS}\",
+                            \"HostedZoneId\": \"${ALB_ZONE_ID}\",
+                            \"EvaluateTargetHealth\": true
+                        }
                     }
                 }]
             }" > /dev/null 2>&1; then
-            echo -e "${GREEN}✅ DNS atualizado: ${SUBDOMAIN} -> ${PUBLIC_IP}${NC}"
+            echo -e "${GREEN}✅ DNS atualizado: ${name} -> ALB (${ALB_DNS})${NC}"
         else
-            echo -e "${YELLOW}⚠️  Erro ao atualizar DNS (pode ser normal se já estiver atualizado)${NC}"
+            echo -e "${YELLOW}⚠️  Erro ao atualizar DNS para ${name}${NC}"
         fi
-    fi
+    done
 }
 
 # Função para deletar stack

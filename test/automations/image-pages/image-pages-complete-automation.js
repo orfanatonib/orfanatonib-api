@@ -165,7 +165,7 @@ async function createImagePage() {
     sections.push({
       caption: `${getRandomElement(SECTION_CAPTIONS)} ${i + 1}`,
       description: getRandomElement(SECTION_DESCRIPTIONS),
-      public: Math.random() > 0.2, // 80% públicos
+      public: false, // Privado
       mediaItems: selectedImages.map((url, index) => ({
         title: `Imagem ${index + 1}`,
         description: `Foto ${index + 1} da seção`,
@@ -180,7 +180,7 @@ async function createImagePage() {
   const pageData = {
     title: getRandomElement(GALLERY_TITLES),
     description: getRandomElement(GALLERY_DESCRIPTIONS),
-    public: Math.random() > 0.3, // 70% públicos
+    public: false, // Privado
     sections: sections
   };
 

@@ -99,7 +99,7 @@ async function createInformative() {
   const informativeData = {
     title: getRandomElement(TITLES),
     description: getRandomElement(DESCRIPTIONS),
-    public: Math.random() > 0.3 // 70% públicos
+    public: false // Privado
   };
 
   try {

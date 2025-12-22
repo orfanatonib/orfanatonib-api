@@ -1,11 +1,11 @@
 [
   {
     "ParameterKey": "BucketName",
-    "ParameterValue": ""
+    "ParameterValue": "orfanato-nib-storage"
   },
   {
     "ParameterKey": "ExistingBucketName",
-    "ParameterValue": "your-bucket-name-if-existing"
+    "ParameterValue": ""
   },
   {
     "ParameterKey": "ApplyBucketPolicyToExistingBucket",

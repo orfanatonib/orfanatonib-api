@@ -59,10 +59,10 @@ async function getTestData() {
   console.log('📊 Obtendo dados necessários para os testes...');
   
   try {
-    // Obter shelters
-    const sheltersResponse = await makeRequest('GET', '/shelters/simple');
-    if (sheltersResponse) {
-      testData.shelters = sheltersResponse.data || [];
+    // Obter shelters (usar endpoint paginado para garantir que pegue todos)
+    const sheltersResponse = await makeRequest('GET', '/shelters?page=1&limit=100');
+    if (sheltersResponse && sheltersResponse.data) {
+      testData.shelters = sheltersResponse.data.data || sheltersResponse.data || [];
       console.log(`  🏠 ${testData.shelters.length} shelters encontrados`);
     }
 
