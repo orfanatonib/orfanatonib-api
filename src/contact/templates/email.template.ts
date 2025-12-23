@@ -7,6 +7,7 @@ export class EmailTemplate {
       process.env.EMAIL_LOGO_URL ||
       process.env.APP_LOGO_URL ||
       '';
+    const hasLogo = Boolean(logoUrl);
 
     // Brand palette (logo): black/white + green/red/yellow accents
     const COLOR_BLACK = '#000000';
@@ -14,6 +15,8 @@ export class EmailTemplate {
     const COLOR_YELLOW = '#FFD700';
     const COLOR_GREEN = '#00A651';
     const COLOR_RED = '#E10600';
+    const COLOR_BG = '#F5F6F8';
+    const COLOR_TEXT_MUTED = '#5B5E66';
 
     return `
       <!DOCTYPE html>
@@ -23,20 +26,20 @@ export class EmailTemplate {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Novo Contato - Orfanato NIB</title>
       </head>
-      <body style="margin: 0; padding: 0; background-color: ${COLOR_BLACK}; font-family: Arial, sans-serif;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: ${COLOR_BLACK}; padding: 24px;">
+      <body style="margin: 0; padding: 0; background-color: ${COLOR_BG}; font-family: Arial, sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: ${COLOR_BG}; padding: 24px;">
           <tr>
             <td align="center">
               <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: ${COLOR_WHITE}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
                 <!-- Logo -->
                 <tr>
-                  <td style="background-color: ${COLOR_BLACK}; padding: 20px 24px; text-align: center;">
+                  <td style="background-color: ${COLOR_WHITE}; padding: 20px 24px; text-align: center;">
                     ${
                       logoUrl
                         ? `
                           <img
                             src="${this.escapeHtml(logoUrl)}"
-                            alt="Orfanato NIB"
+                            alt=""
                             width="160"
                             style="max-width: 220px; width: 220px; height: auto; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none;"
                           />
@@ -64,10 +67,16 @@ export class EmailTemplate {
                 <!-- Header -->
                 <tr>
                   <td style="background-color: ${COLOR_YELLOW}; padding: 26px 24px; text-align: center; border-bottom: 4px solid ${COLOR_BLACK};">
-                    <h1 style="margin: 0; color: ${COLOR_BLACK}; font-size: 30px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">
-                      💚 Orfanato NIB
-                    </h1>
-                    <p style="margin: 10px 0 0; color: ${COLOR_BLACK}; font-size: 18px; font-weight: 700;">
+                    ${
+                      hasLogo
+                        ? ''
+                        : `
+                          <h1 style="margin: 0; color: ${COLOR_BLACK}; font-size: 30px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">
+                            💚 Orfanato NIB
+                          </h1>
+                        `
+                    }
+                    <p style="margin: ${hasLogo ? '0' : '10px'} 0 0; color: ${COLOR_BLACK}; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
                       Nova Mensagem de Contato
                     </p>
                   </td>
@@ -146,11 +155,11 @@ export class EmailTemplate {
                 
                 <!-- Footer -->
                 <tr>
-                  <td style="background-color: ${COLOR_BLACK}; padding: 22px 24px; text-align: center;">
-                    <p style="margin: 0; color: ${COLOR_YELLOW}; font-size: 16px; font-weight: 700;">
-                      💙 Obrigado por usar o <strong style="color: ${COLOR_WHITE};">Orfanato NIB</strong>
+                  <td style="background-color: ${COLOR_WHITE}; padding: 18px 24px; text-align: center;">
+                    <p style="margin: 0; color: ${COLOR_BLACK}; font-size: 14px; font-weight: 700;">
+                      Obrigado por usar o <strong style="color: ${COLOR_BLACK};">Orfanato NIB</strong>
                     </p>
-                    <p style="margin: 12px 0 0; color: ${COLOR_WHITE}; font-size: 12px; opacity: 0.85;">
+                    <p style="margin: 10px 0 0; color: ${COLOR_TEXT_MUTED}; font-size: 12px;">
                       Este é um email automático, por favor não responda.
                     </p>
                   </td>
