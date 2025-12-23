@@ -2,6 +2,12 @@ import { ContactEntity } from '../contact.entity';
 
 export class EmailTemplate {
   static generateContactEmailTemplate(contact: ContactEntity): string {
+    const logoUrl =
+      process.env.CONTACT_EMAIL_LOGO_URL ||
+      process.env.EMAIL_LOGO_URL ||
+      process.env.APP_LOGO_URL ||
+      '';
+
     return `
       <!DOCTYPE html>
       <html lang="pt-BR">
@@ -15,6 +21,27 @@ export class EmailTemplate {
           <tr>
             <td align="center">
               <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+                <!-- Logo -->
+                <tr>
+                  <td style="background-color: #FFFFFF; padding: 24px; text-align: center;">
+                    ${
+                      logoUrl
+                        ? `
+                          <img
+                            src="${this.escapeHtml(logoUrl)}"
+                            alt="Orfanato NIB"
+                            width="160"
+                            style="max-width: 160px; width: 160px; height: auto; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none;"
+                          />
+                        `
+                        : `
+                          <div style="height: 72px; line-height: 72px; font-size: 18px; font-weight: 700; color: #000000;">
+                            Orfanato NIB
+                          </div>
+                        `
+                    }
+                  </td>
+                </tr>
                 <!-- Header -->
                 <tr>
                   <td style="background-color: #FFD700; padding: 32px 24px; text-align: center; border-bottom: 4px solid #000000;">
