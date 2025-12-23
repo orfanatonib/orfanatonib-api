@@ -8,6 +8,13 @@ export class EmailTemplate {
       process.env.APP_LOGO_URL ||
       '';
 
+    // Brand palette (logo): black/white + green/red/yellow accents
+    const COLOR_BLACK = '#000000';
+    const COLOR_WHITE = '#FFFFFF';
+    const COLOR_YELLOW = '#FFD700';
+    const COLOR_GREEN = '#00A651';
+    const COLOR_RED = '#E10600';
+
     return `
       <!DOCTYPE html>
       <html lang="pt-BR">
@@ -16,14 +23,14 @@ export class EmailTemplate {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Novo Contato - Orfanato NIB</title>
       </head>
-      <body style="margin: 0; padding: 0; background-color: #000000; font-family: Arial, sans-serif;">
-        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #000000; padding: 24px;">
+      <body style="margin: 0; padding: 0; background-color: ${COLOR_BLACK}; font-family: Arial, sans-serif;">
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color: ${COLOR_BLACK}; padding: 24px;">
           <tr>
             <td align="center">
-              <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #FFFFFF; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+              <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: ${COLOR_WHITE}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
                 <!-- Logo -->
                 <tr>
-                  <td style="background-color: #FFFFFF; padding: 24px; text-align: center;">
+                  <td style="background-color: ${COLOR_BLACK}; padding: 20px 24px; text-align: center;">
                     ${
                       logoUrl
                         ? `
@@ -31,24 +38,36 @@ export class EmailTemplate {
                             src="${this.escapeHtml(logoUrl)}"
                             alt="Orfanato NIB"
                             width="160"
-                            style="max-width: 160px; width: 160px; height: auto; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none;"
+                            style="max-width: 220px; width: 220px; height: auto; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none;"
                           />
                         `
                         : `
-                          <div style="height: 72px; line-height: 72px; font-size: 18px; font-weight: 700; color: #000000;">
+                          <div style="height: 72px; line-height: 72px; font-size: 18px; font-weight: 700; color: ${COLOR_WHITE};">
                             Orfanato NIB
                           </div>
                         `
                     }
                   </td>
                 </tr>
+                <!-- Brand bar -->
+                <tr>
+                  <td style="padding: 0; background-color: ${COLOR_WHITE};">
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                      <tr>
+                        <td style="height: 8px; background-color: ${COLOR_GREEN}; font-size: 0; line-height: 0;">&nbsp;</td>
+                        <td style="height: 8px; background-color: ${COLOR_RED}; font-size: 0; line-height: 0;">&nbsp;</td>
+                        <td style="height: 8px; background-color: ${COLOR_YELLOW}; font-size: 0; line-height: 0;">&nbsp;</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
                 <!-- Header -->
                 <tr>
-                  <td style="background-color: #FFD700; padding: 32px 24px; text-align: center; border-bottom: 4px solid #000000;">
-                    <h1 style="margin: 0; color: #000000; font-size: 32px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">
+                  <td style="background-color: ${COLOR_YELLOW}; padding: 26px 24px; text-align: center; border-bottom: 4px solid ${COLOR_BLACK};">
+                    <h1 style="margin: 0; color: ${COLOR_BLACK}; font-size: 30px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">
                       💚 Orfanato NIB
                     </h1>
-                    <p style="margin: 12px 0 0; color: #000000; font-size: 18px; font-weight: 600;">
+                    <p style="margin: 10px 0 0; color: ${COLOR_BLACK}; font-size: 18px; font-weight: 700;">
                       Nova Mensagem de Contato
                     </p>
                   </td>
@@ -56,17 +75,17 @@ export class EmailTemplate {
                 
                 <!-- Content -->
                 <tr>
-                  <td style="padding: 32px 24px; background-color: #FFFFFF;">
-                    <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 16px; color: #000000; line-height: 1.6;">
+                  <td style="padding: 28px 24px; background-color: ${COLOR_WHITE};">
+                    <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 16px; color: ${COLOR_BLACK}; line-height: 1.6;">
                       <!-- Nome -->
                       <tr>
-                        <td style="padding-bottom: 16px; border-bottom: 2px solid #FFD700;">
+                        <td style="padding-bottom: 16px; border-bottom: 2px solid ${COLOR_YELLOW};">
                           <table width="100%" cellpadding="0" cellspacing="0">
                             <tr>
                               <td style="width: 120px; vertical-align: top;">
-                                <strong style="color: #000000; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">👤 Nome:</strong>
+                                <strong style="color: ${COLOR_BLACK}; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">👤 Nome:</strong>
                               </td>
-                              <td style="color: #000000; font-size: 16px; font-weight: 500;">
+                              <td style="color: ${COLOR_BLACK}; font-size: 16px; font-weight: 500;">
                                 ${this.escapeHtml(contact.name)}
                               </td>
                             </tr>
@@ -76,14 +95,14 @@ export class EmailTemplate {
                       
                       <!-- Email -->
                       <tr>
-                        <td style="padding: 16px 0; border-bottom: 2px solid #FFD700;">
+                        <td style="padding: 16px 0; border-bottom: 2px solid ${COLOR_YELLOW};">
                           <table width="100%" cellpadding="0" cellspacing="0">
                             <tr>
                               <td style="width: 120px; vertical-align: top;">
-                                <strong style="color: #000000; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">📧 E-mail:</strong>
+                                <strong style="color: ${COLOR_BLACK}; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">📧 E-mail:</strong>
                               </td>
-                              <td style="color: #000000; font-size: 16px; font-weight: 500;">
-                                <a href="mailto:${this.escapeHtml(contact.email)}" style="color: #000000; text-decoration: underline;">
+                              <td style="color: ${COLOR_BLACK}; font-size: 16px; font-weight: 500;">
+                                <a href="mailto:${this.escapeHtml(contact.email)}" style="color: ${COLOR_GREEN}; text-decoration: underline;">
                                   ${this.escapeHtml(contact.email)}
                                 </a>
                               </td>
@@ -94,14 +113,14 @@ export class EmailTemplate {
                       
                       <!-- Telefone -->
                       <tr>
-                        <td style="padding: 16px 0; border-bottom: 2px solid #FFD700;">
+                        <td style="padding: 16px 0; border-bottom: 2px solid ${COLOR_YELLOW};">
                           <table width="100%" cellpadding="0" cellspacing="0">
                             <tr>
                               <td style="width: 120px; vertical-align: top;">
-                                <strong style="color: #000000; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">📱 Telefone:</strong>
+                                <strong style="color: ${COLOR_BLACK}; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">📱 Telefone:</strong>
                               </td>
-                              <td style="color: #000000; font-size: 16px; font-weight: 500;">
-                                <a href="tel:${this.escapeHtml(contact.phone)}" style="color: #000000; text-decoration: underline;">
+                              <td style="color: ${COLOR_BLACK}; font-size: 16px; font-weight: 500;">
+                                <a href="tel:${this.escapeHtml(contact.phone)}" style="color: ${COLOR_GREEN}; text-decoration: underline;">
                                   ${this.escapeHtml(contact.phone)}
                                 </a>
                               </td>
@@ -113,10 +132,10 @@ export class EmailTemplate {
                       <!-- Mensagem -->
                       <tr>
                         <td style="padding-top: 24px;">
-                          <strong style="color: #000000; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 12px;">
+                          <strong style="color: ${COLOR_BLACK}; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 12px;">
                             💬 Mensagem:
                           </strong>
-                          <div style="background-color: #FFD700; padding: 20px; border-left: 6px solid #000000; border-radius: 4px; color: #000000; font-size: 15px; line-height: 1.8; white-space: pre-line; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                          <div style="background-color: ${COLOR_YELLOW}; padding: 20px; border-left: 6px solid ${COLOR_RED}; border-top: 3px solid ${COLOR_GREEN}; border-radius: 4px; color: ${COLOR_BLACK}; font-size: 15px; line-height: 1.8; white-space: pre-line; box-shadow: 0 2px 4px rgba(0,0,0,0.12);">
                             ${this.escapeHtml(contact.message)}
                           </div>
                         </td>
@@ -127,13 +146,24 @@ export class EmailTemplate {
                 
                 <!-- Footer -->
                 <tr>
-                  <td style="background-color: #000000; padding: 24px; text-align: center; border-top: 4px solid #FFD700;">
-                    <p style="margin: 0; color: #FFD700; font-size: 16px; font-weight: 600;">
-                      💙 Obrigado por usar o <strong style="color: #FFFFFF;">Orfanato NIB</strong>
+                  <td style="background-color: ${COLOR_BLACK}; padding: 22px 24px; text-align: center;">
+                    <p style="margin: 0; color: ${COLOR_YELLOW}; font-size: 16px; font-weight: 700;">
+                      💙 Obrigado por usar o <strong style="color: ${COLOR_WHITE};">Orfanato NIB</strong>
                     </p>
-                    <p style="margin: 12px 0 0; color: #FFFFFF; font-size: 12px; opacity: 0.8;">
+                    <p style="margin: 12px 0 0; color: ${COLOR_WHITE}; font-size: 12px; opacity: 0.85;">
                       Este é um email automático, por favor não responda.
                     </p>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding: 0; background-color: ${COLOR_WHITE};">
+                    <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                      <tr>
+                        <td style="height: 6px; background-color: ${COLOR_GREEN}; font-size: 0; line-height: 0;">&nbsp;</td>
+                        <td style="height: 6px; background-color: ${COLOR_RED}; font-size: 0; line-height: 0;">&nbsp;</td>
+                        <td style="height: 6px; background-color: ${COLOR_YELLOW}; font-size: 0; line-height: 0;">&nbsp;</td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
