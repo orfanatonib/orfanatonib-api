@@ -22,16 +22,25 @@ export class ChangePasswordService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    // Verificar se a senha atual está correta
-    const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Senha atual incorreta');
+    // Se for commonUser (usuário comum), a senha atual é obrigatória
+    if (user.commonUser) {
+      if (!dto.currentPassword) {
+        throw new BadRequestException('A senha atual é obrigatória para usuários comuns');
+      }
+
+      // Verificar se a senha atual está correta
+      const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Senha atual incorreta');
+      }
     }
 
-    // Verificar se a nova senha é diferente da atual
-    const isSamePassword = await bcrypt.compare(dto.newPassword, user.password);
-    if (isSamePassword) {
-      throw new BadRequestException('A nova senha deve ser diferente da senha atual');
+    // Verificar se a nova senha é diferente da atual (se houver senha atual)
+    if (user.password) {
+      const isSamePassword = await bcrypt.compare(dto.newPassword, user.password);
+      if (isSamePassword) {
+        throw new BadRequestException('A nova senha deve ser diferente da senha atual');
+      }
     }
 
     // Hash da nova senha
@@ -40,7 +49,7 @@ export class ChangePasswordService {
     // Atualizar a senha
     await this.userRepo.update(userId, { password: hashedNewPassword });
 
-    this.logger.log(`Senha alterada para o usuário: ${userId}`);
+    this.logger.log(`Senha alterada para o usuário: ${userId} (commonUser: ${user.commonUser})`);
 
     return { message: 'Senha alterada com sucesso' };
   }

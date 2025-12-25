@@ -1,12 +1,10 @@
 const axios = require('axios');
+const config = require('../shared/config');
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = config.BASE_URL;
 
 // Credenciais de admin
-const ADMIN_CREDENTIALS = {
-  email: 'superuser@orfanatonib.com',
-  password: 'Abc@123'
-};
+const ADMIN_CREDENTIALS = config.ADMIN_CREDENTIALS;
 
 let authToken = '';
 

@@ -1,12 +1,14 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsString, MinLength, IsOptional } from 'class-validator';
 
 /**
  * DTO para alteração de senha
- * Requer a senha atual e a nova senha
+ * - currentPassword: obrigatório apenas para commonUser = true
+ * - newPassword: sempre obrigatório
  */
 export class ChangePasswordDto {
-  @IsString({ message: 'A senha atual é obrigatória' })
-  currentPassword: string;
+  @IsOptional()
+  @IsString({ message: 'A senha atual deve ser uma string' })
+  currentPassword?: string;
 
   @IsString({ message: 'A nova senha é obrigatória' })
   @MinLength(6, { message: 'A nova senha deve ter pelo menos 6 caracteres' })
