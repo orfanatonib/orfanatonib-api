@@ -9,7 +9,7 @@ import { LeaderSimpleListDto } from '../dto/leader-simple-list.dto';
 import { LeaderProfilesQueryDto, PageDto } from '../dto/leader-profiles.query.dto';
 import { AuthContextService } from 'src/auth/services/auth-context.service';
 import { TeamsService } from 'src/modules/teams/services/teams.service';
-import { ManageLeaderTeamDto } from '../dto/assign-team.dto';
+import { ManageLeaderTeamDto, ManageLeaderTeamsDto } from '../dto/assign-team.dto';
 import { SheltersRepository } from 'src/modules/shelters/repositories/shelters.repository';
 import { ShelterSimpleResponseDto, ShelterWithLeaderStatusDto, toShelterSimpleDto, toShelterWithLeaderStatusDto } from 'src/modules/shelters/dto/shelter.response.dto';
 import { MediaItemProcessor } from 'src/share/media/media-item-processor';
@@ -48,7 +48,6 @@ export class LeaderProfilesService {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    console.log("Buscando página com filtros:", query);
     const { items, total, page, limit } = await this.repo.findPageWithFilters(query);
     return {
       items: items.map(toLeaderDto),
@@ -87,40 +86,59 @@ export class LeaderProfilesService {
   }
 
   /**
-   * Vincula líder a uma equipe de um abrigo
-   * Agora um líder pode estar em múltiplas equipes (do mesmo ou de diferentes abrigos)
+   * Move líder exclusivamente para múltiplas equipes de múltiplos abrigos
+   * Primeiro desvincula de todas as equipes, depois vincula às especificadas no payload
    */
-  async manageTeam(leaderId: string, dto: ManageLeaderTeamDto, req: Request): Promise<LeaderResponseDto> {
+  async manageTeams(leaderId: string, dto: ManageLeaderTeamsDto, req: Request): Promise<LeaderResponseDto> {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
     const leader = await this.repo.findOneWithSheltersAndTeachersOrFail(leaderId);
 
-    // Buscar equipes do abrigo
-    const teams = await this.teamsService.findByShelter(dto.shelterId);
+    // Primeiro: desvincular o líder de todas as equipes onde ele está atualmente
+    await this.teamsService.removeLeaderFromAllTeams(leaderId);
 
-    let targetTeam = teams.find(t => t.numberTeam === dto.numberTeam);
+    // Segundo: processar cada abrigo no payload e vincular às equipes especificadas
+    for (const assignment of dto.assignments) {
+      const shelterTeams = await this.teamsService.findByShelter(assignment.shelterId);
 
-    if (!targetTeam) {
-      // Criar nova equipe
-      const newTeam = await this.teamsService.create({
-        numberTeam: dto.numberTeam,
-        shelterId: dto.shelterId,
-        leaderProfileIds: [leaderId],
-      });
-      targetTeam = newTeam;
-    } else {
-      const isAlreadyInTeam = targetTeam.leaders.some(l => l.id === leaderId);
-      
-      if (!isAlreadyInTeam) {
-        const currentLeaderIds = targetTeam.leaders.map(l => l.id);
-        await this.teamsService.update(targetTeam.id, {
-          leaderProfileIds: [...currentLeaderIds, leaderId],
-        });
+      for (const teamNumber of assignment.teams) {
+        let targetTeam = shelterTeams.find(t => t.numberTeam === teamNumber);
+
+        if (!targetTeam) {
+          // Criar nova equipe com o líder
+          await this.teamsService.create({
+            numberTeam: teamNumber,
+            shelterId: assignment.shelterId,
+            leaderProfileIds: [leaderId],
+          });
+        } else {
+          // Adicionar líder à equipe existente
+          await this.teamsService.addLeadersToTeam(targetTeam.id, [leaderId]);
+        }
       }
     }
 
     return this.findOne(leaderId, req);
+  }
+
+  /**
+   * Move líder exclusivamente para uma equipe de um abrigo (mantido para compatibilidade)
+   * Remove o líder de todas as equipes atuais antes de vincular à nova equipe
+   */
+  async manageTeam(leaderId: string, dto: ManageLeaderTeamDto, req: Request): Promise<LeaderResponseDto> {
+    const ctx = await this.getCtx(req);
+    this.assertAllowed(ctx);
+
+    // Converter o DTO antigo para o novo formato
+    const newDto: ManageLeaderTeamsDto = {
+      assignments: [{
+        shelterId: dto.shelterId,
+        teams: [dto.numberTeam]
+      }]
+    };
+
+    return this.manageTeams(leaderId, newDto, req);
   }
 
   /**

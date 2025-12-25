@@ -131,7 +131,6 @@ export class AuthService {
 
       return tokens;
     } catch (error) {
-      this.logger.error(`Error refreshing token: ${error.message}`);
       throw new UnauthorizedException('Invalid refresh token');
     }
   }

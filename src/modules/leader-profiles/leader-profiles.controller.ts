@@ -15,7 +15,7 @@ import { LeaderResponseDto } from './dto/leader-profile.response.dto';
 import { LeaderSimpleListDto } from './dto/leader-simple-list.dto';
 import { PageDto, LeaderProfilesQueryDto } from './dto/leader-profiles.query.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { ManageLeaderTeamDto } from './dto/assign-team.dto';
+import { ManageLeaderTeamDto, ManageLeaderTeamsDto, ShelterTeamDto } from './dto/assign-team.dto';
 import { ShelterWithLeaderStatusDto } from 'src/modules/shelters/dto/shelter.response.dto';
 
 @Controller('leader-profiles')
@@ -52,9 +52,9 @@ export class LeaderProfilesController {
   @Put(':leaderId')
   async update(
     @Param('leaderId', new ParseUUIDPipe()) leaderId: string,
-    @Body() dto: ManageLeaderTeamDto,
+    @Body() dto: ShelterTeamDto[],
     @Req() req: Request,
   ): Promise<LeaderResponseDto> {
-    return this.service.manageTeam(leaderId, dto, req);
+    return this.service.manageTeams(leaderId, { assignments: dto }, req);
   }
 }

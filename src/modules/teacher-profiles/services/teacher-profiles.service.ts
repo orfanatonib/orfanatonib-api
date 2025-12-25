@@ -37,7 +37,6 @@ export class TeacherProfilesService {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    console.log("Buscando página com filtros:", query);
     const { items, total, page, limit } = await this.repo.findPageWithFilters(query, ctx);
     return {
       items: items.map(toTeacherDto),

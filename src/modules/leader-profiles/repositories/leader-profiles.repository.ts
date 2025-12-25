@@ -302,15 +302,9 @@ export class LeaderProfilesRepository {
   }
 
   async list(): Promise<LeaderSimpleListDto[]> {
-    const items = await this.leaderRepo
-      .createQueryBuilder('leader')
-      .leftJoin('leader.user', 'user')
-      .addSelect(['user.id', 'user.name'])
-      .leftJoin('leader.teams', 'team')
-      .leftJoin('team.shelter', 'shelter')
-      .addSelect(['shelter.id'])
-      .where('user.active = true')
+    const items = await this.buildLeaderBaseQB()
       .orderBy('leader.createdAt', 'ASC')
+      .addOrderBy('shelter.name', 'ASC')
       .getMany();
 
     return items.map(toLeaderSimple);

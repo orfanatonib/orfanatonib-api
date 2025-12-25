@@ -184,7 +184,10 @@ export class ShelteredService {
         (entity as any).address = null;
       } else {
         if (entity.address) {
-          await this.addressesService.update(entity.address.id, dto.address);
+          // Como `address` tem cascade, salvar o `entity` pode sobrescrever alterações
+          // feitas diretamente no repositório de endereço. Por isso, fazemos merge
+          // no objeto em memória e deixamos o `save(entity)` persistir corretamente.
+          this.addressesService.merge(entity.address, dto.address);
         } else {
           const address = await this.addressesService.create(dto.address);
           (entity as any).address = address;
