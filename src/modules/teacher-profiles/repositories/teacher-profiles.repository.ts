@@ -120,7 +120,6 @@ export class TeacherProfilesRepository {
         )`,
         { teacherLike: like, teacherLikeRaw: likeRaw },
       );
-      console.log('✅ Filtro aplicado: teacherSearchString');
     }
 
     if (shelterSearchString?.trim()) {
@@ -142,40 +141,32 @@ export class TeacherProfilesRepository {
         )`,
         { shelterLike: like, shelterLikeRaw: likeRaw },
       );
-      console.log('✅ Filtro aplicado: shelterSearchString');
     }
 
     if (hasShelter !== undefined) {
       if (hasShelter === true) {
         qb.andWhere('teacher.team_id IS NOT NULL');
-        console.log('✅ Filtro aplicado: team_id IS NOT NULL');
       } else {
         qb.andWhere('teacher.team_id IS NULL');
-        console.log('✅ Filtro aplicado: team_id IS NULL');
       }
     }
 
-    // 🎯 FILTRO: teamId - filtrar por ID da equipe
     if (teamId?.trim()) {
       qb.andWhere('teacher.team_id = :teamId', { teamId: teamId.trim() });
-      console.log('✅ Filtro aplicado: teamId');
     }
 
     if (teamName?.trim()) {
       const teamNumber = parseInt(teamName.trim(), 10);
       if (!isNaN(teamNumber)) {
         qb.andWhere('team.numberTeam = :teamNumber', { teamNumber });
-        console.log('✅ Filtro aplicado: teamName');
       }
     }
 
     if (hasTeam !== undefined) {
       if (hasTeam === true) {
         qb.andWhere('teacher.team_id IS NOT NULL');
-        console.log('✅ Filtro aplicado: hasTeam = true');
       } else {
         qb.andWhere('teacher.team_id IS NULL');
-        console.log('✅ Filtro aplicado: hasTeam = false');
       }
     }
 
