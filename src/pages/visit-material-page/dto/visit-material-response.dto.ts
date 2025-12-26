@@ -1,6 +1,5 @@
 import { RouteType } from 'src/route/route-page.entity';
 import { VisitMaterialsPageEntity, TestamentType } from '../entities/visit-material-page.entity';
-import { Logger } from '@nestjs/common';
 import { MediaItemEntity, PlatformType, MediaType, UploadType } from 'src/share/media/media-item/media-item.entity';
 import { Expose } from 'class-transformer';
 
@@ -59,21 +58,17 @@ export class VisitMaterialsPageResponseDTO {
     entity: VisitMaterialsPageEntity,
     mediaItems: MediaItemEntity[] = []
   ): VisitMaterialsPageResponseDTO {
-    const logger = new Logger(VisitMaterialsPageResponseDTO.name);
-    logger.debug(`🧩 Convertendo entidade para DTO: ID=${entity.id}`);
-
     const dto = new VisitMaterialsPageResponseDTO();
 
     dto.id = entity.id;
     dto.title = entity.title;
     dto.subtitle = entity.subtitle;
-    dto.testament = entity.testament ?? TestamentType.OLD_TESTAMENT; // Garantir que sempre tenha um valor
+    dto.testament = entity.testament ?? TestamentType.OLD_TESTAMENT;
     dto.description = entity.description;
     dto.createdAt = entity.createdAt;
     dto.updatedAt = entity.updatedAt;
     dto.currentWeek = entity.currentWeek;
 
-    logger.debug(`🛤️ Mapeando rota da página: ${entity.route?.path}`);
     dto.route = {
       id: entity.route.id,
       path: entity.route.path,
@@ -85,7 +80,6 @@ export class VisitMaterialsPageResponseDTO {
     };
 
     const mapItem = (item: MediaItemEntity): VisitMediaItemResponseDTO => {
-      logger.debug(`🎞️ Mapeando mídia: ID=${item.id}, tipo=${item.mediaType}`);
       return {
         id: item.id,
         title: item.title,
@@ -105,7 +99,6 @@ export class VisitMaterialsPageResponseDTO {
     dto.images = mediaItems.filter((i) => i.mediaType === MediaType.IMAGE).map(mapItem);
     dto.audios = mediaItems.filter((i) => i.mediaType === MediaType.AUDIO).map(mapItem);
 
-    logger.debug(`✅ DTO criado com sucesso. ID=${dto.id}`);
     return dto;
   }
 }
