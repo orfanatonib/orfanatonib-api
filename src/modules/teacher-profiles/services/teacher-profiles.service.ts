@@ -81,16 +81,13 @@ export class TeacherProfilesService {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    // Buscar o professor
     const teacher = await this.repo.findOneWithShelterAndLeaderOrFail(teacherId, ctx);
 
-    // Buscar equipes do abrigo
     const teams = await this.teamsService.findByShelter(dto.shelterId);
 
     let targetTeam = teams.find(t => t.numberTeam === dto.numberTeam);
 
     if (!targetTeam) {
-      // Criar nova equipe
       const newTeam = await this.teamsService.create({
         numberTeam: dto.numberTeam,
         shelterId: dto.shelterId,

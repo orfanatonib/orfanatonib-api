@@ -18,14 +18,12 @@ export class DeleteUserService {
   ) {}
 
   async remove(id: string): Promise<{ message: string }> {
-    // Deletar imagem do usuário do S3 e do banco se existir
     const userImage = await this.mediaItemProcessor.findMediaItemByTarget(
       id,
       'UserEntity',
     );
 
     if (userImage) {
-      // removeMediaItem já deleta do S3 se isLocalFile for true
       await this.mediaItemProcessor.removeMediaItem(
         userImage,
         this.s3Service.delete.bind(this.s3Service),

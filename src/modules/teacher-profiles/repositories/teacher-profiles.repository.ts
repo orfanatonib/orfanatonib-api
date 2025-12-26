@@ -106,7 +106,6 @@ export class TeacherProfilesRepository {
   ) {
     const { teacherSearchString, shelterSearchString, hasShelter, teamId, teamName, hasTeam } = params;
 
-    // 🔍 FILTRO: teacherSearchString - busca por dados do teacher
     if (teacherSearchString?.trim()) {
       const text = teacherSearchString.trim();
       const like = `%${text.toLowerCase()}%`;

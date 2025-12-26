@@ -99,8 +99,6 @@ export class LeaderProfilesRepository {
   ) {
     const { leaderSearchString, shelterSearchString, hasShelter, teamId, teamName, hasTeam } = params;
 
-    // 🔍 FILTROS CONSOLIDADOS
-
     if (leaderSearchString?.trim()) {
       const like = `%${leaderSearchString.trim().toLowerCase()}%`;
       const likeRaw = `%${leaderSearchString.trim()}%`;
@@ -117,7 +115,6 @@ export class LeaderProfilesRepository {
       );
     }
 
-    // Busca por todos os campos do shelter
     if (shelterSearchString?.trim()) {
       const like = `%${shelterSearchString.trim().toLowerCase()}%`;
       const likeRaw = `%${shelterSearchString.trim()}%`;
@@ -161,7 +158,6 @@ export class LeaderProfilesRepository {
       );
     }
 
-    // 🎯 FILTRO: teamId - filtrar por ID da equipe
     if (teamId?.trim()) {
       qb.andWhere(
         `EXISTS (

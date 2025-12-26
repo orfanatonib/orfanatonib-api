@@ -70,7 +70,6 @@ export class ShelteredRepository {
       );
     }
 
-    // Filtro por ID do abrigo
     if (shelterId) {
       qb.andWhere('shelter.id = :shelterId', { shelterId });
     }
@@ -117,7 +116,6 @@ export class ShelteredRepository {
       );
     }
 
-    // ✝️ Filtro: aceitou Jesus
     if (acceptedJesus === 'accepted') {
       qb.andWhere(
         `EXISTS (
@@ -136,14 +134,13 @@ export class ShelteredRepository {
       );
     }
 
-    // ✅ Filtro: status ativo
     if (active === 'active') {
       qb.andWhere('c.active = :active', { active: true });
     } else if (active === 'inactive') {
       qb.andWhere('c.active = :active', { active: false });
     }
 
-    qb.orderBy('c.active', 'DESC') // Ativos primeiro (true > false)
+    qb.orderBy('c.active', 'DESC')
 
     qb.skip((page - 1) * limit).take(limit);
 

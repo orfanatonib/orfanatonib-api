@@ -312,7 +312,6 @@ export class SheltersRepository {
       return leaderEntity;
     });
 
-      // Filtrar professores desta team
       const teamTeachers = teachersData
         .filter((td: any) => td.team_id === teamData.id)
         .map((teacherData: any) => {
@@ -396,7 +395,6 @@ export class SheltersRepository {
 
       if (dto.address) {
         if (shelter.address) {
-          // Atualizar apenas os campos fornecidos (ignorar id, createdAt, updatedAt)
           const addressUpdate: any = {};
           if (dto.address.street !== undefined) addressUpdate.street = dto.address.street;
           if (dto.address.number !== undefined) addressUpdate.number = dto.address.number;
@@ -452,7 +450,7 @@ export class SheltersRepository {
           `UPDATE teacher_profiles SET team_id = NULL WHERE team_id = ?`,
           [team.id]
         );
-        }
+      }
 
       if (teams.length > 0) {
         await txTeam.remove(teams);

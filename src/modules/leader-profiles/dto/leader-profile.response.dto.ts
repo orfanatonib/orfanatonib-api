@@ -82,7 +82,6 @@ export class LeaderResponseDto {
       return [];
     }
 
-    // Agrupar equipes por abrigo
     const sheltersMap = new Map<string, ShelterMiniWithCoordinatorDto>();
 
     for (const team of obj.teams) {
@@ -100,15 +99,13 @@ export class LeaderResponseDto {
       }
 
       const shelter = sheltersMap.get(shelterId)!;
-      
-      // Adicionar a equipe ao abrigo
+
       shelter.teams!.push({
         id: team.id,
         numberTeam: team.numberTeam,
         description: team.description,
       });
 
-      // Adicionar professores da equipe (evitar duplicatas)
       if (team.teachers && Array.isArray(team.teachers)) {
         for (const teacher of team.teachers) {
           if (!shelter.teachers!.some(t => t.id === teacher.id)) {

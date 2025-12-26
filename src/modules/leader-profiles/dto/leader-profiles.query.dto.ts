@@ -37,14 +37,11 @@ const trimOrUndef = (v: any): string | undefined => {
 };
 
 export class LeaderProfilesQueryDto {
-  // 🔍 FILTROS CONSOLIDADOS
-  
   @IsOptional()
   @Transform(({ value }) => trimOrUndef(value))
   @IsString()
   leaderSearchString?: string;
 
-  // Busca por todos os campos do shelter
   @IsOptional()
   @Transform(({ value }) => trimOrUndef(value))
   @IsString()
@@ -54,7 +51,6 @@ export class LeaderProfilesQueryDto {
   @BooleanQuery()
   hasShelter?: boolean;
 
-  // Filtros de equipe
   @IsOptional()
   @Transform(({ value }) => trimOrUndef(value))
   @IsString()

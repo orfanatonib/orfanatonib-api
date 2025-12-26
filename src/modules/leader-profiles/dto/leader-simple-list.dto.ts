@@ -50,7 +50,6 @@ export class LeaderSimpleListDto {
       return [];
     }
 
-    // Agrupar equipes por abrigo
     const sheltersMap = new Map<string, ShelterMiniDto>();
 
     for (const team of obj.teams) {
@@ -68,7 +67,6 @@ export class LeaderSimpleListDto {
 
       const shelter = sheltersMap.get(shelterId)!;
 
-      // Adicionar a equipe ao abrigo
       shelter.teams!.push({
         id: team.id,
         numberTeam: team.numberTeam,

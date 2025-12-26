@@ -95,10 +95,8 @@ export class LeaderProfilesService {
 
     const leader = await this.repo.findOneWithSheltersAndTeachersOrFail(leaderId);
 
-    // Primeiro: desvincular o líder de todas as equipes onde ele está atualmente
     await this.teamsService.removeLeaderFromAllTeams(leaderId);
 
-    // Segundo: processar cada abrigo no payload e vincular às equipes especificadas
     for (const assignment of dto.assignments) {
       const shelterTeams = await this.teamsService.findByShelter(assignment.shelterId);
 
@@ -106,14 +104,12 @@ export class LeaderProfilesService {
         let targetTeam = shelterTeams.find(t => t.numberTeam === teamNumber);
 
         if (!targetTeam) {
-          // Criar nova equipe com o líder
           await this.teamsService.create({
             numberTeam: teamNumber,
             shelterId: assignment.shelterId,
             leaderProfileIds: [leaderId],
           });
         } else {
-          // Adicionar líder à equipe existente
           await this.teamsService.addLeadersToTeam(targetTeam.id, [leaderId]);
         }
       }
@@ -130,7 +126,6 @@ export class LeaderProfilesService {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    // Converter o DTO antigo para o novo formato
     const newDto: ManageLeaderTeamsDto = {
       assignments: [{
         shelterId: dto.shelterId,
@@ -164,7 +159,6 @@ export class LeaderProfilesService {
       return [];
     }
 
-    // Buscar todos os abrigos por IDs, com todas as equipes (sem filtro de role nas equipes)
     const shelters = await this.shelterRepo.find({
       where: { id: In(shelterIds) },
       relations: ['address', 'teams', 'teams.leaders', 'teams.leaders.user', 'teams.teachers', 'teams.teachers.user'],
@@ -175,8 +169,7 @@ export class LeaderProfilesService {
         },
       },
     });
-    
-    // Popular media items
+
     const sheltersWithMedia = await this.populateMediaItems(shelters);
     
     return sheltersWithMedia.map(shelter => toShelterWithLeaderStatusDto(shelter, leader.id));
@@ -191,7 +184,6 @@ export class LeaderProfilesService {
       'ShelterEntity'
     );
 
-    // Criar mapa de media items por shelterId (apenas o primeiro de cada)
     const mediaMap = new Map();
     mediaItems.forEach(item => {
       if (!mediaMap.has(item.targetId)) {
@@ -199,7 +191,6 @@ export class LeaderProfilesService {
       }
     });
 
-    // Popular o mediaItem em cada shelter
     shelters.forEach(shelter => {
       (shelter as any).mediaItem = mediaMap.get(shelter.id) || null;
     });

@@ -35,7 +35,6 @@ export class AwsSESService {
     const from =
       this.configService.get<string>('SES_DEFAULT_FROM') ?? 'no-reply@rodolfo-silva.com';
 
-    // Suporta múltiplos emails separados por vírgula
     const toAddresses = to
       .split(',')
       .map((email) => email.trim())

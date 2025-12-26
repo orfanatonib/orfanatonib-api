@@ -9,7 +9,6 @@ export class EmailTemplate {
       '';
     const hasLogo = Boolean(logoUrl);
 
-    // Brand palette (logo): black/white + green/red/yellow accents
     const COLOR_BLACK = '#000000';
     const COLOR_WHITE = '#FFFFFF';
     const COLOR_YELLOW = '#FFD700';
@@ -31,7 +30,6 @@ export class EmailTemplate {
           <tr>
             <td align="center">
               <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: ${COLOR_WHITE}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
-                <!-- Logo -->
                 <tr>
                   <td style="background-color: ${COLOR_WHITE}; padding: 20px 24px; text-align: center;">
                     ${
@@ -52,7 +50,6 @@ export class EmailTemplate {
                     }
                   </td>
                 </tr>
-                <!-- Brand bar -->
                 <tr>
                   <td style="padding: 0; background-color: ${COLOR_WHITE};">
                     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
@@ -64,7 +61,6 @@ export class EmailTemplate {
                     </table>
                   </td>
                 </tr>
-                <!-- Header -->
                 <tr>
                   <td style="background-color: ${COLOR_YELLOW}; padding: 26px 24px; text-align: center; border-bottom: 4px solid ${COLOR_BLACK};">
                     ${
@@ -81,12 +77,10 @@ export class EmailTemplate {
                     </p>
                   </td>
                 </tr>
-                
-                <!-- Content -->
+
                 <tr>
                   <td style="padding: 28px 24px; background-color: ${COLOR_WHITE};">
                     <table width="100%" cellpadding="0" cellspacing="0" style="font-size: 16px; color: ${COLOR_BLACK}; line-height: 1.6;">
-                      <!-- Nome -->
                       <tr>
                         <td style="padding-bottom: 16px; border-bottom: 2px solid ${COLOR_YELLOW};">
                           <table width="100%" cellpadding="0" cellspacing="0">
@@ -101,8 +95,7 @@ export class EmailTemplate {
                           </table>
                         </td>
                       </tr>
-                      
-                      <!-- Email -->
+
                       <tr>
                         <td style="padding: 16px 0; border-bottom: 2px solid ${COLOR_YELLOW};">
                           <table width="100%" cellpadding="0" cellspacing="0">
@@ -119,8 +112,7 @@ export class EmailTemplate {
                           </table>
                         </td>
                       </tr>
-                      
-                      <!-- Telefone -->
+
                       <tr>
                         <td style="padding: 16px 0; border-bottom: 2px solid ${COLOR_YELLOW};">
                           <table width="100%" cellpadding="0" cellspacing="0">
@@ -137,8 +129,7 @@ export class EmailTemplate {
                           </table>
                         </td>
                       </tr>
-                      
-                      <!-- Mensagem -->
+
                       <tr>
                         <td style="padding-top: 24px;">
                           <strong style="color: ${COLOR_BLACK}; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; display: block; margin-bottom: 12px;">
@@ -152,8 +143,7 @@ export class EmailTemplate {
                     </table>
                   </td>
                 </tr>
-                
-                <!-- Footer -->
+
                 <tr>
                   <td style="background-color: ${COLOR_WHITE}; padding: 18px 24px; text-align: center;">
                     <p style="margin: 0; color: ${COLOR_BLACK}; font-size: 14px; font-weight: 700;">

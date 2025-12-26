@@ -323,7 +323,6 @@ export class TeamsRepository {
         }
       }
 
-      // Remover professores da equipe
       const teachers = await txTeacher.find({
         where: { team: { id } },
       });
@@ -332,7 +331,6 @@ export class TeamsRepository {
         await txTeacher.save(teacher);
       }
 
-      // Deletar a equipe
       await txTeam.remove(team);
     });
   }

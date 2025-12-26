@@ -39,7 +39,6 @@ export class GetSheltersService {
       'ShelterEntity'
     );
 
-    // Criar mapa de media items por shelterId (apenas o primeiro de cada)
     const mediaMap = new Map();
     mediaItems.forEach(item => {
       if (!mediaMap.has(item.targetId)) {
@@ -47,7 +46,6 @@ export class GetSheltersService {
       }
     });
 
-    // Popular o mediaItem em cada shelter
     shelters.forEach(shelter => {
       (shelter as any).mediaItem = mediaMap.get(shelter.id) || null;
     });
@@ -84,7 +82,6 @@ export class GetSheltersService {
       'UserEntity',
     );
 
-    // Mapa por userId escolhendo a mídia mais recente (se houver múltiplas)
     const mediaMap = new Map<string, any>();
     mediaItems.forEach((item: any) => {
       const prev = mediaMap.get(item.targetId);
@@ -99,7 +96,6 @@ export class GetSheltersService {
       }
     });
 
-    // Popular mediaItem em cada user do payload (leaders/teachers dentro das teams)
     teams.forEach((team: any) => {
       const leaders = Array.isArray(team?.leaders) ? team.leaders : [];
       const teachers = Array.isArray(team?.teachers) ? team.teachers : [];
@@ -125,7 +121,6 @@ export class GetSheltersService {
     const { page = 1, limit = 10 } = q;
     const { items, total } = await this.sheltersRepository.findAllPaginated(q, ctx);
 
-    // Popular media items
     const itemsWithMedia = await this.populateMediaItems(items);
 
     return new Paginated(itemsWithMedia.map(toShelterDto), total, page, limit);
@@ -134,8 +129,7 @@ export class GetSheltersService {
   async findAllSimple(req: Request): Promise<ShelterSimpleResponseDto[]> {
     const ctx = await this.getCtx(req);
     const shelters = await this.sheltersRepository.findAllSimple(ctx);
-    
-    // Popular media items
+
     const sheltersWithMedia = await this.populateMediaItems(shelters);
     
     return sheltersWithMedia.map(toShelterSimpleDto);
@@ -145,11 +139,9 @@ export class GetSheltersService {
     const ctx = await this.getCtx(req);
     const shelter = await this.sheltersRepository.findOneOrFailForResponse(id, ctx);
     if (!shelter) throw new NotFoundException('Shelter not found');
-    
-    // Popular media item
+
     await this.populateMediaItems([shelter]);
 
-    // Popular media item dos usuários (leaders/teachers) quando existir
     await this.populateUserMediaItemsForShelter(shelter);
     
     return toShelterDto(shelter);

@@ -27,12 +27,7 @@ export class UpdateUserService {
     const current = await this.userRepo.findById(id);
     if (!current) throw new NotFoundException('UserEntity not found');
 
-    // Este endpoint é apenas para admin (guards garantem isso)
-    // Admin pode alterar TUDO: name, email, phone, password, role, active, completed, commonUser
-    // Admin NÃO precisa da senha atual para alterar senha - basta enviar a nova senha no campo "password"
-
     if (dto.password) {
-      // Hash da nova senha - admin não precisa fornecer senha atual
       dto.password = await bcrypt.hash(dto.password, 10);
     }
 
@@ -64,14 +59,13 @@ export class UpdateUserService {
         } else {
           await this.leaderService.removeByUserId(id);
         }
-      } else if (nextRole === UserRole.ADMIN) {
+      } else {
         await this.teacherService.removeByUserId(id);
         await this.leaderService.removeByUserId(id);
       }
     }
 
     if (!willChangeRole && activeInDto) {
-
       if (nextRole === UserRole.TEACHER) {
         if (nextActive) {
           try {
@@ -90,7 +84,6 @@ export class UpdateUserService {
         } else {
           await this.leaderService.removeByUserId(id);
         }
-      } else {
       }
     }
     const user = await this.userRepo.update(id, dto);
