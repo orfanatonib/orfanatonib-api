@@ -8,6 +8,7 @@ import {
   Req,
   UseGuards,
   Put,
+  Logger,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { LeaderProfilesService } from './services/leader-profiles.service';
@@ -21,6 +22,8 @@ import { ShelterWithLeaderStatusDto } from 'src/modules/shelters/dto/shelter.res
 @Controller('leader-profiles')
 @UseGuards(JwtAuthGuard)
 export class LeaderProfilesController {
+  private readonly logger = new Logger(LeaderProfilesController.name);
+
   constructor(private readonly service: LeaderProfilesService) { }
 
   @Get()
@@ -55,6 +58,9 @@ export class LeaderProfilesController {
     @Body() dto: ShelterTeamDto[],
     @Req() req: Request,
   ): Promise<LeaderResponseDto> {
-    return this.service.manageTeams(leaderId, { assignments: dto }, req);
+    this.logger.log(`Updating leader profile: ${leaderId}`);
+    const result = await this.service.manageTeams(leaderId, { assignments: dto }, req);
+    this.logger.log(`Leader profile updated successfully: ${leaderId}`);
+    return result;
   }
 }

@@ -62,7 +62,9 @@ export class VideosPageController {
       const filesDict: Record<string, Express.Multer.File> = {};
       files.forEach((file) => (filesDict[file.fieldname] = file));
 
+      this.logger.log('Creating new videos page');
       const result = await this.createService.execute(dto, filesDict);
+      this.logger.log(`Videos page created successfully: ${result.id}`);
       return result;
     } catch (error) {
       this.logger.error('Error creating videos page', error);
@@ -96,7 +98,9 @@ export class VideosPageController {
       const filesDict: Record<string, Express.Multer.File> = {};
       files.forEach((file) => (filesDict[file.fieldname] = file));
 
+      this.logger.log(`Updating videos page: ${id}`);
       const result = await this.updateService.execute(id, dto, filesDict);
+      this.logger.log(`Videos page updated successfully: ${id}`);
       return result;
     } catch (error) {
       this.logger.error('Error updating videos page', error);
@@ -123,7 +127,9 @@ export class VideosPageController {
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<{ message: string }> {
+    this.logger.log(`Deleting videos page: ${id}`);
     await this.deleteService.execute(id);
+    this.logger.log(`Videos page deleted successfully: ${id}`);
     return { message: 'Página de vídeos removida com sucesso' };
   }
 }

@@ -29,7 +29,9 @@ export class CommentController {
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async create(@Body() dto: CreateCommentDto): Promise<CommentResponseDto> {
+    this.logger.log('Creating new comment');
     const created = await this.commentService.create(dto);
+    this.logger.log(`Comment created successfully: ${created.id}`);
     return plainToInstance(CommentResponseDto, created);
   }
 
@@ -59,13 +61,17 @@ export class CommentController {
     @Param('id') id: string,
     @Body() dto: UpdateCommentDto,
   ): Promise<CommentResponseDto> {
+    this.logger.log(`Updating comment: ${id}`);
     const updated = await this.commentService.update(id, dto);
+    this.logger.log(`Comment updated successfully: ${id}`);
     return plainToInstance(CommentResponseDto, updated);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async remove(@Param('id') id: string): Promise<void> {
+    this.logger.log(`Deleting comment: ${id}`);
     await this.commentService.remove(id);
+    this.logger.log(`Comment deleted successfully: ${id}`);
   }
 }

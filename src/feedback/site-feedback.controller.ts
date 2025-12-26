@@ -30,7 +30,9 @@ export class SiteFeedbackController {
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
   async create(@Body() dto: CreateSiteFeedbackDto): Promise<SiteFeedbackResponseDto> {
+    this.logger.log('Creating new site feedback');
     const created = await this.siteFeedbackService.create(dto);
+    this.logger.log(`Site feedback created successfully: ${created.id}`);
     return plainToInstance(SiteFeedbackResponseDto, created);
   }
 
@@ -54,20 +56,26 @@ export class SiteFeedbackController {
     @Param('id') id: string,
     @Body() dto: UpdateSiteFeedbackDto,
   ): Promise<SiteFeedbackResponseDto> {
+    this.logger.log(`Updating site feedback: ${id}`);
     const updated = await this.siteFeedbackService.update(id, dto);
+    this.logger.log(`Site feedback updated successfully: ${id}`);
     return plainToInstance(SiteFeedbackResponseDto, updated);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async remove(@Param('id') id: string): Promise<void> {
+    this.logger.log(`Deleting site feedback: ${id}`);
     await this.siteFeedbackService.remove(id);
+    this.logger.log(`Site feedback deleted successfully: ${id}`);
   }
 
   @Patch(':id/read')
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async setRead(@Param('id') id: string): Promise<SiteFeedbackResponseDto> {
+    this.logger.log(`Marking site feedback as read: ${id}`);
     const feedback = await this.siteFeedbackService.setReadOnFeedback(id);
+    this.logger.log(`Site feedback marked as read successfully: ${id}`);
     return plainToInstance(SiteFeedbackResponseDto, feedback);
   }
 }

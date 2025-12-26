@@ -43,7 +43,10 @@ export class VisitMaterialsPageController {
     @UploadedFiles() files: Express.Multer.File[],
     @Body('visitMaterialsPageData') raw: string,
   ): Promise<VisitMaterialsPageResponseDTO> {
-    return this.createService.createFromRaw(raw, files);
+    this.logger.log('Creating new visit material page');
+    const result = await this.createService.createFromRaw(raw, files);
+    this.logger.log(`Visit material page created successfully: ${result.id}`);
+    return result;
   }
 
   @UseGuards(AdminRoleGuard)
@@ -54,13 +57,18 @@ export class VisitMaterialsPageController {
     @UploadedFiles() files: Express.Multer.File[],
     @Body('visitMaterialsPageData') raw: string,
   ): Promise<VisitMaterialsPageResponseDTO> {
-    return this.updateService.updateFromRaw(id, raw, files);
+    this.logger.log(`Updating visit material page: ${id}`);
+    const result = await this.updateService.updateFromRaw(id, raw, files);
+    this.logger.log(`Visit material page updated successfully: ${id}`);
+    return result;
   }
 
   @UseGuards(AdminRoleGuard)
   @Delete(':id')
   async remove(@Param('id') id: string): Promise<void> {
+    this.logger.log(`Deleting visit material page: ${id}`);
     await this.removeService.removeVisitMaterial(id);
+    this.logger.log(`Visit material page deleted successfully: ${id}`);
   }
 
   @Get()
@@ -83,6 +91,9 @@ export class VisitMaterialsPageController {
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post('/current-material/:id')
   async setCurrentMaterial(@Param('id') id: string): Promise<any> {
-    return this.getService.setCurrentWeek(id);
+    this.logger.log(`Setting current material: ${id}`);
+    const result = await this.getService.setCurrentWeek(id);
+    this.logger.log(`Current material set successfully: ${id}`);
+    return result;
   }
 }

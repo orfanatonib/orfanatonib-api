@@ -8,6 +8,7 @@ import {
   Req,
   UseGuards,
   Put,
+  Logger,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { TeacherProfilesService } from './services/teacher-profiles.service';
@@ -20,6 +21,8 @@ import { ManageTeacherTeamDto } from './dto/assign-team.dto';
 @Controller('teacher-profiles')
 @UseGuards(JwtAuthGuard)
 export class TeacherProfilesController {
+  private readonly logger = new Logger(TeacherProfilesController.name);
+
   constructor(private readonly service: TeacherProfilesService) { }
 
 
@@ -50,6 +53,9 @@ export class TeacherProfilesController {
     @Body() dto: ManageTeacherTeamDto,
     @Req() req: Request,
   ): Promise<TeacherResponseDto> {
-    return this.service.manageTeam(teacherId, dto, req);
+    this.logger.log(`Updating teacher profile: ${teacherId}`);
+    const result = await this.service.manageTeam(teacherId, dto, req);
+    this.logger.log(`Teacher profile updated successfully: ${teacherId}`);
+    return result;
   }
 }

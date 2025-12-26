@@ -56,7 +56,9 @@ export class ImageController {
 
       const filesDict = this.mapFiles(files);
 
+      this.logger.log('Creating new image page');
       const result = await this.createService.createImagePage(dto, filesDict);
+      this.logger.log(`Image page created successfully: ${result.id}`);
 
       return result;
     } catch (error) {
@@ -83,7 +85,10 @@ export class ImageController {
 
       const filesDict = this.mapFiles(files);
 
-      return await this.updateService.updateImagePage(id, dto, filesDict);
+      this.logger.log(`Updating image page: ${id}`);
+      const result = await this.updateService.updateImagePage(id, dto, filesDict);
+      this.logger.log(`Image page updated successfully: ${id}`);
+      return result;
     } catch (error) {
       this.logger.error('Error updating gallery', error);
       throw new BadRequestException('Erro ao atualizar a galeria.');
@@ -122,7 +127,9 @@ export class ImageController {
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(':id')
   async remove(@Param('id') id: string) {
+    this.logger.log(`Deleting image page: ${id}`);
     await this.deleteService.removePage(id);
+    this.logger.log(`Image page deleted successfully: ${id}`);
     return { message: 'Gallery page removed successfully' };
   }
 

@@ -35,7 +35,10 @@ export class InformativeController {
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
   async create(@Body() dto: CreateInformativeDto): Promise<InformativeResponseDto> {
-    return this.createService.createInformative(dto);
+    this.logger.log('Creating new informative banner');
+    const result = await this.createService.createInformative(dto);
+    this.logger.log(`Informative banner created successfully: ${result.id}`);
+    return result;
   }
 
   @Get(':id')
@@ -56,13 +59,18 @@ export class InformativeController {
     @Param('id') id: string,
     @Body() dto: UpdateInformativeDto,
   ): Promise<InformativeResponseDto> {
-    return this.updateService.execute(id, dto);
+    this.logger.log(`Updating informative banner: ${id}`);
+    const result = await this.updateService.execute(id, dto);
+    this.logger.log(`Informative banner updated successfully: ${id}`);
+    return result;
   }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(':id')
   async delete(@Param('id') id: string): Promise<void> {
+    this.logger.log(`Deleting informative banner: ${id}`);
     await this.deleteService.execute(id);
+    this.logger.log(`Informative banner deleted successfully: ${id}`);
   }
 
   @Get()

@@ -11,6 +11,7 @@ import {
   Query,
   Req,
   UseGuards,
+  Logger,
 } from '@nestjs/common';
 import { Request } from 'express';
 
@@ -25,6 +26,8 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 @Controller('sheltered')
 @UseGuards(JwtAuthGuard)
 export class ShelteredController {
+  private readonly logger = new Logger(ShelteredController.name);
+
   constructor(private readonly service: ShelteredService) { }
 
   @Get()
@@ -56,7 +59,10 @@ export class ShelteredController {
     @Body() dto: CreateShelteredDto,
     @Req() req: Request,
   ): Promise<ShelteredResponseDto> {
-    return this.service.create(dto, req);
+    this.logger.log(`Creating new sheltered child`);
+    const result = await this.service.create(dto, req);
+    this.logger.log(`Sheltered child created successfully: ${result.id}`);
+    return result;
   }
 
   @Put(':id')
@@ -65,7 +71,10 @@ export class ShelteredController {
     @Body() dto: UpdateShelteredDto,
     @Req() req: Request,
   ): Promise<ShelteredResponseDto> {
-    return this.service.update(id, dto, req);
+    this.logger.log(`Updating sheltered child: ${id}`);
+    const result = await this.service.update(id, dto, req);
+    this.logger.log(`Sheltered child updated successfully: ${id}`);
+    return result;
   }
 
   @Patch(':id/status')
@@ -82,6 +91,8 @@ export class ShelteredController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() req: Request,
   ): Promise<void> {
-    return this.service.remove(id, req);
+    this.logger.log(`Deleting sheltered child: ${id}`);
+    await this.service.remove(id, req);
+    this.logger.log(`Sheltered child deleted successfully: ${id}`);
   }
 }

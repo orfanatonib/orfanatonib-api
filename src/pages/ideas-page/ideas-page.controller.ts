@@ -65,7 +65,9 @@ export class IdeasPageController {
         filesDict[f.fieldname] = f;
       });
 
+      this.logger.log('Creating new ideas page');
       const result = await this.ideasPageCreateService.createIdeasPage(dto, filesDict);
+      this.logger.log(`Ideas page created successfully: ${result.id}`);
       return result;
     } catch (err) {
       this.logger.error('Error creating ideas page', err);
@@ -102,7 +104,9 @@ export class IdeasPageController {
       const filesDict: Record<string, Express.Multer.File> = {};
       files.forEach((file) => (filesDict[file.fieldname] = file));
 
+      this.logger.log(`Updating ideas page: ${id}`);
       const result = await this.updateIdeasPageService.updateIdeasPage(id, dto, filesDict);
+      this.logger.log(`Ideas page updated successfully: ${id}`);
       return IdeasPageResponseDto.fromEntity(result, new Map());
     } catch (error) {
       this.logger.error('Error updating ideas page', error);
@@ -115,7 +119,9 @@ export class IdeasPageController {
   async remove(@Param('id') id: string): Promise<void> {
 
     try {
+      this.logger.log(`Deleting ideas page: ${id}`);
       await this.ideasPageRemoveService.removeIdeasPage(id);
+      this.logger.log(`Ideas page deleted successfully: ${id}`);
     } catch (error) {
       this.logger.error('Error removing ideas page', error);
       throw new BadRequestException(

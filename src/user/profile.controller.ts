@@ -61,7 +61,9 @@ export class ProfileController {
     const payload = await this.authContextService.getPayloadFromRequest(req);
     const userId = payload.sub;
 
+    this.logger.log(`Updating own profile: ${userId}`);
     await this.updateOwnProfileService.updateOwnProfile(userId, dto);
+    this.logger.log(`Own profile updated successfully: ${userId}`);
     return this.getUsersService.findOneForProfile(userId);
   }
 
@@ -78,7 +80,10 @@ export class ProfileController {
     const payload = await this.authContextService.getPayloadFromRequest(req);
     const userId = payload.sub;
 
-    return this.changePasswordService.changePassword(userId, dto);
+    this.logger.log(`Changing password for user: ${userId}`);
+    const result = await this.changePasswordService.changePassword(userId, dto);
+    this.logger.log(`Password changed successfully: ${userId}`);
+    return result;
   }
 
   /**
@@ -97,8 +102,10 @@ export class ProfileController {
     const payload = await this.authContextService.getPayloadFromRequest(req);
     const userId = payload.sub;
 
+    this.logger.log(`Updating own profile image: ${userId}`);
     const bodyToProcess = imageDataRaw ? { imageData: imageDataRaw } : (body || {});
     await this.updateUserImageService.updateUserImage(userId, bodyToProcess, files);
+    this.logger.log(`Own profile image updated successfully: ${userId}`);
     return this.getUsersService.findOneForProfile(userId);
   }
 }
