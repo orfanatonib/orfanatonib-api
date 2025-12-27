@@ -1,12 +1,10 @@
 const axios = require('axios');
+const config = require('../shared/config');
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = config.BASE_URL;
 
 // Credenciais de admin
-const ADMIN_CREDENTIALS = {
-  email: 'superuser@orfanatonib.com',
-  password: 'Abc@123'
-};
+const ADMIN_CREDENTIALS = config.ADMIN_CREDENTIALS;
 
 let authToken = '';
 let testData = {
@@ -70,9 +68,9 @@ async function getTestData() {
     }
 
     // Obter sheltered
-    const shelteredResponse = await makeRequest('GET', '/sheltered/simple');
+    const shelteredResponse = await makeRequest('GET', '/sheltered/simple?page=1&limit=1000');
     if (shelteredResponse) {
-      testData.sheltered = shelteredResponse.data || [];
+      testData.sheltered = shelteredResponse.data?.data || shelteredResponse.data?.items || [];
       console.log(`  👥 ${testData.sheltered.length} sheltered encontrados`);
     }
 
@@ -515,69 +513,58 @@ async function createPagelasForAllSheltered(visitsPerSheltered = 1) {
       if (p.visit && p.year === currentYear) existingVisits.add(p.visit);
     });
     
-    // Criar múltiplas visitas para cada abrigado
+    // Criar múltiplas visitas para cada abrigado, distribuindo entre anos
     for (let visitNum = 1; visitNum <= visitsPerSheltered; visitNum++) {
-      // Se já existe pagela para visita 1 no ano atual, tentar outras visitas/anos
-      let visit = visitNum;
-      let year = currentYear;
-      let attempts = 0;
-      let shouldSkip = false;
-      
-      // Tentar encontrar uma combinação visit/ano que não existe
-      while (existingVisits.has(visit) && existingYears.has(year) && attempts < 5) {
-        visit = Math.max(1, visit + 1);
-        if (visit > 12) {
-          visit = 1;
-          year = currentYear - Math.floor(Math.random() * 3);
-        }
-        attempts++;
-      }
-      
-      // Se já existe pagela para esta combinação, pular
-      if (existingVisits.has(visit) && existingYears.has(year)) {
+      // Distribuir as visitas entre diferentes anos para evitar conflitos
+      // Visitas 1-12: ano atual, 13-24: ano anterior, 25+: 2 anos atrás
+      const yearOffset = Math.floor((visitNum - 1) / 12);
+      const visit = ((visitNum - 1) % 12) + 1;
+      const year = currentYear - yearOffset;
+
+      // Verificar se já existe esta combinação
+      const combinationKey = `${year}-${visit}`;
+      const alreadyExists = existingPagelas.some(p => p.year === year && p.visit === visit);
+
+      if (alreadyExists) {
         skippedCount++;
-        shouldSkip = true;
+        continue; // Pular esta visita
       }
-      
-      if (!shouldSkip) {
-        // Gerar data de referência aleatória no ano escolhido
-        const month = months[Math.floor(Math.random() * months.length)];
-        const day = days[Math.floor(Math.random() * days.length)];
-        const referenceDate = `${year}-${month}-${day}`;
-        
-        const pagelaData = {
-          shelteredId: shelteredId,
-          teacherProfileId: teacherId,
-          referenceDate: referenceDate,
-          visit: visit,
-          year: year,
-          present: Math.random() > 0.2, // 80% de presença
-          notes: `Notas da visita ${visit} - ${referenceDate}`
-        };
-        
-        const response = await makeRequest('POST', '/pagelas', pagelaData);
-        if (response && response.status === 201) {
-          createdPagelas.push(response.data);
-          successCount++;
-          existingVisits.add(visit);
-          existingYears.add(year);
+
+      // Gerar data de referência aleatória no ano escolhido
+      const month = months[Math.floor(Math.random() * months.length)];
+      const day = days[Math.floor(Math.random() * days.length)];
+      const referenceDate = `${year}-${month}-${day}`;
+
+      const pagelaData = {
+        shelteredId: shelteredId,
+        teacherProfileId: teacherId,
+        referenceDate: referenceDate,
+        visit: visit,
+        year: year,
+        present: Math.random() > 0.2, // 80% de presença
+        notes: `Notas da visita ${visit}/${year} - ${referenceDate}`
+      };
+
+      const response = await makeRequest('POST', '/pagelas', pagelaData);
+      if (response && response.status === 201) {
+        createdPagelas.push(response.data);
+        successCount++;
+        existingPagelas.push({ year, visit }); // Adicionar ao cache local
+      } else {
+        // Se já existe pagela para este abrigado/ano/visita, contar como skipped
+        if (response && response.status === 400 &&
+            (response.data?.message?.includes('Já existe Pagela') ||
+             (Array.isArray(response.data?.message) && response.data.message.some((msg) => msg.includes('Já existe Pagela'))))) {
+          skippedCount++;
+          existingPagelas.push({ year, visit }); // Adicionar ao cache para evitar tentar de novo
         } else {
-          // Se já existe pagela para este abrigado/ano/visita, contar como skipped
-          if (response && response.status === 400 && 
-              (response.data?.message?.includes('Já existe Pagela') || 
-               (Array.isArray(response.data?.message) && response.data.message.some((msg) => msg.includes('Já existe Pagela'))))) {
-            skippedCount++;
-            existingVisits.add(visit);
-            existingYears.add(year);
-          } else {
-            errorCount++;
-            if (response && response.data && errorCount <= 5) { // Limitar logs de erro
-              console.log(`    ⚠️ Erro ao criar pagela para ${shelteredName}:`, response.data.message || response.data);
-            }
+          errorCount++;
+          if (response && response.data && errorCount <= 5) { // Limitar logs de erro
+            console.log(`    ⚠️ Erro ao criar pagela para ${shelteredName} (visita ${visit}/${year}):`, response.data.message || response.data);
           }
         }
       }
-      
+
       // Pequeno delay para não sobrecarregar o servidor
       await new Promise(resolve => setTimeout(resolve, 30));
     }
@@ -599,19 +586,31 @@ async function createPagelasForAllSheltered(visitsPerSheltered = 1) {
   if (testData.sheltered.length > 0) {
     console.log(`\n📋 Verificando abrigados com pagelas...`);
     let shelteredWithPagelas = 0;
+    const shelteredWithoutPagelas = [];
+
     for (const sheltered of testData.sheltered) {
       const shelteredId = sheltered.id || sheltered.shelteredId;
+      const shelteredName = sheltered.name || 'Sem nome';
       const checkResponse = await makeRequest('GET', `/pagelas?shelteredId=${shelteredId}`);
       if (checkResponse && checkResponse.status === 200 && checkResponse.data?.length > 0) {
         shelteredWithPagelas++;
+      } else {
+        shelteredWithoutPagelas.push({ id: shelteredId, name: shelteredName });
       }
       await new Promise(resolve => setTimeout(resolve, 10)); // Pequeno delay
     }
+
     console.log(`   ✅ Abrigados com pagelas: ${shelteredWithPagelas}/${testData.sheltered.length}`);
     if (shelteredWithPagelas === testData.sheltered.length) {
       console.log(`   🎉 Todos os abrigados têm pelo menos uma pagela!`);
     } else {
       console.log(`   ⚠️  ${testData.sheltered.length - shelteredWithPagelas} abrigados ainda não têm pagelas`);
+      if (shelteredWithoutPagelas.length > 0 && shelteredWithoutPagelas.length <= 10) {
+        console.log(`\n   📋 Abrigados sem pagelas:`);
+        shelteredWithoutPagelas.forEach(s => {
+          console.log(`      - ${s.name} (ID: ${s.id})`);
+        });
+      }
     }
   }
   
@@ -721,8 +720,8 @@ async function runPagelasAutomation() {
 
   // Criar pagelas para TODOS os abrigados (garantindo que cada um tenha pelo menos 1 pagela)
   console.log('\n📋 Criando pagelas para todos os abrigados...');
-  await createPagelasForAllSheltered(1); // 1 visita por abrigado (mínimo)
-  
+  await createPagelasForAllSheltered(20); // 20 visitas por abrigado
+
   // Opcional: Criar mais pagelas aleatórias em massa
   // await createPagelasInBulk(200);
   

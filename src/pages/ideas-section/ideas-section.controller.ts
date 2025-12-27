@@ -59,8 +59,9 @@ export class IdeasSectionController {
 
     const filesDict: Record<string, Express.Multer.File> = {};
     files.forEach((file) => (filesDict[file.fieldname] = file));
+    this.logger.log('Creating new ideas section');
     const result = await this.createService.createSection(dto, filesDict);
-
+    this.logger.log(`Ideas section created successfully: ${result.id}`);
     return result;
   }
 
@@ -87,8 +88,9 @@ export class IdeasSectionController {
 
     const filesDict: Record<string, Express.Multer.File> = {};
     files.forEach((file) => (filesDict[file.fieldname] = file));
+    this.logger.log(`Updating ideas section: ${id}`);
     const result = await this.updateService.updateSection(id, dto, filesDict);
-
+    this.logger.log(`Ideas section updated successfully: ${id}`);
     return result;
   }
 
@@ -120,7 +122,9 @@ export class IdeasSectionController {
       const filesDict: Record<string, Express.Multer.File> = {};
       files.forEach((file) => (filesDict[file.fieldname] = file));
 
+      this.logger.log(`Updating and attaching ideas section: ${sectionId} to page: ${pageId}`);
       const result = await this.updateService.editAndAttachSectionToPage(sectionId, pageId, dto, filesDict);
+      this.logger.log(`Ideas section updated and attached successfully: ${sectionId}`);
       return result;
     } catch (error) {
       this.logger.error('Error editing and linking section', error);
@@ -132,7 +136,9 @@ export class IdeasSectionController {
   @Delete(':id')
   async delete(@Param('id') id: string) {
 
+    this.logger.log(`Deleting ideas section: ${id}`);
     await this.deleteService.deleteSection(id);
+    this.logger.log(`Ideas section deleted successfully: ${id}`);
 
     return { message: 'Seção de ideias removida com sucesso.' };
   }

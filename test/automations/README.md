@@ -1,4 +1,34 @@
-# Automações de Criação de Conteúdo
+# 🤖 Automações de Criação de Conteúdo
+
+Este diretório contém scripts de automação para criar dados em massa para todos os módulos da aplicação.
+
+## ✨ Nova Arquitetura (Refatorada)
+
+As automações agora usam uma **biblioteca compartilhada** que elimina código duplicado e padroniza a criação de automações.
+
+### 📚 Biblioteca Compartilhada (`shared/`)
+
+Todos os utilitários reutilizáveis estão em `test/automations/shared/`:
+- `api-client.js` - Cliente HTTP com autenticação automática
+- `mock-data-generator.js` - Gerador de dados falsos
+- `logger.js` - Sistema de logging colorido
+- `automation-base.js` - Classe base para automações
+
+📖 **[Leia a documentação completa](shared/README.md)** para entender como usar os utilitários.
+
+### ✅ Automações Refatoradas
+
+Automações que já usam a nova arquitetura:
+- ✅ **Comments** - Código reduzido de 247 para 75 linhas (70% menor)
+- ✅ **Feedbacks** - Código reduzido de 240 para 81 linhas (66% menor)
+
+### 🔄 Benefícios da Refatoração
+
+- 🎯 **-70% de código**: Menos duplicação
+- 🧩 **Reutilizável**: Utilitários compartilhados
+- 📖 **Mais legível**: Código limpo e organizado
+- 🚀 **Mais rápido**: Template pronto para novas automações
+- 🎨 **Logs bonitos**: Sistema de logging consistente
 
 Este diretório contém scripts de automação para criar dados em massa para todos os módulos de páginas da aplicação.
 

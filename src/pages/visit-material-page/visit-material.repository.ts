@@ -21,12 +21,10 @@ export class VisitMaterialsPageRepository extends Repository<VisitMaterialsPageE
 
     const { testament, searchString } = query;
 
-    // 🔍 Filtro por testamento
     if (testament) {
       qb.andWhere('page.testament = :testament', { testament });
     }
 
-    // 🔍 Busca unificada: title, subtitle, description
     if (searchString?.trim()) {
       const like = `%${searchString.trim()}%`;
       qb.andWhere(

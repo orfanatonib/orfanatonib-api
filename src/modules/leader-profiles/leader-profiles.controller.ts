@@ -8,6 +8,7 @@ import {
   Req,
   UseGuards,
   Put,
+  Logger,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { LeaderProfilesService } from './services/leader-profiles.service';
@@ -15,12 +16,14 @@ import { LeaderResponseDto } from './dto/leader-profile.response.dto';
 import { LeaderSimpleListDto } from './dto/leader-simple-list.dto';
 import { PageDto, LeaderProfilesQueryDto } from './dto/leader-profiles.query.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { ManageLeaderTeamDto } from './dto/assign-team.dto';
+import { ManageLeaderTeamDto, ManageLeaderTeamsDto, ShelterTeamDto } from './dto/assign-team.dto';
 import { ShelterWithLeaderStatusDto } from 'src/modules/shelters/dto/shelter.response.dto';
 
 @Controller('leader-profiles')
 @UseGuards(JwtAuthGuard)
 export class LeaderProfilesController {
+  private readonly logger = new Logger(LeaderProfilesController.name);
+
   constructor(private readonly service: LeaderProfilesService) { }
 
   @Get()
@@ -52,9 +55,12 @@ export class LeaderProfilesController {
   @Put(':leaderId')
   async update(
     @Param('leaderId', new ParseUUIDPipe()) leaderId: string,
-    @Body() dto: ManageLeaderTeamDto,
+    @Body() dto: ShelterTeamDto[],
     @Req() req: Request,
   ): Promise<LeaderResponseDto> {
-    return this.service.manageTeam(leaderId, dto, req);
+    this.logger.log(`Updating leader profile: ${leaderId}`);
+    const result = await this.service.manageTeams(leaderId, { assignments: dto }, req);
+    this.logger.log(`Leader profile updated successfully: ${leaderId}`);
+    return result;
   }
 }

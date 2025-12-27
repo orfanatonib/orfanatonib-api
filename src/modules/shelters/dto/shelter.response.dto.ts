@@ -156,7 +156,6 @@ export class ShelterResponseDto {
   @Transform(({ value }) => (Array.isArray(value) ? value : []))
   teams!: TeamWithMembersDto[];
 
-  // Propriedades calculadas para compatibilidade (agrega todos os leaders e teachers de todas as teams)
   @Expose()
   @Type(() => CoordinatorWithUserDto)
   @Transform(({ obj }) => {
@@ -215,7 +214,6 @@ export function toShelterWithLeaderStatusDto(
   
   if (entity.teams && Array.isArray(entity.teams)) {
     dto.teams = entity.teams.map((team: any) => {
-      // Primeiro transformar o team para o DTO base
       const teamBase = plainToInstance(TeamWithLeaderStatusDto, team, { excludeExtraneousValues: true });
       
       const isLeaderInTeam = team.leaders?.some((leader: any) => leader.id === leaderId) ?? false;

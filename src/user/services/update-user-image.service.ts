@@ -35,13 +35,8 @@ export class UpdateUserImageService {
     body: any,
     files: Express.Multer.File[],
   ) {
-    // Este endpoint é apenas para admin quando chamado de /users (guards garantem isso)
-    // Quando chamado de /profile, já vem o userId correto do token
-    
-    // Verificar se o usuário existe (findOne já lança NotFoundException se não encontrar)
     await this.getUsersService.findOne(userId);
 
-    // Parse do body (suporta form-data ou JSON puro)
     let mediaDto: {
       title?: string;
       description?: string;
@@ -70,8 +65,7 @@ export class UpdateUserImageService {
 
     const filesDict = this.mapFiles(files);
     const hasFile = files.length > 0;
-    
-    // Normalizar uploadType (aceita tanto "UPLOAD" quanto "upload")
+
     let uploadTypeValue: UploadType;
     if (mediaDto.uploadType) {
       const normalized = String(mediaDto.uploadType).toLowerCase();
@@ -80,14 +74,12 @@ export class UpdateUserImageService {
       uploadTypeValue = hasFile ? UploadType.UPLOAD : UploadType.LINK;
     }
 
-    // Buscar mídia existente
     const existingMedia = await this.mediaItemProcessor.findMediaItemByTarget(
       userId,
       'UserEntity',
     );
 
     if (existingMedia) {
-      // Atualizar mídia existente
       const media = this.mediaItemProcessor.buildBaseMediaItem(
         {
           ...mediaDto,
@@ -98,10 +90,8 @@ export class UpdateUserImageService {
         'UserEntity',
       );
 
-      // Verificar se existe arquivo antigo no S3 para deletar
       const hasOldLocalFile = existingMedia.isLocalFile && existingMedia.url;
 
-      // Se há arquivo sendo enviado, processa como upload
       if (hasFile) {
         const fieldKey = mediaDto.fieldKey || 'file';
         const file = filesDict[fieldKey];
@@ -111,10 +101,8 @@ export class UpdateUserImageService {
           );
         }
 
-        // Validar se é uma imagem
         this.validateImageFile(file);
 
-        // Sempre deletar arquivo antigo do S3 se existir (substituição)
         if (hasOldLocalFile) {
           try {
             await this.s3Service.delete(existingMedia.url);
@@ -130,7 +118,6 @@ export class UpdateUserImageService {
         media.originalName = file.originalname;
         media.size = file.size;
       } else if (mediaDto.url) {
-        // Mudando para link: sempre deletar arquivo antigo do S3 se existir
         if (hasOldLocalFile) {
           try {
             await this.s3Service.delete(existingMedia.url);
@@ -149,7 +136,6 @@ export class UpdateUserImageService {
 
       await this.mediaItemProcessor.upsertMediaItem(existingMedia.id, media);
     } else {
-      // Criar nova mídia
       const media = this.mediaItemProcessor.buildBaseMediaItem(
         {
           ...mediaDto,
@@ -162,7 +148,6 @@ export class UpdateUserImageService {
         'UserEntity',
       );
 
-      // Se há arquivo sendo enviado, processa como upload
       if (hasFile) {
         const fieldKey = mediaDto.fieldKey || 'file';
         const file = filesDict[fieldKey];
@@ -172,7 +157,6 @@ export class UpdateUserImageService {
           );
         }
 
-        // Validar se é uma imagem
         this.validateImageFile(file);
 
         media.uploadType = UploadType.UPLOAD;
@@ -191,7 +175,6 @@ export class UpdateUserImageService {
       await this.mediaItemProcessor.saveMediaItem(media);
     }
 
-    // Retornar o usuário atualizado
     return this.getUsersService.findOne(userId);
   }
 }

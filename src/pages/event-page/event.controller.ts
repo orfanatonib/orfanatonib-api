@@ -52,7 +52,9 @@ export class EventController {
       const dto = plainToInstance(CreateEventDto, parsed);
       await validateOrReject(dto, { whitelist: true, forbidNonWhitelisted: true });
 
+      this.logger.log('Creating new event');
       const result = await this.createService.create(dto, file);
+      this.logger.log(`Event created successfully: ${result.id}`);
       return result;
     } catch (error) {
       this.logger.error('Error creating event', error.stack);
@@ -106,7 +108,9 @@ export class EventController {
       throw new BadRequestException(message);
     }
 
+    this.logger.log(`Updating event: ${id}`);
     const result = await this.updateService.update(id, { ...dto, isLocalFile: !!file }, file);
+    this.logger.log(`Event updated successfully: ${id}`);
     return result;
   }
 
@@ -114,6 +118,8 @@ export class EventController {
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id') id: string): Promise<void> {
+    this.logger.log(`Deleting event: ${id}`);
     await this.deleteService.remove(id);
+    this.logger.log(`Event deleted successfully: ${id}`);
   }
 }

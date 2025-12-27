@@ -37,7 +37,10 @@ export class RouteController {
   @Post('orphans/cleanup')
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async cleanupOrphanRoutes() {
-    return this.cleanupService.cleanupOrphanRoutes();
+    this.logger.log('Cleaning up orphan routes');
+    const result = await this.cleanupService.cleanupOrphanRoutes();
+    this.logger.log('Orphan routes cleaned up successfully');
+    return result;
   }
 
   @Get(':id')

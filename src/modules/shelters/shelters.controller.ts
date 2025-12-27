@@ -83,8 +83,10 @@ export class SheltersController {
     @Req() req: Request,
     @Body('shelterData') shelterDataRaw?: string,
   ): Promise<ShelterResponseDto> {
+    this.logger.log('Creating new shelter');
     const bodyToProcess = shelterDataRaw ? { shelterData: shelterDataRaw } : {};
     const entity = await this.createService.createFromRaw(bodyToProcess, files, req);
+    this.logger.log(`Shelter created successfully: ${entity.id}`);
     return toShelterDto(entity);
   }
 
@@ -97,8 +99,10 @@ export class SheltersController {
     @Body('shelterData') shelterDataRaw?: string,
     @Body() body?: any,
   ): Promise<ShelterResponseDto> {
+    this.logger.log(`Updating shelter: ${id}`);
     const bodyToProcess = shelterDataRaw ? { shelterData: shelterDataRaw } : (body || {});
     const entity = await this.updateService.updateFromRaw(id, bodyToProcess, files, req);
+    this.logger.log(`Shelter updated successfully: ${id}`);
     return toShelterDto(entity);
   }
 
@@ -111,8 +115,10 @@ export class SheltersController {
     @Body('mediaData') mediaDataRaw?: string,
     @Body() body?: any,
   ): Promise<ShelterResponseDto> {
+    this.logger.log(`Updating shelter media: ${id}`);
     const bodyToProcess = mediaDataRaw ? { mediaData: mediaDataRaw } : (body || {});
     const entity = await this.updateService.updateMediaFromRaw(id, bodyToProcess, files, req);
+    this.logger.log(`Shelter media updated successfully: ${id}`);
     return toShelterDto(entity);
   }
 
@@ -121,7 +127,10 @@ export class SheltersController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Req() req: Request,
   ): Promise<{ message: string }> {
-    return this.deleteService.remove(id, req);
+    this.logger.log(`Deleting shelter: ${id}`);
+    const result = await this.deleteService.remove(id, req);
+    this.logger.log(`Shelter deleted successfully: ${id}`);
+    return result;
   }
 
 }

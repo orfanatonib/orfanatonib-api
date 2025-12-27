@@ -32,6 +32,30 @@ export class TeamsService {
     return teams.map(team => this.toDto(team));
   }
 
+  async findByLeader(leaderId: string): Promise<TeamResponseDto[]> {
+    const teams = await this.repository.findByLeader(leaderId);
+    return teams.map(team => this.toDto(team));
+  }
+
+  async findTeamByShelterAndNumber(shelterId: string, numberTeam: number): Promise<TeamResponseDto | null> {
+    const team = await this.repository.findTeamByShelterAndNumber(shelterId, numberTeam);
+    return team ? this.toDto(team) : null;
+  }
+
+  async addLeadersToTeam(teamId: string, leaderProfileIds: string[]): Promise<TeamResponseDto> {
+    const team = await this.repository.addLeadersToTeam(teamId, leaderProfileIds);
+    return this.toDto(team);
+  }
+
+  async removeLeadersFromTeam(teamId: string, leaderProfileIds: string[]): Promise<TeamResponseDto> {
+    const team = await this.repository.removeLeadersFromTeam(teamId, leaderProfileIds);
+    return this.toDto(team);
+  }
+
+  async removeLeaderFromAllTeams(leaderId: string): Promise<void> {
+    return this.repository.removeLeaderFromAllTeams(leaderId);
+  }
+
   async update(id: string, dto: UpdateTeamDto): Promise<TeamResponseDto> {
     const team = await this.repository.update(id, dto);
     return this.toDto(team);

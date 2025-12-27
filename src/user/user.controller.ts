@@ -45,7 +45,10 @@ export class UserController {
    */
   @Post()
   async create(@Body() dto: CreateUserDto) {
-    return this.createUserService.create(dto);
+    this.logger.log('Creating new user');
+    const result = await this.createUserService.create(dto);
+    this.logger.log(`User created successfully: ${result.id}`);
+    return result;
   }
 
   /**
@@ -74,7 +77,10 @@ export class UserController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateUserDto,
   ): Promise<UserEntity> {
-    return this.updateUserService.update(id, dto);
+    this.logger.log(`Updating user: ${id}`);
+    const result = await this.updateUserService.update(id, dto);
+    this.logger.log(`User updated successfully: ${id}`);
+    return result;
   }
 
   /**
@@ -82,7 +88,9 @@ export class UserController {
    */
   @Delete(':id')
   async remove(@Param('id', new ParseUUIDPipe()) id: string) {
+    this.logger.log(`Deleting user: ${id}`);
     await this.deleteUserService.remove(id);
+    this.logger.log(`User deleted successfully: ${id}`);
     return { message: 'User removed successfully' };
   }
 
@@ -97,7 +105,10 @@ export class UserController {
     @Body('imageData') imageDataRaw?: string,
     @Body() body?: any,
   ): Promise<UserEntity> {
+    this.logger.log(`Updating user image: ${id}`);
     const bodyToProcess = imageDataRaw ? { imageData: imageDataRaw } : (body || {});
-    return this.updateUserImageService.updateUserImage(id, bodyToProcess, files);
+    const result = await this.updateUserImageService.updateUserImage(id, bodyToProcess, files);
+    this.logger.log(`User image updated successfully: ${id}`);
+    return result;
   }
 }

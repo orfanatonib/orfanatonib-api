@@ -17,7 +17,10 @@ export class ContactController {
     phone: string;
     message: string;
   }): Promise<ContactEntity> {
-    return this.contactService.createContact(body);
+    this.logger.log('Creating new contact message');
+    const result = await this.contactService.createContact(body);
+    this.logger.log(`Contact message created successfully: ${result.id}`);
+    return result;
   }
 
   @Get()
@@ -29,12 +32,17 @@ export class ContactController {
   @Patch(':id/read')
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async setRead(@Param('id') id: string): Promise<ContactEntity> {
-    return this.contactService.setReadOnContact(id);
+    this.logger.log(`Marking contact as read: ${id}`);
+    const result = await this.contactService.setReadOnContact(id);
+    this.logger.log(`Contact marked as read successfully: ${id}`);
+    return result;
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async delete(@Param('id') id: string): Promise<void> {
+    this.logger.log(`Deleting contact: ${id}`);
     await this.contactService.deleteContact(id);
+    this.logger.log(`Contact deleted successfully: ${id}`);
   }
 }

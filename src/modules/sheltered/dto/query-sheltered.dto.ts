@@ -22,7 +22,6 @@ export class QueryShelteredDto {
   @IsOptional() @IsString()
   searchString?: string;
 
-  // Filtro por ID do abrigo
   @IsOptional() @IsUUID()
   shelterId?: string;
 }
@@ -39,13 +38,9 @@ export class QueryShelteredSimpleDto {
   @IsOptional() @IsString()
   searchString?: string;
 
-  // ✝️ Filtro: aceitou Jesus
   @IsOptional() @IsIn(['accepted', 'not_accepted', 'all'])
   acceptedJesus?: 'accepted' | 'not_accepted' | 'all' = 'all';
 
-  // ✅ Filtro: status ativo
-  // 'active' - apenas abrigados ativos
-  // 'inactive' - apenas abrigados inativos
   @IsOptional() @IsIn(['active', 'inactive', 'all'])
   active?: 'active' | 'inactive' | 'all' = 'all';
 }

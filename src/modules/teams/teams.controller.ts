@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   ParseUUIDPipe,
+  Logger,
 } from '@nestjs/common';
 import { TeamsService } from './services/teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
@@ -18,11 +19,16 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 @Controller('teams')
 @UseGuards(JwtAuthGuard)
 export class TeamsController {
+  private readonly logger = new Logger(TeamsController.name);
+
   constructor(private readonly service: TeamsService) {}
 
   @Post()
   async create(@Body() dto: CreateTeamDto): Promise<TeamResponseDto> {
-    return this.service.create(dto);
+    this.logger.log('Creating new team');
+    const result = await this.service.create(dto);
+    this.logger.log(`Team created successfully: ${result.id}`);
+    return result;
   }
 
   @Get()
@@ -49,12 +55,17 @@ export class TeamsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateTeamDto,
   ): Promise<TeamResponseDto> {
-    return this.service.update(id, dto);
+    this.logger.log(`Updating team: ${id}`);
+    const result = await this.service.update(id, dto);
+    this.logger.log(`Team updated successfully: ${id}`);
+    return result;
   }
 
   @Delete(':id')
   async remove(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
-    return this.service.remove(id);
+    this.logger.log(`Deleting team: ${id}`);
+    await this.service.remove(id);
+    this.logger.log(`Team deleted successfully: ${id}`);
   }
 }
 

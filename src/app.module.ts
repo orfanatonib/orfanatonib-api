@@ -30,7 +30,6 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import * as path from 'path';
 
-// Determina qual arquivo de ambiente usar
 function getEnvFilePath(): string {
   const env = process.env.ENVIRONMENT || process.env.NODE_ENV || 'local';
   const envFileMap: Record<string, string> = {

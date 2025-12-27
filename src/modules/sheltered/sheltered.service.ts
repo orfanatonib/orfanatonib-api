@@ -115,7 +115,6 @@ export class ShelteredService {
   async create(dto: CreateShelteredDto, request: Request): Promise<ShelteredResponseDto> {
     const ctx = await this.getCtx(request);
 
-    // Validar gender
     this.validateGender(dto.gender);
 
     if (ctx.role && ctx.role !== 'admin' && dto.shelterId) {
@@ -150,7 +149,6 @@ export class ShelteredService {
   async update(id: string, dto: UpdateShelteredDto, request: Request): Promise<ShelteredResponseDto> {
     const ctx = await this.getCtx(request);
 
-    // Validar gender se fornecido
     if (dto.gender !== undefined) {
       this.validateGender(dto.gender);
     }
@@ -184,7 +182,7 @@ export class ShelteredService {
         (entity as any).address = null;
       } else {
         if (entity.address) {
-          await this.addressesService.update(entity.address.id, dto.address);
+          this.addressesService.merge(entity.address, dto.address);
         } else {
           const address = await this.addressesService.create(dto.address);
           (entity as any).address = address;

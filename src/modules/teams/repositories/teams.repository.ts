@@ -118,6 +118,25 @@ export class TeamsRepository {
     });
   }
 
+  async findByLeader(leaderId: string): Promise<TeamEntity[]> {
+    return this.teamRepo.find({
+      where: {
+        leaders: { id: leaderId }
+      },
+      relations: ['shelter', 'leaders', 'leaders.user', 'teachers', 'teachers.user'],
+    });
+  }
+
+  async findTeamByShelterAndNumber(shelterId: string, numberTeam: number): Promise<TeamEntity | null> {
+    return this.teamRepo.findOne({
+      where: {
+        shelter: { id: shelterId },
+        numberTeam: numberTeam
+      },
+      relations: ['shelter', 'leaders', 'leaders.user', 'teachers', 'teachers.user'],
+    });
+  }
+
   async update(id: string, dto: UpdateTeamDto): Promise<TeamEntity> {
     return this.dataSource.transaction(async (manager) => {
       const txTeam = manager.withRepository(this.teamRepo);
@@ -139,9 +158,9 @@ export class TeamsRepository {
           .innerJoin('leader.teams', 'team', 'team.id = :teamId', { teamId: id })
           .select('leader.id', 'id')
           .getRawMany();
-        
+
         const leaderIds = leaderIdsInTeam.map((row: any) => row.id);
-        
+
         if (leaderIds.length > 0) {
           const currentLeaders = await txLeader.find({
             where: { id: In(leaderIds) },
@@ -161,7 +180,7 @@ export class TeamsRepository {
             where: { id: In(dto.leaderProfileIds) },
             relations: ['teams'],
           });
-          
+
           for (const leader of leaders) {
             if (!leader.teams) {
               leader.teams = [];
@@ -205,6 +224,82 @@ export class TeamsRepository {
     });
   }
 
+  async addLeadersToTeam(teamId: string, leaderProfileIds: string[]): Promise<TeamEntity> {
+    return this.dataSource.transaction(async (manager) => {
+      const txLeader = manager.withRepository(this.leaderRepo);
+      const txTeam = manager.withRepository(this.teamRepo);
+
+      const team = await txTeam.findOne({ where: { id: teamId } });
+      if (!team) {
+        throw new NotFoundException('Team not found');
+      }
+
+      if (leaderProfileIds.length > 0) {
+        const leaders = await txLeader.find({
+          where: { id: In(leaderProfileIds) },
+          relations: ['teams'],
+        });
+
+        for (const leader of leaders) {
+          if (!leader.teams) {
+            leader.teams = [];
+          }
+          const isAlreadyInTeam = leader.teams.some(t => t.id === teamId);
+          if (!isAlreadyInTeam) {
+            leader.teams.push(team as any);
+            await txLeader.save(leader);
+          }
+        }
+      }
+
+      return team;
+    });
+  }
+
+  async removeLeadersFromTeam(teamId: string, leaderProfileIds: string[]): Promise<TeamEntity> {
+    return this.dataSource.transaction(async (manager) => {
+      const txLeader = manager.withRepository(this.leaderRepo);
+      const txTeam = manager.withRepository(this.teamRepo);
+
+      const team = await txTeam.findOne({ where: { id: teamId } });
+      if (!team) {
+        throw new NotFoundException('Team not found');
+      }
+
+      if (leaderProfileIds.length > 0) {
+        const leaders = await txLeader.find({
+          where: { id: In(leaderProfileIds) },
+          relations: ['teams'],
+        });
+
+        for (const leader of leaders) {
+          if (leader.teams && Array.isArray(leader.teams)) {
+            leader.teams = leader.teams.filter(t => t.id !== teamId);
+            await txLeader.save(leader);
+          }
+        }
+      }
+
+      return team;
+    });
+  }
+
+  async removeLeaderFromAllTeams(leaderId: string): Promise<void> {
+    return this.dataSource.transaction(async (manager) => {
+      const txLeader = manager.withRepository(this.leaderRepo);
+
+      const leader = await txLeader.findOne({
+        where: { id: leaderId },
+        relations: ['teams'],
+      });
+
+      if (leader && leader.teams && leader.teams.length > 0) {
+        leader.teams = [];
+        await txLeader.save(leader);
+      }
+    });
+  }
+
   async remove(id: string): Promise<void> {
     const team = await this.teamRepo.findOne({ where: { id } });
     if (!team) {
@@ -220,7 +315,7 @@ export class TeamsRepository {
         .createQueryBuilder('leader')
         .innerJoin('leader.teams', 'team', 'team.id = :teamId', { teamId: id })
         .getMany();
-      
+
       for (const leader of leaders) {
         if (leader.teams) {
           leader.teams = leader.teams.filter(t => t.id !== id);
@@ -228,7 +323,6 @@ export class TeamsRepository {
         }
       }
 
-      // Remover professores da equipe
       const teachers = await txTeacher.find({
         where: { team: { id } },
       });
@@ -237,7 +331,6 @@ export class TeamsRepository {
         await txTeacher.save(teacher);
       }
 
-      // Deletar a equipe
       await txTeam.remove(team);
     });
   }

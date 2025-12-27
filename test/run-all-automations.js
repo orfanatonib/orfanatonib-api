@@ -6,14 +6,20 @@ const path = require('path');
 // Executa em SEQUÊNCIA (ordem importa). Inclui fixes entre módulos.
 // Observação: algumas automações podem falhar dependendo de integrações externas (ex.: Contacts envia e-mail).
 const automations = [
-  // Core data
+  // Core data - usuários e estrutura básica
   { name: 'Users', script: 'automations/users/users-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Shelters', script: 'automations/shelters/shelters-complete-automation.js', timeoutMs: 5 * 60_000 },
-  { name: 'Fix: vincular leaders/teachers aos shelters', script: 'fix-shelter-staff-links.js', timeoutMs: 10 * 60_000 },
+  { name: 'Teacher Profiles', script: 'automations/teacher-profiles/teacher-profiles-complete-automation.js', timeoutMs: 5 * 60_000 },
+  { name: 'Leader Profiles', script: 'automations/leader-profiles/leader-profiles-complete-automation.js', timeoutMs: 5 * 60_000 },
+
+  // Fixes - corrige relacionamentos
+  { name: 'Fix: vincular leaders/teachers aos shelters', script: 'automations/fixes/fix-shelter-staff-links.js', timeoutMs: 10 * 60_000 },
+
+  // Dados principais
   { name: 'Sheltered', script: 'automations/sheltered/sheltered-complete-automation.js', timeoutMs: 10 * 60_000 },
   { name: 'Pagelas', script: 'automations/pagelas/pagelas-complete-automation.js', timeoutMs: 10 * 60_000 },
 
-  // Content/pages
+  // Content - páginas e conteúdo
   { name: 'Events', script: 'automations/events/events-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Video Pages', script: 'automations/video-pages/video-pages-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Image Pages', script: 'automations/image-pages/image-pages-complete-automation.js', timeoutMs: 5 * 60_000 },
@@ -21,11 +27,15 @@ const automations = [
   { name: 'Visit Material Pages', script: 'automations/visit-material-pages/visit-material-pages-complete-automation.js', timeoutMs: 7 * 60_000 },
   { name: 'Ideas Sections Órfãs', script: 'automations/ideas-sections/ideas-sections-orphan-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Image Sections Órfãs', script: 'automations/image-sections/image-sections-orphan-automation.js', timeoutMs: 5 * 60_000 },
+
+  // Outros conteúdos
   { name: 'Documents', script: 'automations/documents/documents-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Informatives', script: 'automations/informatives/informatives-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Meditations', script: 'automations/meditations/meditations-complete-automation.js', timeoutMs: 5 * 60_000 },
-  { name: 'Comments', script: 'automations/comments/comments-complete-automation.js', timeoutMs: 5 * 60_000 },
-  { name: 'Feedbacks', script: 'automations/feedbacks/feedbacks-complete-automation.js', timeoutMs: 5 * 60_000 },
+
+  // Interações - comentários, feedbacks, contatos (refatorados com biblioteca compartilhada)
+  { name: 'Comments ✨', script: 'automations/comments/comments-complete-automation.js', timeoutMs: 5 * 60_000 },
+  { name: 'Feedbacks ✨', script: 'automations/feedbacks/feedbacks-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Contacts', script: 'automations/contacts/contacts-complete-automation.js', timeoutMs: 5 * 60_000 },
 ];
 

@@ -70,7 +70,6 @@ export class TeacherResponseDto {
       return null;
     }
 
-    // Montar o shelter com a equipe dentro
     return {
       id: obj.team.shelter.id,
       name: obj.team.shelter.name,

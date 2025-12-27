@@ -30,15 +30,11 @@ const trimOrUndef = (v: any): string | undefined => {
 };
 
 export class TeacherProfilesQueryDto {
-  // 🔍 FILTROS CONSOLIDADOS
-  
-  // Busca pelos dados do teacher: nome, email, telefone
   @IsOptional()
   @Transform(({ value }) => trimOrUndef(value))
   @IsString()
   teacherSearchString?: string;
 
-  // Busca por todos os campos do shelter
   @IsOptional()
   @Transform(({ value }) => trimOrUndef(value))
   @IsString()
@@ -48,7 +44,6 @@ export class TeacherProfilesQueryDto {
   @BooleanQuery()
   hasShelter?: boolean;
 
-  // Filtros de equipe
   @IsOptional()
   @Transform(({ value }) => trimOrUndef(value))
   @IsString()

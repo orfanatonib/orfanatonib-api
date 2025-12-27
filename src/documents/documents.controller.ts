@@ -64,7 +64,10 @@ export class DocumentsController {
       ? files?.find((f) => f.fieldname === dto.media.fileField)
       : undefined;
 
-    return this.createService.createDocument(dto, file);
+    this.logger.log('Creating new document');
+    const result = await this.createService.createDocument(dto, file);
+    this.logger.log(`Document created successfully: ${result.id}`);
+    return result;
   }
 
   @Get()
@@ -104,12 +107,17 @@ export class DocumentsController {
       ? files?.find((f) => f.fieldname === dto.media.fileField)
       : undefined;
 
-    return this.updateService.execute(id, dto, file);
+    this.logger.log(`Updating document: ${id}`);
+    const result = await this.updateService.execute(id, dto, file);
+    this.logger.log(`Document updated successfully: ${id}`);
+    return result;
   }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(':id')
   async remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.deleteService.execute(id);
+    this.logger.log(`Deleting document: ${id}`);
+    await this.deleteService.execute(id);
+    this.logger.log(`Document deleted successfully: ${id}`);
   }
 }

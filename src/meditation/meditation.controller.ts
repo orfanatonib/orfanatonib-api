@@ -53,7 +53,10 @@ export class MeditationController {
       const dto = plainToInstance(CreateMeditationDto, parsed);
       await validateOrReject(dto, { whitelist: true, forbidNonWhitelisted: true });
 
-      return this.createService.create(dto, file);
+      this.logger.log('Creating new meditation');
+      const result = await this.createService.create(dto, file);
+      this.logger.log(`Meditation created successfully: ${result.id}`);
+      return result;
     } catch (error) {
       this.logger.error('Error creating meditation', error.stack);
       const message =
@@ -107,13 +110,18 @@ export class MeditationController {
       throw new BadRequestException(message);
     }
 
-    return this.updateService.update(id, { ...dto, isLocalFile: !!file }, file);
+    this.logger.log(`Updating meditation: ${id}`);
+    const result = await this.updateService.update(id, { ...dto, isLocalFile: !!file }, file);
+    this.logger.log(`Meditation updated successfully: ${id}`);
+    return result;
   }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(':id')
   @HttpCode(204)
   async remove(@Param('id') id: string): Promise<void> {
+    this.logger.log(`Deleting meditation: ${id}`);
     await this.deleteService.remove(id);
+    this.logger.log(`Meditation deleted successfully: ${id}`);
   }
 }

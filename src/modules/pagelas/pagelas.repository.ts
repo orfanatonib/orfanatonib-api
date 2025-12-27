@@ -139,7 +139,15 @@ export class PagelasRepository {
         present: data.present,
         notes: data.notes ?? null,
       });
-      return txPagela.save(entity);
+
+      try {
+        return await txPagela.save(entity);
+      } catch (e: any) {
+        if (e?.code === 'ER_DUP_ENTRY') {
+          throw new BadRequestException('Já existe Pagela para este abrigado nesta visita/ano');
+        }
+        throw e;
+      }
     });
   }
 

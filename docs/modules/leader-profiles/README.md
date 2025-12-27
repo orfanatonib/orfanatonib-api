@@ -413,7 +413,8 @@ node tests/automations/leader-profiles/leader-profiles-complete-automation.js
 
 ## 🔗 Links Relacionados
 
-- [Documentação Completa](./Leader_Profiles_API_Documentation.md)
+- [Documentação Completa dos Endpoints](./LEADER_PROFILES_ENDPOINTS_COMPLETE.md) ⭐ **NOVO**
+- [Documentação Técnica](./Leader_Profiles_API_Documentation.md)
 - [Collection Postman](./Leader_Profiles_API_Collection.postman_collection.json)
 - [Log de Atualizações](./LEADER_PROFILES_COLLECTION_UPDATE_LOG.md)
 - [Índice Geral](../../README.md)
