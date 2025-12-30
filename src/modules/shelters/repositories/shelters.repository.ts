@@ -119,15 +119,38 @@ export class SheltersRepository {
       shelterName,
     } = q;
 
-    const qb = this.buildShelterBaseQB().distinct(true);
-    this.applyRoleFilter(qb, ctx);
+    // Step 1: Build query to get shelter IDs with pagination
+    const sortMap: Record<string, string> = {
+      name: 'shelter.name',
+      createdAt: 'shelter.createdAt',
+      updatedAt: 'shelter.updatedAt',
+      city: 'address.city',
+      state: 'address.state',
+    };
+
+    const orderBy = sortMap[sort] ?? 'shelter.name';
+    const orderDir = (order || 'ASC').toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+
+    const idQb = this.shelterRepo
+      .createQueryBuilder('shelter')
+      .leftJoin('shelter.address', 'address')
+      .leftJoin('shelter.teams', 'teams')
+      .leftJoin('teams.leaders', 'leaders')
+      .leftJoin('leaders.user', 'leaderUser')
+      .leftJoin('teams.teachers', 'teachers')
+      .leftJoin('teachers.user', 'teacherUser')
+      .select('shelter.id', 'id')
+      .addSelect(orderBy, 'orderField')
+      .distinct(true);
+
+    this.applyRoleFilter(idQb, ctx);
 
     if (shelterName?.trim()) {
       const like = `%${shelterName.trim()}%`;
-      qb.andWhere('LOWER(shelter.name) LIKE LOWER(:shelterName)', { shelterName: like });
+      idQb.andWhere('LOWER(shelter.name) LIKE LOWER(:shelterName)', { shelterName: like });
     } else if (searchString?.trim()) {
       const like = `%${searchString.trim()}%`;
-      qb.andWhere(
+      idQb.andWhere(
         `(
           LOWER(shelter.name) LIKE LOWER(:searchString) OR
           LOWER(address.city) LIKE LOWER(:searchString) OR
@@ -152,22 +175,30 @@ export class SheltersRepository {
       );
     }
 
-    const sortMap: Record<string, string> = {
-      name: 'shelter.name',
-      createdAt: 'shelter.createdAt',
-      updatedAt: 'shelter.updatedAt',
-      city: 'address.city',
-      state: 'address.state',
-    };
-    
-    const orderBy = sortMap[sort] ?? 'shelter.name';
-    const orderDir = (order || 'ASC').toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
-    qb.orderBy(orderBy, orderDir as 'ASC' | 'DESC')
+    // Get total count
+    const totalQb = idQb.clone();
+    const total = await totalQb.getCount();
+
+    // Apply sorting and pagination on IDs
+    idQb.orderBy('orderField', orderDir as 'ASC' | 'DESC')
+      .offset((page - 1) * limit)
+      .limit(limit);
+
+    const shelterIds = await idQb.getRawMany();
+
+    if (shelterIds.length === 0) {
+      return { items: [], total };
+    }
+
+    // Step 2: Load full shelter entities with all relations
+    const ids = shelterIds.map(row => row.id);
+    const itemsQb = this.buildShelterBaseQB()
+      .where('shelter.id IN (:...ids)', { ids })
+      .orderBy(orderBy, orderDir as 'ASC' | 'DESC')
       .addOrderBy('teams.numberTeam', 'ASC');
 
-    qb.skip((page - 1) * limit).take(limit);
+    const items = await itemsQb.getMany();
 
-    const [items, total] = await qb.getManyAndCount();
     return { items, total };
   }
 
