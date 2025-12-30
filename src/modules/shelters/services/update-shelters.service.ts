@@ -258,17 +258,18 @@ export class UpdateSheltersService {
 
   private async updateRoute(shelterId: string, dto: UpdateShelterDto) {
     const route = await this.routeService.findRouteByEntityId(shelterId);
-    
+
     if (route) {
       const updateData: any = {};
-      
+
       if (dto.name) {
         updateData.title = dto.name;
+        updateData.path = this.generateRoutePath(dto.name);
       }
       if (dto.description) {
         updateData.description = dto.description;
       }
-      
+
       if (dto.address && (dto.address.city || dto.address.state || dto.address.district || dto.address.number)) {
         const updatedShelter = await this.sheltersRepository.findOneOrFailForResponse(shelterId, {});
         if (updatedShelter && updatedShelter.address) {
