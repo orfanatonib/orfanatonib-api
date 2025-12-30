@@ -310,20 +310,30 @@ if [ "$SKIP_DEPLOY" = false ]; then
         echo "  docker run -d --name orfanato-nib-api --restart unless-stopped -p 80:3000 --env-file /opt/orfanato-nib-api/env/${ENV_FILE_NAME}.env ${IMAGE_NAME}"
     else
         echo -e "${GREEN}✅ Comando enviado! Command ID: ${COMMAND_ID}${NC}"
-        echo -e "${CYAN}⏳ Aguardando execução (15 segundos)...${NC}"
-        sleep 15
+        echo -e "${CYAN}⏳ Aguardando execução...${NC}"
+
+        # Aguardar até 60 segundos para o comando completar
+        MAX_ATTEMPTS=12
+        ATTEMPT=1
+        SSM_STATUS="InProgress"
+
+        while [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ] && [ "$SSM_STATUS" = "InProgress" ]; do
+            sleep 5
+            SSM_STATUS=$(aws ssm get-command-invocation \
+                --command-id "$COMMAND_ID" \
+                --instance-id "$INSTANCE_ID" \
+                --profile "$AWS_PROFILE" \
+                --query 'Status' \
+                --output text 2>/dev/null || echo "UNKNOWN")
+
+            if [ "$SSM_STATUS" = "InProgress" ]; then
+                echo -e "${CYAN}   Tentativa $ATTEMPT/$MAX_ATTEMPTS - Status: $SSM_STATUS${NC}"
+                ATTEMPT=$((ATTEMPT + 1))
+            fi
+        done
 
         echo ""
         echo -e "${CYAN}📋 Resultado do deploy:${NC}"
-        # NOTE: Avoid piping into `while read ...` because EOF makes `read` return non-zero and,
-        # under `set -e`, can incorrectly fail the script even when the command succeeded.
-        SSM_STATUS=$(aws ssm get-command-invocation \
-            --command-id "$COMMAND_ID" \
-            --instance-id "$INSTANCE_ID" \
-            --profile "$AWS_PROFILE" \
-            --query 'Status' \
-            --output text 2>/dev/null || echo "UNKNOWN")
-
         SSM_STDOUT=$(aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
             --instance-id "$INSTANCE_ID" \

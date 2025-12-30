@@ -8,30 +8,30 @@ Each AWS service has its own folder with all necessary files:
 
 ```
 cloudformation/
-├── ecr/              # Elastic Container Registry
-│   ├── deploy.sh     # Deployment script
-│   └── stack.yaml    # CloudFormation template
+├── ecr/                    # Elastic Container Registry
+│   ├── deploy.sh           # Deployment script
+│   └── stack.yaml          # CloudFormation template
 │
-├── ec2/              # EC2 Spot Instances
-│   ├── deploy-stack.sh          # Deploy CloudFormation stack
-│   ├── deploy-complete.sh       # Complete app deployment (build + push + deploy)
-│   ├── stack.yaml               # CloudFormation template
-│   ├── params-staging.json      # Parameters for staging
-│   ├── params-prod.json         # Parameters for production
-│   ├── get-hosted-zone-id.sh    # Utility: Get HostedZoneId
-│   └── get-docker.sh             # Utility: Install Docker
+├── infrastructure/         # EC2, ALB, ACM (Complete Infrastructure)
+│   ├── deploy-infrastructure.sh  # Deploy completo com auto-descoberta
+│   ├── deploy-complete.sh        # Deploy da aplicação (build + push + deploy)
+│   ├── acm-stack.yaml            # Template ACM/SSL Certificate
+│   ├── acm-params.json           # Parâmetros ACM (gerado automaticamente)
+│   ├── ec2-stack.yaml            # Template EC2 + ALB
+│   ├── ec2-params.json           # Parâmetros EC2 (gerado automaticamente)
+│   └── *.example.json            # Exemplos de parâmetros
 │
-├── ses/              # Simple Email Service
+├── ses/                    # Simple Email Service
 │   ├── deploy.sh
 │   ├── stack.yaml
 │   └── params.json
 │
-├── s3/               # Simple Storage Service
+├── s3/                     # Simple Storage Service
 │   ├── deploy.sh
 │   ├── stack.yaml
 │   └── params.json
 │
-└── rds/              # Relational Database Service
+└── rds/                    # Relational Database Service
     ├── deploy.sh
     ├── stack.yaml
     ├── params.json
@@ -46,14 +46,13 @@ cloudformation/
 # ECR (creates staging and production repositories)
 cd ecr && bash deploy.sh
 
-# EC2 Staging
-cd ec2 && ENVIRONMENT=staging bash deploy-stack.sh
-
-# EC2 Production
-cd ec2 && ENVIRONMENT=production bash deploy-stack.sh
+# Infrastructure (ACM + EC2 + ALB) - Deploy 100% Automático
+# Descobre automaticamente VPC, Subnets, Hosted Zone, AMI, etc.
+cd infrastructure && bash deploy-infrastructure.sh orfanatonib.com
 
 # Complete application deployment (build + push + deploy)
-cd ec2 && ./deploy-complete.sh staging latest
+cd infrastructure && ./deploy-complete.sh staging
+cd infrastructure && ./deploy-complete.sh production
 
 # SES
 cd ses && bash deploy.sh
@@ -64,6 +63,19 @@ cd s3 && bash deploy.sh
 # RDS
 cd rds && bash deploy.sh
 ```
+
+### 🤖 Deploy Totalmente Automático
+
+O script `deploy-infrastructure.sh` agora **descobre automaticamente** todos os recursos necessários da sua conta AWS:
+
+- ✅ VPC padrão ou primeira disponível
+- ✅ Subnets públicas em diferentes AZs
+- ✅ Hosted Zone para seu domínio
+- ✅ AMI mais recente do Amazon Linux 2023
+- ✅ Key Pair disponível
+- ✅ Certificado SSL (cria se não existir)
+
+**Nenhuma configuração manual necessária!** Os arquivos `params.json` são atualizados automaticamente.
 
 ### AWS Profile
 
@@ -392,63 +404,70 @@ npm run start:dev
 
 The application should connect to RDS automatically. Check the logs to confirm the connection.
 
-## 🚀 EC2 Stack
+## 🚀 Infrastructure Stack (ACM + EC2 + ALB)
 
 ### Features
 
-- **Instance Type**: EC2 Spot Instance (cost-effective)
-- **AMI**: Amazon Linux 2023
-- **Docker**: Pre-installed and configured
-- **Auto DNS**: Automatic Route53 DNS update after deployment
+- **SSL Certificate**: Automatic ACM certificate creation and validation
+- **EC2 Instances**: 2 instances (staging + production) with Amazon Linux 2023
+- **Application Load Balancer**: ALB with HTTPS and host-based routing
+- **Auto DNS**: Automatic Route53 DNS configuration
 - **SSM**: Systems Manager for secure deployment
+- **Docker**: Pre-installed and configured
 
-### Deploy EC2 Stack
+### Deploy Complete Infrastructure
+
+The `deploy-infrastructure.sh` script deploys everything:
 
 ```bash
-cd ec2
-ENVIRONMENT=staging bash deploy-stack.sh
+cd infrastructure
+bash deploy-infrastructure.sh
 ```
 
 This will:
-1. Create/update the EC2 Spot instance stack
-2. Automatically update Route53 DNS records
+1. Create/validate SSL certificate (ACM)
+2. Create EC2 instances (staging + production)
+3. Create Application Load Balancer
+4. Configure DNS records (staging-api.orfanatonib.com + api.orfanatonib.com)
 
 ### Complete Application Deployment
 
-The `deploy-complete.sh` script does everything in one command:
+The `deploy-complete.sh` script builds and deploys your application:
 
 ```bash
-cd ec2
-./deploy-complete.sh staging latest
+cd infrastructure
+./deploy-complete.sh staging
+# or
+./deploy-complete.sh production
 ```
 
 This script:
 1. **Builds** the Docker image
 2. **Pushes** to ECR (staging or production repository)
-3. **Deploys** to EC2 instance
+3. **Deploys** to EC2 instance via SSM
 
 #### Usage Options
 
 ```bash
 # Deploy to staging
-./deploy-complete.sh staging latest
+./deploy-complete.sh staging
 
 # Deploy to production
-./deploy-complete.sh production latest
+./deploy-complete.sh production
 # or
-./deploy-complete.sh prod latest
+./deploy-complete.sh prod
 
 # Skip build (if image already exists)
-./deploy-complete.sh staging latest --skip-build
+./deploy-complete.sh staging --skip-build
 
 # Skip deploy (only build and push)
-./deploy-complete.sh staging latest --skip-deploy
+./deploy-complete.sh staging --skip-deploy
 ```
 
-### EC2 Utilities
+### Infrastructure Utilities
 
 ```bash
-cd ec2
+cd infrastructure
 
 # Get HostedZoneId for a domain
 ./get-hosted-zone-id.sh orfanatonib.com
