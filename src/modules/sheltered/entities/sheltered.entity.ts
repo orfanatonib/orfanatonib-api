@@ -26,8 +26,8 @@ export class ShelteredEntity extends BaseEntity {
   @Column({ type: 'varchar', length: 32, nullable: true })
   guardianPhone?: string | null;
 
-  @Column({ type: 'date' })
-  birthDate: string;
+  @Column({ type: 'date', nullable: true })
+  birthDate?: string | null;
 
   @Column({ type: 'date', nullable: true })
   joinedAt?: string | null;

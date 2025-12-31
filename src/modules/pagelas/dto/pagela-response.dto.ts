@@ -4,7 +4,7 @@ export class ShelteredMiniDto {
   id: string;
   name: string;
   gender: string;
-  birthDate: string;
+  birthDate?: string | null;
 }
 
 export class TeacherMiniDto {

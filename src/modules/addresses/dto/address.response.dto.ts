@@ -6,13 +6,13 @@ export class AddressResponseDto {
   id: string;
 
   @Expose()
-  street: string;
+  street?: string | null;
 
   @Expose()
   number?: string;
 
   @Expose()
-  district: string;
+  district?: string | null;
 
   @Expose()
   city: string;
@@ -21,7 +21,7 @@ export class AddressResponseDto {
   state: string;
 
   @Expose()
-  postalCode: string;
+  postalCode?: string | null;
 
   @Expose()
   complement?: string;

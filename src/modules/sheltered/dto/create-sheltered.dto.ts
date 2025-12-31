@@ -11,18 +11,18 @@ import {
 import { Type } from 'class-transformer';
 
 class AddressDto {
-  @IsString() street: string;
+  @IsOptional() @IsString() street?: string;
   @IsOptional() @IsString() number?: string;
-  @IsString() district: string;
+  @IsOptional() @IsString() district?: string;
   @IsString() city: string;
   @IsString() state: string;
-  @IsString() postalCode: string;
+  @IsOptional() @IsString() postalCode?: string;
   @IsOptional() @IsString() complement?: string;
 }
 
 export class CreateShelteredDto {
   @IsString() @Length(2, 255) name: string;
-  @IsDateString() birthDate: string;
+  @IsOptional() @IsDateString() birthDate?: string;
 
   @IsOptional() 
   @ValidateIf((o) => o.guardianName && o.guardianName.trim().length > 0)

@@ -4,32 +4,35 @@ import { IsOptional, IsString } from 'class-validator';
 
 @Entity('addresses')
 export class AddressEntity extends BaseEntity {
-  @Column()
+  @Column({ type: 'varchar', length: 255, nullable: true })
   @IsString()
-  street: string;
+  @IsOptional()
+  street?: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   @IsString()
   @IsOptional()
   number?: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255, nullable: true })
   @IsString()
-  district: string;
+  @IsOptional()
+  district?: string | null;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255 })
   @IsString()
   city: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255 })
   @IsString()
   state: string;
 
-  @Column()
+  @Column({ type: 'varchar', length: 255, nullable: true })
   @IsString()
-  postalCode: string;
+  @IsOptional()
+  postalCode?: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   @IsString()
   @IsOptional()
   complement?: string;

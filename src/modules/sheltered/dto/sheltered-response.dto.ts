@@ -13,12 +13,12 @@ export class ShelteredListItemDto {
 
 export class AddressResponseDto {
   id: string;
-  street: string;
+  street?: string | null;
   number?: string;
-  district: string;
+  district?: string | null;
   city: string;
   state: string;
-  postalCode: string;
+  postalCode?: string | null;
   complement?: string;
 }
 
@@ -34,7 +34,7 @@ export class PagelaMiniDto {
 export class ShelteredResponseDto {
   id: string;
   name: string;
-  birthDate: string;
+  birthDate?: string | null;
   guardianName?: string | null;
   gender: string;
   guardianPhone?: string | null;

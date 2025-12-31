@@ -15,12 +15,12 @@ import { Type, Transform } from 'class-transformer';
 import { UploadType, PlatformType } from 'src/share/media/media-item/media-item.entity';
 
 export class AddressInputDto {
-  @IsString() street!: string;
+  @IsOptional() @IsString() street?: string;
   @IsOptional() @IsString() number?: string;
-  @IsString() district!: string;
+  @IsOptional() @IsString() district?: string;
   @IsString() city!: string;
   @IsString() state!: string;
-  @IsString() postalCode!: string;
+  @IsOptional() @IsString() postalCode?: string;
   @IsOptional() @IsString() complement?: string;
 }
 

@@ -8,7 +8,7 @@ set -euo pipefail
 #
 # Optional envs:
 #   AWS_REGION (default: us-east-1)
-#   AWS_S3_BUCKET_NAME (default: orfanato-nib-storage)
+#   AWS_S3_BUCKET_NAME (default: orfanatos-nib-storage)
 #   S3_KEY (default: assets/email/orfanato-nib-logo.png)
 
 FILE_PATH="${1:-}"
@@ -24,7 +24,7 @@ fi
 
 PROFILE="${AWS_PROFILE:-default}"
 REGION="${AWS_REGION:-us-east-1}"
-BUCKET="${AWS_S3_BUCKET_NAME:-orfanato-nib-storage}"
+BUCKET="${AWS_S3_BUCKET_NAME:-orfanatos-nib-storage}"
 KEY="${S3_KEY:-assets/email/orfanato-nib-logo.png}"
 
 echo "==> uploading to s3://${BUCKET}/${KEY} (profile=${PROFILE} region=${REGION})"

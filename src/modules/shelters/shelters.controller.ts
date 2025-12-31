@@ -40,7 +40,7 @@ export class SheltersController {
     private readonly updateService: UpdateSheltersService,
     private readonly getService: GetSheltersService,
     private readonly createService: CreateSheltersService,
-  ) {}
+  ) { }
 
   @Get()
   findAllPaginated(
@@ -82,13 +82,19 @@ export class SheltersController {
     @UploadedFiles() files: Express.Multer.File[] = [],
     @Req() req: Request,
     @Body('shelterData') shelterDataRaw?: string,
+    @Body() body?: any,
   ): Promise<ShelterResponseDto> {
     this.logger.log('Creating new shelter');
-    const bodyToProcess = shelterDataRaw ? { shelterData: shelterDataRaw } : {};
+
+    const bodyToProcess =
+      shelterDataRaw ? { shelterData: shelterDataRaw } : (body || {}); // ✅ aqui
+
     const entity = await this.createService.createFromRaw(bodyToProcess, files, req);
+
     this.logger.log(`Shelter created successfully: ${entity.id}`);
     return toShelterDto(entity);
   }
+
 
   @Put(':id')
   @UseInterceptors(AnyFilesInterceptor())
