@@ -1,18 +1,17 @@
-import { IsString, IsNotEmpty, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsBoolean, IsOptional } from 'class-validator';
 
 export class UpdateInformativeDto {
-    @IsString()
-    @IsNotEmpty({ message: 'O id é obrigatório.' })
-    id: string;
-
+    @IsOptional()
     @IsString()
     @IsNotEmpty({ message: 'O título é obrigatório.' })
-    title: string;
+    title?: string;
 
+    @IsOptional()
     @IsString()
     @IsNotEmpty({ message: 'A descrição é obrigatória.' })
-    description: string;
+    description?: string;
 
+    @IsOptional()
     @IsBoolean()
-    public: boolean;
+    public?: boolean;
 }
