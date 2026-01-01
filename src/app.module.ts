@@ -10,7 +10,7 @@ import { ImageModule } from './pages/image-page/image-page.module';
 import { VideosPageModule } from './pages/video-page/video-page.module';
 import { VisitMaterialsPageModule } from './pages/visit-material-page/visit-material-page.module';
 import { ContactModule } from './contact/contact.module';
-import { EventModule } from './pages/event-page/event.module';
+import { EventModule } from './event/event.module';
 import { CommentModule } from './comment/comment.module';
 import { DocumentModule } from './documents/documents.module';
 import { IdeasPageModule } from './pages/ideas-page/ideas-page.module';

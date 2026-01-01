@@ -13,7 +13,7 @@ import { VideosPage } from 'src/pages/video-page/entities/video-page.entity';
 import { VisitMaterialsPageEntity } from 'src/pages/visit-material-page/entities/visit-material-page.entity';
 import { MediaItemEntity } from 'src/share/media/media-item/media-item.entity';
 import { ContactEntity } from 'src/contact/contact.entity';
-import { EventEntity } from 'src/pages/event-page/entities/event.entity';
+import { EventEntity } from 'src/event/entities/event.entity';
 import { CommentEntity } from 'src/comment/entity/comment.entity';
 import { DocumentEntity } from 'src/documents/entities/document.entity';
 import { IdeasSectionEntity } from 'src/pages/ideas-page/entities/ideas-section.entity';
@@ -36,8 +36,6 @@ import { TeamEntity } from 'src/modules/teams/entities/team.entity';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
         const logger = new Logger('DatabaseModule');
-        // Synchronize enabled for all environments to automatically create tables
-        // In real production, consider using migrations instead of synchronize
         const synchronize = true;
         
         const dbConfig = {

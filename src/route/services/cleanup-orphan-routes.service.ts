@@ -5,7 +5,7 @@ import { RouteRepository } from '../route-page.repository';
 import { ShelterEntity } from 'src/modules/shelters/entities/shelter.entity/shelter.entity';
 import { MeditationEntity } from 'src/meditation/entities/meditation.entity';
 import { DayEntity } from 'src/meditation/entities/day.entity';
-import { EventEntity } from 'src/pages/event-page/entities/event.entity';
+import { EventEntity } from 'src/event/entities/event.entity';
 import { DocumentEntity } from 'src/documents/entities/document.entity';
 import { VisitMaterialsPageEntity } from 'src/pages/visit-material-page/entities/visit-material-page.entity';
 import { VideosPage } from 'src/pages/video-page/entities/video-page.entity';
