@@ -7,6 +7,7 @@ import { TeamEntity } from './entities/team.entity';
 import { LeaderProfileEntity } from 'src/modules/leader-profiles/entities/leader-profile.entity/leader-profile.entity';
 import { TeacherProfileEntity } from 'src/modules/teacher-profiles/entities/teacher-profile.entity/teacher-profile.entity';
 import { ShelterEntity } from 'src/modules/shelters/entities/shelter.entity/shelter.entity';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { ShelterEntity } from 'src/modules/shelters/entities/shelter.entity/shel
       TeacherProfileEntity,
       ShelterEntity,
     ]),
+    AuthModule,
   ],
   controllers: [TeamsController],
   providers: [TeamsService, TeamsRepository],

@@ -119,12 +119,50 @@ export class TeamsRepository {
   }
 
   async findByLeader(leaderId: string): Promise<TeamEntity[]> {
-    return this.teamRepo.find({
-      where: {
-        leaders: { id: leaderId }
-      },
-      relations: ['shelter', 'leaders', 'leaders.user', 'teachers', 'teachers.user'],
-    });
+    console.log(`\n[TeamsRepository.findByLeader] Searching for teams with leaderId=${leaderId}`);
+    
+    try {
+      // First, let's debug and see what we're looking for
+      const leader = await this.leaderRepo.findOne({
+        where: { id: leaderId },
+        relations: ['teams'],
+      });
+      
+      console.log(`[TeamsRepository.findByLeader] Leader found:`, leader ? `ID=${leader.id}` : 'NOT FOUND');
+      if (leader && leader.teams) {
+        console.log(`[TeamsRepository.findByLeader] Leader has ${leader.teams.length} teams directly`);
+      }
+      
+      // Try the query
+      const result = await this.teamRepo.find({
+        where: {
+          leaders: { id: leaderId }
+        },
+        relations: ['shelter', 'leaders', 'leaders.user', 'teachers', 'teachers.user'],
+      });
+      
+      console.log(`[TeamsRepository.findByLeader] Query returned ${result.length} teams for leaderId ${leaderId}`);
+      
+      if (result.length === 0) {
+        // Debug: let's check all teams and see their leaders
+        console.log(`[TeamsRepository.findByLeader] DEBUG: No teams found. Let's check all teams...`);
+        const allTeams = await this.teamRepo.find({
+          relations: ['leaders', 'leaders.user'],
+        });
+        console.log(`[TeamsRepository.findByLeader] Total teams in DB: ${allTeams.length}`);
+        allTeams.slice(0, 10).forEach(team => {
+          console.log(`  - Team ID: ${team.id}, Leaders: ${team.leaders?.length || 0}`);
+          team.leaders?.forEach(leader => {
+            console.log(`    - Leader ID: ${leader.id}, User ID: ${leader.user?.id}`);
+          });
+        });
+      }
+      
+      return result;
+    } catch (error) {
+      console.error(`[TeamsRepository.findByLeader] ERROR:`, error);
+      throw error;
+    }
   }
 
   async findTeamByShelterAndNumber(shelterId: string, numberTeam: number): Promise<TeamEntity | null> {
@@ -333,6 +371,24 @@ export class TeamsRepository {
 
       await txTeam.remove(team);
     });
+  }
+
+  async findLeaderProfileByUserId(userId: string): Promise<LeaderProfileEntity | null> {
+    console.log(`[TeamsRepository.findLeaderProfileByUserId] Searching for leader profile with userId=${userId}`);
+    const leader = await this.leaderRepo.findOne({
+      where: {
+        user: { id: userId }
+      },
+      relations: ['user'],
+    });
+    
+    if (leader) {
+      console.log(`[TeamsRepository.findLeaderProfileByUserId] Found leader profile ID=${leader.id}`);
+    } else {
+      console.log(`[TeamsRepository.findLeaderProfileByUserId] No leader profile found for userId=${userId}`);
+    }
+    
+    return leader;
   }
 }
 

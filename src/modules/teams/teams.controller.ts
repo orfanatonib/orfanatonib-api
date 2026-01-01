@@ -9,19 +9,25 @@ import {
   UseGuards,
   ParseUUIDPipe,
   Logger,
+  Req,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { TeamsService } from './services/teams.service';
 import { CreateTeamDto } from './dto/create-team.dto';
 import { UpdateTeamDto } from './dto/update-team.dto';
 import { TeamResponseDto } from './dto/team-response.dto';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { AuthContextService } from 'src/auth/services/auth-context.service';
 
 @Controller('teams')
 @UseGuards(JwtAuthGuard)
 export class TeamsController {
   private readonly logger = new Logger(TeamsController.name);
 
-  constructor(private readonly service: TeamsService) {}
+  constructor(
+    private readonly service: TeamsService,
+    private readonly authContext: AuthContextService,
+  ) {}
 
   @Post()
   async create(@Body() dto: CreateTeamDto): Promise<TeamResponseDto> {
@@ -34,6 +40,27 @@ export class TeamsController {
   @Get()
   async findAll(): Promise<TeamResponseDto[]> {
     return this.service.findAll();
+  }
+
+  @Get('my-teams')
+  async findMyTeams(@Req() req: Request): Promise<TeamResponseDto[]> {
+    this.logger.log('=== GET /teams/my-teams endpoint called ===');
+    
+    const userId = await this.authContext.getUserId(req);
+    this.logger.log(`✓ Extracted userId: ${userId}`);
+    
+    const role = await this.authContext.getRole(req);
+    this.logger.log(`✓ Extracted role: ${role}`);
+
+    if (!userId || !role) {
+      this.logger.warn(`⚠ Missing userId or role - userId: ${userId}, role: ${role}`);
+      return [];
+    }
+
+    this.logger.log(`→ Calling findByUserContext with userId=${userId}, role=${role}`);
+    const result = await this.service.findByUserContext(userId, role);
+    this.logger.log(`✓ Got ${result.length} teams from service`);
+    return result;
   }
 
   @Get('by-shelter/:shelterId')

@@ -28,6 +28,7 @@ import { ShelteredEntity } from 'src/modules/sheltered/entities/sheltered.entity
 import { PagelaEntity } from 'src/modules/pagelas/entities/pagela.entity';
 import { AcceptedChristEntity } from 'src/modules/accepted-christs/entities/accepted-christ.entity';
 import { TeamEntity } from 'src/modules/teams/entities/team.entity';
+import { ShelterScheduleEntity } from 'src/shelter-schedule/entities/shelter-schedule.entity';
 
 @Module({
   imports: [
@@ -70,7 +71,8 @@ import { TeamEntity } from 'src/modules/teams/entities/team.entity';
             ShelteredEntity,
             PagelaEntity,
             AcceptedChristEntity,
-            TeamEntity
+            TeamEntity,
+            ShelterScheduleEntity
           ],
           synchronize,
         };

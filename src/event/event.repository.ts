@@ -19,6 +19,10 @@ export class EventRepository {
     return this.repo.findOne({ where: { id } });
   }
 
+  async findByScheduleId(scheduleId: string): Promise<EventEntity[]> {
+    return this.repo.find({ where: { shelterSchedule: { id: scheduleId } } });
+  }
+
   async create(dto: any): Promise<EventEntity> {
     const entity = this.repo.create(dto);
     const saved = await this.repo.save(entity);

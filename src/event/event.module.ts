@@ -16,6 +16,6 @@ import { AuthModule } from 'src/auth/auth.module';
   imports: [TypeOrmModule.forFeature([EventEntity]), RouteModule, MediaModule, AuthModule],
   providers: [EventRepository, CreateEventService, UpdateEventService, DeleteEventService, GetEventService],
   controllers: [EventController],
-  exports: [EventRepository],
+  exports: [EventRepository, DeleteEventService],
 })
 export class EventModule { }

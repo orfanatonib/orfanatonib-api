@@ -1,5 +1,6 @@
 import { BaseEntity } from 'src/share/share-entity/base.entity';
-import { Entity, Column } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { ShelterScheduleEntity } from 'src/shelter-schedule/entities/shelter-schedule.entity';
 
 export enum EventAudience {
   ALL = 'all',
@@ -23,4 +24,8 @@ export class EventEntity extends BaseEntity {
 
   @Column({ type: 'enum', enum: EventAudience, default: EventAudience.ALL })
   audience!: EventAudience;
+
+  @ManyToOne(() => ShelterScheduleEntity, (schedule) => schedule.events, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'shelter_schedule_id' })
+  shelterSchedule?: ShelterScheduleEntity;
 } 

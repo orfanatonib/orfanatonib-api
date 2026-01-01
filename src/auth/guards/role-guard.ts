@@ -35,3 +35,31 @@ export class AdminRoleGuard implements CanActivate {
     return true;
   }
 }
+
+@Injectable()
+export class AdminOrLeaderRoleGuard implements CanActivate {
+  private readonly logger = new Logger(AdminOrLeaderRoleGuard.name);
+
+  constructor(private readonly reflector: Reflector) { }
+
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    if (!user) {
+      throw new ForbiddenException('User not authenticated');
+    }
+
+    const { role } = user;
+
+    if (!role) {
+      throw new ForbiddenException('Insufficient permissions');
+    }
+
+    if (role !== UserRole.ADMIN && role !== UserRole.COORDINATOR) {
+      throw new ForbiddenException('Access restricted to administrators and leaders');
+    }
+
+    return true;
+  }
+}
