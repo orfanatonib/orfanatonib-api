@@ -12,7 +12,7 @@ import { IdeasPageRepository } from '../repositories/ideas-page.repository';
 import { MediaItemProcessor } from 'src/share/media/media-item-processor';
 import { IdeasSectionDto, UpdateIdeasPageDto } from '../dto/update-ideas-page.dto';
 import { IdeasPageEntity } from '../entities/ideas-page.entity';
-import { IdeasSectionEntity } from '../entities/ideas-section.entity';
+import { IdeasSectionEntity } from '../../ideas-section/entites/ideas-section.entity';
 import { MediaItemEntity, MediaType, UploadType } from 'src/share/media/media-item/media-item.entity';
 import { MediaTargetType } from 'src/share/media/media-target-type.enum';
 import { IdeasSectionRepository } from '../repositories/ideas-section.repository';
@@ -330,7 +330,7 @@ export class IdeasPageUpdateService {
       entityId: ideasPageId,
       type: RouteType.PAGE,
       path: 'galeria_ideias_',
-      image: 'https://clubinho-nib.s3.us-east-1.amazonaws.com/production/cards/card_ideias.png',
+      image: 'https://orfanatos-nib-storage.s3.us-east-1.amazonaws.com/aux/card_ideias.png',
       public: false,
     };
     const savedRoute = await this.routeService.upsertRoute(routeId, routeData);

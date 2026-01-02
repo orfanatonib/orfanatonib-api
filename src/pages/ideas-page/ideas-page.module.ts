@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { IdeasPageController } from './ideas-page.controller';
 import { IdeasPageEntity } from './entities/ideas-page.entity';
-import { IdeasSectionEntity } from './entities/ideas-section.entity';
+import { IdeasSectionEntity } from '../ideas-section/entites/ideas-section.entity';
 import { IdeasPageRepository } from './repositories/ideas-page.repository';
 import { IdeasPageCreateService } from './services/ideas-page-create.service';
 import { RouteModule } from 'src/route/route.module';

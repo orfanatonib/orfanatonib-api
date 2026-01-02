@@ -80,7 +80,7 @@ export class VisitMaterialsPageCreateService {
         entityId: savedPage.id,
         idToFetch: savedPage.id,
         entityType: 'VisitMaterialsPage',
-        image: 'https://clubinho-nib.s3.us-east-1.amazonaws.com/production/cards/card_materiais.png',
+        image: 'https://orfanatos-nib-storage.s3.us-east-1.amazonaws.com/aux/card_materiais.png',
         public: true,
         current: false
       });

@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { IdeasSectionRepository } from '../repository/ideas-section.repository';
-import { IdeasSectionEntity } from 'src/pages/ideas-page/entities/ideas-section.entity';
+import { IdeasSectionEntity } from 'src/pages/ideas-section/entites/ideas-section.entity';
 import { IdeasSectionResponseDto } from '../dto/ideas-section-response.dto';
 import { MediaItemEntity } from 'src/share/media/media-item/media-item.entity';
 import { MediaItemProcessor } from 'src/share/media/media-item-processor';
@@ -19,6 +19,7 @@ export class IdeasSectionGetService {
 
     const section = await this.ideasSectionRepository.findOne({
       where: { id },
+      relations: ['user'],
     });
 
     if (!section) {

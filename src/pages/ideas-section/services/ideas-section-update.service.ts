@@ -10,7 +10,7 @@ import { UpdateIdeasSectionDto } from '../dto/update-ideas-section.dto';
 import { IdeasSectionMediaItemDto } from '../dto/ideas-section-media-item.dto';
 import { MediaItemEntity } from 'src/share/media/media-item/media-item.entity';
 import { IdeasSectionResponseDto } from '../dto/ideas-section-response.dto';
-import { IdeasSectionEntity } from 'src/pages/ideas-page/entities/ideas-section.entity';
+import { IdeasSectionEntity } from 'src/pages/ideas-section/entites/ideas-section.entity';
 import { IdeasPageEntity } from 'src/pages/ideas-page/entities/ideas-page.entity';
 
 @Injectable()

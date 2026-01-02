@@ -13,7 +13,7 @@ export class IdeasPageRepository extends Repository<IdeasPageEntity> {
   }
 
   async findOnePageById(id: string): Promise<IdeasPageEntity | null> {
-    return this.findOne({ where: { id }, relations: ['route', 'sections'] });
+    return this.findOne({ where: { id }, relations: ['route', 'sections', 'sections.user'] });
   }
 
   async savePage(page: IdeasPageEntity): Promise<IdeasPageEntity> {
@@ -47,6 +47,6 @@ export class IdeasPageRepository extends Repository<IdeasPageEntity> {
   }
 
   async findAllPagesWithSections(): Promise<IdeasPageEntity[]> {
-    return this.find({ relations: ['route', 'sections'] });
+    return this.find({ relations: ['route', 'sections', 'sections.user'] });
   }
 }

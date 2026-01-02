@@ -14,7 +14,7 @@ import { MediaTargetType } from 'src/share/media/media-target-type.enum';
 import { CreateIdeasPageDto } from '../dto/create-ideas-page.dto';
 import { IdeasPageResponseDto } from '../dto/ideas-page-response.dto';
 import { IdeasPageEntity } from '../entities/ideas-page.entity';
-import { IdeasSectionEntity } from '../entities/ideas-section.entity';
+import { IdeasSectionEntity } from '../../ideas-section/entites/ideas-section.entity';
 
 @Injectable()
 export class IdeasPageCreateService {
@@ -107,7 +107,7 @@ export class IdeasPageCreateService {
         entityId: page.id,
         idToFetch: page.id,
         entityType: MediaTargetType.IdeasPage,
-        image: 'https://clubinho-nib.s3.us-east-1.amazonaws.com/production/cards/card_ideias.png',
+        image: 'https://orfanatos-nib-storage.s3.us-east-1.amazonaws.com/aux/card_ideias.png',
         public: false,
       },
     );

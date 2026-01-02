@@ -6,7 +6,7 @@ import { IdeasSectionUpdateService } from './services/ideas-section-update.servi
 import { IdeasSectionGetService } from './services/ideas-section-get.service';
 import { IdeasSectionDeleteService } from './services/ideas-section-delete.service';
 import { IdeasSectionRepository } from './repository/ideas-section.repository';
-import { IdeasSectionEntity } from '../ideas-page/entities/ideas-section.entity';
+import { IdeasSectionEntity } from './entites/ideas-section.entity';
 import { AwsModule } from 'src/aws/aws.module';
 import { MediaModule } from 'src/share/media/media.module';
 

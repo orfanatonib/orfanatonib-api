@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, Repository } from 'typeorm';
-import { IdeasSectionEntity } from '../entities/ideas-section.entity';
+import { IdeasSectionEntity } from '../../ideas-section/entites/ideas-section.entity';
 
 
 

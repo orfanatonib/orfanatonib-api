@@ -5,7 +5,7 @@ import {
   MediaType,
   UploadType,
 } from 'src/share/media/media-item/media-item.entity';
-import { IdeasSectionEntity } from '../entities/ideas-section.entity';
+import { IdeasSectionEntity } from '../../ideas-section/entites/ideas-section.entity';
 import { IdeasPageEntity } from '../entities/ideas-page.entity';
 
 export class IdeasRouteDto {
@@ -70,6 +70,18 @@ export class IdeasMediaItemResponseDto {
   }
 }
 
+export class IdeasSectionUserDto {
+  email: string;
+  phone: string;
+  name: string;
+}
+
+function formatUserName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1]}`;
+}
+
 export class IdeasSectionResponseDto {
   id: string;
   title: string;
@@ -78,6 +90,7 @@ export class IdeasSectionResponseDto {
   createdAt: Date;
   updatedAt: Date;
   medias: IdeasMediaItemResponseDto[];
+  user?: IdeasSectionUserDto;
 
   static fromEntity(
     section: IdeasSectionEntity,
@@ -91,6 +104,11 @@ export class IdeasSectionResponseDto {
       createdAt: section.createdAt,
       updatedAt: section.updatedAt,
       medias: mediaItems.map(IdeasMediaItemResponseDto.fromEntity),
+      user: section.user ? {
+        email: section.user.email,
+        phone: section.user.phone,
+        name: formatUserName(section.user.name),
+      } : undefined,
     };
   }
 }

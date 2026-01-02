@@ -16,7 +16,7 @@ import { ContactEntity } from 'src/contact/contact.entity';
 import { EventEntity } from 'src/event/entities/event.entity';
 import { CommentEntity } from 'src/comment/entity/comment.entity';
 import { DocumentEntity } from 'src/documents/entities/document.entity';
-import { IdeasSectionEntity } from 'src/pages/ideas-page/entities/ideas-section.entity';
+import { IdeasSectionEntity } from 'src/pages/ideas-section/entites/ideas-section.entity';
 import { IdeasPageEntity } from 'src/pages/ideas-page/entities/ideas-page.entity';
 import { InformativeEntity } from 'src/informative/entities/informative.entity';
 import { SiteFeedbackEntity } from 'src/feedback/entity/site-feedback.entity';

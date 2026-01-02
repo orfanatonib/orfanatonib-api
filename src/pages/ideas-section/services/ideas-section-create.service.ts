@@ -9,7 +9,7 @@ import { IdeasSectionRepository } from '../repository/ideas-section.repository';
 import { CreateIdeasSectionDto } from '../dto/create-ideas-section.dto';
 import { MediaItemEntity } from 'src/share/media/media-item/media-item.entity';
 import { IdeasSectionResponseDto } from '../dto/ideas-section-response.dto';
-import { IdeasSectionEntity } from 'src/pages/ideas-page/entities/ideas-section.entity';
+import { IdeasSectionEntity } from 'src/pages/ideas-section/entites/ideas-section.entity';
 
 @Injectable()
 export class IdeasSectionCreateService {
@@ -25,6 +25,7 @@ export class IdeasSectionCreateService {
   async createSection(
     dto: CreateIdeasSectionDto,
     filesDict: Record<string, Express.Multer.File>,
+    userId: string,
   ): Promise<IdeasSectionResponseDto> {
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -32,7 +33,7 @@ export class IdeasSectionCreateService {
     await queryRunner.startTransaction();
 
     try {
-      const section = await this.persistOrphanSection(queryRunner, dto);
+      const section = await this.persistOrphanSection(queryRunner, dto, userId);
       await this.processOrphanSectionMedia(section, dto, filesDict);
 
       await queryRunner.commitTransaction();
@@ -57,6 +58,7 @@ export class IdeasSectionCreateService {
   private async persistOrphanSection(
     queryRunner: QueryRunner,
     dto: CreateIdeasSectionDto,
+    userId: string,
   ): Promise<IdeasSectionEntity> {
 
     const sectionRepo = queryRunner.manager.getRepository(IdeasSectionEntity);
@@ -66,6 +68,7 @@ export class IdeasSectionCreateService {
       description: dto.description,
       public: dto.public ?? true,
       page: undefined,
+      user: { id: userId },
     });
 
     const savedSection = await sectionRepo.save(section);

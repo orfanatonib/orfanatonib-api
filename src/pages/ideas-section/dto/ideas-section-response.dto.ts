@@ -1,6 +1,18 @@
-import { IdeasSectionEntity } from 'src/pages/ideas-page/entities/ideas-section.entity';
+import { IdeasSectionEntity } from 'src/pages/ideas-section/entites/ideas-section.entity';
 import { MediaItemEntity } from 'src/share/media/media-item/media-item.entity';
 import { MediaItemDto } from 'src/share/share-dto/media-item-dto';
+
+export class IdeasSectionUserDto {
+  email: string;
+  phone: string;
+  name: string;
+}
+
+function formatUserName(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0];
+  return `${parts[0]} ${parts[parts.length - 1]}`;
+}
 
 export class IdeasSectionResponseDto {
   id: string;
@@ -10,6 +22,7 @@ export class IdeasSectionResponseDto {
   createdAt: Date;
   updatedAt: Date;
   medias: MediaItemDto[];
+  user?: IdeasSectionUserDto;
 
   static fromEntity(section: IdeasSectionEntity, medias: MediaItemEntity[]): IdeasSectionResponseDto {
     return {
@@ -32,6 +45,11 @@ export class IdeasSectionResponseDto {
         size: item.size,
         fieldKey: undefined,
       })),
+      user: section.user ? {
+        email: section.user.email,
+        phone: section.user.phone,
+        name: formatUserName(section.user.name),
+      } : undefined,
     };
   }
 }

@@ -158,7 +158,7 @@ export class VisitMaterialsPageUpdateService {
       current: existingRouteCurrent,
       type: RouteType.PAGE,
       path: 'materiais_visita_',
-      image: 'https://clubinho-nib.s3.us-east-1.amazonaws.com/production/cards/card_materiais.png',
+      image: 'https://orfanatos-nib-storage.s3.us-east-1.amazonaws.com/aux/card_materiais.png',
     };
     return this.routeService.upsertRoute(routeId, routeData);
   }

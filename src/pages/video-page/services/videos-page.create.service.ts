@@ -55,7 +55,7 @@ import { MediaTargetType } from 'src/share/media/media-target-type.enum';
           entityId: savedPage.id,
           type: RouteType.PAGE,
           description,
-          image: 'https://clubinho-nib.s3.us-east-1.amazonaws.com/production/cards/card_videos.png',
+          image: 'https://orfanatos-nib-storage.s3.us-east-1.amazonaws.com/aux/card_videos.png',
           public: isPublic,
         });
   

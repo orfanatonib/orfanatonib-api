@@ -1,6 +1,7 @@
 import { BaseEntity } from "src/share/share-entity/base.entity";
-import { Column, Entity, ManyToOne } from "typeorm";
-import { IdeasPageEntity } from "./ideas-page.entity";
+import { Column, Entity, ManyToOne, JoinColumn } from "typeorm";
+import { IdeasPageEntity } from "../../ideas-page/entities/ideas-page.entity";
+import { UserEntity } from "src/user/user.entity";
 
 @Entity({ name: 'ideas_sections' })
 export class IdeasSectionEntity extends BaseEntity {
@@ -17,4 +18,8 @@ export class IdeasSectionEntity extends BaseEntity {
     onDelete: 'CASCADE',
   })
   page: IdeasPageEntity;
+
+  @ManyToOne(() => UserEntity, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'user_id' })
+  user?: UserEntity;
 }

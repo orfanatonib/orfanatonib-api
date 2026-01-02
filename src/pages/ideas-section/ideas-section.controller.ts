@@ -12,6 +12,7 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  Request,
 } from '@nestjs/common';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -41,6 +42,7 @@ export class IdeasSectionController {
   @Post()
   @UseInterceptors(AnyFilesInterceptor())
   async create(
+    @Request() req,
     @UploadedFiles() files: Express.Multer.File[],
     @Body('sectionData') raw: string | Buffer,
   ): Promise<IdeasSectionResponseDto> {
@@ -59,8 +61,9 @@ export class IdeasSectionController {
 
     const filesDict: Record<string, Express.Multer.File> = {};
     files.forEach((file) => (filesDict[file.fieldname] = file));
-    this.logger.log('Creating new ideas section');
-    const result = await this.createService.createSection(dto, filesDict);
+    const userId = req.user.userId;
+    this.logger.log(`Creating new ideas section for user ${userId}`);
+    const result = await this.createService.createSection(dto, filesDict, userId);
     this.logger.log(`Ideas section created successfully: ${result.id}`);
     return result;
   }

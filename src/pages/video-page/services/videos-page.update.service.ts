@@ -99,7 +99,7 @@ export class UpdateVideosPageService {
       type: RouteType.PAGE,
       description: pageData.description,
       path: 'galeria_videos_',
-      image: 'https://clubinho-nib.s3.us-east-1.amazonaws.com/production/cards/card_videos.png',      
+      image: 'https://orfanatos-nib-storage.s3.us-east-1.amazonaws.com/aux/card_videos.png',      
       public: pageData.public,
     };
     return this.routeService.upsertRoute(routeId, routeData);

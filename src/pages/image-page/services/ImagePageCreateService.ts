@@ -56,7 +56,7 @@ export class ImagePageCreateService {
                 description,
                 entityId: savedGallery.id,
                 type: RouteType.PAGE,
-                image: 'https://clubinho-nib.s3.us-east-1.amazonaws.com/production/cards/card_imagens.png',
+                image: 'https://orfanatos-nib-storage.s3.us-east-1.amazonaws.com/aux/card_imagens.png',
                 public: isPublic,
             });
 

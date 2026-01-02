@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DataSource, Repository, IsNull } from 'typeorm';
-import { IdeasSectionEntity } from '../../ideas-page/entities/ideas-section.entity';
+import { IdeasSectionEntity } from '../entites/ideas-section.entity';
 
 @Injectable()
 export class IdeasSectionRepository extends Repository<IdeasSectionEntity> {
@@ -18,6 +18,7 @@ export class IdeasSectionRepository extends Repository<IdeasSectionEntity> {
   async findAllOrphanSections(): Promise<IdeasSectionEntity[]> {
     return this.find({
       where: { page: IsNull() },
+      relations: ['user'],
     });
   }
 
@@ -40,6 +41,7 @@ export class IdeasSectionRepository extends Repository<IdeasSectionEntity> {
   async findAllOrfaSections(): Promise<IdeasSectionEntity[]> {
     return this.find({
       where: { page: IsNull() },
+      relations: ['user'],
     });
   }
 }
