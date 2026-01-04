@@ -1,6 +1,7 @@
 const axios = require('axios');
 const FormData = require('form-data');
 const config = require('./config');
+const auth = require('./auth');
 
 /**
  * Cliente HTTP compartilhado para todas as automações
@@ -15,20 +16,18 @@ class ApiClient {
 
   /**
    * Faz login e armazena o token de autenticação
+   * Usa o módulo auth.js centralizado
    */
   async login(credentials = null) {
     try {
-      console.log('🔐 Fazendo login como admin...');
-      const creds = credentials || this.adminCredentials;
-      const response = await axios.post(`${this.baseUrl}/auth/login`, creds);
+      const email = credentials?.email || null;
+      const password = credentials?.password || null;
 
-      if (response.status === 201 || response.status === 200) {
-        this.authToken = response.data.accessToken;
-        console.log('✅ Login realizado com sucesso!');
-        return true;
-      }
+      // Usa o módulo de autenticação centralizado
+      this.authToken = await auth.login(email, password);
+      return true;
     } catch (error) {
-      console.error('❌ Erro no login:', error.response?.data || error.message);
+      console.error('❌ Erro no login:', error.message);
       return false;
     }
   }

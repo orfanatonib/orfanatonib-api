@@ -1,0 +1,341 @@
+[
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/comments/comments-complete-automation.js",
+    "needsUpdate": false,
+    "issues": []
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/contacts/contacts-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/documents/documents-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/events/events-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/feedbacks/feedbacks-complete-automation.js",
+    "needsUpdate": false,
+    "issues": []
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/ideas-pages/ideas-pages-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/ideas-sections/ideas-sections-orphan-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/image-pages/image-pages-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/image-sections/image-sections-orphan-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/informatives/informatives-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/leader-profiles/leader-profiles-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/meditations/meditations-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/pagelas/pagelas-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/profiles/profiles-bulk-create-automation.js",
+    "needsUpdate": false,
+    "issues": []
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/profiles/profiles-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/sheltered/sheltered-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/shelters/shelters-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/teacher-profiles/teacher-profiles-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/users/users-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/video-pages/video-pages-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  },
+  {
+    "path": "/home/diego-seven/Documents/repositories/orfanato-nib/orfanatonib-api/test/automations/visit-material-pages/visit-material-pages-complete-automation.js",
+    "needsUpdate": true,
+    "issues": [
+      {
+        "type": "uses_axios_directly",
+        "message": "Usa axios diretamente ao invés de ApiClient"
+      },
+      {
+        "type": "custom_login",
+        "message": "Tem função login customizada (deveria usar ApiClient.login)"
+      },
+      {
+        "type": "manual_token",
+        "message": "Armazena token manualmente (deveria usar ApiClient)"
+      }
+    ]
+  }
+]

@@ -1,0 +1,226 @@
+import { Injectable } from '@nestjs/common';
+import { DataSource } from 'typeorm';
+import { UserRepository } from '../../../user/user.repository';
+import { PersonalDataRepository } from '../../repositories/personal-data.repository';
+import { UserPreferencesRepository } from '../../repositories/user-preferences.repository';
+import { UserRole } from '../../../auth/auth.types';
+import { QueryProfilesDto } from '../../dto/query-profiles.dto';
+import { PaginatedProfilesResponseDto } from '../../dto/paginated-profiles-response.dto';
+
+@Injectable()
+export class GetAllProfilesService {
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly userRepository: UserRepository,
+    private readonly personalDataRepository: PersonalDataRepository,
+    private readonly userPreferencesRepository: UserPreferencesRepository,
+  ) {}
+
+  async execute(
+    requestingUserId: string,
+    requestingUserRole: UserRole,
+    queryDto: QueryProfilesDto,
+  ): Promise<PaginatedProfilesResponseDto> {
+    const { page = 1, limit = 10, sortBy = 'name', order = 'ASC' } = queryDto;
+
+    // Calcular offset
+    const offset = (page - 1) * limit;
+
+    // Buscar usuários com filtros, paginação e contagem total
+    const { users, total } = await this.getUsersWithFilters(
+      requestingUserId,
+      requestingUserRole,
+      queryDto,
+      limit,
+      offset,
+    );
+
+    // Mapear usuários para perfis completos
+    const profiles = await Promise.all(
+      users.map(async (user) => {
+        const personalData = await this.personalDataRepository.findByUserId(user.id);
+        const preferences = await this.userPreferencesRepository.findByUserId(user.id);
+
+        return {
+          id: user.id,
+          email: user.email,
+          phone: user.phone,
+          name: user.name,
+          role: user.role,
+          personalData: personalData ? {
+            birthDate: personalData.birthDate
+              ? (personalData.birthDate instanceof Date
+                  ? personalData.birthDate.toISOString().split('T')[0]
+                  : String(personalData.birthDate).split('T')[0])
+              : undefined,
+            gender: personalData.gender,
+            gaLeaderName: personalData.gaLeaderName,
+            gaLeaderContact: personalData.gaLeaderContact,
+          } : undefined,
+          preferences: preferences ? {
+            loveLanguages: preferences.loveLanguages,
+            temperaments: preferences.temperaments,
+            favoriteColor: preferences.favoriteColor,
+            favoriteFood: preferences.favoriteFood,
+            favoriteMusic: preferences.favoriteMusic,
+            whatMakesYouSmile: preferences.whatMakesYouSmile,
+            skillsAndTalents: preferences.skillsAndTalents,
+          } : undefined,
+        };
+      }),
+    );
+
+    // Calcular metadados de paginação
+    const totalPages = Math.ceil(total / limit);
+
+    return {
+      items: profiles,
+      meta: {
+        currentPage: page,
+        itemsPerPage: limit,
+        totalItems: total,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1,
+      },
+    };
+  }
+
+  private async getUsersWithFilters(
+    requestingUserId: string,
+    requestingUserRole: UserRole,
+    queryDto: QueryProfilesDto,
+    limit: number,
+    offset: number,
+  ): Promise<{ users: any[]; total: number }> {
+    const {
+      q,
+      name,
+      email,
+      role,
+      loveLanguages,
+      temperaments,
+      favoriteColor,
+      sortBy = 'name',
+      order = 'ASC',
+    } = queryDto;
+
+    let baseQuery = '';
+    let countQuery = '';
+    const params: any[] = [];
+    const countParams: any[] = [];
+
+    if (requestingUserRole === UserRole.ADMIN) {
+      // Admin: todos os usuários
+      baseQuery = `
+        SELECT DISTINCT u.*, pd.birthDate, up.loveLanguages, up.temperaments, up.favoriteColor
+        FROM users u
+        LEFT JOIN personal_data pd ON pd.userId = u.id
+        LEFT JOIN user_preferences up ON up.userId = u.id
+        WHERE 1=1
+      `;
+
+      countQuery = `
+        SELECT COUNT(DISTINCT u.id) as total
+        FROM users u
+        LEFT JOIN personal_data pd ON pd.userId = u.id
+        LEFT JOIN user_preferences up ON up.userId = u.id
+        WHERE 1=1
+      `;
+    } else if (requestingUserRole === UserRole.LEADER) {
+      // Leader: apenas teachers das equipes onde é líder
+      baseQuery = `
+        SELECT DISTINCT u.*, pd.birthDate, up.loveLanguages, up.temperaments, up.favoriteColor
+        FROM users u
+        INNER JOIN teacher_profiles tp ON tp.user_id = u.id
+        INNER JOIN teams t ON t.id = tp.team_id
+        INNER JOIN leader_teams lt ON lt.team_id = t.id
+        INNER JOIN leader_profiles lp ON lp.id = lt.leader_id
+        LEFT JOIN personal_data pd ON pd.userId = u.id
+        LEFT JOIN user_preferences up ON up.userId = u.id
+        WHERE lp.user_id = ?
+      `;
+
+      countQuery = `
+        SELECT COUNT(DISTINCT u.id) as total
+        FROM users u
+        INNER JOIN teacher_profiles tp ON tp.user_id = u.id
+        INNER JOIN teams t ON t.id = tp.team_id
+        INNER JOIN leader_teams lt ON lt.team_id = t.id
+        INNER JOIN leader_profiles lp ON lp.id = lt.leader_id
+        WHERE lp.user_id = ?
+      `;
+
+      params.push(requestingUserId);
+      countParams.push(requestingUserId);
+    } else {
+      // Sem permissão
+      return { users: [], total: 0 };
+    }
+
+    // Aplicar filtros
+    if (q) {
+      baseQuery += ` AND (u.name LIKE ? OR u.email LIKE ?)`;
+      countQuery += ` AND (u.name LIKE ? OR u.email LIKE ?)`;
+      params.push(`%${q}%`, `%${q}%`);
+      countParams.push(`%${q}%`, `%${q}%`);
+    }
+
+    if (name) {
+      baseQuery += ` AND u.name LIKE ?`;
+      countQuery += ` AND u.name LIKE ?`;
+      params.push(`%${name}%`);
+      countParams.push(`%${name}%`);
+    }
+
+    if (email) {
+      baseQuery += ` AND u.email LIKE ?`;
+      countQuery += ` AND u.email LIKE ?`;
+      params.push(`%${email}%`);
+      countParams.push(`%${email}%`);
+    }
+
+    if (role) {
+      baseQuery += ` AND u.role = ?`;
+      countQuery += ` AND u.role = ?`;
+      params.push(role);
+      countParams.push(role);
+    }
+
+    if (loveLanguages) {
+      baseQuery += ` AND up.loveLanguages LIKE ?`;
+      countQuery += ` AND up.loveLanguages LIKE ?`;
+      params.push(`%${loveLanguages}%`);
+      countParams.push(`%${loveLanguages}%`);
+    }
+
+    if (temperaments) {
+      baseQuery += ` AND up.temperaments LIKE ?`;
+      countQuery += ` AND up.temperaments LIKE ?`;
+      params.push(`%${temperaments}%`);
+      countParams.push(`%${temperaments}%`);
+    }
+
+    if (favoriteColor) {
+      baseQuery += ` AND up.favoriteColor LIKE ?`;
+      countQuery += ` AND up.favoriteColor LIKE ?`;
+      params.push(`%${favoriteColor}%`);
+      countParams.push(`%${favoriteColor}%`);
+    }
+
+    // Aplicar ordenação
+    const sortColumn = sortBy === 'birthDate' ? 'pd.birthDate' : `u.${sortBy}`;
+    baseQuery += ` ORDER BY ${sortColumn} ${order}`;
+
+    // Aplicar paginação
+    baseQuery += ` LIMIT ? OFFSET ?`;
+    params.push(limit, offset);
+
+    // Executar queries
+    const users = await this.dataSource.query(baseQuery, params);
+    const countResult = await this.dataSource.query(countQuery, countParams);
+    const total = parseInt(countResult[0]?.total || '0', 10);
+
+    return { users, total };
+  }
+}

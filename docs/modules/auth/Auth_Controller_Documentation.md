@@ -838,7 +838,7 @@ interface MeResponse {
 enum UserRole {
   ADMIN = 'admin',
   TEACHER = 'teacher',
-  COORDINATOR = 'leader',
+  LEADER = 'leader',
   USER = 'user'
 }
 ```

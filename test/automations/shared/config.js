@@ -10,7 +10,7 @@ module.exports = {
   // Credenciais de admin
   ADMIN_CREDENTIALS: {
     email: 'superuser@orfanatonib.com',
-    password: 'Edu@27032016'
+    password: 'Abc@123'
   },
 
   // Timeouts (em milissegundos)

@@ -1,0 +1,134 @@
+import { Injectable, Logger, NotFoundException, InternalServerErrorException, BadRequestException } from '@nestjs/common';
+import { EventRepository } from '../event.repository';
+import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
+import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
+import { MediaType, UploadType } from 'src/shared/media/media-item/media-item.entity';
+import { EventEntity } from '../entities/event.entity';
+
+@Injectable()
+export class UpdateEventService {
+  private readonly logger = new Logger(UpdateEventService.name);
+
+  constructor(
+    private readonly eventRepo: EventRepository,
+    private readonly mediaItemProcessor: MediaItemProcessor,
+    private readonly s3Service: AwsS3Service,
+  ) {}
+
+  async update(id: string, dto: any, file?: Express.Multer.File): Promise<EventEntity> {
+    const event = await this.eventRepo.findById(id);
+    if (!event) throw new NotFoundException('Event not found');
+
+    // Extract media info and non-entity fields from dto
+    const { media, isLocalFile, ...eventData } = dto;
+
+    // Update event data (only fields that belong to EventEntity)
+    await this.eventRepo.update(id, eventData);
+
+    // Handle media update
+    if (file || (media && media.url)) {
+      await this.updateEventMedia(id, media, file);
+    }
+
+    const updated = await this.eventRepo.findById(id);
+    if (!updated) throw new NotFoundException('Event not found');
+    return updated;
+  }
+
+  private async updateEventMedia(
+    eventId: string,
+    mediaInput: any,
+    file?: Express.Multer.File,
+  ): Promise<void> {
+    try {
+      // Find existing media for this event
+      const existingMedia = await this.mediaItemProcessor.findMediaItemByTarget(eventId, 'Event');
+
+      if (file) {
+        // New file upload - delete old media if exists
+        if (existingMedia) {
+          if (existingMedia.isLocalFile && existingMedia.url) {
+            try {
+              await this.s3Service.delete(existingMedia.url);
+            } catch (error) {
+              this.logger.warn(`Could not delete old file: ${existingMedia.url}`);
+            }
+          }
+
+          // Update existing media with new file
+          const fileUrl = await this.s3Service.upload(file);
+          const media = this.mediaItemProcessor.buildBaseMediaItem(
+            {
+              title: mediaInput?.title || 'Event image',
+              description: mediaInput?.description || '',
+              mediaType: MediaType.IMAGE,
+              uploadType: UploadType.UPLOAD,
+              url: fileUrl,
+              isLocalFile: true,
+              originalName: file.originalname,
+              size: file.size,
+            },
+            eventId,
+            'Event',
+          );
+          await this.mediaItemProcessor.upsertMediaItem(existingMedia.id, media);
+        } else {
+          // Create new media with file
+          const fileUrl = await this.s3Service.upload(file);
+          const media = this.mediaItemProcessor.buildBaseMediaItem(
+            {
+              title: mediaInput?.title || 'Event image',
+              description: mediaInput?.description || '',
+              mediaType: MediaType.IMAGE,
+              uploadType: UploadType.UPLOAD,
+              url: fileUrl,
+              isLocalFile: true,
+              originalName: file.originalname,
+              size: file.size,
+            },
+            eventId,
+            'Event',
+          );
+          await this.mediaItemProcessor.saveMediaItem(media);
+        }
+      } else if (mediaInput && mediaInput.url && !mediaInput.isLocalFile) {
+        // URL update without file
+        if (existingMedia) {
+          // Update existing media with new URL
+          const media = this.mediaItemProcessor.buildBaseMediaItem(
+            {
+              title: mediaInput.title || 'Event image',
+              description: mediaInput.description || '',
+              mediaType: MediaType.IMAGE,
+              uploadType: UploadType.LINK,
+              url: mediaInput.url,
+              isLocalFile: false,
+            },
+            eventId,
+            'Event',
+          );
+          await this.mediaItemProcessor.upsertMediaItem(existingMedia.id, media);
+        } else {
+          // Create new media with URL
+          const media = this.mediaItemProcessor.buildBaseMediaItem(
+            {
+              title: mediaInput.title || 'Event image',
+              description: mediaInput.description || '',
+              mediaType: MediaType.IMAGE,
+              uploadType: UploadType.LINK,
+              url: mediaInput.url,
+              isLocalFile: false,
+            },
+            eventId,
+            'Event',
+          );
+          await this.mediaItemProcessor.saveMediaItem(media);
+        }
+      }
+      // else: no file and no URL update - leave media as is
+    } catch (error) {
+      this.logger.error(`Error updating event media`, error.stack);
+      throw new InternalServerErrorException('Error updating event media');
+    }
+  }
+}

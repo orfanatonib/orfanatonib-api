@@ -8,6 +8,7 @@ const path = require('path');
 const automations = [
   // Core data - usuários e estrutura básica
   { name: 'Users', script: 'automations/users/users-complete-automation.js', timeoutMs: 5 * 60_000 },
+  { name: 'Profiles', script: 'automations/profiles/profiles-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Shelters', script: 'automations/shelters/shelters-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Teacher Profiles', script: 'automations/teacher-profiles/teacher-profiles-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Leader Profiles', script: 'automations/leader-profiles/leader-profiles-complete-automation.js', timeoutMs: 5 * 60_000 },
