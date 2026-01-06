@@ -16,7 +16,11 @@ export class TeamsRepository {
   ) {}
 
   async create(dto: CreateTeamDto): Promise<TeamEntity> {
-    const team = this.teamRepo.create(dto);
+    const team = this.teamRepo.create({
+      numberTeam: dto.numberTeam,
+      description: dto.description,
+      shelter: { id: dto.shelterId } as any,
+    });
     return this.teamRepo.save(team);
   }
 
@@ -25,7 +29,17 @@ export class TeamsRepository {
   }
 
   async findOne(id: string): Promise<TeamEntity | null> {
-    return this.teamRepo.findOne({ where: { id } });
+    return this.teamRepo.findOne({
+      where: { id },
+      relations: [
+        'shelter',
+        'shelter.address',
+        'leaders',
+        'leaders.user',
+        'teachers',
+        'teachers.user',
+      ],
+    });
   }
 
   async findByShelter(shelterId: string): Promise<TeamEntity[]> {
@@ -122,14 +136,36 @@ export class TeamsRepository {
   }
 
   async update(id: string, dto: UpdateTeamDto): Promise<TeamEntity> {
-    await this.teamRepo.update(id, dto);
-    const updated = await this.teamRepo.findOne({ where: { id } });
-    if (!updated) throw new NotFoundException('Team not found after update');
-    return updated;
+    const team = await this.teamRepo.findOne({
+      where: { id },
+      relations: ['leaders', 'teachers', 'shelter']
+    });
+
+    if (!team) {
+      throw new NotFoundException(`Team with ID ${id} not found`);
+    }
+
+    // Atualizar campos simples
+    if (dto.numberTeam !== undefined) team.numberTeam = dto.numberTeam;
+    if (dto.description !== undefined) team.description = dto.description;
+
+    // Atualizar relacionamentos ManyToMany
+    if (dto.leaderProfileIds !== undefined) {
+      const leaders = await this.leaderProfileRepo.findByIds(dto.leaderProfileIds);
+      team.leaders = leaders;
+    }
+
+    if (dto.teacherProfileIds !== undefined) {
+      // Import TeacherProfileEntity and use its repository
+      const teacherProfileRepo = this.teamRepo.manager.getRepository('TeacherProfileEntity');
+      const teachers = await teacherProfileRepo.findByIds(dto.teacherProfileIds);
+      team.teachers = teachers as any; // If needed, cast to TeacherProfileEntity[]
+    }
+
+    return this.teamRepo.save(team);
   }
 
   async remove(id: string): Promise<void> {
     await this.teamRepo.delete(id);
   }
 }
-

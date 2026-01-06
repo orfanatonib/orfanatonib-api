@@ -47,7 +47,10 @@ export class IdeasSectionCreateService {
 
       return IdeasSectionResponseDto.fromEntity(section, mediaItems);
     } catch (error) {
-      await queryRunner.rollbackTransaction();
+      // Só fazer rollback se a transação ainda estiver ativa
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
       this.logger.error('💥  Transaction rolled‑back', error.stack);
       throw new BadRequestException(`Erro ao criar a seção de ideias: ${error.message}`);
     } finally {

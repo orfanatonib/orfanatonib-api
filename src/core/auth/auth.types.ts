@@ -11,3 +11,11 @@ export type JwtPayload = {
   iat?: number;
   exp?: number;
 };
+
+export type AuthRequest = Request & {
+  user?: {
+    id?: string;
+    role?: UserRole | string;
+    email?: string;
+  };
+};

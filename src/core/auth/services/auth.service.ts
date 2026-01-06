@@ -16,6 +16,7 @@ import { UserRole } from '../auth.types';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { PersonalDataRepository } from 'src/core/profile/repositories/personal-data.repository';
 import { UserPreferencesRepository } from 'src/core/profile/repositories/user-preferences.repository';
+import { SesIdentityService } from 'src/infrastructure/aws/ses-identity.service';
 
 @Injectable()
 export class AuthService {
@@ -35,6 +36,7 @@ export class AuthService {
     private readonly personalDataRepository: PersonalDataRepository,
     @Inject(forwardRef(() => UserPreferencesRepository))
     private readonly userPreferencesRepository: UserPreferencesRepository,
+    private readonly sesIdentityService: SesIdentityService,
   ) {
     this.googleClient = new OAuth2Client(
       configService.getOrThrow<string>('GOOGLE_CLIENT_ID'),
@@ -59,6 +61,24 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
+    // Verifica status de verificação SES e reenvia se necessário
+    const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
+
+    if (!user.active) {
+      return {
+        message: 'User is inactive. Please verify your email to activate your account.',
+        user: this.buildUserResponse(user),
+        emailVerification: {
+          verificationEmailSent: sesVerification.verificationEmailSent,
+          message: sesVerification.verificationEmailSent
+            ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+            : sesVerification.alreadyVerified
+            ? 'Email já verificado.'
+            : undefined,
+        },
+      };
+    }
+
     const tokens = this.generateTokens(user);
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
@@ -66,6 +86,14 @@ export class AuthService {
       message: 'Login successful',
       user: this.buildUserResponse(user),
       ...tokens,
+      emailVerification: {
+        verificationEmailSent: sesVerification.verificationEmailSent,
+        message: sesVerification.verificationEmailSent
+          ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+          : sesVerification.alreadyVerified
+          ? 'Email já verificado.'
+          : undefined,
+      },
     };
   }
 
@@ -96,21 +124,80 @@ export class AuthService {
           role: UserRole.TEACHER,
         });
 
-        return { email, name, completed: user.completed, commonUser: user.commonUser, newUser: true };
+        // Cadastra email no SES para novo usuário
+        const sesVerification = await this.sesIdentityService.verifyEmailIdentitySES(email);
+
+        return {
+          email,
+          name,
+          completed: user.completed,
+          commonUser: user.commonUser,
+          newUser: true,
+          emailVerification: {
+            verificationEmailSent: sesVerification.verificationEmailSent,
+            message: sesVerification.verificationEmailSent
+              ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+              : undefined,
+          },
+        };
       }
 
       if (!user.completed) {
-        return { email, name, completed: false, commonUser: user.commonUser, newUser: true };
+        // Verifica/cadastra email no SES
+        const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
+        return {
+          email,
+          name,
+          completed: false,
+          commonUser: user.commonUser,
+          newUser: true,
+          emailVerification: {
+            verificationEmailSent: sesVerification.verificationEmailSent,
+            message: sesVerification.verificationEmailSent
+              ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+              : undefined,
+          },
+        };
       }
 
       if (!(user as any).active) {
-        return { message: 'User is inactive', active: false, completed: user.completed, commonUser: user.commonUser, newUser: false };
+        // Verifica/cadastra email no SES
+        const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
+        return {
+          message: 'User is inactive',
+          active: false,
+          completed: user.completed,
+          commonUser: user.commonUser,
+          newUser: false,
+          emailVerification: {
+            verificationEmailSent: sesVerification.verificationEmailSent,
+            message: sesVerification.verificationEmailSent
+              ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+              : undefined,
+          },
+        };
       }
+
+      // Verifica status de verificação SES ao fazer login
+      const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
 
       const tokens = this.generateTokens(user);
       await this.updateRefreshToken(user.id, tokens.refreshToken);
 
-      return { message: 'Login successful', isNewUser: false, user: this.buildUserResponse(user), ...tokens };
+      return {
+        message: 'Login successful',
+        isNewUser: false,
+        user: this.buildUserResponse(user),
+        ...tokens,
+        emailVerification: {
+          verificationEmailSent: sesVerification.verificationEmailSent,
+          message: sesVerification.verificationEmailSent
+            ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+            : sesVerification.alreadyVerified
+            ? 'Email já verificado.'
+            : undefined,
+        },
+      };
     } catch (error) {
       this.logger.error(`Error during Google login: ${error.message}`);
       throw new UnauthorizedException('Invalid Google token');
@@ -318,7 +405,18 @@ export class AuthService {
       role: data.role,
     });
 
-    return { message: 'Registration completed successfully' };
+    // Cadastra/verifica email no SES ao completar registro
+    const sesVerification = await this.sesIdentityService.verifyEmailIdentitySES(data.email);
+
+    return {
+      message: 'Registration completed successfully',
+      emailVerification: {
+        verificationEmailSent: sesVerification.verificationEmailSent,
+        message: sesVerification.verificationEmailSent
+          ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+          : undefined,
+      },
+    };
   }
 
   async register(data: RegisterUserDto) {
@@ -338,7 +436,19 @@ export class AuthService {
       role: data.role,
     });
 
-    return { message: 'Registration successful', user: this.buildUserResponse(user) };
+    // Cadastra email no SES para novo usuário
+    const sesVerification = await this.sesIdentityService.verifyEmailIdentitySES(data.email);
+
+    return {
+      message: 'Registration successful',
+      user: this.buildUserResponse(user),
+      emailVerification: {
+        verificationEmailSent: sesVerification.verificationEmailSent,
+        message: sesVerification.verificationEmailSent
+          ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada para completar o cadastro.'
+          : undefined,
+      },
+    };
   }
 
   private buildUserResponse(user: UserEntity): Partial<UserEntity> {

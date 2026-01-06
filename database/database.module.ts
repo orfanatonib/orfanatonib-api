@@ -1,3 +1,4 @@
+
 import { Module, Logger } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -29,6 +30,7 @@ import { PagelaEntity } from 'src/shelter/pagela/entities/pagela.entity';
 import { AcceptedChristEntity } from 'src/shelter/accepted-christ/entities/accepted-christ.entity';
 import { TeamEntity } from 'src/shelter/team/entities/team.entity';
 import { ShelterScheduleEntity } from 'src/shelter/schedule/entities/shelter-schedule.entity';
+import { AttendanceEntity } from 'src/attendance/entities/attendance.entity';
 import { PersonalData } from 'src/core/profile/entities/personal-data.entity';
 import { UserPreferences } from 'src/core/profile/entities/user-preferences.entity';
 
@@ -75,6 +77,7 @@ import { UserPreferences } from 'src/core/profile/entities/user-preferences.enti
             AcceptedChristEntity,
             TeamEntity,
             ShelterScheduleEntity,
+            AttendanceEntity,
             PersonalData,
             UserPreferences
           ],

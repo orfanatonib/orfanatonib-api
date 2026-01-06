@@ -8,7 +8,8 @@ export class IdeasSectionUserDto {
   name: string;
 }
 
-function formatUserName(fullName: string): string {
+function formatUserName(fullName: string | null | undefined): string {
+  if (!fullName) return '';
   const parts = fullName.trim().split(/\s+/);
   if (parts.length === 1) return parts[0];
   return `${parts[0]} ${parts[parts.length - 1]}`;

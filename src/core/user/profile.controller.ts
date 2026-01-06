@@ -19,7 +19,6 @@ import { ChangePasswordService } from './services/change-password.service';
 import { UpdateOwnProfileService } from './services/update-own-profile.service';
 import { UpdateUserImageService } from './services/update-user-image.service';
 import { GetUsersService } from './services/get-user.service';
-import { UserEntity } from './entities/user.entity';
 
 @UseGuards(JwtAuthGuard)
 @Controller('profile')
@@ -32,14 +31,8 @@ export class ProfileController {
     private readonly updateOwnProfileService: UpdateOwnProfileService,
     private readonly changePasswordService: ChangePasswordService,
     private readonly updateUserImageService: UpdateUserImageService,
-  ) {}
+  ) { }
 
-  /**
-   * Retorna os dados do próprio perfil do usuário autenticado
-   * Não requer permissão de admin, apenas autenticação
-   * Não retorna campos sensíveis (password, refreshToken)
-   * Inclui imagem de perfil e perfis relacionados (teacher/leader)
-   */
   @Get()
   async getOwnProfile(@Req() req: Request) {
     const payload = await this.authContextService.getPayloadFromRequest(req);
@@ -48,11 +41,6 @@ export class ProfileController {
     return this.getUsersService.findOneForProfile(userId);
   }
 
-  /**
-   * Atualiza o perfil do próprio usuário (name, email, phone)
-   * Não requer permissão de admin, apenas autenticação
-   * Retorna o perfil atualizado sem campos sensíveis (password, refreshToken)
-   */
   @Patch()
   async updateOwnProfile(
     @Req() req: Request,
@@ -67,11 +55,6 @@ export class ProfileController {
     return this.getUsersService.findOneForProfile(userId);
   }
 
-  /**
-   * Altera a senha do próprio usuário
-   * Requer a senha atual e a nova senha
-   * Não requer permissão de admin, apenas autenticação
-   */
   @Patch('password')
   async changePassword(
     @Req() req: Request,
@@ -86,11 +69,6 @@ export class ProfileController {
     return result;
   }
 
-  /**
-   * Atualiza a imagem de perfil do próprio usuário
-   * Não requer permissão de admin, apenas autenticação
-   * Retorna o perfil atualizado sem campos sensíveis (password, refreshToken)
-   */
   @Patch('image')
   @UseInterceptors(AnyFilesInterceptor())
   async updateOwnImage(

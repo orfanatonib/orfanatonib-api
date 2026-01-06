@@ -10,6 +10,7 @@ import { AuthService } from './services/auth.service';
 import { AuthContextService } from './services/auth-context.service';
 import { UserModule } from 'src/core/user/user.module';
 import { MediaModule } from 'src/shared/media/media.module';
+import { AwsModule } from 'src/infrastructure/aws/aws.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { MediaModule } from 'src/shared/media/media.module';
     forwardRef(() => UserModule),
     MediaModule,
     forwardRef(() => require('../profile/profile.module').ProfileModule),
+    AwsModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthContextService, AuthRepository, JwtStrategy],

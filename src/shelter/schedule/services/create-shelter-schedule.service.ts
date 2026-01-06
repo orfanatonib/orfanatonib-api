@@ -83,11 +83,12 @@ export class CreateShelterScheduleService {
     team: any,
   ): Promise<void> {
     const shelter = team.shelter;
-    const visitLocation = shelter.address
-      ? `${shelter.address.street}, ${shelter.address.number} - ${shelter.address.city}, ${shelter.address.state}`
-      : shelter.name;
+    const address = shelter?.address;
+    const visitLocation = address?.street
+      ? `${address.street}, ${address.number || 's/n'} - ${address.city || ''}, ${address.state || ''}`.trim()
+      : shelter?.name || 'Local a definir';
 
-    const teamInfo = `Equipe ${team.numberTeam} - ${shelter.name}`;
+    const teamInfo = `Equipe ${team.numberTeam} - ${shelter?.name || 'Abrigo'}`;
     const visitTitle = `Visita - ${teamInfo}`;
 
     try {

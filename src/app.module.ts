@@ -27,6 +27,7 @@ import { PagelasModule } from './shelter/pagela/pagelas.module';
 import { AcceptedChristsModule } from './shelter/accepted-christ/accepted-christs.module';
 import { TeamsModule } from './shelter/team/teams.module';
 import { ShelterScheduleModule } from './shelter/schedule/shelter-schedule.module';
+import { AttendanceModule } from './attendance/attendance.module';
 import { ProfileModule } from './core/profile/profile.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -76,6 +77,7 @@ function getEnvFilePath(): string {
     AcceptedChristsModule,
     TeamsModule,
     ShelterScheduleModule,
+    AttendanceModule,
     ProfileModule
   ],
   controllers: [AppController],
