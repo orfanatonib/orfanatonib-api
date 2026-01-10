@@ -115,8 +115,8 @@ jobs:
       - name: 📝 Create .env file for deployment
         run: |
           cat > /tmp/prod.env << 'EOF'
-          ENVIRONMENT=${{ secrets.PROD_ENVIRONMENT }}
-          PORT=${{ secrets.PORT }}
+          ENVIRONMENT=prod
+          PORT=3000
           DB_HOST=${{ secrets.DB_HOST }}
           DB_PORT=${{ secrets.DB_PORT }}
           DB_USERNAME=${{ secrets.DB_USERNAME }}
@@ -138,6 +138,7 @@ jobs:
           TWILIO_WHATSAPP_TO=${{ secrets.PROD_TWILIO_WHATSAPP_TO }}
           FEED_ORFANATO_PAGE_ID=${{ secrets.PROD_FEED_ORFANATO_PAGE_ID }}
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
           EOF
 
       - name: 🚀 Deploy to EC2 via SSM
