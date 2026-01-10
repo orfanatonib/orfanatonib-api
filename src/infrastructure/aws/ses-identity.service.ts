@@ -19,7 +19,6 @@ export class SesIdentityService {
    * @returns Informações sobre o status de verificação
    */
   async checkAndResendSesVerification(email: string): Promise<SesVerificationResult> {
-    this.logger.debug(`Iniciando verificação SES para email: ${email}`);
 
     try {
       if (!this.awsSesService['sesClient'] || typeof this.awsSesService['sesClient'].send !== 'function') {
@@ -30,7 +29,6 @@ export class SesIdentityService {
       const { GetIdentityVerificationAttributesCommand, VerifyEmailIdentityCommand } = await import('@aws-sdk/client-ses');
 
       // Checa status de verificação
-      this.logger.debug(`Consultando status de verificação para: ${email}`);
       const getCommand = new GetIdentityVerificationAttributesCommand({ Identities: [email] });
       const result = await this.awsSesService['sesClient'].send(getCommand);
 
@@ -38,9 +36,7 @@ export class SesIdentityService {
       const verificationStatus = attrs?.VerificationStatus;
 
       if (!attrs) {
-        this.logger.debug(`Email ${email} não possui atributos de verificação. Enviando solicitação de verificação.`);
       } else {
-        this.logger.debug(`Status de verificação atual para ${email}: ${verificationStatus}`);
       }
 
       if (!attrs || verificationStatus !== 'Success') {
@@ -55,7 +51,6 @@ export class SesIdentityService {
           verificationStatus: verificationStatus || 'NotStarted',
         };
       } else {
-        this.logger.debug(`Email ${email} já está verificado no SES.`);
         return {
           verificationEmailSent: false,
           alreadyVerified: true,
@@ -77,7 +72,6 @@ export class SesIdentityService {
    * @returns Informações sobre o envio do email de verificação
    */
   async verifyEmailIdentitySES(email: string): Promise<SesVerificationResult> {
-    this.logger.debug(`Iniciando cadastro/verificação de email no SES: ${email}`);
 
     try {
       if (!this.awsSesService['sesClient'] || typeof this.awsSesService['sesClient'].send !== 'function') {

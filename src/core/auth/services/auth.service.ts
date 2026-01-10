@@ -73,8 +73,8 @@ export class AuthService {
           message: sesVerification.verificationEmailSent
             ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
             : sesVerification.alreadyVerified
-            ? 'Email já verificado.'
-            : undefined,
+              ? 'Email já verificado.'
+              : undefined,
         },
       };
     }
@@ -91,8 +91,8 @@ export class AuthService {
         message: sesVerification.verificationEmailSent
           ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
           : sesVerification.alreadyVerified
-          ? 'Email já verificado.'
-          : undefined,
+            ? 'Email já verificado.'
+            : undefined,
       },
     };
   }
@@ -194,13 +194,24 @@ export class AuthService {
           message: sesVerification.verificationEmailSent
             ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
             : sesVerification.alreadyVerified
-            ? 'Email já verificado.'
-            : undefined,
+              ? 'Email já verificado.'
+              : undefined,
         },
       };
     } catch (error) {
-      this.logger.error(`Error during Google login: ${error.message}`);
-      throw new UnauthorizedException('Invalid Google token');
+      this.logger.error(`Error during Google login: ${error.message}`, error.stack);
+
+      // Provide more specific error messages for Google authentication
+      if (error.message?.includes('Token used too late') || error.message?.includes('expired')) {
+        throw new UnauthorizedException('Google authentication token has expired. Please try signing in again.');
+      }
+
+      if (error.message?.includes('Invalid token')) {
+        throw new UnauthorizedException('Invalid Google authentication token. Please try signing in again.');
+      }
+
+      // Generic Google authentication error
+      throw new UnauthorizedException('Google authentication failed. Please try signing in with Google again.');
     }
   }
 
@@ -367,8 +378,8 @@ export class AuthService {
       personalData: personalData ? {
         birthDate: personalData.birthDate
           ? (personalData.birthDate instanceof Date
-              ? personalData.birthDate.toISOString().split('T')[0]
-              : String(personalData.birthDate).split('T')[0])
+            ? personalData.birthDate.toISOString().split('T')[0]
+            : String(personalData.birthDate).split('T')[0])
           : undefined,
         gender: personalData.gender,
         gaLeaderName: personalData.gaLeaderName,

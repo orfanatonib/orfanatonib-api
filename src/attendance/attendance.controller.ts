@@ -29,7 +29,6 @@ export class AttendanceController {
   ) {
     const userId = (req as any).user?.id ?? (await this.authContext.getUserId(req));
     const role = (req as any).user?.role ?? (await this.authContext.getRole(req));
-    this.logger.debug(`registerAttendance user=${userId} role=${role} schedule=${dto.scheduleId} type=${dto.type}`);
     return this.attendanceService.registerAttendance(
       userId,
       dto.scheduleId,
@@ -50,7 +49,6 @@ export class AttendanceController {
   ) {
     const userId = (req as any).user?.id ?? (await this.authContext.getUserId(req));
     const role = (req as any).user?.role ?? (await this.authContext.getRole(req));
-    this.logger.debug(`registerTeamAttendance user=${userId} role=${role} team=${dto.teamId} schedule=${dto.scheduleId} items=${dto.attendances?.length}`);
     return this.attendanceService.registerTeamAttendance(
       userId,
       dto.teamId,
@@ -69,7 +67,6 @@ export class AttendanceController {
   async getLeaderPendings(@Req() req: Request, @Query('teamId') teamId: string) {
     const userId = (req as any).user?.id ?? (await this.authContext.getUserId(req));
     const role = (req as any).user?.role ?? (await this.authContext.getRole(req));
-    this.logger.debug(`getLeaderPendings user=${userId} role=${role} team=${teamId}`);
     return this.attendanceService.findPendingsForLeader(userId, teamId, new Date());
   }
 
@@ -82,7 +79,6 @@ export class AttendanceController {
   async getMemberPendings(@Req() req: Request) {
     const userId = (req as any).user?.id ?? (await this.authContext.getUserId(req));
     const role = (req as any).user?.role ?? (await this.authContext.getRole(req));
-    this.logger.debug(`getMemberPendings user=${userId} role=${role}`);
     return this.attendanceService.findPendingsForMember(userId, new Date());
   }
 
@@ -95,7 +91,6 @@ export class AttendanceController {
   async listTeamMembers(@Req() req: Request, @Param('teamId') teamId: string) {
     const userId = (req as any).user?.id ?? (await this.authContext.getUserId(req));
     const role = (req as any).user?.role ?? (await this.authContext.getRole(req));
-    this.logger.debug(`listTeamMembers user=${userId} role=${role} team=${teamId}`);
     return this.attendanceService.listTeamMembers(userId, teamId);
   }
 
@@ -111,7 +106,6 @@ export class AttendanceController {
   ): Promise<PaginatedResponseDto<any>> {
     const userId = (req as any).user?.id ?? (await this.authContext.getUserId(req));
     const role = (req as any).user?.role ?? (await this.authContext.getRole(req));
-    this.logger.debug(`listTeamSchedules user=${userId} role=${role} team=${teamId} filters=${JSON.stringify(filters)}`);
     return this.attendanceService.listTeamSchedulesPaginated(userId, teamId, filters);
   }
 
@@ -124,7 +118,6 @@ export class AttendanceController {
   async listLeaderTeams(@Req() req: Request) {
     const userId = (req as any).user?.id ?? (await this.authContext.getUserId(req));
     const role = (req as any).user?.role ?? (await this.authContext.getRole(req));
-    this.logger.debug(`listLeaderTeams user=${userId} role=${role}`);
     return this.attendanceService.listLeaderTeams(userId);
   }
 
@@ -137,7 +130,6 @@ export class AttendanceController {
   async listLeaderTeamsWithMembers(@Req() req: Request) {
     const userId = (req as any).user?.id ?? (await this.authContext.getUserId(req));
     const role = (req as any).user?.role ?? (await this.authContext.getRole(req));
-    this.logger.debug(`listLeaderTeamsWithMembers user=${userId} role=${role}`);
     return this.attendanceService.listLeaderTeamsWithMembers(userId);
   }
 
@@ -154,7 +146,6 @@ export class AttendanceController {
   ): Promise<ShelterWithTeamsDto[]> {
     const userId = (req as any).user?.id ?? (await this.authContext.getUserId(req));
     const role = (req as any).user?.role ?? (await this.authContext.getRole(req));
-    this.logger.debug(`listAttendanceSheetsHierarchical user=${userId} role=${role} start=${startDate} end=${endDate}`);
     return this.attendanceService.listAttendanceSheetsHierarchical(userId, { startDate, endDate });
   }
 
@@ -167,7 +158,6 @@ export class AttendanceController {
   async listLeaderSheltersTeamsMembers(@Req() req: Request) {
     const userId = (req as any).user?.id ?? (await this.authContext.getUserId(req));
     const role = (req as any).user?.role ?? (await this.authContext.getRole(req));
-    this.logger.debug(`listLeaderSheltersTeamsMembers user=${userId} role=${role}`);
     return this.attendanceService.listLeaderTeamsWithMembers(userId);
   }
 
@@ -182,7 +172,6 @@ export class AttendanceController {
   ): Promise<PaginatedResponseDto<any>> {
     const userId = (req as any).user?.id ?? (await this.authContext.getUserId(req));
     const role = (req as any).user?.role ?? (await this.authContext.getRole(req));
-    this.logger.debug(`listAttendanceRecords user=${userId} role=${role} filters=${JSON.stringify(filters)}`);
     return this.attendanceService.listAttendanceRecords(userId, filters);
   }
 
@@ -199,7 +188,6 @@ export class AttendanceController {
   ): Promise<AttendanceStatsDto> {
     const userId = (req as any).user?.id ?? (await this.authContext.getUserId(req));
     const role = (req as any).user?.role ?? (await this.authContext.getRole(req));
-    this.logger.debug(`getAttendanceStats user=${userId} role=${role} team=${teamId} start=${startDate} end=${endDate}`);
     return this.attendanceService.getAttendanceStats(userId, teamId, startDate, endDate);
   }
 
@@ -217,7 +205,6 @@ export class AttendanceController {
   ): Promise<AttendanceStatsDto> {
     const userId = (req as any).user?.id ?? (await this.authContext.getUserId(req));
     const role = (req as any).user?.role ?? (await this.authContext.getRole(req));
-    this.logger.debug(`getTeamAttendanceStats user=${userId} role=${role} team=${teamId} start=${startDate} end=${endDate}`);
     return this.attendanceService.getTeamAttendanceStats(userId, teamId, startDate, endDate);
   }
 }

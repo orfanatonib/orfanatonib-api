@@ -41,7 +41,6 @@ export class AttendanceService {
     scheduleId: string,
     attendances: Array<{ memberId: string; type: AttendanceType; comment?: string }>,
   ): Promise<AttendanceResponseDto[]> {
-    this.logger.debug(`registerTeamAttendance user=${userId} team=${teamId} schedule=${scheduleId} items=${attendances?.length}`);
     const user = await this.getUserWithMembership(userId);
     await this.assertLeaderAccess(user, teamId);
 
@@ -75,7 +74,6 @@ export class AttendanceService {
     // Apenas professores precisam registrar presença (líderes não)
     const teacherUsers = team.teachers?.map(t => t.user).filter(u => u) ?? [];
     const members = [...teacherUsers];
-    this.logger.debug(`registerTeamAttendance membersFound=${members.length}`);
 
     // Registra presença/falta para cada membro informado
     const results: AttendanceEntity[] = [];
@@ -122,7 +120,6 @@ export class AttendanceService {
     type: AttendanceType,
     comment?: string,
   ): Promise<AttendanceResponseDto> {
-    this.logger.debug(`registerAttendance member=${memberId} schedule=${scheduleId} type=${type}`);
     // Busca o evento
     const schedule = await this.scheduleRepo.findOne({
       where: { id: scheduleId },
@@ -189,7 +186,6 @@ export class AttendanceService {
       throw new ForbiddenException('Usuário não identificado no token');
     }
 
-    this.logger.debug(`findPendingsForLeader user=${userId} team=${teamId} today=${today.toISOString().slice(0, 10)}`);
     const user = await this.getUserWithMembership(userId);
     await this.assertLeaderAccess(user, teamId);
 
@@ -277,7 +273,6 @@ export class AttendanceService {
       throw new ForbiddenException('Usuário não identificado no token');
     }
 
-    this.logger.debug(`findPendingsForMember member=${memberId} today=${today.toISOString().slice(0, 10)}`);
     const todayStr = today.toISOString().slice(0, 10);
 
     // Busca os times do membro
@@ -296,7 +291,6 @@ export class AttendanceService {
     }
 
     if (teamIds.length === 0) {
-      this.logger.debug('findPendingsForMember no teams found for member');
       return [];
     }
 
@@ -376,7 +370,6 @@ export class AttendanceService {
       this.logger.warn('listTeamMembers called without userId (token ausente)');
       throw new ForbiddenException('Usuário não identificado no token');
     }
-    this.logger.debug(`listTeamMembers user=${userId} team=${teamId}`);
     const user = await this.getUserWithMembership(userId);
     await this.assertLeaderAccess(user, teamId);
 
@@ -412,7 +405,6 @@ export class AttendanceService {
       this.logger.warn('listTeamSchedules called without userId (token ausente)');
       throw new ForbiddenException('Usuário não identificado no token');
     }
-    this.logger.debug(`listTeamSchedules user=${userId} team=${teamId}`);
     const user = await this.getUserWithMembership(userId);
     await this.assertTeamMembership(user, teamId);
 
@@ -448,7 +440,6 @@ export class AttendanceService {
       this.logger.warn('listTeamSchedulesPaginated called without userId (token ausente)');
       throw new ForbiddenException('Usuário não identificado no token');
     }
-    this.logger.debug(`listTeamSchedulesPaginated user=${userId} team=${teamId} filters=${JSON.stringify(filters)}`);
     const user = await this.getUserWithMembership(userId);
     await this.assertTeamMembership(user, teamId);
 
@@ -536,7 +527,6 @@ export class AttendanceService {
       this.logger.warn('listLeaderTeams called without userId (token ausente)');
       throw new ForbiddenException('Usuário não identificado no token');
     }
-    this.logger.debug(`listLeaderTeams user=${userId}`);
     const user = await this.getUserWithMembership(userId);
 
     if (user.role === UserRole.ADMIN) {
@@ -585,7 +575,6 @@ export class AttendanceService {
       this.logger.warn('listLeaderTeamsWithMembers called without userId (token ausente)');
       throw new ForbiddenException('Usuário não identificado no token');
     }
-    this.logger.debug(`listLeaderTeamsWithMembers user=${userId}`);
 
     const user = await this.getUserWithMembership(userId);
     let teams: TeamEntity[] = [];
@@ -649,7 +638,6 @@ export class AttendanceService {
       throw new ForbiddenException('Usuário não identificado no token');
     }
 
-    this.logger.debug(`listAttendanceRecords user=${userId} filters=${JSON.stringify(filters)}`);
     const user = await this.getUserWithMembership(userId);
 
     const { page = 1, limit = 20, startDate, endDate, type, teamId, memberId, sortOrder = 'desc', sortBy = 'createdAt' } = filters;
@@ -756,7 +744,6 @@ export class AttendanceService {
       throw new ForbiddenException('Usuário não identificado no token');
     }
 
-    this.logger.debug(`getAttendanceStats user=${userId} team=${teamId} start=${startDate} end=${endDate}`);
     const user = await this.getUserWithMembership(userId);
 
     let query = this.attendanceRepo.createQueryBuilder('attendance')
@@ -839,7 +826,6 @@ export class AttendanceService {
       throw new ForbiddenException('Usuário não identificado no token');
     }
 
-    this.logger.debug(`getTeamAttendanceStats user=${userId} team=${teamId} start=${startDate} end=${endDate}`);
     const user = await this.getUserWithMembership(userId);
     await this.assertLeaderAccess(user, teamId);
 
@@ -949,12 +935,10 @@ export class AttendanceService {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    this.logger.debug(`getUserWithMembership user=${userId} role=${user.role} leaderTeams=${user.leaderProfile?.teams?.length || 0} teacherTeam=${user.teacherProfile?.team ? '1' : '0'}`);
     return user;
   }
 
   private async getLeaderTeamIds(userId: string): Promise<string[]> {
-    this.logger.debug(`getLeaderTeamIds user=${userId}`);
     const rows = await this.teamRepo.createQueryBuilder('team')
       .leftJoin('team.leaders', 'leaderProfile')
       .leftJoin('leaderProfile.user', 'leaderUser')
@@ -962,12 +946,10 @@ export class AttendanceService {
       .select('team.id', 'teamId')
       .getRawMany();
 
-    this.logger.debug(`getLeaderTeamIds user=${userId} count=${rows.length}`);
     return rows.map(r => r.teamId);
   }
 
   private async getTeacherTeamIds(userId: string): Promise<string[]> {
-    this.logger.debug(`getTeacherTeamIds user=${userId}`);
     const rows = await this.teamRepo.createQueryBuilder('team')
       .leftJoin('team.teachers', 'teacherProfile')
       .leftJoin('teacherProfile.user', 'teacherUser')
@@ -975,7 +957,6 @@ export class AttendanceService {
       .select('team.id', 'teamId')
       .getRawMany();
 
-    this.logger.debug(`getTeacherTeamIds user=${userId} count=${rows.length}`);
     return rows.map(r => r.teamId);
   }
 
@@ -985,7 +966,6 @@ export class AttendanceService {
     }
 
     const leaderTeamIds = await this.getLeaderTeamIds(user.id);
-    this.logger.debug(`assertLeaderAccess user=${user.id} team=${teamId} leaderTeams=${leaderTeamIds.length}`);
     const isLeaderOfTeam = leaderTeamIds.includes(teamId);
 
     if (!isLeaderOfTeam) {
@@ -1003,7 +983,6 @@ export class AttendanceService {
       this.getTeacherTeamIds(user.id),
     ]);
 
-    this.logger.debug(`assertTeamMembership user=${user.id} team=${teamId} leaderTeams=${leaderTeamIds.length} teacherTeams=${teacherTeamIds.length}`);
     const isMember = leaderTeamIds.includes(teamId) || teacherTeamIds.includes(teamId);
 
     if (!isMember) {
@@ -1021,7 +1000,6 @@ export class AttendanceService {
       throw new ForbiddenException('Usuário não identificado no token');
     }
 
-    this.logger.debug(`listAttendanceSheetsHierarchical user=${userId} filters=${JSON.stringify(filters)}`);
     const user = await this.getUserWithMembership(userId);
 
     // Buscar IDs dos times que o usuário gerencia (como líder)
