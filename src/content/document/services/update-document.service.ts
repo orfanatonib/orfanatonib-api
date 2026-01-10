@@ -144,7 +144,7 @@ export class UpdateDocumentService {
       public: false,
       type: RouteType.PAGE,
       path: 'documento_',
-      image: 'https://bucket-clubinho-galeria.s3.us-east-2.amazonaws.com/uploads/img_card.jpg',
+      image: 'https://bucket-orfanato-galeria.s3.us-east-2.amazonaws.com/uploads/img_card.jpg',
     };
 
     return this.routeService.upsertRoute(routeId, routeData);

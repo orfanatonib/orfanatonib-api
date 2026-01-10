@@ -24,12 +24,12 @@ for file in $automation_files; do
     ((total++))
 
     # Verificar se o arquivo contém credenciais antigas
-    if grep -q "superuser@clubinhonib.com\|admin@clubinhonib.com" "$file" 2>/dev/null; then
+    if grep -q "superuser@orfanatonib.com\|admin@orfanatonib.com" "$file" 2>/dev/null; then
         echo "  📝 Atualizando: $file"
 
         # Substituir email antigo
-        sed -i 's/superuser@clubinhonib.com/superuser@orfanatonib.com/g' "$file"
-        sed -i 's/admin@clubinhonib.com/superuser@orfanatonib.com/g' "$file"
+        sed -i 's/superuser@orfanatonib.com/superuser@orfanatonib.com/g' "$file"
+        sed -i 's/admin@orfanatonib.com/superuser@orfanatonib.com/g' "$file"
 
         ((updated++))
     fi

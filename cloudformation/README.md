@@ -40,7 +40,7 @@ cloudformation/
 
 ## 🚀 Quick Start
 
-### Deploy a specific service:
+### Deploy a specific service
 
 ```bash
 # ECR (creates staging and production repositories)
@@ -79,7 +79,7 @@ O script `deploy-infrastructure.sh` agora **descobre automaticamente** todos os 
 
 ### AWS Profile
 
-All scripts use the `clubinho-aws` profile by default. To use a different profile:
+All scripts use the `orfanato-aws` profile by default. To use a different profile:
 
 ```bash
 AWS_PROFILE=another-profile bash deploy.sh
@@ -98,6 +98,7 @@ AWS_PROFILE=another-profile bash deploy.sh
 - **Estimated cost**: ~$15-20 USD/month
 
 ⚠️ **IMPORTANT - SECURITY**: This configuration allows public access to RDS. Make sure to:
+
 - Use **VERY STRONG** passwords (minimum 16 characters, with letters, numbers and symbols)
 - Consider restricting `AllowedCIDR` to specific IPs in production
 - Monitor access logs and connection attempts
@@ -301,6 +302,7 @@ Fill in the fields:
 #### Advanced Settings (Optional)
 
 In the **"Advanced"** tab:
+
 - **Use SSL**: Can leave unchecked for development, but recommended for production
 - **Default Character Set**: `utf8mb4`
 - **Default Collation**: `utf8mb4_unicode_ci`
@@ -338,6 +340,7 @@ nano ../env/local.env
 ```
 
 **Important**: The application uses `env/local.env` when `ENVIRONMENT=local`. Make sure:
+
 - The `env/local.env` file exists
 - The `ENVIRONMENT=local` variable is defined in the file (already included)
 
@@ -425,6 +428,7 @@ bash deploy-infrastructure.sh
 ```
 
 This will:
+
 1. Create/validate SSL certificate (ACM)
 2. Create EC2 instances (staging + production)
 3. Create Application Load Balancer
@@ -442,6 +446,7 @@ cd infrastructure
 ```
 
 This script:
+
 1. **Builds** the Docker image
 2. **Pushes** to ECR (staging or production repository)
 3. **Deploys** to EC2 instance via SSM
@@ -502,6 +507,7 @@ DB_PORT=$(aws cloudformation describe-stacks \
 The application needs these environment variables:
 
 #### Database
+
 - `DB_HOST` - RDS endpoint (from CloudFormation output)
 - `DB_PORT` - MySQL port (3306)
 - `DB_USERNAME` - Database username
@@ -509,28 +515,33 @@ The application needs these environment variables:
 - `DB_NAME` - Database name
 
 #### AWS
+
 - `AWS_REGION` - AWS region (e.g., us-east-1)
 - `AWS_ACCESS_KEY_ID` - IAM user access key
 - `AWS_SECRET_ACCESS_KEY` - IAM user secret key
 - `AWS_S3_BUCKET_NAME` - S3 bucket name
 
 #### Email (SES)
+
 - `SES_DEFAULT_FROM` - Default sender email
 - `SES_DEFAULT_TO` - Default recipient email
 
 #### JWT
+
 - `JWT_SECRET` - Secret key for JWT signing
 - `JWT_EXPIRES_IN` - JWT expiration time (e.g., 7d)
 - `JWT_REFRESH_SECRET` - Secret key for refresh tokens
 - `JWT_REFRESH_EXPIRES_IN` - Refresh token expiration time (e.g., 14d)
 
 #### Twilio
+
 - `TWILIO_ACCOUNT_SID` - Twilio account SID
 - `TWILIO_AUTH_TOKEN` - Twilio auth token
 - `TWILIO_WHATSAPP_FROM` - WhatsApp sender number
 - `TWILIO_WHATSAPP_TO` - WhatsApp recipient number
 
 #### Other
+
 - `FEED_ORFANATO_PAGE_ID` - Facebook/Instagram page ID
 - `GOOGLE_CLIENT_ID` - Google OAuth client ID
 - `ENVIRONMENT` - Application environment (local, staging, production)
@@ -545,7 +556,7 @@ See `env/staging.env` and `env/prod.env` for examples.
 
 ### MANDATORY Recommendations
 
-1. **STRONG Passwords**: 
+1. **STRONG Passwords**:
    - Use passwords with **minimum 16 characters**
    - Combine uppercase, lowercase, numbers and symbols
    - Use AWS Secrets Manager or Parameter Store to store passwords
@@ -561,11 +572,11 @@ See `env/staging.env` and `env/prod.env` for examples.
    - Configure alerts for multiple failed login attempts
    - Monitor suspicious connections
 
-4. **Encryption**: 
+4. **Encryption**:
    - Storage is already encrypted by default ✅
    - Consider enabling SSL/TLS for connections (recommended)
 
-5. **Backup**: 
+5. **Backup**:
    - Automatic backups are configured (7 days) ✅
 
 6. **Updates**:
@@ -595,6 +606,7 @@ aws secretsmanager get-secret-value \
 - **Total estimated**: ~$17-22 USD/month
 
 To reduce costs in development, you can:
+
 - Stop the instance when not in use
 - Reduce backup period
 - Use smaller instances (if available)
@@ -602,18 +614,22 @@ To reduce costs in development, you can:
 ## 🐛 Troubleshooting
 
 ### Error: "DB instance already exists"
+
 - Check if an instance with the same identifier already exists
 - Use a different name or delete the existing instance
 
 ### Error: "Subnet group not found"
+
 - Verify that subnets are in the same VPC
 - Make sure you have at least 2 subnets in different AZs
 
 ### Error: "Invalid security group"
+
 - Verify that the Security Group is in the same VPC
 - Check ingress rules
 
 ### Can't connect to RDS publicly
+
 - Check Security Group (port 3306 must be open for your IP or 0.0.0.0/0)
 - Verify that subnets are public (have route to Internet Gateway)
 - Verify that RDS is configured as public (PubliclyAccessible: true)
@@ -623,6 +639,7 @@ To reduce costs in development, you can:
 ### Error: "Can't connect to MySQL server"
 
 **Possible causes:**
+
 1. Security Group doesn't allow your IP
    - **Solution**: Check if `AllowedCIDR` is set to `0.0.0.0/0` or includes your IP
 
@@ -635,6 +652,7 @@ To reduce costs in development, you can:
 ### Error: "Access denied for user"
 
 **Possible causes:**
+
 1. Incorrect username or password
    - **Solution**: Check CloudFormation stack parameters
 
@@ -644,12 +662,14 @@ To reduce costs in development, you can:
 ### Error: "Unknown database"
 
 **Possible causes:**
+
 1. Database wasn't created
    - **Solution**: Verify that the `DBName` parameter was configured correctly
 
 ### Application doesn't connect
 
 **Check:**
+
 1. Environment variables are correct in the `.env` file
 2. `.env` file is being loaded (check `src/main.ts` or `app.module.ts`)
 3. Port 3306 is not blocked by local firewall

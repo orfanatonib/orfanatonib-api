@@ -18,7 +18,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # Profile AWS (pode ser sobrescrito com variável de ambiente)
-AWS_PROFILE=${AWS_PROFILE:-clubinho-aws}
+AWS_PROFILE=${AWS_PROFILE:-orfanato-aws}
 
 # Nome da stack e arquivos (no próprio diretório)
 STACK_NAME="orfanato-nib-ses"

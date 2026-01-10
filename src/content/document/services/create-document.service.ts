@@ -90,7 +90,7 @@ export class CreateDocumentService {
         idToFetch: document.id,
         entityType: 'Document',
         image:
-          'https://bucket-clubinho-galeria.s3.us-east-2.amazonaws.com/uploads/img_card.jpg',
+          'https://bucket-orfanato-galeria.s3.us-east-2.amazonaws.com/uploads/img_card.jpg',
         public: false,
       },
     );

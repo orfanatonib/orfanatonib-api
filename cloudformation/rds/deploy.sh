@@ -19,7 +19,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # Profile AWS (pode ser sobrescrito com variável de ambiente)
-AWS_PROFILE=${AWS_PROFILE:-clubinho-aws}
+AWS_PROFILE=${AWS_PROFILE:-orfanato-aws}
 
 STACK_NAME="geral-aplications-rds"
 TEMPLATE_FILE="stack.yaml"
@@ -51,7 +51,7 @@ if ! command_exists aws; then
 fi
 
 # Profile AWS (pode ser sobrescrito com variável de ambiente)
-AWS_PROFILE=${AWS_PROFILE:-clubinho-aws}
+AWS_PROFILE=${AWS_PROFILE:-orfanato-aws}
 
 # Verificar autenticação AWS
 if ! aws sts get-caller-identity --profile "$AWS_PROFILE" &> /dev/null; then

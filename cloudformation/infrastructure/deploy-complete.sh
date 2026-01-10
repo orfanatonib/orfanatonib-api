@@ -21,7 +21,7 @@ MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
 
 # Profile AWS (pode ser sobrescrito com variável de ambiente)
-AWS_PROFILE=${AWS_PROFILE:-clubinho-aws}
+AWS_PROFILE=${AWS_PROFILE:-orfanato-aws}
 
 # Diretório do script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

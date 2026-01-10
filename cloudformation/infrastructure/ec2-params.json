@@ -29,7 +29,7 @@
   },
   {
     "ParameterKey": "KeyPairName",
-    "ParameterValue": "clubinho-nib-api"
+    "ParameterValue": "orfanato-nib-api"
   },
   {
     "ParameterKey": "AllowedCIDR",

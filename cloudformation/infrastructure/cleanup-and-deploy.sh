@@ -22,7 +22,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configurações
-AWS_PROFILE="clubinho-aws"
+AWS_PROFILE="orfanato-aws"
 DOMAIN="orfanatonib.com"
 ACM_STACK_NAME="orfanato-nib-acm"
 EC2_STACK_NAME="orfanato-nib-ec2"

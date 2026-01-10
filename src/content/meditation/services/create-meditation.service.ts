@@ -102,7 +102,7 @@ export class CreateMeditationService {
         entityId: savedMeditation.id,
         type: RouteType.DOC,
         prefix: 'meditacao_',
-        image: 'https://bucket-clubinho-galeria.s3.amazonaws.com/uploads/img_card.jpg',
+        image: 'https://bucket-orfanato-galeria.s3.amazonaws.com/uploads/img_card.jpg',
         public: false,
       });
 

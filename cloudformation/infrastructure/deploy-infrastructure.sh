@@ -16,7 +16,7 @@ MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
 
 # Profile AWS
-AWS_PROFILE=${AWS_PROFILE:-clubinho-aws}
+AWS_PROFILE=${AWS_PROFILE:-orfanato-aws}
 
 # Domínio (pode ser sobrescrito com variável de ambiente ou parâmetro)
 DOMAIN=${1:-${DOMAIN:-orfanatonib.com}}
