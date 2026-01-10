@@ -5,10 +5,18 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
 env:
   AWS_REGION: us-east-1
-  ECR_STACK_NAME: orfanato-nib-ecr
-  EC2_STACK_NAME: orfanato-nib-ec2
+  ECR_REPOSITORY_NAME: orfanato-nib-api-production
+  EC2_INSTANCE_TAG: prod-orfanato-nib-api
   ENVIRONMENT: production
 
 jobs:
@@ -45,10 +53,19 @@ jobs:
       - name: 🔍 Get ECR repository URI
         id: ecr-info
         run: |
-          REPOSITORY_URI=$(aws cloudformation describe-stacks \
-            --stack-name ${{ env.ECR_STACK_NAME }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`ProductionRepositoryUri`].OutputValue' \
-            --output text)
+          echo "🔍 Querying ECR repository: ${{ env.ECR_REPOSITORY_NAME }}"
+          REPOSITORY_URI=$(aws ecr describe-repositories \
+            --repository-names ${{ env.ECR_REPOSITORY_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'repositories[0].repositoryUri' \
+            --output text 2>&1)
+          
+          if [ $? -ne 0 ] || [ -z "$REPOSITORY_URI" ] || [ "$REPOSITORY_URI" = "None" ]; then
+            echo "❌ Error: ECR repository '${{ env.ECR_REPOSITORY_NAME }}' not found"
+            echo "Please ensure the repository exists in region ${{ env.AWS_REGION }}"
+            exit 1
+          fi
+          
           echo "repository_uri=$REPOSITORY_URI" >> $GITHUB_OUTPUT
           echo "✅ ECR Repository: $REPOSITORY_URI"
 
@@ -78,10 +95,20 @@ jobs:
       - name: 🔍 Get EC2 instance info
         id: ec2-info
         run: |
-          INSTANCE_ID=$(aws cloudformation describe-stacks \
-            --stack-name ${{ env.EC2_STACK_NAME }} \
-            --query 'Stacks[0].Outputs[?OutputKey==`InstanceIdProd`].OutputValue' \
-            --output text)
+          echo "🔍 Querying EC2 instance with tag: Name=${{ env.EC2_INSTANCE_TAG }}"
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --region ${{ env.AWS_REGION }} \
+            --filters "Name=tag:Name,Values=${{ env.EC2_INSTANCE_TAG }}" \
+                      "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].InstanceId' \
+            --output text 2>&1)
+          
+          if [ $? -ne 0 ] || [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ]; then
+            echo "❌ Error: No running EC2 instance found with tag Name=${{ env.EC2_INSTANCE_TAG }}"
+            echo "Please ensure the instance exists and is running in region ${{ env.AWS_REGION }}"
+            exit 1
+          fi
+          
           echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
           echo "✅ Instance ID: $INSTANCE_ID"
 
