@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "DomainName",
+    "ParameterValue": "orfanatonib.com"
+  },
+  {
+    "ParameterKey": "HostedZoneId",
+    "ParameterValue": "Z0258077265U2L3HPAGYP"
+  }
+]

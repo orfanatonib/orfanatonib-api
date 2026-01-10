@@ -5,12 +5,11 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
-  
-  // Configurar ValidationPipe global
+
   app.useGlobalPipes(new ValidationPipe({
-    transform: true, // Transforma automaticamente os tipos
+    transform: true,
     transformOptions: {
-      enableImplicitConversion: true, // Converte automaticamente tipos simples
+      enableImplicitConversion: true,
     },
   }));
   

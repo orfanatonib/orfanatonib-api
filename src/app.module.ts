@@ -1,36 +1,38 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { RouteModule } from './route/route.module';
-import { UserModule } from './user/user.module';
-import { AuthModule } from './auth/auth.module';
-import { AwsModule } from './aws/aws.module';
+import { RouteModule } from './infrastructure/route/route.module';
+import { UserModule } from './core/user/user.module';
+import { AuthModule } from './core/auth/auth.module';
+import { AwsModule } from './infrastructure/aws/aws.module';
 import { DatabaseModule } from '../database/database.module';
-import { MeditationModule } from './meditation/meditation.module';
-import { ImageModule } from './pages/image-page/image-page.module';
-import { VideosPageModule } from './pages/video-page/video-page.module';
-import { VisitMaterialsPageModule } from './pages/visit-material-page/visit-material-page.module';
-import { ContactModule } from './contact/contact.module';
-import { EventModule } from './pages/event-page/event.module';
-import { CommentModule } from './comment/comment.module';
-import { DocumentModule } from './documents/documents.module';
-import { IdeasPageModule } from './pages/ideas-page/ideas-page.module';
-import { InformativeModule } from './informative/informative.module';
-import { ImageSectionModule } from './pages/image-section/image-section.module';
-import { IdeasSectionModule } from './pages/ideas-section/ideas-section.module';
-import { SiteFeedbackModule } from './feedback/site-feedback.module';
-import { AddressesModule } from './modules/addresses/addresses.module';
-import { LeaderProfilesModule } from './modules/leader-profiles/leader-profiles.module';
-import { TeacherProfilesModule } from './modules/teacher-profiles/teacher-profiles.module';
-import { SheltersModule } from './modules/shelters/shelters.module';
-import { ShelteredModule } from './modules/sheltered/sheltered.module';
-import { PagelasModule } from './modules/pagelas/pagelas.module';
-import { AcceptedChristsModule } from './modules/accepted-christs/accepted-christs.module';
-import { TeamsModule } from './modules/teams/teams.module';
+import { MeditationModule } from './content/meditation/meditation.module';
+import { ImageModule } from './content/page/image-page/image-page.module';
+import { VideosPageModule } from './content/page/video-page/video-page.module';
+import { VisitMaterialsPageModule } from './content/page/visit-material-page/visit-material-page.module';
+import { ContactModule } from './communication/contact/contact.module';
+import { EventModule } from './content/event/event.module';
+import { CommentModule } from './communication/comment/comment.module';
+import { DocumentModule } from './content/document/documents.module';
+import { IdeasPageModule } from './content/page/ideas-page/ideas-page.module';
+import { InformativeModule } from './content/informative/informative.module';
+import { ImageSectionModule } from './content/page/image-section/image-section.module';
+import { IdeasSectionModule } from './content/page/ideas-section/ideas-section.module';
+import { SiteFeedbackModule } from './communication/feedback/site-feedback.module';
+import { AddressesModule } from './shelter/address/addresses.module';
+import { LeaderProfilesModule } from './shelter/leader-profile/leader-profiles.module';
+import { TeacherProfilesModule } from './shelter/teacher-profile/teacher-profiles.module';
+import { SheltersModule } from './shelter/shelter/shelters.module';
+import { ShelteredModule } from './shelter/sheltered/sheltered.module';
+import { PagelasModule } from './shelter/pagela/pagelas.module';
+import { AcceptedChristsModule } from './shelter/accepted-christ/accepted-christs.module';
+import { TeamsModule } from './shelter/team/teams.module';
+import { ShelterScheduleModule } from './shelter/schedule/shelter-schedule.module';
+import { AttendanceModule } from './attendance/attendance.module';
+import { ProfileModule } from './core/profile/profile.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import * as path from 'path';
 
-// Determina qual arquivo de ambiente usar
 function getEnvFilePath(): string {
   const env = process.env.ENVIRONMENT || process.env.NODE_ENV || 'local';
   const envFileMap: Record<string, string> = {
@@ -67,13 +69,16 @@ function getEnvFilePath(): string {
     IdeasSectionModule,
     SiteFeedbackModule,
     AddressesModule,
-           LeaderProfilesModule,
-           TeacherProfilesModule,
-           SheltersModule,
-           ShelteredModule,
+    LeaderProfilesModule,
+    TeacherProfilesModule,
+    SheltersModule,
+    ShelteredModule,
     PagelasModule,
     AcceptedChristsModule,
-    TeamsModule
+    TeamsModule,
+    ShelterScheduleModule,
+    AttendanceModule,
+    ProfileModule
   ],
   controllers: [AppController],
   providers: [AppService],

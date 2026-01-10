@@ -1,0 +1,21 @@
+export enum UserRole {
+  ADMIN = 'admin',
+  TEACHER = 'teacher',
+  LEADER = 'leader',
+}
+
+export type JwtPayload = {
+  sub: string;
+  email?: string;
+  role?: UserRole | string;
+  iat?: number;
+  exp?: number;
+};
+
+export type AuthRequest = Request & {
+  user?: {
+    id?: string;
+    role?: UserRole | string;
+    email?: string;
+  };
+};

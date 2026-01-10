@@ -1,0 +1,256 @@
+name: Deploy Production Orfanato API
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPOSITORY_NAME: orfanato-nib-api-production
+  EC2_INSTANCE_TAG: prod-orfanato-nib-api
+  ENVIRONMENT: production
+
+jobs:
+  build-and-deploy:
+    name: Build, Push and Deploy to Production
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🛠 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: 📦 Install dependencies
+        run: npm ci
+
+      - name: ✅ Run tests
+        run: npm test
+
+      - name: 🏗 Build project
+        run: npm run build
+
+      - name: 🔐 Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: 🔍 Get ECR repository URI
+        id: ecr-info
+        run: |
+          echo "🔍 Querying ECR repository: ${{ env.ECR_REPOSITORY_NAME }}"
+          REPOSITORY_URI=$(aws ecr describe-repositories \
+            --repository-names ${{ env.ECR_REPOSITORY_NAME }} \
+            --region ${{ env.AWS_REGION }} \
+            --query 'repositories[0].repositoryUri' \
+            --output text 2>&1)
+          
+          if [ $? -ne 0 ] || [ -z "$REPOSITORY_URI" ] || [ "$REPOSITORY_URI" = "None" ]; then
+            echo "❌ Error: ECR repository '${{ env.ECR_REPOSITORY_NAME }}' not found"
+            echo "Please ensure the repository exists in region ${{ env.AWS_REGION }}"
+            exit 1
+          fi
+          
+          echo "repository_uri=$REPOSITORY_URI" >> $GITHUB_OUTPUT
+          echo "✅ ECR Repository: $REPOSITORY_URI"
+
+      - name: 🔐 Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: 🐳 Build Docker image
+        env:
+          ECR_REPOSITORY: ${{ steps.ecr-info.outputs.repository_uri }}
+          IMAGE_TAG: latest
+        run: |
+          echo "🔨 Building image: ${ECR_REPOSITORY}:${IMAGE_TAG}"
+          docker build -f DockerFile -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
+          docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REPOSITORY}:${{ github.sha }}
+
+      - name: 📤 Push image to ECR
+        env:
+          ECR_REPOSITORY: ${{ steps.ecr-info.outputs.repository_uri }}
+          IMAGE_TAG: latest
+        run: |
+          echo "📤 Pushing image: ${ECR_REPOSITORY}:${IMAGE_TAG}"
+          docker push ${ECR_REPOSITORY}:${IMAGE_TAG}
+          docker push ${ECR_REPOSITORY}:${{ github.sha }}
+          echo "✅ Images pushed successfully!"
+
+      - name: 🔍 Get EC2 instance info
+        id: ec2-info
+        run: |
+          echo "🔍 Querying EC2 instance with tag: Name=${{ env.EC2_INSTANCE_TAG }}"
+          INSTANCE_ID=$(aws ec2 describe-instances \
+            --region ${{ env.AWS_REGION }} \
+            --filters "Name=tag:Name,Values=${{ env.EC2_INSTANCE_TAG }}" \
+                      "Name=instance-state-name,Values=running" \
+            --query 'Reservations[0].Instances[0].InstanceId' \
+            --output text 2>&1)
+          
+          if [ $? -ne 0 ] || [ -z "$INSTANCE_ID" ] || [ "$INSTANCE_ID" = "None" ]; then
+            echo "❌ Error: No running EC2 instance found with tag Name=${{ env.EC2_INSTANCE_TAG }}"
+            echo "Please ensure the instance exists and is running in region ${{ env.AWS_REGION }}"
+            exit 1
+          fi
+          
+          echo "instance_id=$INSTANCE_ID" >> $GITHUB_OUTPUT
+          echo "✅ Instance ID: $INSTANCE_ID"
+
+      - name: 📝 Create .env file for deployment
+        run: |
+          cat > /tmp/prod.env << 'EOF'
+          ENVIRONMENT=prod
+          PORT=3000
+          DB_HOST=${{ secrets.DB_HOST }}
+          DB_PORT=${{ secrets.DB_PORT }}
+          DB_USERNAME=${{ secrets.DB_USERNAME }}
+          DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+          DB_NAME=${{ secrets.PROD_DB_NAME }}
+          AWS_REGION=${{ secrets.AWS_REGION }}
+          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_S3_BUCKET_NAME=${{ secrets.AWS_S3_BUCKET_NAME }}
+          SES_DEFAULT_FROM=${{ secrets.PROD_SES_DEFAULT_FROM }}
+          SES_DEFAULT_TO=${{ secrets.PROD_SES_DEFAULT_TO }}
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
+          JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
+          JWT_REFRESH_EXPIRES_IN=${{ secrets.JWT_REFRESH_EXPIRES_IN }}
+          TWILIO_ACCOUNT_SID=${{ secrets.PROD_TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN=${{ secrets.PROD_TWILIO_AUTH_TOKEN }}
+          TWILIO_WHATSAPP_FROM=${{ secrets.PROD_TWILIO_WHATSAPP_FROM }}
+          TWILIO_WHATSAPP_TO=${{ secrets.PROD_TWILIO_WHATSAPP_TO }}
+          FEED_ORFANATO_PAGE_ID=${{ secrets.PROD_FEED_ORFANATO_PAGE_ID }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
+          EOF
+
+      - name: 🚀 Deploy to EC2 via SSM
+        env:
+          INSTANCE_ID: ${{ steps.ec2-info.outputs.instance_id }}
+          ECR_REPOSITORY: ${{ steps.ecr-info.outputs.repository_uri }}
+          IMAGE_TAG: latest
+        run: |
+          echo "🚀 Deploying to EC2 instance: $INSTANCE_ID"
+
+          # Encode .env file to base64
+          ENV_B64=$(base64 -w0 /tmp/prod.env)
+
+          # Send deployment command via SSM
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --parameters "commands=[
+              'set -e',
+              'echo \"🔐 Logging into ECR...\"',
+              'aws ecr get-login-password --region ${{ env.AWS_REGION }} | docker login --username AWS --password-stdin ${ECR_REPOSITORY}',
+              'echo \"📁 Creating env directory...\"',
+              'mkdir -p /opt/orfanato-nib-api/env',
+              'echo \"📝 Writing .env file...\"',
+              'echo ${ENV_B64} | base64 -d > /opt/orfanato-nib-api/env/prod.env',
+              'echo \"🛑 Stopping old container...\"',
+              'docker stop orfanato-nib-api || true',
+              'docker rm orfanato-nib-api || true',
+              'echo \"📥 Pulling new image...\"',
+              'docker pull ${ECR_REPOSITORY}:${IMAGE_TAG}',
+              'echo \"🏃 Starting new container...\"',
+              'docker run -d --name orfanato-nib-api --restart unless-stopped -p 80:3000 -p 3000:3000 --env-file /opt/orfanato-nib-api/env/prod.env ${ECR_REPOSITORY}:${IMAGE_TAG}',
+              'sleep 3',
+              'echo \"✅ Container started:\"',
+              'docker ps | grep orfanato-nib-api',
+              'echo \"🧹 Cleaning up old Docker images...\"',
+              'docker image prune -af --filter \"until=24h\" || true',
+              'echo \"✅ Cleanup completed\"'
+            ]" \
+            --output text --query 'Command.CommandId')
+
+          echo "Command ID: $COMMAND_ID"
+
+          # Wait for command completion
+          echo "⏳ Waiting for deployment to complete..."
+          MAX_ATTEMPTS=30
+          ATTEMPT=0
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "$INSTANCE_ID" \
+              --query 'Status' \
+              --output text 2>/dev/null || echo "Pending")
+
+            if [ "$STATUS" = "Success" ] || [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ] || [ "$STATUS" = "TimedOut" ]; then
+              break
+            fi
+
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS - Status: $STATUS"
+            sleep 5
+          done
+
+          # Get command result
+          STATUS=$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --query 'Status' \
+            --output text)
+
+          STDOUT=$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --query 'StandardOutputContent' \
+            --output text)
+
+          STDERR=$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --query 'StandardErrorContent' \
+            --output text)
+
+          echo "📋 Deployment Status: $STATUS"
+          echo ""
+          echo "📤 Standard Output:"
+          echo "$STDOUT"
+
+          if [ -n "$STDERR" ] && [ "$STDERR" != "None" ]; then
+            echo ""
+            echo "⚠️ Standard Error:"
+            echo "$STDERR"
+          fi
+
+          if [ "$STATUS" != "Success" ]; then
+            echo "❌ Deployment failed!"
+            exit 1
+          fi
+
+          echo "✅ Deployment completed successfully!"
+
+      - name: 🎉 Deployment Summary
+        run: |
+          echo "╔════════════════════════════════════════════════════════╗"
+          echo "║        ✅ Production Deployment Complete!             ║"
+          echo "╚════════════════════════════════════════════════════════╝"
+          echo ""
+          echo "📋 Summary:"
+          echo "   Environment: production"
+          echo "   Image: ${{ steps.ecr-info.outputs.repository_uri }}:latest"
+          echo "   Commit: ${{ github.sha }}"
+          echo ""
+          echo "🌐 API URL: https://api.orfanatonib.com"
+          echo ""
+          echo "💡 Test the API:"
+          echo "   curl https://api.orfanatonib.com/health"

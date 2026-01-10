@@ -1,7 +1,7 @@
 [
   {
     "ParameterKey": "BucketName",
-    "ParameterValue": "orfanato-nib-storage"
+    "ParameterValue": "orfanatos-nib-storage"
   },
   {
     "ParameterKey": "ExistingBucketName",

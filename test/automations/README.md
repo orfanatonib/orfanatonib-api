@@ -1,4 +1,39 @@
-# Automações de Criação de Conteúdo
+# 🤖 Automações de Criação de Conteúdo
+
+Este diretório contém scripts de automação para criar dados em massa para todos os módulos da aplicação.
+
+## ⚙️ Pré-requisitos gerais
+- API rodando e acessível em `API_URL` (padrão: `http://localhost:3000`). Defina `API_URL` se o backend estiver em outra porta.
+- Usuário admin configurado em `test/automations/shared/config.js`.
+- Todos os scripts agora **interrompem com erro** (exit code != 0) se o login falhar ou se não houver dados mínimos para criar os registros, evitando falso positivo.
+
+## ✨ Nova Arquitetura (Refatorada)
+
+As automações agora usam uma **biblioteca compartilhada** que elimina código duplicado e padroniza a criação de automações.
+
+### 📚 Biblioteca Compartilhada (`shared/`)
+
+Todos os utilitários reutilizáveis estão em `test/automations/shared/`:
+- `api-client.js` - Cliente HTTP com autenticação automática
+- `mock-data-generator.js` - Gerador de dados falsos
+- `logger.js` - Sistema de logging colorido
+- `automation-base.js` - Classe base para automações
+
+📖 **[Leia a documentação completa](shared/README.md)** para entender como usar os utilitários.
+
+### ✅ Automações Refatoradas
+
+Automações que já usam a nova arquitetura:
+- ✅ **Comments** - Código reduzido de 247 para 75 linhas (70% menor)
+- ✅ **Feedbacks** - Código reduzido de 240 para 81 linhas (66% menor)
+
+### 🔄 Benefícios da Refatoração
+
+- 🎯 **-70% de código**: Menos duplicação
+- 🧩 **Reutilizável**: Utilitários compartilhados
+- 📖 **Mais legível**: Código limpo e organizado
+- 🚀 **Mais rápido**: Template pronto para novas automações
+- 🎨 **Logs bonitos**: Sistema de logging consistente
 
 Este diretório contém scripts de automação para criar dados em massa para todos os módulos de páginas da aplicação.
 
@@ -70,6 +105,42 @@ Este diretório contém scripts de automação para criar dados em massa para to
 - Endpoint: `POST /meditations`
 - Quantidade padrão: 10 meditações
 
+### 14. **Shelter Schedules** (`shelter-schedules/`) ⭐ NOVO
+- Cria agendamento de visitas e reuniões para todos os times
+- Endpoint: `POST /shelter-schedule`
+- Quantidade padrão: 12 schedules por time (visitas mensais)
+- Funcionalidades:
+  - Gera datas de reunião (segunda-feira) e visita (sábado)
+  - Distribui visitas ao longo do ano
+  - Cria lições com temas educativos variados
+  - Evita duplicação de números de visita
+- 📖 [Documentação detalhada](shelter-schedules/README.md)
+
+### 15. **Attendance** (`attendance/`) ⭐ NOVO
+- Cria registros de presença/falta para todos os schedules existentes
+- Endpoint: `POST /attendance/register/team`
+- Funcionalidades:
+  - Registra presença para todos os membros de cada time
+  - Simula taxa de presença realista (85% por padrão)
+  - Gera razões de ausência variadas
+  - Testa sistema de pendências
+- **Pré-requisito:** Execute primeiro a automação de Shelter Schedules
+- 📖 [Documentação detalhada](attendance/README.md)
+
+### 🔗 Automação Integrada (Recomendada)
+Para criar schedules e attendances em sequência, use o script integrado:
+
+```bash
+./test/automations/run-schedules-and-attendance.sh
+```
+
+Este script:
+1. Cria Shelter Schedules para todos os times
+2. Aguarda 3 segundos
+3. Cria Attendances (pagelas) para todos os schedules criados
+4. Exibe resumo final com status de cada etapa
+- Falha imediatamente se a API não estiver acessível ou se não houver times/schedules suficientes para gerar dados.
+
 ## 🚀 Como Usar
 
 ### Executar uma automação específica:
@@ -114,8 +185,17 @@ node test/automations/informatives/informatives-complete-automation.js
 # Meditations
 node test/automations/meditations/meditations-complete-automation.js
 
-# Pagelas (Criação em Massa) ⭐ NOVO
-node test/automations/pagelas/pagelas-mass-creation.js
+# Pagelas (Criação em Massa)
+node test/automations/pagelas/pagelas-complete-automation.js
+
+# Shelter Schedules (Agendamento de Visitas) ⭐ NOVO
+node test/automations/shelter-schedules/shelter-schedules-complete-automation.js
+
+# Attendance (Registro de Presença) ⭐ NOVO
+node test/automations/attendance/attendance-complete-automation.js
+
+# Shelter Schedules + Attendance (Automação Integrada) ⭐ RECOMENDADO
+./test/automations/run-schedules-and-attendance.sh
 ```
 
 ### Executar todas as automações:

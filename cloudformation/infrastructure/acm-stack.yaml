@@ -1,0 +1,39 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'SSL/TLS Certificate for Orfanato NIB API using AWS Certificate Manager'
+
+Parameters:
+  DomainName:
+    Type: String
+    Default: orfanatonib.com
+    Description: Primary domain name
+
+  HostedZoneId:
+    Type: String
+    Description: Route53 Hosted Zone ID for DNS validation
+
+Resources:
+  SSLCertificate:
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref DomainName
+      SubjectAlternativeNames:
+        - !Sub '*.${DomainName}'
+        - !Sub 'api.${DomainName}'
+        - !Sub 'staging-api.${DomainName}'
+      ValidationMethod: DNS
+      Tags:
+        - Key: Application
+          Value: orfanato-nib
+        - Key: Environment
+          Value: all
+
+Outputs:
+  CertificateArn:
+    Description: ARN of the SSL certificate
+    Value: !Ref SSLCertificate
+    Export:
+      Name: !Sub '${AWS::StackName}-CertificateArn'
+
+  DomainName:
+    Description: Primary domain name
+    Value: !Ref DomainName
