@@ -16,7 +16,7 @@ export class FeatureFlagGuard implements CanActivate {
         const featureFlagKey = this.reflector.get<string>(FEATURE_FLAG_KEY, context.getHandler());
 
         if (!featureFlagKey) {
-            return true; // No feature flag required
+            return true;
         }
 
         const environment = this.configService.get<string>('ENVIRONMENT');

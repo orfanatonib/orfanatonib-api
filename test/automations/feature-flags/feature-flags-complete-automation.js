@@ -1,21 +1,13 @@
 const AutomationBase = require('../shared/automation-base');
 const Logger = require('../shared/logger');
 
-/**
- * Automação de Feature Flags
- * Cria feature flags para todos os módulos do projeto
- */
 class FeatureFlagsAutomation extends AutomationBase {
     constructor() {
         super({ name: 'Feature Flags Automation' });
     }
 
-    /**
-     * Define as feature flags baseadas nos módulos do projeto
-     */
     getFeatureFlags() {
         return [
-            // Content Module
             {
                 key: 'content-events',
                 name: 'Events Module',
@@ -45,7 +37,6 @@ class FeatureFlagsAutomation extends AutomationBase {
                 environment: 'staging'
             },
 
-            // Pages Module
             {
                 key: 'pages-video',
                 name: 'Video Pages',
@@ -75,7 +66,6 @@ class FeatureFlagsAutomation extends AutomationBase {
                 environment: 'staging'
             },
 
-            // Communication Module
             {
                 key: 'communication-comments',
                 name: 'Comments System',
@@ -98,7 +88,6 @@ class FeatureFlagsAutomation extends AutomationBase {
                 environment: 'staging'
             },
 
-            // Shelter Module
             {
                 key: 'shelter-management',
                 name: 'Shelter Management',
@@ -128,7 +117,6 @@ class FeatureFlagsAutomation extends AutomationBase {
                 environment: 'staging'
             },
 
-            // Attendance Module
             {
                 key: 'attendance-tracking',
                 name: 'Attendance Tracking',
@@ -144,7 +132,6 @@ class FeatureFlagsAutomation extends AutomationBase {
                 environment: 'staging'
             },
 
-            // Profile Module
             {
                 key: 'profile-personal-data',
                 name: 'Personal Data Management',
@@ -160,7 +147,6 @@ class FeatureFlagsAutomation extends AutomationBase {
                 environment: 'staging'
             },
 
-            // Advanced Features
             {
                 key: 'advanced-ai-suggestions',
                 name: 'AI Suggestions',
@@ -226,7 +212,6 @@ class FeatureFlagsAutomation extends AutomationBase {
                 }
             }
 
-            // Delay para não sobrecarregar o servidor
             await this.delay(300);
         }
 
@@ -238,17 +223,12 @@ class FeatureFlagsAutomation extends AutomationBase {
         Logger.info(`📋 Total: ${flags.length}`);
         Logger.info('');
 
-        // Testar listagem
         await this.testListings();
     }
 
-    /**
-     * Testa as listagens de feature flags
-     */
     async testListings() {
         Logger.section('🧪 Testando listagens de feature flags');
 
-        // Listar todas
         const allResponse = await this.client.get('/feature-flags');
         if (allResponse && allResponse.status === 200) {
             Logger.success(`${allResponse.data.length} feature flags encontradas (total)`);
@@ -256,7 +236,6 @@ class FeatureFlagsAutomation extends AutomationBase {
             Logger.error('Falha ao listar feature flags');
         }
 
-        // Listar por ambiente
         const stagingResponse = await this.client.get('/feature-flags/environment/staging');
         if (stagingResponse && stagingResponse.status === 200) {
             Logger.success(`${stagingResponse.data.length} feature flags em staging`);
@@ -264,7 +243,6 @@ class FeatureFlagsAutomation extends AutomationBase {
             Logger.error('Falha ao listar feature flags de staging');
         }
 
-        // Verificar uma flag específica
         const checkResponse = await this.client.get('/feature-flags/check/content-events?environment=staging');
         if (checkResponse && checkResponse.status === 200) {
             const status = checkResponse.data.enabled ? '✅ Enabled' : '❌ Disabled';
@@ -275,6 +253,5 @@ class FeatureFlagsAutomation extends AutomationBase {
     }
 }
 
-// Executar automação
 const automation = new FeatureFlagsAutomation();
 automation.run();
