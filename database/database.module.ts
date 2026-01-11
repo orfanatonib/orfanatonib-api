@@ -33,6 +33,7 @@ import { ShelterScheduleEntity } from 'src/shelter/schedule/entities/shelter-sch
 import { AttendanceEntity } from 'src/attendance/entities/attendance.entity';
 import { PersonalData } from 'src/core/profile/entities/personal-data.entity';
 import { UserPreferences } from 'src/core/profile/entities/user-preferences.entity';
+import { FeatureFlagEntity } from 'src/core/feature-flags/entities/feature-flag.entity';
 
 @Module({
   imports: [
@@ -42,7 +43,7 @@ import { UserPreferences } from 'src/core/profile/entities/user-preferences.enti
       useFactory: (configService: ConfigService) => {
         const logger = new Logger('DatabaseModule');
         const synchronize = true;
-        
+
         const dbConfig = {
           type: 'mysql' as const,
           host: configService.get<string>('DB_HOST', 'localhost'),
@@ -79,7 +80,8 @@ import { UserPreferences } from 'src/core/profile/entities/user-preferences.enti
             ShelterScheduleEntity,
             AttendanceEntity,
             PersonalData,
-            UserPreferences
+            UserPreferences,
+            FeatureFlagEntity
           ],
           synchronize,
         };

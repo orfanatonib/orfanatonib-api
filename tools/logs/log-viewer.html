@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orfanato NIB - Log Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button.stop {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        button.clear {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        select,
+        input {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: border 0.3s ease;
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 8px;
+            font-size: 14px;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .logs-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 1200px) {
+            .logs-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .log-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 200px);
+        }
+
+        .log-header {
+            padding: 15px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-header.staging {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .log-count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .log-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+            background: #1e1e1e;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .log-line {
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .log-line.error {
+            background: rgba(244, 67, 54, 0.1);
+            color: #ff5252;
+            border-left: 3px solid #ff5252;
+        }
+
+        .log-line.warn {
+            background: rgba(255, 193, 7, 0.1);
+            color: #ffc107;
+            border-left: 3px solid #ffc107;
+        }
+
+        .log-line.info {
+            color: #4caf50;
+        }
+
+        .log-line.debug {
+            color: #9e9e9e;
+        }
+
+        .log-line.default {
+            color: #e0e0e0;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            color: #9e9e9e;
+            font-style: italic;
+        }
+
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin-right: 15px;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #2d2d2d;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+
+        .filter-input {
+            flex: 1;
+            min-width: 200px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>📡 Orfanato NIB - Log Viewer</h1>
+            <div class="controls">
+                <button id="startBtn" onclick="startMonitoring()">▶️ Iniciar Monitoramento</button>
+                <button id="stopBtn" class="stop" onclick="stopMonitoring()" style="display:none;">⏸️ Pausar</button>
+                <button class="clear" onclick="clearLogs()">🗑️ Limpar Logs</button>
+
+                <select id="intervalSelect">
+                    <option value="3">Atualizar a cada 3s</option>
+                    <option value="5">Atualizar a cada 5s</option>
+                    <option value="10">Atualizar a cada 10s</option>
+                    <option value="30">Atualizar a cada 30s</option>
+                </select>
+
+                <input type="text" id="filterInput" class="filter-input"
+                    placeholder="🔍 Filtrar logs (ex: ERROR, Google, etc)">
+
+                <div class="status" id="status" style="display:none;">
+                    <div class="status-dot"></div>
+                    <span>Monitorando...</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="logs-container">
+            <div class="log-panel">
+                <div class="log-header staging">
+                    <span>🟣 STAGING</span>
+                    <span class="log-count" id="stagingCount">0 linhas</span>
+                </div>
+                <div class="log-content" id="stagingLogs">
+                    <div class="loading">Clique em "Iniciar Monitoramento" para começar...</div>
+                </div>
+            </div>
+
+            <div class="log-panel">
+                <div class="log-header">
+                    <span>🟢 PRODUCTION</span>
+                    <span class="log-count" id="prodCount">0 linhas</span>
+                </div>
+                <div class="log-content" id="prodLogs">
+                    <div class="loading">Clique em "Iniciar Monitoramento" para começar...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let monitoringInterval = null;
+        let stagingLogs = [];
+        let prodLogs = [];
+
+        function classifyLog(line) {
+            if (line.includes('ERROR') || line.includes('Error')) return 'error';
+            if (line.includes('WARN') || line.includes('Warning')) return 'warn';
+            if (line.includes('LOG') || line.includes('Info')) return 'info';
+            if (line.includes('DEBUG') || line.includes('Debug')) return 'debug';
+            return 'default';
+        }
+
+        function formatLog(line) {
+            const cleanLine = stripAnsiCodes(line);
+            const className = classifyLog(cleanLine);
+            return `<div class="log-line ${className}">${escapeHtml(cleanLine)}</div>`;
+        }
+
+        function stripAnsiCodes(text) {
+            // Remove ANSI escape codes (color codes, etc.)
+            return text.replace(/\x1b\[[0-9;]*m/g, '')
+                .replace(/\[([0-9;]+)m/g, '');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function applyFilter() {
+            const filter = document.getElementById('filterInput').value.toLowerCase();
+            renderLogs('staging', filter);
+            renderLogs('prod', filter);
+        }
+
+        function renderLogs(env, filter = '') {
+            const logs = env === 'staging' ? stagingLogs : prodLogs;
+            const container = document.getElementById(env === 'staging' ? 'stagingLogs' : 'prodLogs');
+            const countEl = document.getElementById(env === 'staging' ? 'stagingCount' : 'prodCount');
+
+            const filteredLogs = filter
+                ? logs.filter(log => log.toLowerCase().includes(filter))
+                : logs;
+
+            container.innerHTML = filteredLogs.length > 0
+                ? filteredLogs.map(formatLog).join('')
+                : '<div class="loading">Nenhum log encontrado...</div>';
+
+            countEl.textContent = `${filteredLogs.length} linhas`;
+            container.scrollTop = container.scrollHeight;
+        }
+
+        async function fetchLogs(env) {
+            try {
+                // Simula chamada ao backend que executa o script watch-logs.sh
+                // Em produção, você criaria um endpoint Node.js que executa o script
+                const response = await fetch(`/api/logs/${env}`);
+                const data = await response.json();
+
+                if (env === 'staging') {
+                    stagingLogs = data.logs.split('\n').filter(l => l.trim());
+                } else {
+                    prodLogs = data.logs.split('\n').filter(l => l.trim());
+                }
+
+                applyFilter();
+            } catch (error) {
+                console.error(`Erro ao buscar logs de ${env}:`, error);
+                // Fallback: mostra mensagem de erro
+                const container = document.getElementById(env === 'staging' ? 'stagingLogs' : 'prodLogs');
+                container.innerHTML = `<div class="loading" style="color: #ff5252;">
+                    ⚠️ Erro ao conectar. Certifique-se de que o servidor backend está rodando.
+                    <br><br>
+                    Execute: <code>node log-server.js</code>
+                </div>`;
+            }
+        }
+
+        function startMonitoring() {
+            const interval = parseInt(document.getElementById('intervalSelect').value) * 1000;
+
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'inline-block';
+            document.getElementById('status').style.display = 'flex';
+
+            // Busca imediatamente
+            fetchLogs('staging');
+            fetchLogs('prod');
+
+            // Configura intervalo
+            monitoringInterval = setInterval(() => {
+                fetchLogs('staging');
+                fetchLogs('prod');
+            }, interval);
+        }
+
+        function stopMonitoring() {
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+                monitoringInterval = null;
+            }
+
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('status').style.display = 'none';
+        }
+
+        function clearLogs() {
+            stagingLogs = [];
+            prodLogs = [];
+            renderLogs('staging');
+            renderLogs('prod');
+        }
+
+        // Event listeners
+        document.getElementById('filterInput').addEventListener('input', applyFilter);
+        document.getElementById('intervalSelect').addEventListener('change', () => {
+            if (monitoringInterval) {
+                stopMonitoring();
+                startMonitoring();
+            }
+        });
+    </script>
+</body>
+
+</html>

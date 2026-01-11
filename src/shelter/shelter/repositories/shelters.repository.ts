@@ -257,7 +257,7 @@ export class SheltersRepository {
     }
 
     const shelter = shelterData[0];
-    
+
     // Buscar teams do abrigo
     const teamsData = await manager.query(`
       SELECT t.id, t.numberTeam, t.description, t.createdAt, t.updatedAt
@@ -323,47 +323,47 @@ export class SheltersRepository {
       const teamLeaders = leadersData
         .filter((ld: any) => ld.team_id === teamData.id)
         .map((leaderData: any) => {
-      const leaderEntity = new LeaderProfileEntity();
-      leaderEntity.id = leaderData.id;
-      leaderEntity.active = leaderData.active;
-      leaderEntity.createdAt = leaderData.createdAt;
-      leaderEntity.updatedAt = leaderData.updatedAt;
+          const leaderEntity = new LeaderProfileEntity();
+          leaderEntity.id = leaderData.id;
+          leaderEntity.active = leaderData.active;
+          leaderEntity.createdAt = leaderData.createdAt;
+          leaderEntity.updatedAt = leaderData.updatedAt;
 
-      const userEntity = new UserEntity();
-      userEntity.id = leaderData.user_id;
-      userEntity.name = leaderData.name;
-      userEntity.email = leaderData.email;
-      userEntity.phone = leaderData.phone;
-      userEntity.active = leaderData.user_active;
-      userEntity.completed = leaderData.completed;
-      userEntity.commonUser = leaderData.commonUser;
-      userEntity.role = leaderData.role;
+          const userEntity = new UserEntity();
+          userEntity.id = leaderData.user_id;
+          userEntity.name = leaderData.name;
+          userEntity.email = leaderData.email;
+          userEntity.phone = leaderData.phone;
+          userEntity.active = leaderData.user_active;
+          userEntity.completed = leaderData.completed;
+          userEntity.commonUser = leaderData.commonUser;
+          userEntity.role = leaderData.role;
 
-      leaderEntity.user = userEntity;
-      return leaderEntity;
-    });
+          leaderEntity.user = userEntity;
+          return leaderEntity;
+        });
 
       const teamTeachers = teachersData
         .filter((td: any) => td.team_id === teamData.id)
         .map((teacherData: any) => {
-      const teacherEntity = new TeacherProfileEntity();
-      teacherEntity.id = teacherData.id;
-      teacherEntity.active = teacherData.active;
-      teacherEntity.createdAt = teacherData.createdAt;
-      teacherEntity.updatedAt = teacherData.updatedAt;
+          const teacherEntity = new TeacherProfileEntity();
+          teacherEntity.id = teacherData.id;
+          teacherEntity.active = teacherData.active;
+          teacherEntity.createdAt = teacherData.createdAt;
+          teacherEntity.updatedAt = teacherData.updatedAt;
 
-      const userEntity = new UserEntity();
-      userEntity.id = teacherData.user_id;
-      userEntity.name = teacherData.name;
-      userEntity.email = teacherData.email;
-      userEntity.phone = teacherData.phone;
-      userEntity.active = teacherData.user_active;
-      userEntity.completed = teacherData.completed;
-      userEntity.commonUser = teacherData.commonUser;
-      userEntity.role = teacherData.role;
+          const userEntity = new UserEntity();
+          userEntity.id = teacherData.user_id;
+          userEntity.name = teacherData.name;
+          userEntity.email = teacherData.email;
+          userEntity.phone = teacherData.phone;
+          userEntity.active = teacherData.user_active;
+          userEntity.completed = teacherData.completed;
+          userEntity.commonUser = teacherData.commonUser;
+          userEntity.role = teacherData.role;
 
-      teacherEntity.user = userEntity;
-      return teacherEntity;
+          teacherEntity.user = userEntity;
+          return teacherEntity;
         });
 
       teamEntity.leaders = teamLeaders;
@@ -374,18 +374,18 @@ export class SheltersRepository {
     return shelterEntity;
   }
 
-  async list(ctx?: RoleCtx): Promise<ShelterSelectOptionDto[]> {
+  async list(ctx?: RoleCtx, showAddress = true): Promise<ShelterSelectOptionDto[]> {
     const qb = this.buildShelterBaseQB().orderBy('shelter.name', 'ASC');
     this.applyRoleFilter(qb, ctx);
     const items = await qb.getMany();
-    return items.map(toShelterSelectOption);
+    return items.map(s => toShelterSelectOption(s, showAddress));
   }
 
   async createShelter(dto: CreateShelterDto): Promise<ShelterEntity> {
     return this.dataSource.transaction(async (manager) => {
       const shelterRepo = manager.withRepository(this.shelterRepo);
       const addressRepo = manager.withRepository(this.addressRepo);
-      
+
       const address = addressRepo.create(dto.address);
       await addressRepo.save(address);
 
@@ -434,7 +434,7 @@ export class SheltersRepository {
           if (dto.address.state !== undefined) addressUpdate.state = dto.address.state;
           if (dto.address.postalCode !== undefined) addressUpdate.postalCode = dto.address.postalCode;
           if (dto.address.complement !== undefined) addressUpdate.complement = dto.address.complement;
-          
+
           Object.assign(shelter.address, addressUpdate);
           await addressRepo.save(shelter.address);
         } else {
