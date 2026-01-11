@@ -92,7 +92,7 @@ class FeatureFlagsAutomation extends AutomationBase {
                 key: 'shelter-management',
                 name: 'Shelter Management',
                 description: 'Enable/disable shelter management features',
-                enabled: true,
+                enabled: false,
                 environment: 'staging'
             },
             {
@@ -113,7 +113,14 @@ class FeatureFlagsAutomation extends AutomationBase {
                 key: 'shelter-pagelas',
                 name: 'Pagelas System',
                 description: 'Enable/disable pagelas (attendance sheets)',
-                enabled: true,
+                enabled: false,
+                environment: 'staging'
+            },
+            {
+                key: 'shelter-address',
+                name: 'Shelter Address',
+                description: 'Enable/disable shelter address visibility',
+                enabled: false,
                 environment: 'staging'
             },
 
