@@ -14,6 +14,8 @@ import { AuthContextService } from 'src/core/auth/services/auth-context.service'
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { ShelterEntity } from '../entities/shelter.entity/shelter.entity';
 import { ShelterTeamsQuantityResponseDto } from '../dto/shelter-teams-quantity-response.dto';
+import { FeatureFlagsService } from 'src/core/feature-flags/feature-flags.service';
+import { FeatureFlagKeys } from 'src/core/feature-flags/enums/feature-flag-keys.enum';
 
 type Ctx = { role?: string; userId?: string | null };
 
@@ -23,7 +25,8 @@ export class GetSheltersService {
     private readonly sheltersRepository: SheltersRepository,
     private readonly authCtx: AuthContextService,
     private readonly mediaItemProcessor: MediaItemProcessor,
-  ) {}
+    private readonly featureFlagsService: FeatureFlagsService,
+  ) { }
 
   private async getCtx(req: Request): Promise<Ctx> {
     const p = await this.authCtx.tryGetPayload(req);
@@ -123,7 +126,8 @@ export class GetSheltersService {
 
     const itemsWithMedia = await this.populateMediaItems(items);
 
-    return new Paginated(itemsWithMedia.map(toShelterDto), total, page, limit);
+    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
+    return new Paginated(itemsWithMedia.map(s => toShelterDto(s, showAddress)), total, page, limit);
   }
 
   async findAllSimple(req: Request): Promise<ShelterSimpleResponseDto[]> {
@@ -131,8 +135,9 @@ export class GetSheltersService {
     const shelters = await this.sheltersRepository.findAllSimple(ctx);
 
     const sheltersWithMedia = await this.populateMediaItems(shelters);
-    
-    return sheltersWithMedia.map(toShelterSimpleDto);
+
+    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
+    return sheltersWithMedia.map(s => toShelterSimpleDto(s, showAddress));
   }
 
   async findOne(id: string, req: Request): Promise<ShelterResponseDto> {
@@ -143,20 +148,24 @@ export class GetSheltersService {
     await this.populateMediaItems([shelter]);
 
     await this.populateUserMediaItemsForShelter(shelter);
-    
-    return toShelterDto(shelter);
+
+
+
+    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
+    return toShelterDto(shelter, showAddress);
   }
 
   async list(req: Request): Promise<ShelterSelectOptionDto[]> {
     const ctx = await this.getCtx(req);
-    return await this.sheltersRepository.list(ctx);
+    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
+    return await this.sheltersRepository.list(ctx, showAddress);
   }
 
   async getTeamsQuantity(id: string, req: Request): Promise<ShelterTeamsQuantityResponseDto> {
     const ctx = await this.getCtx(req);
     const shelter = await this.sheltersRepository.findOneOrFailForResponse(id, ctx);
     if (!shelter) throw new NotFoundException('Shelter not found');
-    
+
     return {
       id: shelter.id,
       teamsQuantity: shelter.teamsQuantity ?? 0,

@@ -13,12 +13,12 @@ export class ShelterSelectOptionDto {
   leader!: boolean;
 }
 
-export function toShelterSelectOption(entity: ShelterEntity): ShelterSelectOptionDto {
+export function toShelterSelectOption(entity: ShelterEntity, showAddress = true): ShelterSelectOptionDto {
   const bairro = entity.address?.district?.trim();
   const hasLeaders = entity.teams?.some(team => team.leaders && team.leaders.length > 0) || false;
   return {
     id: entity.id,
-    detalhe: `${entity.name} : ${bairro || '—'}`,
+    detalhe: `${entity.name}${showAddress ? ` : ${bairro || '—'}` : ''}`,
     leader: hasLeaders,
   };
 }

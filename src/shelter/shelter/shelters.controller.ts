@@ -29,6 +29,8 @@ import { ShelterResponseDto, ShelterSimpleResponseDto, toShelterDto } from './dt
 import { ShelterSelectOptionDto } from './dto/shelter-select-option.dto';
 import { ShelterTeamsQuantityResponseDto } from './dto/shelter-teams-quantity-response.dto';
 import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
+import { FeatureFlagsService } from 'src/core/feature-flags/feature-flags.service';
+import { FeatureFlagKeys } from 'src/core/feature-flags/enums/feature-flag-keys.enum';
 
 @Controller('shelters')
 @UseGuards(JwtAuthGuard)
@@ -40,6 +42,7 @@ export class SheltersController {
     private readonly updateService: UpdateSheltersService,
     private readonly getService: GetSheltersService,
     private readonly createService: CreateSheltersService,
+    private readonly featureFlagsService: FeatureFlagsService,
   ) { }
 
   @Get()
@@ -90,9 +93,9 @@ export class SheltersController {
       shelterDataRaw ? { shelterData: shelterDataRaw } : (body || {}); // ✅ aqui
 
     const entity = await this.createService.createFromRaw(bodyToProcess, files, req);
-
     this.logger.log(`Shelter created successfully: ${entity.id}`);
-    return toShelterDto(entity);
+    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
+    return toShelterDto(entity, showAddress);
   }
 
 
@@ -109,7 +112,8 @@ export class SheltersController {
     const bodyToProcess = shelterDataRaw ? { shelterData: shelterDataRaw } : (body || {});
     const entity = await this.updateService.updateFromRaw(id, bodyToProcess, files, req);
     this.logger.log(`Shelter updated successfully: ${id}`);
-    return toShelterDto(entity);
+    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
+    return toShelterDto(entity, showAddress);
   }
 
   @Patch(':id/media')
@@ -125,7 +129,8 @@ export class SheltersController {
     const bodyToProcess = mediaDataRaw ? { mediaData: mediaDataRaw } : (body || {});
     const entity = await this.updateService.updateMediaFromRaw(id, bodyToProcess, files, req);
     this.logger.log(`Shelter media updated successfully: ${id}`);
-    return toShelterDto(entity);
+    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
+    return toShelterDto(entity, showAddress);
   }
 
   @Delete(':id')

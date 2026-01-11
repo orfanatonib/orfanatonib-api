@@ -29,6 +29,7 @@ import { TeamsModule } from './shelter/team/teams.module';
 import { ShelterScheduleModule } from './shelter/schedule/shelter-schedule.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { ProfileModule } from './core/profile/profile.module';
+import { FeatureFlagsModule } from './core/feature-flags/feature-flags.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import * as path from 'path';
@@ -78,7 +79,8 @@ function getEnvFilePath(): string {
     TeamsModule,
     ShelterScheduleModule,
     AttendanceModule,
-    ProfileModule
+    ProfileModule,
+    FeatureFlagsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

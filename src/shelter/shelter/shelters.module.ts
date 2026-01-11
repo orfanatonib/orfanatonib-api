@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { FeatureFlagsModule } from 'src/core/feature-flags/feature-flags.module';
 
 import { SheltersController } from './shelters.controller';
 import { DeleteSheltersService } from './services/delete-shelters.service';
@@ -33,6 +34,7 @@ import { MediaItemEntity } from 'src/shared/media/media-item/media-item.entity';
     forwardRef(() => ShelteredModule),
     forwardRef(() => AuthModule),
     forwardRef(() => TeamsModule),
+    FeatureFlagsModule,
     MediaModule,
     AwsModule,
     RouteModule,

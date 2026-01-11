@@ -203,31 +203,43 @@ export class ShelterResponseDto {
   @Expose() updatedAt!: Date;
 }
 
-export function toShelterSimpleDto(entity: ShelterEntity): ShelterSimpleResponseDto {
-  return plainToInstance(ShelterSimpleResponseDto, entity, { excludeExtraneousValues: true });
+export function toShelterSimpleDto(entity: ShelterEntity, showAddress = true): ShelterSimpleResponseDto {
+  const dto = plainToInstance(ShelterSimpleResponseDto, entity, { excludeExtraneousValues: true });
+  if (!showAddress) {
+    dto.address = undefined as any;
+  }
+  return dto;
 }
-export function toShelterDto(entity: ShelterEntity): ShelterResponseDto {
-  return plainToInstance(ShelterResponseDto, entity, { excludeExtraneousValues: true });
+export function toShelterDto(entity: ShelterEntity, showAddress = true): ShelterResponseDto {
+  const dto = plainToInstance(ShelterResponseDto, entity, { excludeExtraneousValues: true });
+  if (!showAddress) {
+    dto.address = undefined as any;
+  }
+  return dto;
 }
 
 export function toShelterWithLeaderStatusDto(
   entity: ShelterEntity,
   leaderId: string,
+  showAddress = true,
 ): ShelterWithLeaderStatusDto {
   const dto = plainToInstance(ShelterWithLeaderStatusDto, entity, { excludeExtraneousValues: true });
-  
+  if (!showAddress) {
+    dto.address = undefined as any;
+  }
+
   if (entity.teams && Array.isArray(entity.teams)) {
     dto.teams = entity.teams.map((team: any) => {
       const teamBase = plainToInstance(TeamWithLeaderStatusDto, team, { excludeExtraneousValues: true });
-      
+
       const isLeaderInTeam = team.leaders?.some((leader: any) => leader.id === leaderId) ?? false;
       teamBase.isLeaderInTeam = isLeaderInTeam;
-      
+
       return teamBase;
     });
   } else {
     dto.teams = [];
   }
-  
+
   return dto;
 }
