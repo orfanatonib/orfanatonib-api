@@ -61,7 +61,6 @@ export class AttendanceReaderService {
         const memberUsers = team.members?.map(t => t.user).filter(u => u) ?? [];
 
         for (const schedule of schedules) {
-            // 1. Verificar Pendência de VISITA
             if (schedule.visitDate && new Date(schedule.visitDate) < today) {
                 const attendances = await this.attendanceRepo.find({
                     where: {
@@ -101,7 +100,6 @@ export class AttendanceReaderService {
                 }
             }
 
-            // 2. Verificar Pendência de REUNIÃO
             if (schedule.meetingDate && new Date(schedule.meetingDate) < today) {
                 const attendances = await this.attendanceRepo.find({
                     where: {
@@ -145,9 +143,6 @@ export class AttendanceReaderService {
         return pendings;
     }
 
-    // ...
-    // Note: I cannot use '...' in replacement. I must match exact content.
-    // Simplifying:
     async findPendingsForMember(memberId: string, today: Date): Promise<PendingForMemberDto[]> {
         if (!memberId) {
             throw new ForbiddenException('Membro não identificado');
@@ -178,7 +173,6 @@ export class AttendanceReaderService {
         for (const schedule of schedules) {
             const team = teams.find(t => t.id === schedule.team.id);
 
-            // 1. Pendência de VISITA
             if (schedule.visitDate && new Date(schedule.visitDate) < today) {
                 const attendance = await this.attendanceRepo.findOne({
                     where: {
@@ -481,7 +475,6 @@ export class AttendanceReaderService {
             query = query.andWhere('schedule.team.id IN (:...teamIds)', { teamIds });
         }
 
-        // 🐛 BUGFIX: Filtrar por category para garantir que visit e meeting sejam separados
         if (category) {
             query = query.andWhere('attendance.category = :category', { category });
         }

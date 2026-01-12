@@ -31,17 +31,12 @@ export class GetUsersService {
     return this.userRepo.findByEmail(email);
   }
 
-  /**
-   * Retorna o perfil completo do usuário sem campos sensíveis (password, refreshToken)
-   * e incluindo a imagem de perfil
-   */
   async findOneForProfile(id: string) {
     const user = await this.userRepo.findByIdWithProfiles(id);
     if (!user) {
       throw new NotFoundException('UserEntity not found');
     }
 
-    // Buscar imagem do usuário
     const imageMedia = await this.mediaItemProcessor.findMediaItemByTarget(
       id,
       'UserEntity',

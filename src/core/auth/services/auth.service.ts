@@ -61,7 +61,6 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Verifica status de verificação SES e reenvia se necessário
     const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
 
     if (!user.active) {
@@ -124,7 +123,6 @@ export class AuthService {
           role: UserRole.MEMBER,
         });
 
-        // Cadastra email no SES para novo usuário
         const sesVerification = await this.sesIdentityService.verifyEmailIdentitySES(email);
 
         return {
@@ -143,7 +141,6 @@ export class AuthService {
       }
 
       if (!user.completed) {
-        // Verifica/cadastra email no SES
         const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
         return {
           email,
@@ -161,7 +158,6 @@ export class AuthService {
       }
 
       if (!(user as any).active) {
-        // Verifica/cadastra email no SES
         const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
         return {
           message: 'User is inactive',
@@ -178,7 +174,6 @@ export class AuthService {
         };
       }
 
-      // Verifica status de verificação SES ao fazer login
       const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
 
       const tokens = this.generateTokens(user);
@@ -201,7 +196,6 @@ export class AuthService {
     } catch (error) {
       this.logger.error(`Error during Google login: ${error.message}`, error.stack);
 
-      // Provide more specific error messages for Google authentication
       if (error.message?.includes('Token used too late') || error.message?.includes('expired')) {
         throw new UnauthorizedException('Google authentication token has expired. Please try signing in again.');
       }
@@ -210,7 +204,6 @@ export class AuthService {
         throw new UnauthorizedException('Invalid Google authentication token. Please try signing in again.');
       }
 
-      // Generic Google authentication error
       throw new UnauthorizedException('Google authentication failed. Please try signing in with Google again.');
     }
   }
@@ -359,13 +352,11 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    // Buscar imagem do usuário
     const imageMedia = await this.mediaItemProcessor.findMediaItemByTarget(
       userId,
       'UserEntity',
     );
 
-    // Buscar dados de perfil
     const personalData = await this.personalDataRepository.findByUserId(userId);
     const preferences = await this.userPreferencesRepository.findByUserId(userId);
 
@@ -394,7 +385,6 @@ export class AuthService {
         whatMakesYouSmile: preferences.whatMakesYouSmile,
         skillsAndTalents: preferences.skillsAndTalents,
       } : undefined,
-      // Optionally, you can add image or other fields if needed
     };
   }
 
@@ -416,7 +406,6 @@ export class AuthService {
       role: data.role,
     });
 
-    // Cadastra/verifica email no SES ao completar registro
     const sesVerification = await this.sesIdentityService.verifyEmailIdentitySES(data.email);
 
     return {
@@ -447,7 +436,6 @@ export class AuthService {
       role: data.role,
     });
 
-    // Cadastra email no SES para novo usuário
     const sesVerification = await this.sesIdentityService.verifyEmailIdentitySES(data.email);
 
     return {

@@ -103,7 +103,7 @@ export class PendingForLeaderDto {
   shelterName: string;
 
   @IsNumber()
-  totalMembers: number; // total de professores (líderes não contam)
+  totalMembers: number;
 
   pendingMembers: PendingMemberDto[];
 }
@@ -145,7 +145,6 @@ export class PendingForMemberDto {
   shelterName: string;
 }
 
-// DTOs para paginação e filtros
 export class PaginationDto {
   @IsNumber()
   @Min(1)
@@ -217,7 +216,7 @@ export class AttendanceStatsDto {
   absentCount: number;
 
   @IsNumber()
-  attendanceRate: number; // porcentagem
+  attendanceRate: number;
 
   @IsNumber()
   pendingCount: number;
@@ -276,11 +275,11 @@ export class TeamScheduleDto {
 
   @IsNumber()
   @IsOptional()
-  attendanceCount?: number; // número de registros de presença já feitos
+  attendanceCount?: number;
 
   @IsNumber()
   @IsOptional()
-  totalMembers?: number; // total de professores no time (líderes não contam)
+  totalMembers?: number;
 }
 
 export class LeaderTeamDto {
@@ -301,7 +300,7 @@ export class LeaderTeamDto {
 
   @IsNumber()
   @IsOptional()
-  memberCount?: number; // total de professores (líderes não contam)
+  memberCount?: number;
 }
 
 export class PaginatedResponseDto<T> {
@@ -316,7 +315,6 @@ export class PaginatedResponseDto<T> {
   };
 }
 
-// DTOs para listagem hierárquica de pagelas
 export class AttendanceRecordDto {
   @IsUUID()
   id: string;

@@ -67,8 +67,7 @@ export class AttendanceWriterService {
         const members = [...memberUsers];
         const results: AttendanceEntity[] = [];
 
-        // Determinar a categoria oposta para evitar duplicatas
-        const oppositeCategory = category === AttendanceCategory.VISIT 
+        const oppositeCategory = category === AttendanceCategory.VISIT
             ? AttendanceCategory.MEETING 
             : AttendanceCategory.VISIT;
 
@@ -78,8 +77,6 @@ export class AttendanceWriterService {
                 throw new BadRequestException(`Membro ${att.memberId} não encontrado no time`);
             }
 
-            // 🐛 BUGFIX: Deletar registros da categoria oposta para evitar duplicação
-            // Se estiver salvando para "visit", remove registros de "meeting" (e vice-versa)
             const deletedOpposite = await this.attendanceRepo.delete({
                 member: { id: member.id },
                 shelterSchedule: { id: schedule.id },
@@ -90,7 +87,6 @@ export class AttendanceWriterService {
                 this.logger.warn(`⚠️ Removido ${deletedOpposite.affected} registro(s) da categoria oposta (${oppositeCategory}) para membro ${member.id} no schedule ${scheduleId}`);
             }
 
-            // Buscar registro existente para a categoria correta
             const existing = await this.attendanceRepo.findOne({
                 where: {
                     member: { id: member.id },
@@ -141,28 +137,10 @@ export class AttendanceWriterService {
 
         this.validateScheduleDate(schedule);
 
-        // Verifica se o membro pertence ao time do evento (apenas professores registram presença)
-        // Opcional: validar se usuario logado é o mesmo memberId (feito no controller geralmente, mas ok confiar no userId passado pelo controller)
-
-        const team = schedule.team;
-        const isMember = team.members?.some(t => t.user.id === memberId);
-
-        if (!isMember) {
-            // Se nao for member, verificar se é admin/leader? 
-            // A regra original nao usava 'accessService.assertTeamMembership' aqui de forma explicita, mas usava logic dentro do metodo?
-            // Ah, original usava:
-            /*
-             const user = await this.getUserWithMembership(memberId);
-             await this.assertTeamMembership(user, schedule.team.id);
-            */
-            // Vou manter a logica original usando o AccessService
-        }
-
         const user = await this.accessService.getUserWithMembership(memberId);
         await this.accessService.assertTeamMembership(user, schedule.team.id);
 
-        // 🐛 BUGFIX: Deletar registros da categoria oposta para evitar duplicação
-        const oppositeCategory = category === AttendanceCategory.VISIT 
+        const oppositeCategory = category === AttendanceCategory.VISIT
             ? AttendanceCategory.MEETING 
             : AttendanceCategory.VISIT;
 

@@ -15,9 +15,8 @@ export class DeleteEventService {
 
   async remove(id: string): Promise<void> {
     try {
-      // Find and delete associated media items
       const mediaItems = await this.mediaItemProcessor.findMediaItemsByTarget(id, 'Event');
-      
+
       if (mediaItems.length > 0) {
         await this.mediaItemProcessor.deleteMediaItems(
           mediaItems,
@@ -26,7 +25,6 @@ export class DeleteEventService {
         this.logger.log(`Deleted ${mediaItems.length} media items for event ${id}`);
       }
 
-      // Delete the event
       await this.eventRepo.remove(id);
       this.logger.log(`Event ${id} deleted successfully`);
     } catch (error) {

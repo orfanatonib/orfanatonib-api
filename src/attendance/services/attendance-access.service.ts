@@ -18,12 +18,10 @@ export class AttendanceAccessService {
     async getUserTeamIds(user: UserEntity): Promise<string[]> {
         const teamIds: string[] = [];
 
-        // Adicionar times do member
         if (user.memberProfile?.team) {
             teamIds.push(user.memberProfile.team.id);
         }
 
-        // Adicionar times do leader
         if (user.leaderProfile?.teams) {
             teamIds.push(...user.leaderProfile.teams.map((t: any) => t.id));
         }

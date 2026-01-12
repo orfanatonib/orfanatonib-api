@@ -59,7 +59,6 @@ export class ProfileController {
     const userRole = await this.authContextService.getRole(req);
     if (!userRole) throw new ForbiddenException('User role not found');
 
-    // Apenas ADMIN e LEADER podem listar perfis
     if (userRole !== UserRole.ADMIN && userRole !== UserRole.LEADER) {
       throw new ForbiddenException('Only admins and leaders can list profiles');
     }
@@ -92,12 +91,10 @@ export class ProfileController {
 
     const userRole = await this.authContextService.getRole(req);
 
-    // Members and Leaders can only update their own profiles
     if (userRole === UserRole.MEMBER || userRole === UserRole.LEADER) {
       return this.updateProfileService.execute(userId, updateProfileDto);
     }
 
-    // Admins can update their own profile via this endpoint too
     if (userRole === UserRole.ADMIN) {
       return this.updateProfileService.execute(userId, updateProfileDto);
     }
