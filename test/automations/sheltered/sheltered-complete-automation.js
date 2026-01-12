@@ -18,7 +18,7 @@ async function login() {
   try {
     console.log('🔐 Fazendo login como admin...');
     const response = await axios.post(`${BASE_URL}/auth/login`, ADMIN_CREDENTIALS);
-    
+
     if (response.status === 201) {
       authToken = response.data.accessToken;
       console.log('✅ Login realizado com sucesso!');
@@ -40,11 +40,11 @@ async function makeRequest(method, url, data = null) {
         'Content-Type': 'application/json'
       }
     };
-    
+
     if (data) {
       config.data = data;
     }
-    
+
     const response = await axios(config);
     return response;
   } catch (error) {
@@ -55,12 +55,13 @@ async function makeRequest(method, url, data = null) {
 
 async function getTestData() {
   console.log('📊 Obtendo dados necessários para os testes...');
-  
+
   try {
     // Obter shelters (usar endpoint paginado para garantir que pegue todos)
     const sheltersResponse = await makeRequest('GET', '/shelters?page=1&limit=100');
     if (sheltersResponse && sheltersResponse.data) {
-      testData.shelters = sheltersResponse.data.data || sheltersResponse.data || [];
+      // ✅ A resposta paginada vem com a estrutura { items: [], meta: {}}
+      testData.shelters = sheltersResponse.data.items || [];
       console.log(`  🏠 ${testData.shelters.length} shelters encontrados`);
     }
 
@@ -83,7 +84,7 @@ async function getTestData() {
 
 async function testShelteredCRUD() {
   console.log('\n📋 Testando CRUD de Sheltered...');
-  
+
   // 1. Criar Sheltered
   console.log('  🔸 Teste 1: Criar Sheltered');
   const createData = {
@@ -104,12 +105,12 @@ async function testShelteredCRUD() {
       complement: 'Apto 45'
     }
   };
-  
+
   const createResponse = await makeRequest('POST', '/sheltered', createData);
   if (createResponse && createResponse.status === 201) {
     console.log(`    ✅ Sheltered criado: ${createResponse.data.name}`);
     const createdSheltered = createResponse.data;
-    
+
     // 2. Buscar Sheltered por ID
     console.log('  🔸 Teste 2: Buscar Sheltered por ID');
     const getResponse = await makeRequest('GET', `/sheltered/${createdSheltered.id}`);
@@ -124,7 +125,7 @@ async function testShelteredCRUD() {
       gender: 'M',
       guardianName: 'Maria Silva Santos'
     };
-    
+
     const updateResponse = await makeRequest('PUT', `/sheltered/${createdSheltered.id}`, updateData);
     if (updateResponse && updateResponse.status === 200) {
       console.log(`    ✅ Sheltered atualizado: ${updateResponse.data.name}`);
@@ -136,7 +137,7 @@ async function testShelteredCRUD() {
       guardianName: '', // Campo vazio
       guardianPhone: '' // Campo vazio
     };
-    
+
     const updateEmptyResponse = await makeRequest('PUT', `/sheltered/${createdSheltered.id}`, updateEmptyData);
     if (updateEmptyResponse && updateEmptyResponse.status === 200) {
       console.log(`    ✅ Sheltered atualizado com campos vazios: ${updateEmptyResponse.data.name}`);
@@ -161,7 +162,7 @@ async function testShelteredCRUD() {
         complement: 'Apto 999'
       }
     };
-    
+
     const updateWithAddressIdResponse = await makeRequest('PUT', `/sheltered/${createdSheltered.id}`, updateWithAddressIdData);
     if (updateWithAddressIdResponse && updateWithAddressIdResponse.status === 200) {
       console.log(`    ✅ Sheltered atualizado com address ID: ${updateWithAddressIdResponse.data.name}`);
@@ -182,7 +183,7 @@ async function testShelteredCRUD() {
 
 async function testShelteredFilters() {
   console.log('\n📋 Testando Filtros Consolidados de Sheltered...');
-  
+
   // 1. Filtro consolidado: shelteredSearchingString (nome, responsável, telefone)
   console.log('  🔸 Teste 1: Filtro consolidado shelteredSearchingString (nome, responsável, telefone)');
   const searchResponse = await makeRequest('GET', '/sheltered?shelteredSearchingString=Maria&limit=5');
@@ -244,7 +245,7 @@ async function testShelteredFilters() {
 
 async function testShelteredListings() {
   console.log('\n📋 Testando Listagens de Sheltered...');
-  
+
   // 1. Listagem paginada
   console.log('  🔸 Teste 1: Listagem paginada');
   const paginatedResponse = await makeRequest('GET', '/sheltered?page=1&limit=10');
@@ -275,7 +276,7 @@ async function testShelteredListings() {
 
 async function testShelteredValidation() {
   console.log('\n📋 Testando Validações de Sheltered...');
-  
+
   // 1. Gender inválido
   console.log('  🔸 Teste 1: Gender inválido');
   const invalidGenderResponse = await makeRequest('POST', '/sheltered', {
@@ -333,12 +334,12 @@ async function testShelteredValidation() {
       postalCode: '04567-890'
     }
   };
-  
+
   const createWithoutGuardianResponse = await makeRequest('POST', '/sheltered', createWithoutGuardianData);
   if (createWithoutGuardianResponse && createWithoutGuardianResponse.status === 201) {
     console.log(`    ✅ Sheltered criado sem guardianName: ${createWithoutGuardianResponse.data.name}`);
     console.log(`    ✅ GuardianName é opcional: ${createWithoutGuardianResponse.data.guardianName || 'null'}`);
-    
+
     // Deletar sheltered de teste
     const deleteResponse = await makeRequest('DELETE', `/sheltered/${createWithoutGuardianResponse.data.id}`);
     if (deleteResponse && deleteResponse.status === 200) {
@@ -365,13 +366,13 @@ async function testShelteredValidation() {
       postalCode: '05678-901'
     }
   };
-  
+
   const createWithEmptyResponse = await makeRequest('POST', '/sheltered', createWithEmptyOptionalData);
   if (createWithEmptyResponse && createWithEmptyResponse.status === 201) {
     console.log(`    ✅ Sheltered criado com campos vazios: ${createWithEmptyResponse.data.name}`);
     console.log(`    ✅ GuardianName vazio aceito: "${createWithEmptyResponse.data.guardianName || 'null'}"`);
     console.log(`    ✅ GuardianPhone vazio aceito: "${createWithEmptyResponse.data.guardianPhone || 'null'}"`);
-    
+
     // Deletar sheltered de teste
     const deleteResponse = await makeRequest('DELETE', `/sheltered/${createWithEmptyResponse.data.id}`);
     if (deleteResponse && deleteResponse.status === 200) {
@@ -384,7 +385,7 @@ async function testShelteredValidation() {
 
 async function testShelteredRelationships() {
   console.log('\n📋 Testando Relacionamentos de Sheltered...');
-  
+
   if (testData.shelters.length === 0) {
     console.log('  ⚠️ Nenhum shelter encontrado para testar relacionamentos');
     return;
@@ -421,7 +422,7 @@ async function testShelteredRelationships() {
       const updateShelterResponse = await makeRequest('PUT', `/sheltered/${createWithShelterResponse.data.id}`, {
         shelterId: testData.shelters[1].id
       });
-      
+
       if (updateShelterResponse && updateShelterResponse.status === 200) {
         console.log(`    ✅ Shelter atualizado: ${updateShelterResponse.data.shelter?.name || 'N/A'}`);
       }
@@ -432,7 +433,7 @@ async function testShelteredRelationships() {
     const removeShelterResponse = await makeRequest('PUT', `/sheltered/${createWithShelterResponse.data.id}`, {
       shelterId: null
     });
-    
+
     if (removeShelterResponse && removeShelterResponse.status === 200) {
       console.log('    ✅ Shelter removido com sucesso');
     }
@@ -450,11 +451,11 @@ async function testShelteredRelationships() {
 
 async function createShelteredInBulk(count = 100) {
   console.log(`\n🚀 Criando ${count} sheltered em massa...`);
-  
+
   if (testData.shelters.length === 0) {
     console.log('  ⚠️ Nenhum shelter encontrado. Criando sheltered sem shelter vinculado.');
   }
-  
+
   const firstNames = ['João', 'Maria', 'Pedro', 'Ana', 'Carlos', 'Juliana', 'Fernando', 'Patricia', 'Ricardo', 'Camila', 'Lucas', 'Beatriz', 'Rafael', 'Mariana', 'Gabriel', 'Isabela', 'Thiago', 'Larissa', 'Bruno', 'Amanda', 'Felipe', 'Carolina', 'Gustavo', 'Leticia', 'Rodrigo', 'Vanessa', 'André', 'Renata', 'Marcelo', 'Tatiana'];
   const lastNames = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Pereira', 'Costa', 'Rodrigues', 'Almeida', 'Nascimento', 'Lima', 'Araújo', 'Fernandes', 'Carvalho', 'Gomes', 'Martins', 'Rocha', 'Ribeiro', 'Alves', 'Monteiro', 'Mendes'];
   const guardianNames = ['José Silva', 'Maria Santos', 'João Oliveira', 'Ana Costa', 'Pedro Souza', 'Juliana Pereira', 'Carlos Rodrigues', 'Patricia Almeida', 'Fernando Lima', 'Camila Araújo'];
@@ -462,11 +463,11 @@ async function createShelteredInBulk(count = 100) {
   const cities = ['São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Curitiba', 'Porto Alegre', 'Salvador', 'Recife', 'Fortaleza', 'Brasília', 'Manaus'];
   const states = ['SP', 'RJ', 'MG', 'PR', 'RS', 'BA', 'PE', 'CE', 'DF', 'AM'];
   const streets = ['Rua das Flores', 'Avenida Central', 'Rua Principal', 'Avenida dos Abrigos', 'Rua da Esperança'];
-  
+
   const createdSheltered = [];
   let successCount = 0;
   let errorCount = 0;
-  
+
   for (let i = 0; i < count; i++) {
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
     const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
@@ -475,19 +476,19 @@ async function createShelteredInBulk(count = 100) {
     const stateIndex = cities.indexOf(city);
     const state = states[stateIndex] || 'SP';
     const street = streets[Math.floor(Math.random() * streets.length)];
-    
+
     // Gerar data de nascimento entre 2010 e 2018
     const birthYear = 2010 + Math.floor(Math.random() * 9);
     const birthMonth = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
     const birthDay = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
     const birthDate = `${birthYear}-${birthMonth}-${birthDay}`;
-    
+
     // Gerar data de entrada no abrigo entre 2020 e 2024
     const joinedYear = 2020 + Math.floor(Math.random() * 5);
     const joinedMonth = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
     const joinedDay = String(Math.floor(Math.random() * 28) + 1).padStart(2, '0');
     const joinedAt = `${joinedYear}-${joinedMonth}-${joinedDay}`;
-    
+
     const shelteredData = {
       name: `${firstName} ${lastName}`,
       birthDate: birthDate,
@@ -506,7 +507,7 @@ async function createShelteredInBulk(count = 100) {
         complement: Math.random() > 0.5 ? `Apto ${Math.floor(Math.random() * 200) + 1}` : null
       }
     };
-    
+
     const response = await makeRequest('POST', '/sheltered', shelteredData);
     if (response && response.status === 201) {
       createdSheltered.push(response.data);
@@ -517,16 +518,16 @@ async function createShelteredInBulk(count = 100) {
     } else {
       errorCount++;
     }
-    
+
     // Pequeno delay para não sobrecarregar o servidor
     await new Promise(resolve => setTimeout(resolve, 50));
   }
-  
+
   console.log(`\n✅ Criação em massa concluída!`);
   console.log(`   📊 Sucessos: ${successCount}/${count}`);
   console.log(`   ❌ Erros: ${errorCount}/${count}`);
   console.log(`   💾 Total de sheltered criados: ${createdSheltered.length}`);
-  
+
   return createdSheltered;
 }
 
@@ -560,7 +561,7 @@ async function runShelteredAutomation() {
 
   // Criar dados em massa
   await createShelteredInBulk(100);
-  
+
   // Executar testes
   await testShelteredCRUD();
   await testShelteredFilters();
