@@ -24,12 +24,12 @@
         "postalCode": "01234-567",
         "complement": "Apto 45"
       },
-      "teachers": [
+      "members": [
         {
-          "id": "uuid-teacher-1",
+          "id": "uuid-member-1",
           "active": true,
           "user": {
-            "id": "uuid-teacher-user-1",
+            "id": "uuid-member-user-1",
             "name": "Maria Santos",
             "email": "maria.santos@example.com",
             "phone": "+5511888888888",
@@ -43,8 +43,8 @@
     "createdAt": "2025-09-27T21:00:00.000Z",
     "updatedAt": "2025-09-27T21:00:00.000Z"
   },
-  "teacherProfile": {
-    "id": "uuid-teacher-1",
+  "memberProfile": {
+    "id": "uuid-member-1",
     "active": true,
     "user": {
       "id": "uuid-user-2",
@@ -128,8 +128,8 @@
       "gender": "feminino",
       "birthDate": "2010-05-15"
     },
-    "teacher": {
-      "id": "uuid-teacher-1",
+    "member": {
+      "id": "uuid-member-1",
       "active": true,
       "user": {
         "id": "uuid-user-2",
@@ -185,9 +185,9 @@
         }
       }
     ],
-    "teachers": [
+    "members": [
       {
-        "id": "uuid-teacher-1",
+        "id": "uuid-member-1",
         "active": true,
         "user": {
           "id": "uuid-user-2",
@@ -214,7 +214,7 @@
       "completed": true,
       "commonUser": false,
       "role": "admin",
-      "teacherProfile": null,
+      "memberProfile": null,
       "leaderProfile": {
         "id": "uuid-leader-1",
         "active": true,

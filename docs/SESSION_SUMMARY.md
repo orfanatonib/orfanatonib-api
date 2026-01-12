@@ -71,7 +71,7 @@ docs/
 │   ├── users/
 │   ├── shelters/
 │   ├── leader-profiles/      # ⭐ v6.0.0 - 100% synced
-│   ├── teacher-profiles/
+│   ├── member-profiles/
 │   ├── sheltered/
 │   └── pagelas/
 └── guides/                   # General guides
@@ -150,9 +150,9 @@ docs/ (17 MD files, all in English)
 │   │   └── results/
 │   │       └── results.json
 │   │
-│   ├── 👩‍🏫 teacher-profiles/
+│   ├── 👩‍🏫 member-profiles/
 │   │   ├── README.md
-│   │   ├── Teacher_Profiles_API_Collection.postman_collection.json
+│   │   ├── Member_Profiles_API_Collection.postman_collection.json
 │   │   └── results/
 │   │
 │   ├── 👶 sheltered/
@@ -197,7 +197,7 @@ docs/ (17 MD files, all in English)
 - ❌ `list-databases.js` → Debugging file
 - ❌ `populate-shelters.js` → In complete automation
 - ❌ `test-media-items.js` → In complete automation
-- ❌ `test-teacher-shelter-linking.js` → In complete automation
+- ❌ `test-member-shelter-linking.js` → In complete automation
 - ❌ `test-create-user.js` → In complete automation
 - ❌ `check-users.js` → Debugging file
 - ❌ `investigate-users.js` → Debugging file
@@ -212,8 +212,8 @@ test/
     ├── leader-profiles/
     │   ├── leader-profiles-complete-automation.js
     │   └── results.json
-    ├── teacher-profiles/
-    │   ├── teacher-profiles-complete-automation.js
+    ├── member-profiles/
+    │   ├── member-profiles-complete-automation.js
     │   └── results.json
     ├── users/
     │   └── users-complete-automation.js
@@ -259,7 +259,7 @@ test/
 |--------|--------|------|----------|
 | Users | ⏳ Pending | Mapped | High |
 | Shelters | ⏳ Pending | Mapped | High |
-| Teacher Profiles | ⏳ Pending | Mapped | Medium |
+| Member Profiles | ⏳ Pending | Mapped | Medium |
 | Sheltered | ⏳ Pending | Mapped (different pagination) | Medium |
 | Pagelas | ⏳ Pending | Mapped | Medium |
 | Auth | ⏳ Pending | To map | Low |
@@ -273,11 +273,11 @@ test/
 
 2. **Update Shelters Collection**
    - Sync with CreateShelterDto (address, mediaItem)
-   - Ensure leaders[] and teachers[] are arrays
+   - Ensure leaders[] and members[] are arrays
    - Fix pagination structure
 
-3. **Update Teacher Profiles Collection**
-   - Sync TeacherResponseDto (shelter can be null, shelter.leader can be null)
+3. **Update Member Profiles Collection**
+   - Sync MemberResponseDto (shelter can be null, shelter.leader can be null)
    - Fix pagination structure
 
 4. **Update Sheltered Collection**
@@ -286,7 +286,7 @@ test/
    - Fix pagination structure
 
 5. **Update Pagelas Collection**
-   - Sync PagelaResponseDto (complete sheltered and teacher)
+   - Sync PagelaResponseDto (complete sheltered and member)
    - notes can be null
    - Fix pagination structure
 

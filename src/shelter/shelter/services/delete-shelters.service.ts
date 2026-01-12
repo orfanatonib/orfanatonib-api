@@ -21,7 +21,7 @@ export class DeleteSheltersService {
 
   async remove(id: string, req: Request): Promise<{ message: string }> {
     const ctx = await this.getCtx(req);
-    if (!ctx.role || ctx.role === 'teacher') {
+    if (!ctx.role || ctx.role === 'member') {
       throw new ForbiddenException('Acesso negado');
     }
 

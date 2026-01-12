@@ -8,12 +8,12 @@ O módulo Users gerencia os usuários do sistema de orfanato, incluindo perfis, 
 
 ### Entidades
 - **UserEntity** - Dados do usuário
-- **TeacherProfileEntity** - Perfil de professor (relacionamento opcional)
+- **MemberProfileEntity** - Perfil de professor (relacionamento opcional)
 - **LeaderProfileEntity** - Perfil de líder (relacionamento opcional)
 
 ### Relacionamentos
 ```
-User -> TeacherProfile (1:0..1) - Usuário pode ter perfil de professor
+User -> MemberProfile (1:0..1) - Usuário pode ter perfil de professor
 User -> LeaderProfile (1:0..1) - Usuário pode ter perfil de líder
 ```
 
@@ -39,7 +39,7 @@ User -> LeaderProfile (1:0..1) - Usuário pode ter perfil de líder
 - `sort` - Campo de ordenação (`createdAt`, `updatedAt`, `name`, `email`)
 - `order` - Direção (`asc`, `desc`)
 - `searchString` - Busca por nome, email ou telefone
-- `role` - Filtrar por role (`admin`, `coordinator`, `teacher`)
+- `role` - Filtrar por role (`admin`, `coordinator`, `member`)
 - `active` - Filtrar por status ativo (`true`/`false`)
 - `completed` - Filtrar por registro completo (`true`/`false`)
 
@@ -48,7 +48,7 @@ User -> LeaderProfile (1:0..1) - Usuário pode ter perfil de líder
 ### Roles Permitidos
 - **admin** - Acesso total
 - **coordinator** (leader) - Acesso limitado
-- **teacher** - Acesso apenas aos próprios dados
+- **member** - Acesso apenas aos próprios dados
 
 ### Headers Obrigatórios
 ```
@@ -65,7 +65,7 @@ GET /users?page=1&limit=12&sort=name&order=asc
 
 ### Filtrar por Role
 ```bash
-GET /users?role=teacher&active=true
+GET /users?role=member&active=true
 ```
 
 ### Filtrar por Status
@@ -83,7 +83,7 @@ Content-Type: application/json
   "email": "ana@example.com",
   "phone": "+5511777777777",
   "password": "password123",
-  "role": "teacher"
+  "role": "member"
 }
 ```
 
@@ -122,7 +122,7 @@ PATCH /users/uuid-user-id/deactivate
       "active": true,
       "completed": true,
       "commonUser": false,
-      "role": "teacher",
+      "role": "member",
       "createdAt": "2025-09-27T21:00:00.000Z",
       "updatedAt": "2025-09-27T21:00:00.000Z"
     }
@@ -143,7 +143,7 @@ PATCH /users/uuid-user-id/deactivate
   "active": false,
   "completed": false,
   "commonUser": true,
-  "role": "teacher",
+  "role": "member",
   "createdAt": "2025-09-27T21:00:00.000Z",
   "updatedAt": "2025-09-27T21:00:00.000Z"
 }
@@ -188,7 +188,7 @@ PATCH /users/uuid-user-id/deactivate
   "message": [
     "email must be a valid email",
     "password must be at least 6 characters",
-    "role must be one of: admin, coordinator, teacher"
+    "role must be one of: admin, coordinator, member"
   ],
   "error": "Bad Request"
 }
@@ -211,7 +211,7 @@ PATCH /users/uuid-user-id/deactivate
 ### Roles Válidos
 - `admin` - Administrador
 - `coordinator` - Coordenador/Líder
-- `teacher` - Professor
+- `member` - Professor
 
 ## 🧪 Testes
 
@@ -277,7 +277,7 @@ node automations/users/create-users-automation.js
 - `email` - Email único (obrigatório)
 - `phone` - Telefone único (obrigatório)
 - `password` - Senha hash (obrigatório)
-- `role` - Role do usuário (`admin`, `coordinator`, `teacher`)
+- `role` - Role do usuário (`admin`, `coordinator`, `member`)
 - `active` - Status ativo (padrão: `false`)
 - `completed` - Registro completo (padrão: `false`)
 - `commonUser` - Usuário comum (padrão: `true`)
@@ -297,7 +297,7 @@ node automations/users/create-users-automation.js
 ### Roles do Sistema
 - **admin** - Acesso total ao sistema
 - **coordinator** - Gerencia abrigos e professores
-- **teacher** - Acesso limitado aos próprios dados
+- **member** - Acesso limitado aos próprios dados
 
 ---
 

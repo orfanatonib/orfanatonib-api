@@ -31,17 +31,12 @@ export class GetUsersService {
     return this.userRepo.findByEmail(email);
   }
 
-  /**
-   * Retorna o perfil completo do usuário sem campos sensíveis (password, refreshToken)
-   * e incluindo a imagem de perfil
-   */
   async findOneForProfile(id: string) {
     const user = await this.userRepo.findByIdWithProfiles(id);
     if (!user) {
       throw new NotFoundException('UserEntity not found');
     }
 
-    // Buscar imagem do usuário
     const imageMedia = await this.mediaItemProcessor.findMediaItemByTarget(
       id,
       'UserEntity',
@@ -78,42 +73,42 @@ export class GetUsersService {
             updatedAt: imageMedia.updatedAt,
           }
         : null,
-      teacherProfile: user.teacherProfile
+      memberProfile: user.memberProfile
         ? {
-            id: user.teacherProfile.id,
-            active: user.teacherProfile.active,
-            createdAt: user.teacherProfile.createdAt,
-            updatedAt: user.teacherProfile.updatedAt,
-            team: user.teacherProfile.team
+            id: user.memberProfile.id,
+            active: user.memberProfile.active,
+            createdAt: user.memberProfile.createdAt,
+            updatedAt: user.memberProfile.updatedAt,
+            team: user.memberProfile.team
               ? {
-                  id: user.teacherProfile.team.id,
-                  numberTeam: user.teacherProfile.team.numberTeam,
-                  description: user.teacherProfile.team.description,
-                  createdAt: user.teacherProfile.team.createdAt,
-                  updatedAt: user.teacherProfile.team.updatedAt,
-                  shelter: user.teacherProfile.team.shelter
+                  id: user.memberProfile.team.id,
+                  numberTeam: user.memberProfile.team.numberTeam,
+                  description: user.memberProfile.team.description,
+                  createdAt: user.memberProfile.team.createdAt,
+                  updatedAt: user.memberProfile.team.updatedAt,
+                  shelter: user.memberProfile.team.shelter
                     ? {
-                        id: user.teacherProfile.team.shelter.id,
-                        name: user.teacherProfile.team.shelter.name,
-                        description: user.teacherProfile.team.shelter.description,
-                        teamsQuantity: user.teacherProfile.team.shelter.teamsQuantity,
-                        createdAt: user.teacherProfile.team.shelter.createdAt,
-                        updatedAt: user.teacherProfile.team.shelter.updatedAt,
-                        address: user.teacherProfile.team.shelter.address
+                        id: user.memberProfile.team.shelter.id,
+                        name: user.memberProfile.team.shelter.name,
+                        description: user.memberProfile.team.shelter.description,
+                        teamsQuantity: user.memberProfile.team.shelter.teamsQuantity,
+                        createdAt: user.memberProfile.team.shelter.createdAt,
+                        updatedAt: user.memberProfile.team.shelter.updatedAt,
+                        address: user.memberProfile.team.shelter.address
                           ? {
-                              id: user.teacherProfile.team.shelter.address.id,
-                              street: user.teacherProfile.team.shelter.address.street,
-                              number: user.teacherProfile.team.shelter.address.number,
+                              id: user.memberProfile.team.shelter.address.id,
+                              street: user.memberProfile.team.shelter.address.street,
+                              number: user.memberProfile.team.shelter.address.number,
                               district:
-                                user.teacherProfile.team.shelter.address.district,
-                              city: user.teacherProfile.team.shelter.address.city,
-                              state: user.teacherProfile.team.shelter.address.state,
+                                user.memberProfile.team.shelter.address.district,
+                              city: user.memberProfile.team.shelter.address.city,
+                              state: user.memberProfile.team.shelter.address.state,
                               postalCode:
-                                user.teacherProfile.team.shelter.address.postalCode,
+                                user.memberProfile.team.shelter.address.postalCode,
                               createdAt:
-                                user.teacherProfile.team.shelter.address.createdAt,
+                                user.memberProfile.team.shelter.address.createdAt,
                               updatedAt:
-                                user.teacherProfile.team.shelter.address.updatedAt,
+                                user.memberProfile.team.shelter.address.updatedAt,
                             }
                           : null,
                       }

@@ -13,11 +13,6 @@ export class SesIdentityService {
 
   constructor(private readonly awsSesService: AwsSESService) {}
 
-  /**
-   * Checa se o email está verificado no SES. Se não, reenvia email de verificação.
-   * @param email - Endereço de email a ser verificado
-   * @returns Informações sobre o status de verificação
-   */
   async checkAndResendSesVerification(email: string): Promise<SesVerificationResult> {
 
     try {
@@ -28,7 +23,6 @@ export class SesIdentityService {
 
       const { GetIdentityVerificationAttributesCommand, VerifyEmailIdentityCommand } = await import('@aws-sdk/client-ses');
 
-      // Checa status de verificação
       const getCommand = new GetIdentityVerificationAttributesCommand({ Identities: [email] });
       const result = await this.awsSesService['sesClient'].send(getCommand);
 
@@ -40,7 +34,6 @@ export class SesIdentityService {
       }
 
       if (!attrs || verificationStatus !== 'Success') {
-        // Não verificado, reenviar email de verificação
         const verifyCommand = new VerifyEmailIdentityCommand({ EmailAddress: email });
         await this.awsSesService['sesClient'].send(verifyCommand);
         this.logger.log(`Email de verificação SES enviado com sucesso para: ${email}`);
@@ -66,11 +59,6 @@ export class SesIdentityService {
     }
   }
 
-  /**
-   * Cadastra/verifica o email no SES (usado para Google login/registro).
-   * @param email - Endereço de email a ser cadastrado/verificado
-   * @returns Informações sobre o envio do email de verificação
-   */
   async verifyEmailIdentitySES(email: string): Promise<SesVerificationResult> {
 
     try {

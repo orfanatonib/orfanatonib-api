@@ -21,7 +21,7 @@ class UserMiniDto {
 }
 
 @Exclude()
-export class TeacherMiniDto {
+export class MemberMiniDto {
   @Expose() id!: string;
   @Expose() active!: boolean;
 
@@ -48,9 +48,9 @@ export class ShelterMiniWithCoordinatorDto {
   teams!: TeamMiniDto[];
 
   @Expose()
-  @Type(() => TeacherMiniDto)
+  @Type(() => MemberMiniDto)
   @Transform(({ value }) => (Array.isArray(value) ? value : []))
-  teachers!: TeacherMiniDto[];
+  members!: MemberMiniDto[];
 }
 
 @Exclude()
@@ -94,7 +94,7 @@ export class LeaderResponseDto {
           id: team.shelter.id,
           name: team.shelter.name,
           teams: [],
-          teachers: [],
+          members: [],
         });
       }
 
@@ -106,13 +106,13 @@ export class LeaderResponseDto {
         description: team.description,
       });
 
-      if (team.teachers && Array.isArray(team.teachers)) {
-        for (const teacher of team.teachers) {
-          if (!shelter.teachers!.some(t => t.id === teacher.id)) {
-            shelter.teachers!.push({
-              id: teacher.id,
-              active: teacher.active,
-              user: teacher.user,
+      if (team.members && Array.isArray(team.members)) {
+        for (const member of team.members) {
+          if (!shelter.members!.some(t => t.id === member.id)) {
+            shelter.members!.push({
+              id: member.id,
+              active: member.active,
+              user: member.user,
             });
           }
         }

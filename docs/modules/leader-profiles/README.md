@@ -363,7 +363,7 @@ node tests/automations/leader-profiles/leader-profiles-complete-automation.js
   id: string;
   active: boolean;
   user: UserMiniDto;
-  shelter: ShelterWithTeachersDto | null;
+  shelter: ShelterWithMembersDto | null;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -10,7 +10,7 @@
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start:local": "dotenv -e env/local.env -- nest start --watch",
     "start:staging": "dotenv -e env/staging.env -- nest start --watch",
-    "start:prod": "dotenv -e env/prod.env -- node dist/main",
+    "start:prod": "dotenv -e env/prod.env -- nest start --watch",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "dotenv -e env/local.env -- jest",
     "test:watch": "dotenv -e env/local.env -- jest --watch",
@@ -21,7 +21,7 @@
     "test:auto:users": "dotenv -e env/local.env -- node test/automations/users/users-complete-automation.js",
     "test:auto:shelters": "dotenv -e env/local.env -- node test/automations/shelters/shelters-complete-automation.js",
     "test:auto:leaders": "dotenv -e env/local.env -- node test/automations/leader-profiles/leader-profiles-complete-automation.js",
-    "test:auto:teachers": "dotenv -e env/local.env -- node test/automations/teacher-profiles/teacher-profiles-complete-automation.js",
+    "test:auto:members": "dotenv -e env/local.env -- node test/automations/member-profiles/member-profiles-complete-automation.js",
     "test:auto:sheltered": "dotenv -e env/local.env -- node test/automations/sheltered/sheltered-complete-automation.js",
     "test:auto:pagelas": "dotenv -e env/local.env -- node test/automations/pagelas/pagelas-complete-automation.js"
   },

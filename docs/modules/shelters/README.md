@@ -15,7 +15,7 @@ O módulo Shelters gerencia os abrigos do sistema de orfanato, incluindo informa
 ```
 Shelter -> Address (1:1)
 Shelter -> LeaderProfile (N:1) - Um abrigo tem um líder principal
-Shelter -> TeacherProfile (1:N) - Um abrigo pode ter múltiplos professores
+Shelter -> MemberProfile (1:N) - Um abrigo pode ter múltiplos professores
 ```
 
 ## 🚀 Endpoints
@@ -46,7 +46,7 @@ Shelter -> TeacherProfile (1:N) - Um abrigo pode ter múltiplos professores
 ### Roles Permitidos
 - **admin** - Acesso total
 - **coordinator** (leader) - Acesso aos próprios abrigos
-- **teacher** - Acesso aos abrigos onde trabalha
+- **member** - Acesso aos abrigos onde trabalha
 
 ### Headers Obrigatórios
 ```
@@ -127,11 +127,11 @@ Content-Type: application/json
           "commonUser": false
         }
       },
-      "teachers": [
+      "members": [
         {
-          "id": "uuid-teacher",
+          "id": "uuid-member",
           "user": {
-            "id": "uuid-teacher-user",
+            "id": "uuid-member-user",
             "name": "João Silva",
             "email": "joao@example.com",
             "phone": "+5511999999999",
@@ -165,7 +165,7 @@ Content-Type: application/json
     "postalCode": "01234-567"
   },
   "leader": null,
-  "teachers": [],
+  "members": [],
   "createdAt": "2025-09-27T21:00:00.000Z",
   "updatedAt": "2025-09-27T21:00:00.000Z"
 }
@@ -253,7 +253,7 @@ node automations/shelters/create-shelters-automation.js
 - `name` - Nome do abrigo (obrigatório)
 - `address` - Relacionamento com AddressEntity
 - `leader` - Relacionamento com LeaderProfileEntity
-- `teachers` - Relacionamento com TeacherProfileEntity[]
+- `members` - Relacionamento com MemberProfileEntity[]
 - `createdAt` - Data de criação
 - `updatedAt` - Data de atualização
 

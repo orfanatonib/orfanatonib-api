@@ -6,23 +6,23 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 
-import { TeacherProfileEntity } from '../entities/teacher-profile.entity/teacher-profile.entity';
+import { MemberProfileEntity } from '../entities/member-profile.entity/member-profile.entity';
 import { TeamEntity } from 'src/shelter/team/entities/team.entity';
 import { ShelterEntity } from 'src/shelter/shelter/entities/shelter.entity/shelter.entity';
 import { UserEntity } from 'src/core/user/entities/user.entity';
-import { TeacherSimpleListDto, toTeacherSimple } from '../dto/teacher-simple-list.dto';
-import { TeacherProfilesQueryDto } from '../dto/teacher-profiles.query.dto';
+import { MemberSimpleListDto, toMemberSimple } from '../dto/member-simple-list.dto';
+import { MemberProfilesQueryDto } from '../dto/member-profiles.query.dto';
 
 type RoleCtx = { role?: string; userId?: string | null };
 type SortDir = 'ASC' | 'DESC';
 
 @Injectable()
-export class TeacherProfilesRepository {
+export class MemberProfilesRepository {
   constructor(
     private readonly dataSource: DataSource,
 
-    @InjectRepository(TeacherProfileEntity)
-    private readonly teacherRepo: Repository<TeacherProfileEntity>,
+    @InjectRepository(MemberProfileEntity)
+    private readonly memberRepo: Repository<MemberProfileEntity>,
 
   @InjectRepository(ShelterEntity)
   private readonly shelterRepo: Repository<ShelterEntity>,
@@ -31,22 +31,22 @@ export class TeacherProfilesRepository {
     private readonly userRepo: Repository<UserEntity>,
   ) { }
 
-  private baseQB(): SelectQueryBuilder<TeacherProfileEntity> {
-    return this.teacherRepo
-      .createQueryBuilder('teacher')
-      .leftJoinAndSelect('teacher.team', 'team')
+  private baseQB(): SelectQueryBuilder<MemberProfileEntity> {
+    return this.memberRepo
+      .createQueryBuilder('member')
+      .leftJoinAndSelect('member.team', 'team')
       .leftJoinAndSelect('team.shelter', 'shelter')
       .leftJoinAndSelect('shelter.address', 'shelter_address')
       .leftJoinAndSelect('team.leaders', 'leaders')
-      .leftJoin('teacher.user', 'teacher_user')
+      .leftJoin('member.user', 'member_user')
       .addSelect([
-        'teacher_user.id',
-        'teacher_user.name',
-        'teacher_user.email',
-        'teacher_user.phone',
-        'teacher_user.active',
-        'teacher_user.completed',
-        'teacher_user.commonUser',
+        'member_user.id',
+        'member_user.name',
+        'member_user.email',
+        'member_user.phone',
+        'member_user.active',
+        'member_user.completed',
+        'member_user.commonUser',
       ])
       .leftJoin('leaders.user', 'leader_user')
       .addSelect([
@@ -58,38 +58,38 @@ export class TeacherProfilesRepository {
         'leader_user.completed',
         'leader_user.commonUser',
       ])
-      .andWhere('teacher_user.active = true');
+      .andWhere('member_user.active = true');
   }
 
-  private baseIdsQuery(): SelectQueryBuilder<TeacherProfileEntity> {
-    return this.teacherRepo
-      .createQueryBuilder('teacher')
-      .leftJoin('teacher.user', 'teacher_user')
-      .leftJoin('teacher.team', 'team')
+  private baseIdsQuery(): SelectQueryBuilder<MemberProfileEntity> {
+    return this.memberRepo
+      .createQueryBuilder('member')
+      .leftJoin('member.user', 'member_user')
+      .leftJoin('member.team', 'team')
       .leftJoin('team.shelter', 'shelter')
       .leftJoin('shelter.address', 'shelter_address')
       .leftJoin('team.leaders', 'leaders')
       .leftJoin('leaders.user', 'leader_user')
-      .where('teacher_user.active = true');
+      .where('member_user.active = true');
   }
 
   private resolveSort(sort?: string) {
     const map: Record<string, string> = {
-      createdAt: 'teacher.createdAt',
-      updatedAt: 'teacher.updatedAt',
-      name: 'teacher_user.name',
+      createdAt: 'member.createdAt',
+      updatedAt: 'member.updatedAt',
+      name: 'member_user.name',
     };
-    return map[sort ?? 'updatedAt'] ?? 'teacher.updatedAt';
+    return map[sort ?? 'updatedAt'] ?? 'member.updatedAt';
   }
 
-  private applyRoleFilter(qb: SelectQueryBuilder<TeacherProfileEntity>, ctx?: RoleCtx) {
+  private applyRoleFilter(qb: SelectQueryBuilder<MemberProfileEntity>, ctx?: RoleCtx) {
     const role = ctx?.role?.toLowerCase();
     const userId = ctx?.userId;
     if (!role || role === 'admin' || !userId) return;
 
     if (role === 'leader') {
       qb.andWhere('leader_user.id = :uid', { uid: userId }).distinct(true);
-    } else if (role === 'teacher') {
+    } else if (role === 'member') {
       qb.andWhere('1 = 0');
     }
   }
@@ -101,23 +101,23 @@ export class TeacherProfilesRepository {
   }
 
   private applyFilters(
-    qb: SelectQueryBuilder<TeacherProfileEntity>,
-    params: TeacherProfilesQueryDto,
+    qb: SelectQueryBuilder<MemberProfileEntity>,
+    params: MemberProfilesQueryDto,
   ) {
-    const { teacherSearchString, shelterSearchString, hasShelter, teamId, teamName, hasTeam } = params;
+    const { memberSearchString, shelterSearchString, hasShelter, teamId, teamName, hasTeam } = params;
 
-    if (teacherSearchString?.trim()) {
-      const text = teacherSearchString.trim();
+    if (memberSearchString?.trim()) {
+      const text = memberSearchString.trim();
       const like = `%${text.toLowerCase()}%`;
       const likeRaw = `%${text}%`;
       
       qb.andWhere(
         `(
-          LOWER(teacher_user.name)  LIKE :teacherLike OR
-          LOWER(teacher_user.email) LIKE :teacherLike OR
-          teacher_user.phone        LIKE :teacherLikeRaw
+          LOWER(member_user.name)  LIKE :memberLike OR
+          LOWER(member_user.email) LIKE :memberLike OR
+          member_user.phone        LIKE :memberLikeRaw
         )`,
-        { teacherLike: like, teacherLikeRaw: likeRaw },
+        { memberLike: like, memberLikeRaw: likeRaw },
       );
     }
 
@@ -144,14 +144,14 @@ export class TeacherProfilesRepository {
 
     if (hasShelter !== undefined) {
       if (hasShelter === true) {
-        qb.andWhere('teacher.team_id IS NOT NULL');
+        qb.andWhere('member.team_id IS NOT NULL');
       } else {
-        qb.andWhere('teacher.team_id IS NULL');
+        qb.andWhere('member.team_id IS NULL');
       }
     }
 
     if (teamId?.trim()) {
-      qb.andWhere('teacher.team_id = :teamId', { teamId: teamId.trim() });
+      qb.andWhere('member.team_id = :teamId', { teamId: teamId.trim() });
     }
 
     if (teamName?.trim()) {
@@ -163,29 +163,29 @@ export class TeacherProfilesRepository {
 
     if (hasTeam !== undefined) {
       if (hasTeam === true) {
-        qb.andWhere('teacher.team_id IS NOT NULL');
+        qb.andWhere('member.team_id IS NOT NULL');
       } else {
-        qb.andWhere('teacher.team_id IS NULL');
+        qb.andWhere('member.team_id IS NULL');
       }
     }
 
     return qb;
   }
 
-  async findOneWithShelterAndLeaderOrFail(id: string, ctx?: RoleCtx): Promise<TeacherProfileEntity> {
-    const qb = this.baseQB().andWhere('teacher.id = :id', { id });
+  async findOneWithShelterAndLeaderOrFail(id: string, ctx?: RoleCtx): Promise<MemberProfileEntity> {
+    const qb = this.baseQB().andWhere('member.id = :id', { id });
     this.applyRoleFilter(qb, ctx);
 
-    const teacher = await qb.getOne();
-    if (!teacher) throw new NotFoundException('TeacherProfile not found');
-    return teacher;
+    const member = await qb.getOne();
+    if (!member) throw new NotFoundException('MemberProfile not found');
+    return member;
   }
 
   async findPageWithFilters(
-    query: TeacherProfilesQueryDto,
+    query: MemberProfilesQueryDto,
     ctx?: RoleCtx,
   ): Promise<{
-    items: TeacherProfileEntity[];
+    items: MemberProfileEntity[];
     total: number;
     page: number;
     limit: number;
@@ -202,13 +202,13 @@ export class TeacherProfilesRepository {
     const offset = (page - 1) * limit;
 
     const totalQB = this.applyFilters(this.baseIdsQuery(), query)
-      .select('teacher.id')
+      .select('member.id')
       .distinct(true);
     this.applyRoleFilter(totalQB, ctx);
     const total = await totalQB.getCount();
 
     const idsQB = this.applyFilters(this.baseIdsQuery(), query)
-      .select('teacher.id', 'id')
+      .select('member.id', 'id')
       .addSelect(sortColumn, 'ord')
       .distinct(true)
       .orderBy(sortColumn, sortDir)
@@ -223,57 +223,57 @@ export class TeacherProfilesRepository {
     }
 
     const itemsQB = this.baseQB()
-      .andWhere('teacher.id IN (:...ids)', { ids })
+      .andWhere('member.id IN (:...ids)', { ids })
       .orderBy(sortColumn, sortDir)
       .addOrderBy('shelter.name', 'ASC')
-      .addOrderBy('teacher.createdAt', 'ASC');
+      .addOrderBy('member.createdAt', 'ASC');
     this.applyRoleFilter(itemsQB, ctx);
     const items = await itemsQB.getMany();
 
     return { items, total, page, limit };
   }
 
-  async list(ctx?: RoleCtx): Promise<TeacherSimpleListDto[]> {
-    const qb = this.teacherRepo
-      .createQueryBuilder('teacher')
-      .leftJoin('teacher.user', 'user')
+  async list(ctx?: RoleCtx): Promise<MemberSimpleListDto[]> {
+    const qb = this.memberRepo
+      .createQueryBuilder('member')
+      .leftJoin('member.user', 'user')
       .addSelect(['user.id', 'user.name', 'user.email', 'user.active'])
       .where('user.active = true')
-      .andWhere('teacher.team_id IS NULL')
-      .orderBy('teacher.createdAt', 'ASC');
+      .andWhere('member.team_id IS NULL')
+      .orderBy('member.createdAt', 'ASC');
 
-    if (ctx?.role === 'teacher') {
+    if (ctx?.role === 'member') {
       qb.andWhere('1 = 0');
     }
 
     const items = await qb.getMany();
-    return items.map(toTeacherSimple);
+    return items.map(toMemberSimple);
   }
 
 
 
-  async createForUser(userId: string): Promise<TeacherProfileEntity> {
+  async createForUser(userId: string): Promise<MemberProfileEntity> {
     return this.dataSource.transaction(async (manager) => {
-      const txTeacher = manager.withRepository(this.teacherRepo);
+      const txMember = manager.withRepository(this.memberRepo);
       const txUser = manager.withRepository(this.userRepo);
 
       const user = await txUser.findOne({ where: { id: userId } });
       if (!user) throw new NotFoundException('User not found');
 
-      const existing = await txTeacher.findOne({ where: { user: { id: userId } } });
+      const existing = await txMember.findOne({ where: { user: { id: userId } } });
       if (existing) return existing;
 
-      const entity = txTeacher.create({ user: user as any, active: true, team: null as any });
-      return txTeacher.save(entity);
+      const entity = txMember.create({ user: user as any, active: true, team: null as any });
+      return txMember.save(entity);
     });
   }
 
   async removeByUserId(userId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
-      const txTeacher = manager.withRepository(this.teacherRepo);
-      const profile = await txTeacher.findOne({ where: { user: { id: userId } } });
+      const txMember = manager.withRepository(this.memberRepo);
+      const profile = await txMember.findOne({ where: { user: { id: userId } } });
       if (!profile) return;
-      await txTeacher.delete(profile.id);
+      await txMember.delete(profile.id);
     });
   }
 
@@ -292,11 +292,11 @@ export class TeacherProfilesRepository {
         .leftJoin('teams.leaders', 'leaders')
         .leftJoin('leaders.user', 'leader_user')
         .andWhere('leader_user.id = :uid', { uid: userId });
-    } else if (role === 'teacher') {
+    } else if (role === 'member') {
       qb.leftJoin('shelter.teams', 'teams')
-        .leftJoin('teams.teachers', 'teachers')
-        .leftJoin('teachers.user', 'teacher_user')
-        .andWhere('teacher_user.id = :uid', { uid: userId });
+        .leftJoin('teams.members', 'members')
+        .leftJoin('members.user', 'member_user')
+        .andWhere('member_user.id = :uid', { uid: userId });
     } else {
       return false;
     }

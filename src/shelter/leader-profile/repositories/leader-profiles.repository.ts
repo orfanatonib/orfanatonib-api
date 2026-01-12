@@ -46,7 +46,7 @@ export class LeaderProfilesRepository {
       .createQueryBuilder('leader')
       .leftJoinAndSelect('leader.teams', 'team')
       .leftJoinAndSelect('team.shelter', 'shelter')
-      .leftJoinAndSelect('team.teachers', 'teachers')
+      .leftJoinAndSelect('team.members', 'members')
       .leftJoin('leader.user', 'leader_user')
       .addSelect([
         'leader_user.id',
@@ -57,15 +57,15 @@ export class LeaderProfilesRepository {
         'leader_user.completed',
         'leader_user.commonUser',
       ])
-      .leftJoin('teachers.user', 'teacher_user')
+      .leftJoin('members.user', 'member_user')
       .addSelect([
-        'teacher_user.id',
-        'teacher_user.name',
-        'teacher_user.email',
-        'teacher_user.phone',
-        'teacher_user.active',
-        'teacher_user.completed',
-        'teacher_user.commonUser',
+        'member_user.id',
+        'member_user.name',
+        'member_user.email',
+        'member_user.phone',
+        'member_user.active',
+        'member_user.completed',
+        'member_user.commonUser',
       ])
       .where('leader_user.active = true')
       .distinct(true);
@@ -241,19 +241,19 @@ export class LeaderProfilesRepository {
       .andWhere('leader.id IN (:...ids)', { ids })
       .orderBy(sortColumn, sortDir)
       .addOrderBy('shelter.name', 'ASC')
-      .addOrderBy('teachers.createdAt', 'ASC')
+      .addOrderBy('members.createdAt', 'ASC')
       .getMany();
 
     return { items, total, page, limit };
   }
 
-  async findOneWithSheltersAndTeachersOrFail(
+  async findOneWithSheltersAndMembersOrFail(
     id: string,
   ): Promise<LeaderProfileEntity> {
     const leader = await this.buildLeaderBaseQB()
       .andWhere('leader.id = :id', { id })
       .orderBy('shelter.name', 'ASC')
-      .addOrderBy('teachers.createdAt', 'ASC')
+      .addOrderBy('members.createdAt', 'ASC')
       .getOne();
 
     if (!leader) throw new NotFoundException('LeaderProfile not found');

@@ -11,7 +11,7 @@ O módulo **Pagelas** é responsável pelo controle de presença e atividades do
 
 ### **Relacionamentos:**
 - **ManyToOne** com `ShelteredEntity` (obrigatório)
-- **ManyToOne** com `TeacherProfileEntity` (obrigatório)
+- **ManyToOne** com `MemberProfileEntity` (obrigatório)
 
 ### **Constraint Única:**
 - **UQ_pagela_sheltered_year_visit**: Garante que cada sheltered tenha apenas uma pagela por visita/ano
@@ -28,7 +28,7 @@ O módulo **Pagelas** é responsável pelo controle de presença e atividades do
   present: boolean;              // Se o sheltered esteve presente
   notes?: string;               // Observações do professor (opcional)
   sheltered: ShelteredEntity;   // Relacionamento obrigatório
-  teacher: TeacherProfileEntity; // Relacionamento obrigatório
+  member: MemberProfileEntity; // Relacionamento obrigatório
   createdAt: Date;              // Data de criação
   updatedAt: Date;              // Data de atualização
 }
@@ -43,7 +43,7 @@ O módulo **Pagelas** é responsável pelo controle de presença e atividades do
 ```json
 {
   "shelteredId": "uuid-sheltered",
-  "teacherProfileId": "uuid-teacher", // obrigatório
+  "memberProfileId": "uuid-member", // obrigatório
   "referenceDate": "2025-01-15",
   "visit": 3,
   "year": 2025,
@@ -59,7 +59,7 @@ O módulo **Pagelas** é responsável pelo controle de presença e atividades do
   "createdAt": "2025-09-27T21:00:00.000Z",
   "updatedAt": "2025-09-27T21:00:00.000Z",
   "shelteredId": "uuid-sheltered",
-  "teacherProfileId": "uuid-teacher",
+  "memberProfileId": "uuid-member",
   "referenceDate": "2025-01-15",
   "year": 2025,
   "visit": 3,
@@ -120,7 +120,7 @@ GET /pagelas?shelteredId=uuid-sheltered&year=2025&present=true
   "createdAt": "2025-09-27T21:00:00.000Z",
   "updatedAt": "2025-09-27T21:00:00.000Z",
   "shelteredId": "uuid-sheltered",
-  "teacherProfileId": "uuid-teacher",
+  "memberProfileId": "uuid-member",
   "referenceDate": "2025-01-15",
   "year": 2025,
   "visit": 3,
@@ -135,7 +135,7 @@ GET /pagelas?shelteredId=uuid-sheltered&year=2025&present=true
 **Body (todos os campos opcionais):**
 ```json
 {
-  "teacherProfileId": "uuid-teacher",
+  "memberProfileId": "uuid-member",
   "referenceDate": "2025-01-16",
   "visit": 3,
   "year": 2025,
@@ -185,7 +185,7 @@ GET /pagelas?year=2025&week=3
 
 #### **CreatePagelaDto:**
 - `shelteredId`: UUID obrigatório
-- `teacherProfileId`: UUID opcional
+- `memberProfileId`: UUID opcional
 - `referenceDate`: Data válida obrigatória
 - `week`: Número inteiro entre 1 e 53
 - `year`: Número inteiro entre 2000 e 9999 (opcional, calculado automaticamente)
@@ -204,9 +204,9 @@ GET /pagelas?year=2025&week=3
 2. **Referência Temporal**: `referenceDate` deve estar dentro da semana especificada
 3. **Relacionamentos**: 
    - `sheltered` é obrigatório e deve existir
-   - `teacher` é opcional, mas se fornecido deve existir
+   - `member` é opcional, mas se fornecido deve existir
 4. **Cascade Delete**: Se sheltered for removido, suas pagelas são removidas
-5. **SET NULL**: Se teacher for removido, a referência é definida como null
+5. **SET NULL**: Se member for removido, a referência é definida como null
 
 ## 🚨 Cenários de Erro
 
@@ -239,7 +239,7 @@ GET /pagelas?year=2025&week=3
 ```json
 {
   "statusCode": 404,
-  "message": "TeacherProfile não encontrado",
+  "message": "MemberProfile não encontrado",
   "error": "Not Found"
 }
 ```
@@ -304,10 +304,10 @@ GET /pagelas?searchString=participou
 - **Cascade**: DELETE em sheltered remove todas as pagelas
 - **Validação**: shelteredId deve existir
 
-### **Módulo Teacher Profiles:**
-- **Relacionamento**: OneToMany (teacher → pagelas)
-- **Cascade**: SET NULL em teacher remove referência
-- **Validação**: teacherProfileId deve existir se fornecido
+### **Módulo Member Profiles:**
+- **Relacionamento**: OneToMany (member → pagelas)
+- **Cascade**: SET NULL em member remove referência
+- **Validação**: memberProfileId deve existir se fornecido
 
 ## 📋 Automação e Testes
 

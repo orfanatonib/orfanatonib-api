@@ -25,7 +25,6 @@ export class CreateShelterScheduleService {
       throw new NotFoundException(`Team with ID ${dto.teamId} not found`);
     }
 
-    // Validate visit number uniqueness for the team
     const existingSchedule = await this.scheduleRepo.findByTeamIdAndVisitNumber(dto.teamId, dto.visitNumber);
     if (existingSchedule) {
       throw new BadRequestException(
@@ -43,7 +42,6 @@ export class CreateShelterScheduleService {
       team: { id: dto.teamId },
     });
 
-    // Create events independently based on what's provided
     if (this.isValidDate(dto.visitDate)) {
       await this.createVisitEvent(schedule, dto, team);
       this.logger.log(`Visit event created for schedule ${schedule.id}`);
@@ -59,8 +57,7 @@ export class CreateShelterScheduleService {
     }
 
     this.logger.log(`Shelter schedule created with ID ${schedule.id}`);
-    
-    // Return the schedule with all relationships loaded
+
     const fullSchedule = await this.scheduleRepo.findById(schedule.id);
     if (!fullSchedule) {
       throw new NotFoundException(`Failed to retrieve created schedule`);
@@ -97,7 +94,7 @@ export class CreateShelterScheduleService {
         description: `${dto.lessonContent}\n\n${teamInfo}`,
         date: dto.visitDate!,
         location: visitLocation,
-        audience: EventAudience.TEACHERS,
+        audience: EventAudience.MEMBERS,
         shelterSchedule: { id: schedule.id },
       });
     } catch (error) {
@@ -121,7 +118,7 @@ export class CreateShelterScheduleService {
         description: `${dto.observation || 'Reunião de planejamento'}\n\n${teamInfo}`,
         date: dto.meetingDate!,
         location: dto.meetingRoom || 'NIB - Nova Igreja Batista',
-        audience: EventAudience.TEACHERS,
+        audience: EventAudience.MEMBERS,
         shelterSchedule: { id: schedule.id },
       });
     } catch (error) {

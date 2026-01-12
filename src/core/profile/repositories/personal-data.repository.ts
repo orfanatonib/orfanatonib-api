@@ -13,7 +13,6 @@ export class PersonalDataRepository extends Repository<PersonalData> {
   }
 
   async createForUser(userId: string, data: Partial<PersonalData>): Promise<PersonalData> {
-    // Remove userId from data to prevent overwriting
     const { userId: _, ...cleanData } = data;
     const personalData = this.create({
       ...cleanData,

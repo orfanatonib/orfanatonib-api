@@ -101,7 +101,7 @@ fetch('/profile', {
   "name": "João Silva",
   "email": "joao@example.com",
   "phone": "+5511999999999",
-  "role": "teacher",
+  "role": "member",
   "active": true,
   "completed": true,
   "commonUser": true,

@@ -77,7 +77,7 @@
                 }
               ]
             },
-            "description": "Lista todos os shelters com paginação e filtros avançados. Requer role admin ou leader. Teachers não têm acesso. Leaders veem apenas seus próprios shelters. Inclui busca por texto, filtros por líder e ordenação flexível."
+            "description": "Lista todos os shelters com paginação e filtros avançados. Requer role admin ou leader. Members não têm acesso. Leaders veem apenas seus próprios shelters. Inclui busca por texto, filtros por líder e ordenação flexível."
           },
           "response": [
             {
@@ -123,7 +123,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-shelter-1\",\n  \"name\": \"Abrigo Central\",\n  \"address\": {\n    \"id\": \"uuid-address-1\",\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\"\n  },\n  \"leaders\": [\n    {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"João Silva\",\n        \"email\": \"joao.silva@example.com\",\n        \"phone\": \"+5511999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    },\n    {\n      \"id\": \"uuid-leader-2\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-3\",\n        \"name\": \"Pedro Costa\",\n        \"email\": \"pedro.costa@example.com\",\n        \"phone\": \"+5511777777777\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"teachers\": [\n    {\n      \"id\": \"uuid-teacher-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-2\",\n        \"name\": \"Maria Santos\",\n        \"email\": \"maria.santos@example.com\",\n        \"phone\": \"+5511888888888\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"uuid-shelter-1\",\n  \"name\": \"Abrigo Central\",\n  \"address\": {\n    \"id\": \"uuid-address-1\",\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\"\n  },\n  \"leaders\": [\n    {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"João Silva\",\n        \"email\": \"joao.silva@example.com\",\n        \"phone\": \"+5511999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    },\n    {\n      \"id\": \"uuid-leader-2\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-3\",\n        \"name\": \"Pedro Costa\",\n        \"email\": \"pedro.costa@example.com\",\n        \"phone\": \"+5511777777777\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"members\": [\n    {\n      \"id\": \"uuid-member-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-2\",\n        \"name\": \"Maria Santos\",\n        \"email\": \"maria.santos@example.com\",\n        \"phone\": \"+5511888888888\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
             },
             {
               "name": "Erro - Acesso Negado",
@@ -153,7 +153,7 @@
               "body": "{\n  \"statusCode\": 403,\n  \"message\": \"Acesso negado\",\n  \"error\": \"Forbidden\"\n}"
             },
             {
-              "name": "Erro - Teacher Sem Acesso",
+              "name": "Erro - Member Sem Acesso",
               "originalRequest": {
                 "method": "GET",
                 "header": [],
@@ -273,7 +273,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-shelter-1\",\n  \"name\": \"Abrigo Central\",\n  \"address\": {\n    \"id\": \"uuid-address-1\",\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\"\n  },\n  \"leaders\": [\n    {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"João Silva\",\n        \"email\": \"joao.silva@example.com\",\n        \"phone\": \"+5511999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    },\n    {\n      \"id\": \"uuid-leader-2\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-3\",\n        \"name\": \"Pedro Costa\",\n        \"email\": \"pedro.costa@example.com\",\n        \"phone\": \"+5511777777777\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"teachers\": [\n    {\n      \"id\": \"uuid-teacher-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-2\",\n        \"name\": \"Maria Santos\",\n        \"email\": \"maria.santos@example.com\",\n        \"phone\": \"+5511888888888\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"uuid-shelter-1\",\n  \"name\": \"Abrigo Central\",\n  \"address\": {\n    \"id\": \"uuid-address-1\",\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\"\n  },\n  \"leaders\": [\n    {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"João Silva\",\n        \"email\": \"joao.silva@example.com\",\n        \"phone\": \"+5511999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    },\n    {\n      \"id\": \"uuid-leader-2\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-3\",\n        \"name\": \"Pedro Costa\",\n        \"email\": \"pedro.costa@example.com\",\n        \"phone\": \"+5511777777777\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"members\": [\n    {\n      \"id\": \"uuid-member-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-2\",\n        \"name\": \"Maria Santos\",\n        \"email\": \"maria.santos@example.com\",\n        \"phone\": \"+5511888888888\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
             }
           ]
         },
@@ -328,7 +328,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-shelter-1\",\n  \"name\": \"Abrigo Central\",\n  \"address\": {\n    \"id\": \"uuid-address-1\",\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\",\n    \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n    \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n  },\n  \"leader\": {\n    \"id\": \"uuid-leader-1\",\n    \"active\": true,\n    \"user\": {\n      \"id\": \"uuid-user-1\",\n      \"name\": \"João Silva\",\n      \"email\": \"joao@example.com\",\n      \"phone\": \"+5511999999999\",\n      \"active\": true,\n      \"completed\": true,\n      \"commonUser\": false\n    }\n  },\n  \"teachers\": [\n    {\n      \"id\": \"uuid-teacher-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-2\",\n        \"name\": \"Maria Santos\",\n        \"email\": \"maria@example.com\",\n        \"phone\": \"+5511888888888\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"uuid-shelter-1\",\n  \"name\": \"Abrigo Central\",\n  \"address\": {\n    \"id\": \"uuid-address-1\",\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\",\n    \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n    \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n  },\n  \"leader\": {\n    \"id\": \"uuid-leader-1\",\n    \"active\": true,\n    \"user\": {\n      \"id\": \"uuid-user-1\",\n      \"name\": \"João Silva\",\n      \"email\": \"joao@example.com\",\n      \"phone\": \"+5511999999999\",\n      \"active\": true,\n      \"completed\": true,\n      \"commonUser\": false\n    }\n  },\n  \"members\": [\n    {\n      \"id\": \"uuid-member-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-2\",\n        \"name\": \"Maria Santos\",\n        \"email\": \"maria@example.com\",\n        \"phone\": \"+5511888888888\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
             },
             {
               "name": "Erro - Shelter Não Encontrado",
@@ -383,7 +383,7 @@
                 "shelters"
               ]
             },
-            "description": "Cria um novo shelter com endereço completo e múltiplos líderes. Requer role admin ou leader. Teachers não têm acesso. Leaders só podem criar shelters incluindo a si mesmos na lista de líderes. Validação de nome único e professores não vinculados."
+            "description": "Cria um novo shelter com endereço completo e múltiplos líderes. Requer role admin ou leader. Members não têm acesso. Leaders só podem criar shelters incluindo a si mesmos na lista de líderes. Validação de nome único e professores não vinculados."
           },
           "response": [
             {
@@ -398,7 +398,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Abrigo Central\",\n  \"address\": {\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\"\n  },\n  \"leaderProfileIds\": [\"uuid-leader-1\", \"uuid-leader-2\"],\n  \"teacherProfileIds\": [\"uuid-teacher-1\"]\n}"
+                  "raw": "{\n  \"name\": \"Abrigo Central\",\n  \"address\": {\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\"\n  },\n  \"leaderProfileIds\": [\"uuid-leader-1\", \"uuid-leader-2\"],\n  \"memberProfileIds\": [\"uuid-member-1\"]\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/shelters",
@@ -420,7 +420,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-shelter-novo\",\n  \"name\": \"Abrigo Central\",\n  \"description\": \"Abrigo dedicado ao cuidado de crianças e adolescentes em situação de vulnerabilidade social. Oferecemos acolhimento, educação e apoio psicossocial para promover o desenvolvimento integral dos nossos abrigados.\",\n  \"address\": {\n    \"id\": \"uuid-address-novo\",\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\",\n    \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n    \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n  },\n  \"leaders\": [\n    {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"João Silva\",\n        \"email\": \"joao@example.com\",\n        \"phone\": \"+5511999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    },\n    {\n      \"id\": \"uuid-leader-2\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-3\",\n        \"name\": \"Pedro Santos\",\n        \"email\": \"pedro@example.com\",\n        \"phone\": \"+5511777777777\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"teachers\": [\n    {\n      \"id\": \"uuid-teacher-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-2\",\n        \"name\": \"Maria Santos\",\n        \"email\": \"maria@example.com\",\n        \"phone\": \"+5511888888888\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"mediaItem\": null,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"uuid-shelter-novo\",\n  \"name\": \"Abrigo Central\",\n  \"description\": \"Abrigo dedicado ao cuidado de crianças e adolescentes em situação de vulnerabilidade social. Oferecemos acolhimento, educação e apoio psicossocial para promover o desenvolvimento integral dos nossos abrigados.\",\n  \"address\": {\n    \"id\": \"uuid-address-novo\",\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\",\n    \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n    \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n  },\n  \"leaders\": [\n    {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"João Silva\",\n        \"email\": \"joao@example.com\",\n        \"phone\": \"+5511999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    },\n    {\n      \"id\": \"uuid-leader-2\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-3\",\n        \"name\": \"Pedro Santos\",\n        \"email\": \"pedro@example.com\",\n        \"phone\": \"+5511777777777\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"members\": [\n    {\n      \"id\": \"uuid-member-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-2\",\n        \"name\": \"Maria Santos\",\n        \"email\": \"maria@example.com\",\n        \"phone\": \"+5511888888888\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"mediaItem\": null,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
             },
             {
               "name": "Erro - Nome Duplicado",
@@ -506,7 +506,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Abrigo Teste\",\n  \"address\": {\n    \"street\": \"Rua Teste\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\"\n  },\n  \"teacherProfileIds\": [\"uuid-teacher-ja-vinculado\"]\n}"
+                  "raw": "{\n  \"name\": \"Abrigo Teste\",\n  \"address\": {\n    \"street\": \"Rua Teste\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\"\n  },\n  \"memberProfileIds\": [\"uuid-member-ja-vinculado\"]\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/shelters",
@@ -528,7 +528,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"statusCode\": 400,\n  \"message\": \"Alguns TeacherProfiles já estão vinculados a outro Shelter: uuid-teacher-ja-vinculado\",\n  \"error\": \"Bad Request\"\n}"
+              "body": "{\n  \"statusCode\": 400,\n  \"message\": \"Alguns MemberProfiles já estão vinculados a outro Shelter: uuid-member-ja-vinculado\",\n  \"error\": \"Bad Request\"\n}"
             }
           ]
         },
@@ -578,7 +578,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-shelter-novo\",\n  \"name\": \"Abrigo Novo com Foto\",\n  \"description\": \"Abrigo criado com upload de imagem para o S3\",\n  \"address\": { ... },\n  \"leaders\": [],\n  \"teachers\": [],\n  \"mediaItem\": {\n    \"id\": \"uuid-media-novo\",\n    \"title\": \"Foto Principal\",\n    \"description\": \"Imagem enviada via upload\",\n    \"mediaType\": \"image\",\n    \"uploadType\": \"upload\",\n    \"url\": \"https://s3.amazonaws.com/bucket/shelters/abc123.jpg\",\n    \"isLocalFile\": true,\n    \"originalName\": \"foto.jpg\",\n    \"size\": 245678,\n    \"createdAt\": \"2025-10-11T...\",\n    \"updatedAt\": \"2025-10-11T...\"\n  },\n  \"createdAt\": \"2025-10-11T...\",\n  \"updatedAt\": \"2025-10-11T...\"\n}"
+              "body": "{\n  \"id\": \"uuid-shelter-novo\",\n  \"name\": \"Abrigo Novo com Foto\",\n  \"description\": \"Abrigo criado com upload de imagem para o S3\",\n  \"address\": { ... },\n  \"leaders\": [],\n  \"members\": [],\n  \"mediaItem\": {\n    \"id\": \"uuid-media-novo\",\n    \"title\": \"Foto Principal\",\n    \"description\": \"Imagem enviada via upload\",\n    \"mediaType\": \"image\",\n    \"uploadType\": \"upload\",\n    \"url\": \"https://s3.amazonaws.com/bucket/shelters/abc123.jpg\",\n    \"isLocalFile\": true,\n    \"originalName\": \"foto.jpg\",\n    \"size\": 245678,\n    \"createdAt\": \"2025-10-11T...\",\n    \"updatedAt\": \"2025-10-11T...\"\n  },\n  \"createdAt\": \"2025-10-11T...\",\n  \"updatedAt\": \"2025-10-11T...\"\n}"
             }
           ]
         },
@@ -613,7 +613,7 @@
                 }
               ]
             },
-            "description": "Atualiza um shelter existente com todos os campos opcionais. Requer role admin ou leader. Teachers não têm acesso. Leaders só podem atualizar seus próprios shelters. Sincronização automática de professores e validação de duplicatas."
+            "description": "Atualiza um shelter existente com todos os campos opcionais. Requer role admin ou leader. Members não têm acesso. Leaders só podem atualizar seus próprios shelters. Sincronização automática de professores e validação de duplicatas."
           },
           "response": [
             {
@@ -628,7 +628,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Abrigo Jardins Atualizado\",\n  \"address\": {\n    \"street\": \"Rua das Palmeiras\",\n    \"number\": \"456\",\n    \"district\": \"Jardins\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-890\",\n    \"complement\": \"Casa 2\"\n  },\n  \"leaderProfileIds\": [\"uuid-leader-1\", \"uuid-leader-2\"],\n  \"teacherProfileIds\": [\"uuid-teacher-2\"]\n}"
+                  "raw": "{\n  \"name\": \"Abrigo Jardins Atualizado\",\n  \"address\": {\n    \"street\": \"Rua das Palmeiras\",\n    \"number\": \"456\",\n    \"district\": \"Jardins\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-890\",\n    \"complement\": \"Casa 2\"\n  },\n  \"leaderProfileIds\": [\"uuid-leader-1\", \"uuid-leader-2\"],\n  \"memberProfileIds\": [\"uuid-member-2\"]\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/shelters/uuid-shelter-1",
@@ -651,7 +651,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-shelter-1\",\n  \"name\": \"Abrigo Jardins Atualizado\",\n  \"description\": \"Abrigo atualizado com foco no desenvolvimento educacional e psicossocial das crianças. Oferecemos atividades recreativas, apoio escolar e acompanhamento psicológico especializado.\",\n  \"address\": {\n    \"id\": \"uuid-address-1\",\n    \"street\": \"Rua das Palmeiras\",\n    \"number\": \"456\",\n    \"district\": \"Jardins\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-890\",\n    \"complement\": \"Casa 2\",\n    \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n    \"updatedAt\": \"2025-09-27T21:30:00.000Z\"\n  },\n  \"leaders\": [\n    {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"João Silva\",\n        \"email\": \"joao@example.com\",\n        \"phone\": \"+5511999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    },\n    {\n      \"id\": \"uuid-leader-2\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-3\",\n        \"name\": \"Pedro Santos\",\n        \"email\": \"pedro@example.com\",\n        \"phone\": \"+5511777777777\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"teachers\": [\n    {\n      \"id\": \"uuid-teacher-2\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-4\",\n        \"name\": \"Ana Costa\",\n        \"email\": \"ana@example.com\",\n        \"phone\": \"+5511666666666\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"mediaItem\": null,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:30:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"uuid-shelter-1\",\n  \"name\": \"Abrigo Jardins Atualizado\",\n  \"description\": \"Abrigo atualizado com foco no desenvolvimento educacional e psicossocial das crianças. Oferecemos atividades recreativas, apoio escolar e acompanhamento psicológico especializado.\",\n  \"address\": {\n    \"id\": \"uuid-address-1\",\n    \"street\": \"Rua das Palmeiras\",\n    \"number\": \"456\",\n    \"district\": \"Jardins\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-890\",\n    \"complement\": \"Casa 2\",\n    \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n    \"updatedAt\": \"2025-09-27T21:30:00.000Z\"\n  },\n  \"leaders\": [\n    {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"João Silva\",\n        \"email\": \"joao@example.com\",\n        \"phone\": \"+5511999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    },\n    {\n      \"id\": \"uuid-leader-2\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-3\",\n        \"name\": \"Pedro Santos\",\n        \"email\": \"pedro@example.com\",\n        \"phone\": \"+5511777777777\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"members\": [\n    {\n      \"id\": \"uuid-member-2\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-4\",\n        \"name\": \"Ana Costa\",\n        \"email\": \"ana@example.com\",\n        \"phone\": \"+5511666666666\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  ],\n  \"mediaItem\": null,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:30:00.000Z\"\n}"
             },
             {
               "name": "Erro - Shelter Não Encontrado",
@@ -821,7 +821,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-shelter-1\",\n  \"name\": \"Abrigo Central\",\n  \"description\": \"Descrição do abrigo\",\n  \"address\": {\n    \"id\": \"uuid-address-1\",\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\",\n    \"createdAt\": \"2025-10-11T20:00:00.000Z\",\n    \"updatedAt\": \"2025-10-11T20:00:00.000Z\"\n  },\n  \"leaders\": [],\n  \"teachers\": [],\n  \"mediaItem\": {\n    \"id\": \"uuid-media-1\",\n    \"title\": \"Foto Principal do Abrigo\",\n    \"description\": \"Imagem de entrada do abrigo\",\n    \"mediaType\": \"image\",\n    \"uploadType\": \"link\",\n    \"url\": \"https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800\",\n    \"isLocalFile\": false,\n    \"platformType\": null,\n    \"originalName\": null,\n    \"size\": null,\n    \"createdAt\": \"2025-10-11T20:00:00.000Z\",\n    \"updatedAt\": \"2025-10-11T20:00:00.000Z\"\n  },\n  \"createdAt\": \"2025-10-11T20:00:00.000Z\",\n  \"updatedAt\": \"2025-10-11T20:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"uuid-shelter-1\",\n  \"name\": \"Abrigo Central\",\n  \"description\": \"Descrição do abrigo\",\n  \"address\": {\n    \"id\": \"uuid-address-1\",\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\",\n    \"createdAt\": \"2025-10-11T20:00:00.000Z\",\n    \"updatedAt\": \"2025-10-11T20:00:00.000Z\"\n  },\n  \"leaders\": [],\n  \"members\": [],\n  \"mediaItem\": {\n    \"id\": \"uuid-media-1\",\n    \"title\": \"Foto Principal do Abrigo\",\n    \"description\": \"Imagem de entrada do abrigo\",\n    \"mediaType\": \"image\",\n    \"uploadType\": \"link\",\n    \"url\": \"https://images.unsplash.com/photo-1587825140708-dfaf72ae4b04?w=800\",\n    \"isLocalFile\": false,\n    \"platformType\": null,\n    \"originalName\": null,\n    \"size\": null,\n    \"createdAt\": \"2025-10-11T20:00:00.000Z\",\n    \"updatedAt\": \"2025-10-11T20:00:00.000Z\"\n  },\n  \"createdAt\": \"2025-10-11T20:00:00.000Z\",\n  \"updatedAt\": \"2025-10-11T20:00:00.000Z\"\n}"
             }
           ]
         },
@@ -915,7 +915,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-shelter-1\",\n  \"name\": \"Abrigo Central\",\n  \"description\": \"Descrição do abrigo\",\n  \"address\": {\n    \"id\": \"uuid-address-1\",\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\",\n    \"createdAt\": \"2025-10-11T20:00:00.000Z\",\n    \"updatedAt\": \"2025-10-11T20:00:00.000Z\"\n  },\n  \"leaders\": [],\n  \"teachers\": [],\n  \"mediaItem\": {\n    \"id\": \"uuid-media-1\",\n    \"title\": \"Foto do Abrigo\",\n    \"description\": \"Imagem principal do abrigo\",\n    \"mediaType\": \"image\",\n    \"uploadType\": \"upload\",\n    \"url\": \"https://s3.amazonaws.com/bucket/shelter-uuid-1/image-abc123.jpg\",\n    \"isLocalFile\": true,\n    \"platformType\": null,\n    \"originalName\": \"foto-abrigo.jpg\",\n    \"size\": 245678,\n    \"createdAt\": \"2025-10-11T20:00:00.000Z\",\n    \"updatedAt\": \"2025-10-11T20:00:00.000Z\"\n  },\n  \"createdAt\": \"2025-10-11T20:00:00.000Z\",\n  \"updatedAt\": \"2025-10-11T20:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"uuid-shelter-1\",\n  \"name\": \"Abrigo Central\",\n  \"description\": \"Descrição do abrigo\",\n  \"address\": {\n    \"id\": \"uuid-address-1\",\n    \"street\": \"Rua das Flores\",\n    \"number\": \"123\",\n    \"district\": \"Centro\",\n    \"city\": \"São Paulo\",\n    \"state\": \"SP\",\n    \"postalCode\": \"01234-567\",\n    \"complement\": \"Apto 45\",\n    \"createdAt\": \"2025-10-11T20:00:00.000Z\",\n    \"updatedAt\": \"2025-10-11T20:00:00.000Z\"\n  },\n  \"leaders\": [],\n  \"members\": [],\n  \"mediaItem\": {\n    \"id\": \"uuid-media-1\",\n    \"title\": \"Foto do Abrigo\",\n    \"description\": \"Imagem principal do abrigo\",\n    \"mediaType\": \"image\",\n    \"uploadType\": \"upload\",\n    \"url\": \"https://s3.amazonaws.com/bucket/shelter-uuid-1/image-abc123.jpg\",\n    \"isLocalFile\": true,\n    \"platformType\": null,\n    \"originalName\": \"foto-abrigo.jpg\",\n    \"size\": 245678,\n    \"createdAt\": \"2025-10-11T20:00:00.000Z\",\n    \"updatedAt\": \"2025-10-11T20:00:00.000Z\"\n  },\n  \"createdAt\": \"2025-10-11T20:00:00.000Z\",\n  \"updatedAt\": \"2025-10-11T20:00:00.000Z\"\n}"
             },
             {
               "name": "Erro - Arquivo Não Enviado",
@@ -980,7 +980,7 @@
                 }
               ]
             },
-            "description": "Remove um shelter permanentemente. Requer role admin ou leader. Teachers não têm acesso. Leaders só podem deletar seus próprios shelters. Operação irreversível - desvincula professores e remove endereço."
+            "description": "Remove um shelter permanentemente. Requer role admin ou leader. Members não têm acesso. Leaders só podem deletar seus próprios shelters. Operação irreversível - desvincula professores e remove endereço."
           },
           "response": [
             {
@@ -1042,7 +1042,7 @@
           ]
         }
       ],
-      "description": "Endpoints para gerenciamento completo de Shelters com autenticação JWT obrigatória e controle de acesso granular por roles. ATUALIZADA COM ENDPOINTS MANYTOMANY COMPLETOS! Inclui todos os endpoints principais, filtros avançados, paginação, ordenação, atribuição/remoção de leaders e teachers, e operações em massa. Suporta relacionamentos ManyToMany com leaders e teachers, permitindo múltiplos líderes e professores por shelter."
+      "description": "Endpoints para gerenciamento completo de Shelters com autenticação JWT obrigatória e controle de acesso granular por roles. ATUALIZADA COM ENDPOINTS MANYTOMANY COMPLETOS! Inclui todos os endpoints principais, filtros avançados, paginação, ordenação, atribuição/remoção de leaders e members, e operações em massa. Suporta relacionamentos ManyToMany com leaders e members, permitindo múltiplos líderes e professores por shelter."
     }
   ]
 }

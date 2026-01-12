@@ -21,7 +21,7 @@ O módulo de **Abrigo** é responsável por gerenciar todos os abrigos do sistem
 - **Abrigo (Shelter)**: Unidade física que abriga pessoas
 - **Equipe (Team)**: Grupo de trabalho dentro de um abrigo, identificado por um **número** (1, 2, 3, 4...)
 - **Líder (Leader)**: Coordenador que pertence a uma equipe
-- **Professor (Teacher)**: Educador que pertence a uma equipe
+- **Professor (Member)**: Educador que pertence a uma equipe
 - **Abrigado (Sheltered)**: Pessoa que está no abrigo (relacionamento direto, não passa por equipes)
 
 ### 🏗️ Estrutura de Relacionamentos
@@ -48,7 +48,7 @@ O módulo de **Abrigo** é responsável por gerenciar todos os abrigos do sistem
        │              │              │
        ▼              ▼
 ┌─────────────┐  ┌─────────────┐
-│   LEADER    │  │  TEACHER    │
+│   LEADER    │  │  MEMBER    │
 │   PROFILE   │  │   PROFILE   │
 └─────────────┘  └─────────────┘
 ```
@@ -84,7 +84,7 @@ O módulo de **Abrigo** é responsável por gerenciar todos os abrigos do sistem
 5. **Respostas da API:**
    - ⚠️ Todos os endpoints de listagem (`GET /shelters`, `GET /shelters/simple`, `GET /shelters/:id`) retornam as equipes de cada abrigo, incluindo os líderes e professores de cada equipe
    - As equipes são sempre incluídas nas respostas
-   - Os campos `leaders` e `teachers` na raiz do objeto são calculados automaticamente agregando todos os membros de todas as equipes (para compatibilidade)
+   - Os campos `leaders` e `members` na raiz do objeto são calculados automaticamente agregando todos os membros de todas as equipes (para compatibilidade)
 
 ---
 
@@ -101,7 +101,7 @@ interface ShelterResponseDto {
   address: AddressDto;           // Endereço completo
   teams: TeamWithMembersDto[];   // Array de equipes do abrigo
   leaders: CoordinatorDto[];     // TODOS os líderes (agregado de todas as equipes)
-  teachers: TeacherDto[];        // TODOS os professores (agregado de todas as equipes)
+  members: MemberDto[];        // TODOS os professores (agregado de todas as equipes)
   mediaItem?: MediaItemDto | null; // Imagem do abrigo
   createdAt: Date;
   updatedAt: Date;
@@ -112,7 +112,7 @@ interface TeamWithMembersDto {
   numberTeam: number;            // ⭐ NÚMERO da equipe (1, 2, 3, 4...) - tipo NUMBER
   description?: string;          // Descrição da equipe
   leaders: CoordinatorDto[];     // Líderes desta equipe
-  teachers: TeacherDto[];        // Professores desta equipe
+  members: MemberDto[];        // Professores desta equipe
 }
 
 interface CoordinatorDto {
@@ -129,7 +129,7 @@ interface CoordinatorDto {
   };
 }
 
-interface TeacherDto {
+interface MemberDto {
   id: string;                    // UUID do perfil do professor
   active: boolean;
   user: {
@@ -331,7 +331,7 @@ Authorization: Bearer {token}
               }
             }
           ],
-          "teachers": [
+          "members": [
             {
               "id": "cc0e8400-e29b-41d4-a716-446655440000",
               "active": true,
@@ -363,7 +363,7 @@ Authorization: Bearer {token}
           }
         }
       ],
-      "teachers": [
+      "members": [
         {
           "id": "cc0e8400-e29b-41d4-a716-446655440000",
           "active": true,
@@ -389,7 +389,7 @@ Authorization: Bearer {token}
 }
 ```
 
-**Nota:** O campo `teams` contém todas as equipes do abrigo com seus líderes e professores. Os campos `leaders` e `teachers` na raiz são calculados automaticamente agregando todos os membros de todas as equipes (para compatibilidade com código legado).
+**Nota:** O campo `teams` contém todas as equipes do abrigo com seus líderes e professores. Os campos `leaders` e `members` na raiz são calculados automaticamente agregando todos os membros de todas as equipes (para compatibilidade com código legado).
 
 ---
 
@@ -437,7 +437,7 @@ Authorization: Bearer {token}
         "numberTeam": 1,
         "description": "Primeira equipe",
   "leaders": [],
-        "teachers": []
+        "members": []
       }
     ],
   "mediaItem": null,
@@ -543,7 +543,7 @@ Authorization: Bearer {token}
           }
         }
       ],
-      "teachers": [
+      "members": [
         {
           "id": "cc0e8400-e29b-41d4-a716-446655440000",
           "active": true,
@@ -564,7 +564,7 @@ Authorization: Bearer {token}
       "numberTeam": 2,
       "description": "Segunda equipe do abrigo",
       "leaders": [],
-      "teachers": []
+      "members": []
     }
   ],
   "leaders": [
@@ -582,7 +582,7 @@ Authorization: Bearer {token}
       }
     }
   ],
-  "teachers": [
+  "members": [
     {
       "id": "cc0e8400-e29b-41d4-a716-446655440000",
       "active": true,
@@ -709,13 +709,13 @@ Authorization: Bearer {token}
       "numberTeam": 1,
       "description": "Equipe Matutina",
       "leaderProfileIds": ["leader-uuid-1", "leader-uuid-2"],
-      "teacherProfileIds": ["teacher-uuid-1"]
+      "memberProfileIds": ["member-uuid-1"]
     },
     {
       "numberTeam": 2,
       "description": "Equipe Vespertina",
       "leaderProfileIds": ["leader-uuid-3"],
-      "teacherProfileIds": ["teacher-uuid-2", "teacher-uuid-3"]
+      "memberProfileIds": ["member-uuid-2", "member-uuid-3"]
     }
   ],
   "mediaItem": {
@@ -761,7 +761,7 @@ image: [arquivo de imagem]
   - `numberTeam` (number) - Número da equipe (1, 2, 3... até `teamsQuantity`)
   - `description` (string, opcional) - Descrição da equipe
   - `leaderProfileIds` (array de UUIDs, opcional) - IDs dos perfis de líderes para vincular
-  - `teacherProfileIds` (array de UUIDs, opcional) - IDs dos perfis de professores para vincular
+  - `memberProfileIds` (array de UUIDs, opcional) - IDs dos perfis de professores para vincular
 - `mediaItem` (objeto)
 
 **Resposta de Sucesso (201):** `ShelterResponseDto`
@@ -832,7 +832,7 @@ Content-Type: application/json
           }
         }
       ],
-      "teachers": [
+      "members": [
         {
           "id": "cc0e8400-e29b-41d4-a716-446655440001",
           "active": true,
@@ -880,7 +880,7 @@ Content-Type: application/json
           }
         }
       ],
-      "teachers": [
+      "members": [
         {
           "id": "cc0e8400-e29b-41d4-a716-446655440003",
           "active": true,
@@ -925,7 +925,7 @@ Content-Type: application/json
       }
     }
   ],
-  "teachers": [
+  "members": [
     {
       "id": "cc0e8400-e29b-41d4-a716-446655440001",
       "active": true,
@@ -1004,19 +1004,19 @@ Content-Type: application/json
       "numberTeam": 1,
       "description": "Equipe Matutina Atualizada",
       "leaderProfileIds": ["leader-uuid-1", "leader-uuid-2"],
-      "teacherProfileIds": ["teacher-uuid-1"]
+      "memberProfileIds": ["member-uuid-1"]
     },
     {
       "numberTeam": 2,
       "description": "Equipe Vespertina",
       "leaderProfileIds": ["leader-uuid-3"],
-      "teacherProfileIds": ["teacher-uuid-2"]
+      "memberProfileIds": ["member-uuid-2"]
     },
     {
       "numberTeam": 3,
       "description": "Nova Equipe",
       "leaderProfileIds": [],
-      "teacherProfileIds": []
+      "memberProfileIds": []
     }
   ]
 }
@@ -1231,7 +1231,7 @@ interface TeamInputDto {
   numberTeam: number;            // Número da equipe (1, 2, 3... até teamsQuantity)
   description?: string;          // Descrição da equipe (opcional)
   leaderProfileIds?: string[];   // Array de UUIDs dos perfis de líderes (opcional) - ⚠️ Substitui completamente os líderes atuais
-  teacherProfileIds?: string[];  // Array de UUIDs dos perfis de professores (opcional) - ⚠️ Substitui completamente os professores atuais
+  memberProfileIds?: string[];  // Array de UUIDs dos perfis de professores (opcional) - ⚠️ Substitui completamente os professores atuais
 }
 ```
 
@@ -1268,7 +1268,7 @@ interface ShelterResponseDto {
   address: AddressDto;
   teams: TeamWithMembersDto[];   // Array de equipes com líderes e professores
   leaders: CoordinatorDto[];     // TODOS os líderes (agregado de todas as equipes)
-  teachers: TeacherDto[];        // TODOS os professores (agregado de todas as equipes)
+  members: MemberDto[];        // TODOS os professores (agregado de todas as equipes)
   mediaItem?: MediaItemDto | null;
   createdAt: Date;
   updatedAt: Date;
@@ -1385,7 +1385,7 @@ interface PaginatedResponse<T> {
 2. ⚠️ **Lembre-se:** O campo `teamsQuantity` é obrigatório
 3. Para upload de imagem, use `multipart/form-data` com `shelterData` (JSON stringificado) e `image` (arquivo)
 4. ⭐ **Opcional:** Inclua o array `teams` para vincular líderes e professores durante a criação
-   - Exemplo: `teams: [{ numberTeam: 1, leaderProfileIds: ["uuid1"], teacherProfileIds: ["uuid2"] }]`
+   - Exemplo: `teams: [{ numberTeam: 1, leaderProfileIds: ["uuid1"], memberProfileIds: ["uuid2"] }]`
    - O sistema cria todas as equipes de 1 até `teamsQuantity`
    - Equipes não especificadas serão criadas sem líderes/professores
 
@@ -1404,7 +1404,7 @@ interface PaginatedResponse<T> {
 2. Use `PUT /shelters/:id` com `UpdateShelterDto` incluindo:
    - `teamsQuantity` (valor atual)
    - `teams` com apenas a equipe que deseja atualizar
-   - Exemplo: `teams: [{ numberTeam: 1, leaderProfileIds: ["novo-uuid"], teacherProfileIds: ["novo-uuid"] }]`
+   - Exemplo: `teams: [{ numberTeam: 1, leaderProfileIds: ["novo-uuid"], memberProfileIds: ["novo-uuid"] }]`
 3. ⚠️ **Importante:** Apenas a equipe especificada será atualizada, as outras permanecem inalteradas
 
 ### Fluxo 3: Buscar Quantidade de Equipes para Editar Professor/Líder
@@ -1417,7 +1417,7 @@ interface PaginatedResponse<T> {
 2. O objeto `ShelterResponseDto` já inclui:
    - `teams`: Array de equipes com seus líderes e professores
    - `leaders`: Array agregado de todos os líderes (compatibilidade)
-   - `teachers`: Array agregado de todos os professores (compatibilidade)
+   - `members`: Array agregado de todos os professores (compatibilidade)
 3. Use `shelter.teams` para exibir as equipes individualmente
 4. Use `shelter.teams[].numberTeam` para exibir o número da equipe (1, 2, 3...)
 
@@ -1428,7 +1428,7 @@ interface PaginatedResponse<T> {
 **Nota:** O gerenciamento de equipes (criar, atualizar, deletar) é feito através do módulo **Teams** (`/teams`). Para adicionar líderes e professores a um abrigo, use os endpoints dos módulos **Líder** e **Professor**:
 
 - `PUT /leader-profiles/:leaderId/team` - Adicionar/mover líder
-- `PUT /teacher-profiles/:teacherId/team` - Adicionar/mover professor
+- `PUT /member-profiles/:memberId/team` - Adicionar/mover professor
 
 Veja os documentos:
 - [Módulo Líder](./MODULO_LIDER.md)
@@ -1483,7 +1483,7 @@ Veja os documentos:
 - ⭐ **Líderes podem estar em múltiplas equipes** (ManyToMany) - podem estar em equipes do mesmo abrigo ou de abrigos diferentes
 - **Professores podem estar em apenas 1 equipe** (ManyToOne) - não podem estar em múltiplas equipes ou abrigos
 - Um abrigo pode ter múltiplos líderes e professores (distribuídos em equipes)
-- As propriedades `leaders` e `teachers` na resposta agregam todos os membros de todas as equipes
+- As propriedades `leaders` e `members` na resposta agregam todos os membros de todas as equipes
 
 ### Com Abrigados
 - ⭐ **Abrigados (Sheltered) têm relacionamento DIRETO com Abrigo** - NÃO passam por equipes

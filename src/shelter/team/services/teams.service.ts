@@ -15,11 +15,8 @@ export class TeamsService {
   }
 
   async findAll(): Promise<TeamResponseDto[]> {
-    console.log('[TeamsService.findAll] Fetching all teams from repository');
     const teams = await this.repository.findAll();
-    console.log(`[TeamsService.findAll] Got ${teams.length} teams from repo`);
     const dtos = teams.map(team => this.toDto(team));
-    console.log(`[TeamsService.findAll] Converted to ${dtos.length} DTOs`);
     return dtos;
   }
 
@@ -37,27 +34,15 @@ export class TeamsService {
   }
 
   async findByLeader(userId: string): Promise<TeamResponseDto[]> {
-    console.log(`[TeamsService.findByLeader] Fetching teams for user ${userId}`);
-    
-    // Get leader profile by userId
-    try {
-      const leaderProfile = await this.repository.findLeaderProfileByUserId(userId);
-      console.log(`[TeamsService.findByLeader] Leader profile:`, leaderProfile ? `ID=${leaderProfile.id}` : 'NOT FOUND');
-      
-      if (!leaderProfile) {
-        console.warn(`[TeamsService.findByLeader] No leader profile found for userId ${userId}`);
-        return [];
-      }
-      
-      const teams = await this.repository.findByLeader(leaderProfile.id);
-      console.log(`[TeamsService.findByLeader] Got ${teams.length} teams from repo`);
-      const dtos = teams.map(team => this.toDto(team));
-      console.log(`[TeamsService.findByLeader] Converted to ${dtos.length} DTOs`);
-      return dtos;
-    } catch (error) {
-      console.error(`[TeamsService.findByLeader] ERROR:`, error);
-      throw error;
+    const leaderProfile = await this.repository.findLeaderProfileByUserId(userId);
+
+    if (!leaderProfile) {
+      return [];
     }
+
+    const teams = await this.repository.findByLeader(leaderProfile.id);
+    const dtos = teams.map(team => this.toDto(team));
+    return dtos;
   }
 
   async findTeamByShelterAndNumber(shelterId: string, numberTeam: number): Promise<TeamResponseDto | null> {
@@ -93,41 +78,24 @@ export class TeamsService {
   }
 
   async findByUserContext(userId: string, role: string): Promise<TeamResponseDto[]> {
-    console.log(`\n[TeamsService.findByUserContext] Called with userId=${userId}, role=${role}`);
-    
     if (role === 'admin') {
-      console.log('[TeamsService] Role is admin - fetching all teams');
-      const result = await this.findAll();
-      console.log(`[TeamsService] Admin returning ${result.length} teams`);
-      return result;
+      return this.findAll();
     }
 
     if (role === 'leader') {
-      console.log(`[TeamsService] Role is leader - fetching teams for leader ${userId}`);
-      const result = await this.findByLeader(userId);
-      console.log(`[TeamsService] Leader returning ${result.length} teams`);
-      return result;
+      return this.findByLeader(userId);
     }
 
-    // For teachers, find the team they belong to
-    if (role === 'teacher') {
-      console.log(`[TeamsService] Role is teacher - fetching all teams to filter`);
+    if (role === 'member') {
       const allTeams = await this.repository.findAll();
-      console.log(`[TeamsService] Found ${allTeams.length} total teams`);
-      
-      const teacherTeams = allTeams.filter(team => {
-        const isInTeam = team.teachers && team.teachers.some(teacher => teacher.user?.id === userId);
-        console.log(`[TeamsService] Team ${team.id}: hasTeachers=${!!team.teachers}, isTeacherInTeam=${isInTeam}`);
-        return isInTeam;
+
+      const memberTeams = allTeams.filter(team => {
+        return team.members && team.members.some(member => member.user?.id === userId);
       });
-      
-      console.log(`[TeamsService] Teacher returning ${teacherTeams.length} teams`);
-      const dtos = teacherTeams.map(team => this.toDto(team));
-      console.log(`[TeamsService] Converted to ${dtos.length} DTOs`);
-      return dtos;
+
+      return memberTeams.map(team => this.toDto(team));
     }
 
-    console.log(`[TeamsService] Unknown role "${role}" - returning empty array`);
     return [];
   }
 
@@ -157,11 +125,11 @@ export class TeamsService {
         email: leader.user?.email || '',
         phone: leader.user?.phone || '',
       })),
-      teachers: (entity.teachers || []).map(teacher => ({
-        id: teacher.id || '', // ID do perfil
-        name: teacher.user?.name || '',
-        email: teacher.user?.email || '',
-        phone: teacher.user?.phone || '',
+      members: (entity.members || []).map(member => ({
+        id: member.id || '', // ID do perfil
+        name: member.user?.name || '',
+        email: member.user?.email || '',
+        phone: member.user?.phone || '',
       })),
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,

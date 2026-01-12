@@ -92,7 +92,7 @@ fetch('/auth/login', {
     "email": "joao@example.com",
     "name": "João Silva",
     "phone": "+5511999999999",
-    "role": "teacher",
+    "role": "member",
     "active": true,
     "completed": true,
     "commonUser": true,
@@ -185,7 +185,7 @@ curl -X POST \
     "email": "joao@gmail.com",
     "name": "João Silva",
     "phone": "+5511999999999",
-    "role": "teacher",
+    "role": "member",
     "active": true,
     "completed": true,
     "commonUser": true,
@@ -314,7 +314,7 @@ curl -X POST \
 
 ### 5. **GET /auth/me** - Obter Dados do Usuário Autenticado
 
-Retorna todos os dados completos do usuário autenticado, incluindo perfis (teacher/leader), imagem, teams, shelters e endereços.
+Retorna todos os dados completos do usuário autenticado, incluindo perfis (member/leader), imagem, teams, shelters e endereços.
 
 #### Request
 
@@ -350,12 +350,12 @@ fetch('/auth/me', {
 .then(user => {
   console.log('User data:', user);
   console.log('Image URL:', user.image?.url);
-  console.log('Teacher Profile:', user.teacherProfile);
+  console.log('Member Profile:', user.memberProfile);
   console.log('Leader Profile:', user.leaderProfile);
 });
 ```
 
-#### Response 200 OK - Usuário Teacher
+#### Response 200 OK - Usuário Member
 
 ```json
 {
@@ -363,7 +363,7 @@ fetch('/auth/me', {
   "email": "joao@example.com",
   "name": "João Silva",
   "phone": "+5511999999999",
-  "role": "teacher",
+  "role": "member",
   "active": true,
   "completed": true,
   "commonUser": true,
@@ -383,8 +383,8 @@ fetch('/auth/me', {
     "createdAt": "2025-10-01T14:00:00.000Z",
     "updatedAt": "2025-10-01T14:00:00.000Z"
   },
-  "teacherProfile": {
-    "id": "teacher-profile-uuid",
+  "memberProfile": {
+    "id": "member-profile-uuid",
     "active": true,
     "createdAt": "2025-09-27T21:00:00.000Z",
     "updatedAt": "2025-09-27T21:00:00.000Z",
@@ -447,7 +447,7 @@ fetch('/auth/me', {
     "createdAt": "2025-10-01T14:00:00.000Z",
     "updatedAt": "2025-10-01T14:00:00.000Z"
   },
-  "teacherProfile": null,
+  "memberProfile": null,
   "leaderProfile": {
     "id": "leader-profile-uuid",
     "active": true,
@@ -552,7 +552,7 @@ Registra um novo usuário no sistema.
   "email": "joao@example.com",
   "password": "senha123",
   "phone": "+5511999999999",
-  "role": "teacher"
+  "role": "member"
 }
 ```
 
@@ -561,7 +561,7 @@ Registra um novo usuário no sistema.
 - `email` (string, obrigatório): Email do usuário (deve ser único e válido)
 - `password` (string, obrigatório, mínimo 6 caracteres): Senha do usuário
 - `phone` (string, obrigatório): Telefone do usuário
-- `role` (enum, obrigatório): Role do usuário (`teacher`, `leader`, `admin`, `user`)
+- `role` (enum, obrigatório): Role do usuário (`member`, `leader`, `admin`, `user`)
 
 #### Exemplo de Request (cURL)
 
@@ -574,7 +574,7 @@ curl -X POST \
     "email": "joao@example.com",
     "password": "senha123456",
     "phone": "+5511999999999",
-    "role": "teacher"
+    "role": "member"
   }'
 ```
 
@@ -588,7 +588,7 @@ curl -X POST \
     "email": "joao@example.com",
     "name": "João Silva",
     "phone": "+5511999999999",
-    "role": "teacher",
+    "role": "member",
     "active": false,
     "completed": true,
     "commonUser": true,
@@ -617,7 +617,7 @@ curl -X POST \
     "name should not be empty",
     "email must be an email",
     "password must be longer than or equal to 6 characters",
-    "role must be one of the following values: teacher, leader, admin, user"
+    "role must be one of the following values: member, leader, admin, user"
   ],
   "error": "Bad Request"
 }
@@ -644,7 +644,7 @@ Completa o registro de um usuário (usado principalmente após login com Google 
   "name": "João Silva",
   "phone": "+5511999999999",
   "password": "senha123456",
-  "role": "teacher"
+  "role": "member"
 }
 ```
 
@@ -653,7 +653,7 @@ Completa o registro de um usuário (usado principalmente após login com Google 
 - `name` (string, obrigatório): Nome completo do usuário
 - `phone` (string, obrigatório): Telefone do usuário
 - `password` (string, opcional, mínimo 6 caracteres): Senha do usuário
-- `role` (enum, opcional): Role do usuário (`teacher`, `leader`, `admin`, `user`)
+- `role` (enum, opcional): Role do usuário (`member`, `leader`, `admin`, `user`)
 
 #### Exemplo de Request (cURL)
 
@@ -666,7 +666,7 @@ curl -X POST \
     "name": "João Silva",
     "phone": "+5511999999999",
     "password": "senha123456",
-    "role": "teacher"
+    "role": "member"
   }'
 ```
 
@@ -765,7 +765,7 @@ interface MeResponse {
     createdAt: Date;
     updatedAt: Date;
   } | null;
-  teacherProfile: {
+  memberProfile: {
     id: string;
     active: boolean;
     createdAt: Date;
@@ -837,7 +837,7 @@ interface MeResponse {
 ```typescript
 enum UserRole {
   ADMIN = 'admin',
-  TEACHER = 'teacher',
+  MEMBER = 'member',
   LEADER = 'leader',
   USER = 'user'
 }
@@ -949,7 +949,7 @@ const meResponse = await fetch('/auth/me', {
 const userData = await meResponse.json();
 console.log('User:', userData);
 console.log('Image:', userData.image);
-console.log('Teacher Profile:', userData.teacherProfile);
+console.log('Member Profile:', userData.memberProfile);
 ```
 
 ### Exemplo 2: Refresh Token Automático

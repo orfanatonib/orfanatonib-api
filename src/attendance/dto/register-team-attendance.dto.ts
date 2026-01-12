@@ -1,6 +1,6 @@
 import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, ValidateNested, MaxLength, ArrayMinSize } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AttendanceType } from '../entities/attendance.entity';
+import { AttendanceType, AttendanceCategory } from '../entities/attendance.entity';
 
 export class MemberAttendanceDto {
   @IsUUID()
@@ -25,6 +25,10 @@ export class RegisterTeamAttendanceDto {
   @IsUUID()
   @IsNotEmpty()
   scheduleId: string;
+
+  @IsEnum(AttendanceCategory)
+  @IsOptional()
+  category?: AttendanceCategory = AttendanceCategory.VISIT;
 
   @IsArray()
   @ArrayMinSize(1, { message: 'Deve haver pelo menos um registro de presença' })

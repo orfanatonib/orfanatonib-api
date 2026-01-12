@@ -6,7 +6,7 @@ export class CreatePagelaDto {
   shelteredId: string;
 
   @IsUUID()
-  teacherProfileId: string;
+  memberProfileId: string;
 
   @IsDateString()
   referenceDate: string;

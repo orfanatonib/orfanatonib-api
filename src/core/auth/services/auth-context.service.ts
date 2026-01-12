@@ -79,9 +79,9 @@ export class AuthContextService {
     return role === UserRole.ADMIN;
   }
 
-  async isTeacher(req: Request): Promise<boolean> {
+  async isMember(req: Request): Promise<boolean> {
     const role = await this.getRole(req);
-    return role === UserRole.TEACHER;
+    return role === UserRole.MEMBER;
   }
 
   async isCoordinator(req: Request): Promise<boolean> {
@@ -110,7 +110,7 @@ export class AuthContextService {
     if (!role) return undefined;
     const r = String(role).toLowerCase();
     if (r === UserRole.ADMIN) return UserRole.ADMIN;
-    if (r === UserRole.TEACHER) return UserRole.TEACHER;
+    if (r === UserRole.MEMBER) return UserRole.MEMBER;
     if (r === UserRole.LEADER) return UserRole.LEADER;
     return undefined;
   }

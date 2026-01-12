@@ -11,7 +11,7 @@ let testData = {
   users: [],
   shelters: [],
   sheltered: [],
-  teacherProfiles: [],
+  memberProfiles: [],
   pagelas: []
 };
 
@@ -74,11 +74,11 @@ async function getTestData() {
       console.log(`  👥 ${testData.sheltered.length} sheltered encontrados`);
     }
 
-    // Obter teacher profiles
-    const teachersResponse = await makeRequest('GET', '/teacher-profiles/simple');
-    if (teachersResponse) {
-      testData.teacherProfiles = teachersResponse.data || [];
-      console.log(`  👩‍🏫 ${testData.teacherProfiles.length} teacher profiles encontrados`);
+    // Obter member profiles
+    const membersResponse = await makeRequest('GET', '/member-profiles/simple');
+    if (membersResponse) {
+      testData.memberProfiles = membersResponse.data || [];
+      console.log(`  👩‍🏫 ${testData.memberProfiles.length} member profiles encontrados`);
     }
 
     // Obter pagelas existentes
@@ -109,14 +109,14 @@ async function testPagelasCRUD() {
   // 1. Criar Pagela
   console.log('  🔸 Teste 1: Criar Pagela');
   
-  if (testData.teacherProfiles.length === 0) {
-    console.log('    ⚠️ Nenhum teacher profile encontrado. Pulando teste de criação.');
+  if (testData.memberProfiles.length === 0) {
+    console.log('    ⚠️ Nenhum member profile encontrado. Pulando teste de criação.');
     return;
   }
   
   const createData = {
     shelteredId: testData.sheltered[0].id || testData.sheltered[0].shelteredId,
-    teacherProfileId: testData.teacherProfiles[0].teacherProfileId || testData.teacherProfiles[0].id,
+    memberProfileId: testData.memberProfiles[0].memberProfileId || testData.memberProfiles[0].id,
     referenceDate: new Date().toISOString(),
     visit: 1,
     year: new Date().getFullYear(),
@@ -199,14 +199,14 @@ async function testPagelasFilters() {
   }
 
   // 5. Busca por string (nome do professor)
-  if (testData.teacherProfiles.length > 0) {
-    const teacherName = testData.teacherProfiles[0].name || '';
-    if (teacherName && teacherName !== '—') {
-      console.log(`  🔸 Teste 5: Busca por nome do professor (searchString=${teacherName.substring(0, 5)})`);
-      const teacherSearchResponse = await makeRequest('GET', `/pagelas?searchString=${encodeURIComponent(teacherName.substring(0, 5))}`);
-      if (teacherSearchResponse && teacherSearchResponse.status === 200) {
-        console.log(`    ✅ Status: ${teacherSearchResponse.status}`);
-        console.log(`    📊 Encontradas: ${teacherSearchResponse.data?.length || 0}`);
+  if (testData.memberProfiles.length > 0) {
+    const memberName = testData.memberProfiles[0].name || '';
+    if (memberName && memberName !== '—') {
+      console.log(`  🔸 Teste 5: Busca por nome do professor (searchString=${memberName.substring(0, 5)})`);
+      const memberSearchResponse = await makeRequest('GET', `/pagelas?searchString=${encodeURIComponent(memberName.substring(0, 5))}`);
+      if (memberSearchResponse && memberSearchResponse.status === 200) {
+        console.log(`    ✅ Status: ${memberSearchResponse.status}`);
+        console.log(`    📊 Encontradas: ${memberSearchResponse.data?.length || 0}`);
       }
     }
   }
@@ -246,7 +246,7 @@ async function testPagelasValidation() {
   console.log('  🔸 Teste 1: ShelteredId inválido');
   const invalidShelteredResponse = await makeRequest('POST', '/pagelas', {
     shelteredId: '00000000-0000-0000-0000-000000000000',
-    teacherProfileId: '00000000-0000-0000-0000-000000000000',
+    memberProfileId: '00000000-0000-0000-0000-000000000000',
     referenceDate: new Date().toISOString(),
     visit: 1,
     present: true
@@ -255,24 +255,24 @@ async function testPagelasValidation() {
     console.log('    ✅ Erro esperado: ShelteredId inválido rejeitado');
   }
 
-  // 2. TeacherProfileId inválido
-  console.log('  🔸 Teste 2: TeacherProfileId inválido');
-  const invalidTeacherResponse = await makeRequest('POST', '/pagelas', {
+  // 2. MemberProfileId inválido
+  console.log('  🔸 Teste 2: MemberProfileId inválido');
+  const invalidMemberResponse = await makeRequest('POST', '/pagelas', {
     shelteredId: testData.sheltered[0]?.id || '00000000-0000-0000-0000-000000000000',
-    teacherProfileId: 'invalid-uuid',
+    memberProfileId: 'invalid-uuid',
     referenceDate: new Date().toISOString(),
     visit: 1,
     present: true
   });
-  if (invalidTeacherResponse && invalidTeacherResponse.status === 400) {
-    console.log('    ✅ Erro esperado: TeacherProfileId inválido rejeitado');
+  if (invalidMemberResponse && invalidMemberResponse.status === 400) {
+    console.log('    ✅ Erro esperado: MemberProfileId inválido rejeitado');
   }
 
   // 3. Data inválida
   console.log('  🔸 Teste 3: Data inválida');
   const invalidDateResponse = await makeRequest('POST', '/pagelas', {
     shelteredId: testData.sheltered[0]?.id || '00000000-0000-0000-0000-000000000000',
-    teacherProfileId: '00000000-0000-0000-0000-000000000000',
+    memberProfileId: '00000000-0000-0000-0000-000000000000',
     referenceDate: 'data-invalida',
     visit: 1,
     present: true
@@ -285,7 +285,7 @@ async function testPagelasValidation() {
   console.log('  🔸 Teste 4: Visit inválido');
   const invalidVisitResponse = await makeRequest('POST', '/pagelas', {
     shelteredId: testData.sheltered[0]?.id || '00000000-0000-0000-0000-000000000000',
-    teacherProfileId: '00000000-0000-0000-0000-000000000000',
+    memberProfileId: '00000000-0000-0000-0000-000000000000',
     referenceDate: new Date().toISOString(),
     visit: 0, // Inválido (deve ser >= 1)
     present: true
@@ -315,8 +315,8 @@ async function testPagelasRelationships() {
   // 1. Criar pagela com sheltered
   console.log('  🔸 Teste 1: Criar pagela com sheltered');
   
-  if (testData.teacherProfiles.length === 0) {
-    console.log('    ⚠️ Nenhum teacher profile encontrado. Pulando teste de relacionamento.');
+  if (testData.memberProfiles.length === 0) {
+    console.log('    ⚠️ Nenhum member profile encontrado. Pulando teste de relacionamento.');
     return;
   }
   
@@ -350,7 +350,7 @@ async function testPagelasRelationships() {
   
   const createData = {
     shelteredId: shelteredId,
-    teacherProfileId: testData.teacherProfiles[0].teacherProfileId || testData.teacherProfiles[0].id,
+    memberProfileId: testData.memberProfiles[0].memberProfileId || testData.memberProfiles[0].id,
     referenceDate: new Date().toISOString(),
     visit: visit,
     year: year,
@@ -477,8 +477,8 @@ async function createPagelasForAllSheltered(visitsPerSheltered = 1) {
     return [];
   }
   
-  if (testData.teacherProfiles.length === 0) {
-    console.log('  ⚠️ Nenhum teacher profile encontrado. Não é possível criar pagelas.');
+  if (testData.memberProfiles.length === 0) {
+    console.log('  ⚠️ Nenhum member profile encontrado. Não é possível criar pagelas.');
     return [];
   }
   
@@ -496,8 +496,8 @@ async function createPagelasForAllSheltered(visitsPerSheltered = 1) {
     const sheltered = testData.sheltered[shelteredIndex];
     const shelteredId = sheltered.id || sheltered.shelteredId;
     const shelteredName = sheltered.name || 'Sem nome';
-    const teacher = testData.teacherProfiles[Math.floor(Math.random() * testData.teacherProfiles.length)];
-    const teacherId = teacher.teacherProfileId || teacher.id;
+    const member = testData.memberProfiles[Math.floor(Math.random() * testData.memberProfiles.length)];
+    const memberId = member.memberProfileId || member.id;
     
     // Verificar se já existem pagelas para este abrigado
     const existingPagelasResponse = await makeRequest('GET', `/pagelas?shelteredId=${shelteredId}`);
@@ -537,7 +537,7 @@ async function createPagelasForAllSheltered(visitsPerSheltered = 1) {
 
       const pagelaData = {
         shelteredId: shelteredId,
-        teacherProfileId: teacherId,
+        memberProfileId: memberId,
         referenceDate: referenceDate,
         visit: visit,
         year: year,
@@ -628,8 +628,8 @@ async function createPagelasInBulk(count = 200) {
     return [];
   }
   
-  if (testData.teacherProfiles.length === 0) {
-    console.log('  ⚠️ Nenhum teacher profile encontrado. Não é possível criar pagelas.');
+  if (testData.memberProfiles.length === 0) {
+    console.log('  ⚠️ Nenhum member profile encontrado. Não é possível criar pagelas.');
     return [];
   }
   
@@ -643,7 +643,7 @@ async function createPagelasInBulk(count = 200) {
   
   for (let i = 0; i < count; i++) {
     const sheltered = testData.sheltered[Math.floor(Math.random() * testData.sheltered.length)];
-    const teacher = testData.teacherProfiles[Math.floor(Math.random() * testData.teacherProfiles.length)];
+    const member = testData.memberProfiles[Math.floor(Math.random() * testData.memberProfiles.length)];
     
     // Gerar data de referência aleatória no ano atual
     const month = months[Math.floor(Math.random() * months.length)];
@@ -658,7 +658,7 @@ async function createPagelasInBulk(count = 200) {
     
     const pagelaData = {
       shelteredId: sheltered.id || sheltered.shelteredId,
-      teacherProfileId: teacher.teacherProfileId || teacher.id,
+      memberProfileId: member.memberProfileId || member.id,
       referenceDate: referenceDate,
       visit: visit,
       year: year,

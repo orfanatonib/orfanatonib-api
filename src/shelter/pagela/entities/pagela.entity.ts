@@ -1,7 +1,7 @@
 import { BaseEntity } from 'src/shared/entity/base.entity';
 import { Entity, Column, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { ShelteredEntity } from 'src/shelter/sheltered/entities/sheltered.entity';
-import { TeacherProfileEntity } from 'src/shelter/teacher-profile/entities/teacher-profile.entity/teacher-profile.entity';
+import { MemberProfileEntity } from 'src/shelter/member-profile/entities/member-profile.entity/member-profile.entity';
 
 @Entity('pagelas')
 @Unique('UQ_pagela_sheltered_year_visit', ['sheltered', 'year', 'visit'])
@@ -29,7 +29,7 @@ export class PagelaEntity extends BaseEntity {
   @JoinColumn({ name: 'sheltered_id' })
   sheltered: ShelteredEntity;
 
-  @ManyToOne(() => TeacherProfileEntity, { nullable: false, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'teacher_profile_id' })
-  teacher: TeacherProfileEntity;
+  @ManyToOne(() => MemberProfileEntity, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'member_profile_id' })
+  member: MemberProfileEntity;
 }

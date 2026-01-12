@@ -79,7 +79,7 @@ export class CreateSheltersService {
 
   async create(dto: CreateShelterDto, req: Request, filesDict?: Record<string, Express.Multer.File>) {
     const ctx = await this.getCtx(req);
-    if (!ctx.role || ctx.role === 'teacher') {
+    if (!ctx.role || ctx.role === 'member') {
       throw new ForbiddenException('Acesso negado');
     }
 
@@ -116,7 +116,7 @@ export class CreateSheltersService {
   private async createTeams(shelterId: string, dto: CreateShelterDto): Promise<void> {
     type TeamInput = NonNullable<CreateShelterDto['teams']>[0];
     const teamsMap = new Map<number, TeamInput>();
-    const teacherIdsUsed = new Set<string>();
+    const memberIdsUsed = new Set<string>();
     
     if (dto.teams && dto.teams.length > 0) {
       for (const team of dto.teams) {
@@ -129,14 +129,14 @@ export class CreateSheltersService {
           throw new BadRequestException(`Duplicate: team ${team.numberTeam} already defined`);
         }
         
-        if (team.teacherProfileIds && team.teacherProfileIds.length > 0) {
-          for (const teacherId of team.teacherProfileIds) {
-            if (teacherIdsUsed.has(teacherId)) {
+        if (team.memberProfileIds && team.memberProfileIds.length > 0) {
+          for (const memberId of team.memberProfileIds) {
+            if (memberIdsUsed.has(memberId)) {
               throw new BadRequestException(
-                `Teacher with ID ${teacherId} cannot be in multiple teams. A teacher can only belong to one team.`
+                `Member with ID ${memberId} cannot be in multiple teams. A member can only belong to one team.`
               );
         }
-            teacherIdsUsed.add(teacherId);
+            memberIdsUsed.add(memberId);
           }
         }
         
@@ -152,7 +152,7 @@ export class CreateSheltersService {
         description: teamData?.description,
         shelterId: shelterId,
         leaderProfileIds: teamData?.leaderProfileIds,
-        teacherProfileIds: teamData?.teacherProfileIds,
+        memberProfileIds: teamData?.memberProfileIds,
       };
 
       await this.teamsService.create(createTeamDto);

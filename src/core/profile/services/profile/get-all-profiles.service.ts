@@ -23,10 +23,8 @@ export class GetAllProfilesService {
   ): Promise<PaginatedProfilesResponseDto> {
     const { page = 1, limit = 10, sortBy = 'name', order = 'ASC' } = queryDto;
 
-    // Calcular offset
     const offset = (page - 1) * limit;
 
-    // Buscar usuários com filtros, paginação e contagem total
     const { users, total } = await this.getUsersWithFilters(
       requestingUserId,
       requestingUserRole,
@@ -35,7 +33,6 @@ export class GetAllProfilesService {
       offset,
     );
 
-    // Mapear usuários para perfis completos
     const profiles = await Promise.all(
       users.map(async (user) => {
         const personalData = await this.personalDataRepository.findByUserId(user.id);
@@ -70,7 +67,6 @@ export class GetAllProfilesService {
       }),
     );
 
-    // Calcular metadados de paginação
     const totalPages = Math.ceil(total / limit);
 
     return {
@@ -111,7 +107,6 @@ export class GetAllProfilesService {
     const countParams: any[] = [];
 
     if (requestingUserRole === UserRole.ADMIN) {
-      // Admin: todos os usuários
       baseQuery = `
         SELECT DISTINCT u.*, pd.birthDate, up.loveLanguages, up.temperaments, up.favoriteColor
         FROM users u
@@ -128,11 +123,10 @@ export class GetAllProfilesService {
         WHERE 1=1
       `;
     } else if (requestingUserRole === UserRole.LEADER) {
-      // Leader: apenas teachers das equipes onde é líder
       baseQuery = `
         SELECT DISTINCT u.*, pd.birthDate, up.loveLanguages, up.temperaments, up.favoriteColor
         FROM users u
-        INNER JOIN teacher_profiles tp ON tp.user_id = u.id
+        INNER JOIN member_profiles tp ON tp.user_id = u.id
         INNER JOIN teams t ON t.id = tp.team_id
         INNER JOIN leader_teams lt ON lt.team_id = t.id
         INNER JOIN leader_profiles lp ON lp.id = lt.leader_id
@@ -144,7 +138,7 @@ export class GetAllProfilesService {
       countQuery = `
         SELECT COUNT(DISTINCT u.id) as total
         FROM users u
-        INNER JOIN teacher_profiles tp ON tp.user_id = u.id
+        INNER JOIN member_profiles tp ON tp.user_id = u.id
         INNER JOIN teams t ON t.id = tp.team_id
         INNER JOIN leader_teams lt ON lt.team_id = t.id
         INNER JOIN leader_profiles lp ON lp.id = lt.leader_id
@@ -154,11 +148,9 @@ export class GetAllProfilesService {
       params.push(requestingUserId);
       countParams.push(requestingUserId);
     } else {
-      // Sem permissão
       return { users: [], total: 0 };
     }
 
-    // Aplicar filtros
     if (q) {
       baseQuery += ` AND (u.name LIKE ? OR u.email LIKE ?)`;
       countQuery += ` AND (u.name LIKE ? OR u.email LIKE ?)`;
@@ -208,15 +200,12 @@ export class GetAllProfilesService {
       countParams.push(`%${favoriteColor}%`);
     }
 
-    // Aplicar ordenação
     const sortColumn = sortBy === 'birthDate' ? 'pd.birthDate' : `u.${sortBy}`;
     baseQuery += ` ORDER BY ${sortColumn} ${order}`;
 
-    // Aplicar paginação
     baseQuery += ` LIMIT ? OFFSET ?`;
     params.push(limit, offset);
 
-    // Executar queries
     const users = await this.dataSource.query(baseQuery, params);
     const countResult = await this.dataSource.query(countQuery, countParams);
     const total = parseInt(countResult[0]?.total || '0', 10);

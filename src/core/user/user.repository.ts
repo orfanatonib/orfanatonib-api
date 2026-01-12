@@ -32,7 +32,7 @@ export class UserRepository {
     return this.repo.findOne({
       where: { id },
       relations: {
-        teacherProfile: { team: { shelter: true } },
+        memberProfile: { team: { shelter: true } },
         leaderProfile: { teams: { shelter: true } },
       },
     });

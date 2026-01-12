@@ -1,6 +1,6 @@
 import { UserRole } from 'src/core/auth/auth.types';
 import { LeaderProfileEntity } from 'src/shelter/leader-profile/entities/leader-profile.entity/leader-profile.entity';
-import { TeacherProfileEntity } from 'src/shelter/teacher-profile/entities/teacher-profile.entity/teacher-profile.entity';
+import { MemberProfileEntity } from 'src/shelter/member-profile/entities/member-profile.entity/member-profile.entity';
 import { BaseEntity } from 'src/shared/entity/base.entity';
 import { Entity, Column, OneToOne } from 'typeorm';
 
@@ -28,14 +28,14 @@ export class UserEntity extends BaseEntity {
   @Column({ type: 'boolean', default: true })
   commonUser: boolean;
 
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.TEACHER })
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.MEMBER })
   role: UserRole;
 
   @Column({ nullable: true, type: 'text' })
   refreshToken: string | null;
 
-  @OneToOne(() => TeacherProfileEntity, (p) => p.user)
-  teacherProfile?: TeacherProfileEntity | null;
+  @OneToOne(() => MemberProfileEntity, (p) => p.user)
+  memberProfile?: MemberProfileEntity | null;
 
   @OneToOne(() => LeaderProfileEntity, (p) => p.user)
   leaderProfile?: LeaderProfileEntity | null;

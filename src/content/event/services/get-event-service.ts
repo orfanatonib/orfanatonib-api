@@ -32,9 +32,9 @@ export class GetEventService {
     const ctx = await this.getCtx(req);
 
     let allowed: string[] = [EventAudience.ALL];
-    if (ctx.role === 'teacher') allowed = [EventAudience.ALL, EventAudience.TEACHERS];
-    if (ctx.role === 'leader') allowed = [EventAudience.ALL, EventAudience.TEACHERS, EventAudience.LEADERS];
-    if (ctx.role === 'admin') allowed = [EventAudience.ALL, EventAudience.TEACHERS, EventAudience.LEADERS];
+    if (ctx.role === 'member') allowed = [EventAudience.ALL, EventAudience.MEMBERS];
+    if (ctx.role === 'leader') allowed = [EventAudience.ALL, EventAudience.MEMBERS, EventAudience.LEADERS];
+    if (ctx.role === 'admin') allowed = [EventAudience.ALL, EventAudience.MEMBERS, EventAudience.LEADERS];
 
     const events = await this.eventRepo.findAll(allowed);
 
@@ -69,9 +69,9 @@ export class GetEventService {
 
     const ctx = await this.getCtx(req);
     let allowed: string[] = [EventAudience.ALL];
-    if (ctx.role === 'teacher') allowed = [EventAudience.ALL, EventAudience.TEACHERS];
-    if (ctx.role === 'leader') allowed = [EventAudience.ALL, EventAudience.TEACHERS, EventAudience.LEADERS];
-    if (ctx.role === 'admin') allowed = [EventAudience.ALL, EventAudience.TEACHERS, EventAudience.LEADERS];
+    if (ctx.role === 'member') allowed = [EventAudience.ALL, EventAudience.MEMBERS];
+    if (ctx.role === 'leader') allowed = [EventAudience.ALL, EventAudience.MEMBERS, EventAudience.LEADERS];
+    if (ctx.role === 'admin') allowed = [EventAudience.ALL, EventAudience.MEMBERS, EventAudience.LEADERS];
 
     if (!allowed.includes(event.audience)) {
       this.logger.warn(`Event not accessible by role=${ctx.role}: ID=${id}`);
@@ -90,9 +90,9 @@ export class GetEventService {
     const ctx = await this.getCtx(req);
 
     let allowed: string[] = [EventAudience.ALL];
-    if (ctx.role === 'teacher') allowed = [EventAudience.ALL, EventAudience.TEACHERS];
-    if (ctx.role === 'leader') allowed = [EventAudience.ALL, EventAudience.TEACHERS, EventAudience.LEADERS];
-    if (ctx.role === 'admin') allowed = [EventAudience.ALL, EventAudience.TEACHERS, EventAudience.LEADERS];
+    if (ctx.role === 'member') allowed = [EventAudience.ALL, EventAudience.MEMBERS];
+    if (ctx.role === 'leader') allowed = [EventAudience.ALL, EventAudience.MEMBERS, EventAudience.LEADERS];
+    if (ctx.role === 'admin') allowed = [EventAudience.ALL, EventAudience.MEMBERS, EventAudience.LEADERS];
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);

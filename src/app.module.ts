@@ -20,7 +20,7 @@ import { IdeasSectionModule } from './content/page/ideas-section/ideas-section.m
 import { SiteFeedbackModule } from './communication/feedback/site-feedback.module';
 import { AddressesModule } from './shelter/address/addresses.module';
 import { LeaderProfilesModule } from './shelter/leader-profile/leader-profiles.module';
-import { TeacherProfilesModule } from './shelter/teacher-profile/teacher-profiles.module';
+import { MemberProfilesModule } from './shelter/member-profile/member-profiles.module';
 import { SheltersModule } from './shelter/shelter/shelters.module';
 import { ShelteredModule } from './shelter/sheltered/sheltered.module';
 import { PagelasModule } from './shelter/pagela/pagelas.module';
@@ -71,7 +71,7 @@ function getEnvFilePath(): string {
     SiteFeedbackModule,
     AddressesModule,
     LeaderProfilesModule,
-    TeacherProfilesModule,
+    MemberProfilesModule,
     SheltersModule,
     ShelteredModule,
     PagelasModule,

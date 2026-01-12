@@ -7,7 +7,7 @@ export class ShelteredMiniDto {
   birthDate?: string | null;
 }
 
-export class TeacherMiniDto {
+export class MemberMiniDto {
   id: string;
   active: boolean;
   user: {
@@ -24,7 +24,7 @@ export class PagelaResponseDto {
   updatedAt: string;
 
   sheltered: ShelteredMiniDto;
-  teacher: TeacherMiniDto;
+  member: MemberMiniDto;
 
   referenceDate: string;
   year: number;
@@ -44,14 +44,14 @@ export class PagelaResponseDto {
         gender: e.sheltered?.gender,
         birthDate: e.sheltered?.birthDate,
       },
-      teacher: {
-        id: e.teacher?.id,
-        active: e.teacher?.active,
+      member: {
+        id: e.member?.id,
+        active: e.member?.active,
         user: {
-          id: e.teacher?.user?.id,
-          name: e.teacher?.user?.name,
-          email: e.teacher?.user?.email,
-          phone: e.teacher?.user?.phone,
+          id: e.member?.user?.id,
+          name: e.member?.user?.name,
+          email: e.member?.user?.email,
+          phone: e.member?.user?.phone,
         },
       },
       referenceDate: e.referenceDate,

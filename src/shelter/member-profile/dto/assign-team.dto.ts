@@ -1,9 +1,6 @@
 import { IsUUID, IsNumber, Min } from 'class-validator';
 
-/**
- * DTO para vincular professor a uma equipe de um abrigo
- */
-export class ManageTeacherTeamDto {
+export class ManageMemberTeamDto {
   @IsUUID()
   shelterId!: string;
 
