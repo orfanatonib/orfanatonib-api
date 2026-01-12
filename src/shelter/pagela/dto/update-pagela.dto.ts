@@ -4,7 +4,7 @@ import { Type } from 'class-transformer';
 export class UpdatePagelaDto {
   @IsOptional()
   @IsUUID()
-  teacherProfileId?: string;
+  memberProfileId?: string;
 
   @IsOptional()
   @IsDateString()

@@ -53,7 +53,7 @@ class CoordinatorWithUserDto {
 }
 
 @Exclude()
-class TeacherWithUserDto {
+class MemberWithUserDto {
   @Expose() id!: string;
   @Expose() active!: boolean;
 
@@ -130,9 +130,9 @@ class TeamWithMembersDto {
   leaders!: CoordinatorWithUserDto[];
 
   @Expose()
-  @Type(() => TeacherWithUserDto)
+  @Type(() => MemberWithUserDto)
   @Transform(({ value }) => (Array.isArray(value) ? value : []))
-  teachers!: TeacherWithUserDto[];
+  members!: MemberWithUserDto[];
 }
 
 @Exclude()
@@ -176,23 +176,23 @@ export class ShelterResponseDto {
   leaders!: CoordinatorWithUserDto[];
 
   @Expose()
-  @Type(() => TeacherWithUserDto)
+  @Type(() => MemberWithUserDto)
   @Transform(({ obj }) => {
-    const teachersMap = new Map<string, TeacherWithUserDto>();
+    const membersMap = new Map<string, MemberWithUserDto>();
     if (obj.teams && Array.isArray(obj.teams)) {
-      obj.teams.forEach((team: { teachers?: TeacherWithUserDto[] }) => {
-        if (team.teachers && Array.isArray(team.teachers)) {
-          team.teachers.forEach((teacher: any) => {
-            if (!teachersMap.has(teacher.id)) {
-              teachersMap.set(teacher.id, plainToInstance(TeacherWithUserDto, teacher, { excludeExtraneousValues: true }));
+      obj.teams.forEach((team: { members?: MemberWithUserDto[] }) => {
+        if (team.members && Array.isArray(team.members)) {
+          team.members.forEach((member: any) => {
+            if (!membersMap.has(member.id)) {
+              membersMap.set(member.id, plainToInstance(MemberWithUserDto, member, { excludeExtraneousValues: true }));
             }
           });
         }
       });
     }
-    return Array.from(teachersMap.values());
+    return Array.from(membersMap.values());
   })
-  teachers!: TeacherWithUserDto[];
+  members!: MemberWithUserDto[];
 
   @Expose()
   @Type(() => MediaItemResponseDto)

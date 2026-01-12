@@ -2,7 +2,6 @@ import { IsOptional, IsString, IsInt, Min, IsIn } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryProfilesDto {
-  // Paginação
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -15,38 +14,35 @@ export class QueryProfilesDto {
   @Min(1)
   limit?: number = 10;
 
-  // Filtros de busca
   @IsOptional()
   @IsString()
-  q?: string; // Busca geral (nome, email)
+  q?: string;
 
   @IsOptional()
   @IsString()
-  name?: string; // Busca por nome
+  name?: string;
 
   @IsOptional()
   @IsString()
-  email?: string; // Busca por email
+  email?: string;
 
   @IsOptional()
   @IsString()
-  @IsIn(['admin', 'teacher', 'leader'])
-  role?: string; // Filtro por role
-
-  // Filtros de preferências
-  @IsOptional()
-  @IsString()
-  loveLanguages?: string; // Busca em love languages
+  @IsIn(['admin', 'member', 'leader'])
+  role?: string;
 
   @IsOptional()
   @IsString()
-  temperaments?: string; // Busca em temperamentos
+  loveLanguages?: string;
 
   @IsOptional()
   @IsString()
-  favoriteColor?: string; // Busca por cor favorita
+  temperaments?: string;
 
-  // Ordenação
+  @IsOptional()
+  @IsString()
+  favoriteColor?: string;
+
   @IsOptional()
   @IsString()
   @IsIn(['name', 'email', 'createdAt', 'birthDate'])

@@ -8,6 +8,11 @@ export enum AttendanceType {
   ABSENT = 'absent',
 }
 
+export enum AttendanceCategory {
+  VISIT = 'visit',
+  MEETING = 'meeting',
+}
+
 @Entity('attendance_records')
 export class AttendanceEntity extends BaseEntity {
   @ManyToOne(() => UserEntity, { eager: true, onDelete: 'CASCADE' })
@@ -17,6 +22,9 @@ export class AttendanceEntity extends BaseEntity {
   @ManyToOne(() => ShelterScheduleEntity, { eager: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'shelter_schedule_id' })
   shelterSchedule!: ShelterScheduleEntity;
+
+  @Column({ type: 'enum', enum: AttendanceCategory, default: AttendanceCategory.VISIT })
+  category!: AttendanceCategory;
 
   @Column({ type: 'enum', enum: AttendanceType })
   type!: AttendanceType;

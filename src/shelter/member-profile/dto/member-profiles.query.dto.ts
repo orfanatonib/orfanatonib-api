@@ -29,11 +29,11 @@ const trimOrUndef = (v: any): string | undefined => {
   return t ? t : undefined;
 };
 
-export class TeacherProfilesQueryDto {
+export class MemberProfilesQueryDto {
   @IsOptional()
   @Transform(({ value }) => trimOrUndef(value))
   @IsString()
-  teacherSearchString?: string;
+  memberSearchString?: string;
 
   @IsOptional()
   @Transform(({ value }) => trimOrUndef(value))

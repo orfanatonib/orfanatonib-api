@@ -1,6 +1,8 @@
+import { Request } from 'express';
+
 export enum UserRole {
   ADMIN = 'admin',
-  TEACHER = 'teacher',
+  MEMBER = 'member',
   LEADER = 'leader',
 }
 

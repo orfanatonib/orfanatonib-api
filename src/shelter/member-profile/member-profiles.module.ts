@@ -1,11 +1,11 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
-import { TeacherProfilesRepository } from './repositories/teacher-profiles.repository';
-import { TeacherProfilesService } from './services/teacher-profiles.service';
-import { TeacherProfilesController } from './teacher-profiles.controller';
+import { MemberProfilesRepository } from './repositories/member-profiles.repository';
+import { MemberProfilesService } from './services/member-profiles.service';
+import { MemberProfilesController } from './member-profiles.controller';
 
-import { TeacherProfileEntity } from './entities/teacher-profile.entity/teacher-profile.entity';
+import { MemberProfileEntity } from './entities/member-profile.entity/member-profile.entity';
 import { LeaderProfilesModule } from '../leader-profile/leader-profiles.module';
 import { SheltersModule } from '../shelter/shelters.module';
 import { UserModule } from 'src/core/user/user.module';
@@ -14,15 +14,15 @@ import { TeamsModule } from '../team/teams.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([TeacherProfileEntity]),
+    TypeOrmModule.forFeature([MemberProfileEntity]),
     forwardRef(() => LeaderProfilesModule),
     forwardRef(() => SheltersModule),
     forwardRef(() => UserModule),
     forwardRef(() => AuthModule),
     forwardRef(() => TeamsModule),
   ],
-  controllers: [TeacherProfilesController],
-  providers: [TeacherProfilesRepository, TeacherProfilesService],
-  exports: [TeacherProfilesRepository, TeacherProfilesService, TypeOrmModule],
+  controllers: [MemberProfilesController],
+  providers: [MemberProfilesRepository, MemberProfilesService],
+  exports: [MemberProfilesRepository, MemberProfilesService, TypeOrmModule],
 })
-export class TeacherProfilesModule { }
+export class MemberProfilesModule { }

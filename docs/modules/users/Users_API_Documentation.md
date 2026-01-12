@@ -2,11 +2,11 @@
 
 ## 🎯 Visão Geral
 
-O módulo **Users** é o orquestrador principal do sistema, responsável por gerenciar usuários e automaticamente criar/gerenciar os profiles de **Teacher** e **Leader** conforme o role do usuário.
+O módulo **Users** é o orquestrador principal do sistema, responsável por gerenciar usuários e automaticamente criar/gerenciar os profiles de **Member** e **Leader** conforme o role do usuário.
 
 ### 🔑 Características Principais
 - **CRUD Completo** de usuários
-- **🎭 ORQUESTRAÇÃO AUTOMÁTICA** de Teacher/Leader profiles
+- **🎭 ORQUESTRAÇÃO AUTOMÁTICA** de Member/Leader profiles
 - **Mudança de Roles** com migração automática de profiles
 - **Ativação/Desativação** com criação/remoção de profiles
 - **Filtros Avançados** e paginação
@@ -18,29 +18,29 @@ O módulo **Users** é o orquestrador principal do sistema, responsável por ger
 O módulo Users implementa uma **orquestração inteligente** que gerencia automaticamente os profiles:
 
 #### **Criação de Usuário:**
-- ✅ Role `teacher` → Cria automaticamente `TeacherProfile`
+- ✅ Role `member` → Cria automaticamente `MemberProfile`
 - ✅ Role `leader` → Cria automaticamente `LeaderProfile`
 - ✅ Role `admin` → Não cria profile específico
 
 #### **Mudança de Role:**
-- ✅ `teacher` → `leader` → Remove Teacher Profile, cria Leader Profile
-- ✅ `leader` → `teacher` → Remove Leader Profile, cria Teacher Profile
+- ✅ `member` → `leader` → Remove Member Profile, cria Leader Profile
+- ✅ `leader` → `member` → Remove Leader Profile, cria Member Profile
 - ✅ Qualquer role → `admin` → Remove todos os profiles
 
 #### **Ativação/Desativação:**
-- ✅ Ativar usuário `teacher` → Cria Teacher Profile
-- ✅ Desativar usuário `teacher` → Remove Teacher Profile
+- ✅ Ativar usuário `member` → Cria Member Profile
+- ✅ Desativar usuário `member` → Remove Member Profile
 - ✅ Ativar usuário `leader` → Cria Leader Profile
 - ✅ Desativar usuário `leader` → Remove Leader Profile
 
 #### **⚠️ IMPORTANTE - Controle de Visibilidade:**
-- ✅ **Usuários com `active = false` NÃO aparecem** nas listagens de Teacher Profiles
+- ✅ **Usuários com `active = false` NÃO aparecem** nas listagens de Member Profiles
 - ✅ **Usuários com `active = false` NÃO aparecem** nas listagens de Leader Profiles
-- ✅ **Filtro automático**: `teacher_user.active = true` e `leader_user.active = true`
+- ✅ **Filtro automático**: `member_user.active = true` e `leader_user.active = true`
 - ✅ **Controle total**: Apenas o admin pode ativar/desativar usuários
 
 #### **Exclusão:**
-- ✅ Remove Teacher Profile (se existir)
+- ✅ Remove Member Profile (se existir)
 - ✅ Remove Leader Profile (se existir)
 - ✅ Remove User Entity
 - ✅ Mantém integridade referencial
@@ -54,7 +54,7 @@ Lista usuários com filtros, paginação e ordenação.
 - `page` (number): Número da página (padrão: 1)
 - `limit` (number): Itens por página (padrão: 12, máx: 100)
 - `q` (string): Termo de busca (nome, email, telefone, role)
-- `role` (string): Filtro por role (`teacher`, `leader`, `admin`, `user`)
+- `role` (string): Filtro por role (`member`, `leader`, `admin`, `user`)
 - `active` (boolean): Filtro por status ativo
 - `completed` (boolean): Filtro por status completado
 - `sort` (string): Campo de ordenação (`name`, `email`, `phone`, `role`, `createdAt`, `updatedAt`)
@@ -62,7 +62,7 @@ Lista usuários com filtros, paginação e ordenação.
 
 **Exemplo de Request:**
 ```http
-GET /users?page=1&limit=10&role=teacher&active=true&sort=name&order=ASC
+GET /users?page=1&limit=10&role=member&active=true&sort=name&order=ASC
 ```
 
 **Exemplo de Response:**
@@ -74,7 +74,7 @@ GET /users?page=1&limit=10&role=teacher&active=true&sort=name&order=ASC
       "name": "João Silva",
       "email": "joao@example.com",
       "phone": "+5511999999999",
-      "role": "teacher",
+      "role": "member",
       "active": true,
       "completed": true,
       "commonUser": true,
@@ -111,7 +111,7 @@ GET /users/123e4567-e89b-12d3-a456-426614174000
   "name": "João Silva",
   "email": "joao@example.com",
   "phone": "+5511999999999",
-  "role": "teacher",
+  "role": "member",
   "active": true,
   "completed": true,
   "commonUser": true,
@@ -130,7 +130,7 @@ Cria um novo usuário e automaticamente cria o profile correspondente.
   "email": "joao@example.com",
   "password": "password123",
   "phone": "+5511999999999",
-  "role": "teacher",
+  "role": "member",
   "active": true,
   "completed": false,
   "commonUser": true
@@ -144,13 +144,13 @@ Cria um novo usuário e automaticamente cria o profile correspondente.
 - `phone` (string): Telefone do usuário
 
 **Campos Opcionais:**
-- `role` (enum): Role do usuário (`teacher`, `leader`, `admin`, `user`)
+- `role` (enum): Role do usuário (`member`, `leader`, `admin`, `user`)
 - `active` (boolean): Status ativo (padrão: false)
 - `completed` (boolean): Status completado (padrão: false)
 - `commonUser` (boolean): Usuário comum (padrão: true)
 
 **Orquestração Automática:**
-- Se `role = "teacher"` → Cria automaticamente **Teacher Profile**
+- Se `role = "member"` → Cria automaticamente **Member Profile**
 - Se `role = "leader"` → Cria automaticamente **Leader Profile**
 - Se `role = "admin"` → Não cria profile específico
 
@@ -161,7 +161,7 @@ Cria um novo usuário e automaticamente cria o profile correspondente.
   "name": "João Silva",
   "email": "joao@example.com",
   "phone": "+5511999999999",
-  "role": "teacher",
+  "role": "member",
   "active": true,
   "completed": false,
   "commonUser": true,
@@ -188,10 +188,10 @@ Atualiza um usuário existente com orquestração automática de profiles.
 ```
 
 **Orquestração de Mudança de Role:**
-- **teacher → leader**: Remove Teacher Profile, cria Leader Profile
-- **leader → teacher**: Remove Leader Profile, cria Teacher Profile
-- **teacher/leader → admin**: Remove profile específico
-- **admin → teacher/leader**: Cria profile correspondente
+- **member → leader**: Remove Member Profile, cria Leader Profile
+- **leader → member**: Remove Leader Profile, cria Member Profile
+- **member/leader → admin**: Remove profile específico
+- **admin → member/leader**: Cria profile correspondente
 
 **Exemplo de Response:**
 ```json
@@ -216,7 +216,7 @@ Remove um usuário e seus profiles associados.
 - `id` (UUID): ID do usuário
 
 **Orquestração de Exclusão:**
-- Remove automaticamente **Teacher Profile** (se existir)
+- Remove automaticamente **Member Profile** (se existir)
 - Remove automaticamente **Leader Profile** (se existir)
 - Remove o usuário
 
@@ -229,7 +229,7 @@ Remove um usuário e seus profiles associados.
 
 ## 🎭 Exemplos de Orquestração
 
-### **Cenário 1: Criar Teacher**
+### **Cenário 1: Criar Member**
 ```http
 POST /users
 {
@@ -237,13 +237,13 @@ POST /users
   "email": "joao@example.com",
   "password": "password123",
   "phone": "+5511999999999",
-  "role": "teacher",
+  "role": "member",
   "active": true
 }
 ```
-**Resultado**: Usuário criado + Teacher Profile criado automaticamente
+**Resultado**: Usuário criado + Member Profile criado automaticamente
 
-### **Cenário 2: Mudar Teacher para Leader**
+### **Cenário 2: Mudar Member para Leader**
 ```http
 PUT /users/uuid-user
 {
@@ -251,7 +251,7 @@ PUT /users/uuid-user
   "active": true
 }
 ```
-**Resultado**: Teacher Profile removido + Leader Profile criado automaticamente
+**Resultado**: Member Profile removido + Leader Profile criado automaticamente
 
 ### **Cenário 3: Desativar Usuário**
 ```http
@@ -260,7 +260,7 @@ PUT /users/uuid-user
   "active": false
 }
 ```
-**Resultado**: Profile (Teacher/Leader) removido automaticamente
+**Resultado**: Profile (Member/Leader) removido automaticamente
 
 ### **Cenário 4: Reativar Usuário**
 ```http
@@ -301,7 +301,7 @@ Content-Type: application/json
   refreshToken: string | null;  // Token de refresh
   createdAt: Date;              // Data de criação
   updatedAt: Date;              // Data de atualização
-  teacherProfile?: TeacherProfileEntity;  // Profile de professor
+  memberProfile?: MemberProfileEntity;  // Profile de professor
   leaderProfile?: LeaderProfileEntity;    // Profile de líder
 }
 ```
@@ -309,7 +309,7 @@ Content-Type: application/json
 ### UserRole Enum
 ```typescript
 enum UserRole {
-  TEACHER = 'teacher',
+  MEMBER = 'member',
   LEADER = 'leader', 
   ADMIN = 'admin',
   USER = 'user'
@@ -322,7 +322,7 @@ enum UserRole {
 ```mermaid
 graph TD
     A[POST /users] --> B{Role?}
-    B -->|teacher| C[Cria Teacher Profile]
+    B -->|member| C[Cria Member Profile]
     B -->|leader| D[Cria Leader Profile]
     B -->|admin/user| E[Sem Profile]
 ```
@@ -331,16 +331,16 @@ graph TD
 ```mermaid
 graph TD
     A[PUT /users/:id] --> B{Mudança de Role?}
-    B -->|teacher→leader| C[Remove Teacher Profile<br/>Cria Leader Profile]
-    B -->|leader→teacher| D[Remove Leader Profile<br/>Cria Teacher Profile]
+    B -->|member→leader| C[Remove Member Profile<br/>Cria Leader Profile]
+    B -->|leader→member| D[Remove Leader Profile<br/>Cria Member Profile]
     B -->|qualquer→admin| E[Remove Profile Atual]
-    B -->|admin→teacher/leader| F[Cria Profile Correspondente]
+    B -->|admin→member/leader| F[Cria Profile Correspondente]
 ```
 
 ### Exclusão
 ```mermaid
 graph TD
-    A[DELETE /users/:id] --> B[Remove Teacher Profile]
+    A[DELETE /users/:id] --> B[Remove Member Profile]
     B --> C[Remove Leader Profile]
     C --> D[Remove User]
 ```
@@ -348,7 +348,7 @@ graph TD
 ## 🔍 Filtros e Buscas
 
 ### Filtros Disponíveis
-- **Por Role**: `?role=teacher|leader|admin|user`
+- **Por Role**: `?role=member|leader|admin|user`
 - **Por Status Ativo**: `?active=true|false`
 - **Por Status Completado**: `?completed=true|false`
 - **Busca por Termo**: `?q=termo` (busca em nome, email, telefone, role)
@@ -361,7 +361,7 @@ graph TD
 ### Exemplos de Uso
 ```http
 # Buscar professores ativos
-GET /users?role=teacher&active=true
+GET /users?role=member&active=true
 
 # Buscar por nome
 GET /users?q=João
@@ -429,19 +429,19 @@ GET /users?page=2&limit=5
 ## 🧪 Casos de Teste
 
 ### Cenários de Criação
-1. **Criar Teacher**: Verifica se Teacher Profile é criado automaticamente
+1. **Criar Member**: Verifica se Member Profile é criado automaticamente
 2. **Criar Leader**: Verifica se Leader Profile é criado automaticamente
 3. **Criar Admin**: Verifica se nenhum profile específico é criado
 4. **Email Duplicado**: Deve retornar erro 409
 
 ### Cenários de Atualização
-1. **Mudança teacher → leader**: Remove Teacher Profile, cria Leader Profile
-2. **Mudança leader → teacher**: Remove Leader Profile, cria Teacher Profile
+1. **Mudança member → leader**: Remove Member Profile, cria Leader Profile
+2. **Mudança leader → member**: Remove Leader Profile, cria Member Profile
 3. **Desativar usuário**: Remove profiles automaticamente
 4. **Ativar usuário**: Recria profiles automaticamente
 
 ### Cenários de Exclusão
-1. **Excluir teacher**: Remove Teacher Profile e usuário
+1. **Excluir member**: Remove Member Profile e usuário
 2. **Excluir leader**: Remove Leader Profile e usuário
 3. **Usuário inexistente**: Retorna erro 404
 
@@ -461,7 +461,7 @@ GET /users?page=2&limit=5
 ## 🔧 Configuração e Dependências
 
 ### Dependências do Módulo
-- `TeacherProfilesService`: Para orquestração de teacher profiles
+- `MemberProfilesService`: Para orquestração de member profiles
 - `LeaderProfilesService`: Para orquestração de leader profiles
 - `bcryptjs`: Para hash de senhas
 - `class-validator`: Para validação de DTOs

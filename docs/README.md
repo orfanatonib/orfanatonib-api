@@ -16,7 +16,7 @@ docs/
 │   ├── users/
 │   ├── shelters/
 │   ├── leader-profiles/         # ⭐ v6.0.0 - 100% sincronizado
-│   ├── teacher-profiles/
+│   ├── member-profiles/
 │   ├── sheltered/
 │   └── pagelas/
 │
@@ -30,7 +30,7 @@ docs/
 ### 🔐 Auth
 **Autenticação e Autorização**
 - Login e geração de tokens JWT
-- Controle de acesso por roles (admin, leader, teacher)
+- Controle de acesso por roles (admin, leader, member)
 - Refresh de tokens
 
 📁 [`modules/auth/`](./modules/auth/)
@@ -54,7 +54,7 @@ docs/
 - Gestão de endereços
 - Media items (fotos)
 - Filtros por localização e staff
-- Relacionamentos com leaders e teachers
+- Relacionamentos com leaders e members
 
 📁 [`modules/shelters/`](./modules/shelters/)
 
@@ -71,14 +71,14 @@ docs/
 
 ---
 
-### 👩‍🏫 Teacher Profiles
+### 👩‍🏫 Member Profiles
 **Perfis de Professores**
 - CRUD de perfis de professores
 - Vinculação a shelters
 - Especializações e habilidades
 - Filtros avançados
 
-📁 [`modules/teacher-profiles/`](./modules/teacher-profiles/)
+📁 [`modules/member-profiles/`](./modules/member-profiles/)
 
 ---
 
@@ -97,7 +97,7 @@ docs/
 ### 📝 Pagelas
 **Sistema de Pagelas (Relatórios)**
 - CRUD de pagelas
-- Vinculação a sheltered e teachers
+- Vinculação a sheltered e members
 - Filtros por ano, visita, presença
 - Busca avançada
 - Estatísticas
@@ -164,7 +164,7 @@ tests/automations/[módulo]/[módulo]-complete-automation.js
 | Users | ✅ | ✅ | ✅ | 100% |
 | Shelters | ✅ | ✅ | ✅ | 100% |
 | Leader Profiles | ✅ | ✅ | ✅ | 100% |
-| Teacher Profiles | ✅ | ✅ | ✅ | 100% |
+| Member Profiles | ✅ | ✅ | ✅ | 100% |
 | Sheltered | ✅ | ✅ | ✅ | 100% |
 | Pagelas | ✅ | ✅ | ✅ | 100% |
 

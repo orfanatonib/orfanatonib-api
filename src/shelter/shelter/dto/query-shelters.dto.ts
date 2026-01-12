@@ -1,9 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Min, IsString, IsIn } from 'class-validator';
 
-/**
- * 📋 DTO para query de shelters com filtros simplificados
- */
 export class QuerySheltersDto {
   @IsOptional() @Type(() => Number) @IsInt() @Min(1)
   page?: number = 1;

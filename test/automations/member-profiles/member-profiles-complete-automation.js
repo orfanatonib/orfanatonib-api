@@ -10,7 +10,7 @@ let authToken = '';
 let testData = {
   users: [],
   shelters: [],
-  teacherProfiles: []
+  memberProfiles: []
 };
 
 // ==================== UTILITÁRIOS ====================
@@ -58,7 +58,7 @@ async function getTestData() {
   console.log('📊 Obtendo dados necessários para os testes...');
   
   try {
-    // Obter users (para criar teacher profiles)
+    // Obter users (para criar member profiles)
     const usersResponse = await makeRequest('GET', '/users/simple');
     if (usersResponse) {
       testData.users = usersResponse.data || [];
@@ -72,11 +72,11 @@ async function getTestData() {
       console.log(`  🏠 ${testData.shelters.length} shelters encontrados`);
     }
 
-    // Obter teacher profiles existentes
-    const teachersResponse = await makeRequest('GET', '/teacher-profiles/simple');
-    if (teachersResponse) {
-      testData.teacherProfiles = teachersResponse.data || [];
-      console.log(`  👩‍🏫 ${testData.teacherProfiles.length} teacher profiles encontrados`);
+    // Obter member profiles existentes
+    const membersResponse = await makeRequest('GET', '/member-profiles/simple');
+    if (membersResponse) {
+      testData.memberProfiles = membersResponse.data || [];
+      console.log(`  👩‍🏫 ${testData.memberProfiles.length} member profiles encontrados`);
     }
 
     console.log('✅ Dados obtidos com sucesso!');
@@ -89,18 +89,18 @@ async function getTestData() {
 
 // ==================== TESTES DE CRUD ====================
 
-async function testTeacherProfilesCRUD() {
-  console.log('\n📋 Testando CRUD de Teacher Profiles...');
+async function testMemberProfilesCRUD() {
+  console.log('\n📋 Testando CRUD de Member Profiles...');
   
   // 1. Criar User primeiro (se necessário)
   let testUser = null;
   if (testData.users.length === 0) {
     console.log('  🔸 Criando user para teste...');
     const createUserData = {
-      name: `User Teacher Test ${Date.now()}`,
-      email: `teacher${Date.now()}@example.com`,
+      name: `User Member Test ${Date.now()}`,
+      email: `member${Date.now()}@example.com`,
       password: 'password123',
-      role: 'teacher'
+      role: 'member'
     };
     
     const createUserResponse = await makeRequest('POST', '/users', createUserData);
@@ -117,18 +117,18 @@ async function testTeacherProfilesCRUD() {
     return;
   }
 
-  // 2. Criar Teacher Profile
-  console.log('  🔸 Teste 1: Criar Teacher Profile');
+  // 2. Criar Member Profile
+  console.log('  🔸 Teste 1: Criar Member Profile');
   const createData = {
     userId: testUser.id,
     shelterId: testData.shelters[0]?.id,
-    name: `Teacher Profile Teste ${Date.now()}`,
+    name: `Member Profile Teste ${Date.now()}`,
     phone: '+5511999999999',
-    email: `teacher${Date.now()}@example.com`,
+    email: `member${Date.now()}@example.com`,
     specialization: 'Matemática',
     experience: '5 anos',
     address: {
-      street: 'Rua dos Teachers',
+      street: 'Rua dos Members',
       number: '123',
       district: 'Centro',
       city: 'São Paulo',
@@ -137,93 +137,93 @@ async function testTeacherProfilesCRUD() {
     }
   };
   
-  const createResponse = await makeRequest('POST', '/teacher-profiles', createData);
+  const createResponse = await makeRequest('POST', '/member-profiles', createData);
   if (createResponse && createResponse.status === 201) {
-    console.log(`    ✅ Teacher Profile criado: ${createResponse.data.name}`);
+    console.log(`    ✅ Member Profile criado: ${createResponse.data.name}`);
     const createdProfile = createResponse.data;
     
-    // 3. Buscar Teacher Profile por ID
-    console.log('  🔸 Teste 2: Buscar Teacher Profile por ID');
-    const getResponse = await makeRequest('GET', `/teacher-profiles/${createdProfile.id}`);
+    // 3. Buscar Member Profile por ID
+    console.log('  🔸 Teste 2: Buscar Member Profile por ID');
+    const getResponse = await makeRequest('GET', `/member-profiles/${createdProfile.id}`);
     if (getResponse && getResponse.status === 200) {
-      console.log(`    ✅ Teacher Profile encontrado: ${getResponse.data.name}`);
+      console.log(`    ✅ Member Profile encontrado: ${getResponse.data.name}`);
     }
 
-    // 4. Atualizar Teacher Profile
-    console.log('  🔸 Teste 3: Atualizar Teacher Profile');
+    // 4. Atualizar Member Profile
+    console.log('  🔸 Teste 3: Atualizar Member Profile');
     const updateData = {
       name: `${createData.name} - Atualizado`,
       specialization: 'Português',
       experience: '7 anos'
     };
     
-    const updateResponse = await makeRequest('PUT', `/teacher-profiles/${createdProfile.id}`, updateData);
+    const updateResponse = await makeRequest('PUT', `/member-profiles/${createdProfile.id}`, updateData);
     if (updateResponse && updateResponse.status === 200) {
-      console.log(`    ✅ Teacher Profile atualizado: ${updateResponse.data.name}`);
+      console.log(`    ✅ Member Profile atualizado: ${updateResponse.data.name}`);
     }
 
-    // 5. Deletar Teacher Profile
-    console.log('  🔸 Teste 4: Deletar Teacher Profile');
-    const deleteResponse = await makeRequest('DELETE', `/teacher-profiles/${createdProfile.id}`);
+    // 5. Deletar Member Profile
+    console.log('  🔸 Teste 4: Deletar Member Profile');
+    const deleteResponse = await makeRequest('DELETE', `/member-profiles/${createdProfile.id}`);
     if (deleteResponse && deleteResponse.status === 200) {
-      console.log('    ✅ Teacher Profile deletado com sucesso');
+      console.log('    ✅ Member Profile deletado com sucesso');
     }
   }
 }
 
 // ==================== TESTES DE FILTROS CONSOLIDADOS ====================
 
-async function testTeacherProfilesFilters() {
-  console.log('\n📋 Testando Filtros Consolidados de Teacher Profiles...');
+async function testMemberProfilesFilters() {
+  console.log('\n📋 Testando Filtros Consolidados de Member Profiles...');
   
-  // 1. Filtro por teacherSearchString (busca por dados do teacher)
-  console.log('  🔸 Teste 1: teacherSearchString (busca por dados do teacher)');
-  const teacherSearchResponse = await makeRequest('GET', '/teacher-profiles?teacherSearchString=Maria&limit=5');
-  if (teacherSearchResponse && teacherSearchResponse.status === 200) {
-    console.log(`    ✅ Status: ${teacherSearchResponse.status}`);
-    console.log(`    📊 Encontrados: ${teacherSearchResponse.data.items?.length || 0}`);
+  // 1. Filtro por memberSearchString (busca por dados do member)
+  console.log('  🔸 Teste 1: memberSearchString (busca por dados do member)');
+  const memberSearchResponse = await makeRequest('GET', '/member-profiles?memberSearchString=Maria&limit=5');
+  if (memberSearchResponse && memberSearchResponse.status === 200) {
+    console.log(`    ✅ Status: ${memberSearchResponse.status}`);
+    console.log(`    📊 Encontrados: ${memberSearchResponse.data.items?.length || 0}`);
     console.log(`    🔍 Buscando por: Maria (nome, email, telefone)`);
   }
 
   // 2. Filtro por shelterSearchString (busca por dados do shelter)
   console.log('  🔸 Teste 2: shelterSearchString (busca por dados do shelter)');
-  const shelterSearchResponse = await makeRequest('GET', '/teacher-profiles?shelterSearchString=Casa&limit=5');
+  const shelterSearchResponse = await makeRequest('GET', '/member-profiles?shelterSearchString=Casa&limit=5');
   if (shelterSearchResponse && shelterSearchResponse.status === 200) {
     console.log(`    ✅ Status: ${shelterSearchResponse.status}`);
     console.log(`    📊 Encontrados: ${shelterSearchResponse.data.items?.length || 0}`);
     console.log(`    🔍 Buscando por: Casa (nome, descrição, endereço, líder)`);
   }
 
-  // 3. Filtro hasShelter=true (teachers com shelter)
-  console.log('  🔸 Teste 3: hasShelter=true (teachers vinculados a shelters)');
-  const hasShelterTrueResponse = await makeRequest('GET', '/teacher-profiles?hasShelter=true&limit=5');
+  // 3. Filtro hasShelter=true (members com shelter)
+  console.log('  🔸 Teste 3: hasShelter=true (members vinculados a shelters)');
+  const hasShelterTrueResponse = await makeRequest('GET', '/member-profiles?hasShelter=true&limit=5');
   if (hasShelterTrueResponse && hasShelterTrueResponse.status === 200) {
     console.log(`    ✅ Status: ${hasShelterTrueResponse.status}`);
     console.log(`    📊 Encontrados: ${hasShelterTrueResponse.data.items?.length || 0}`);
-    console.log(`    🔍 Filtro: Teachers COM shelter`);
+    console.log(`    🔍 Filtro: Members COM shelter`);
   }
 
-  // 4. Filtro hasShelter=false (teachers sem shelter)
-  console.log('  🔸 Teste 4: hasShelter=false (teachers sem shelter)');
-  const hasShelterFalseResponse = await makeRequest('GET', '/teacher-profiles?hasShelter=false&limit=5');
+  // 4. Filtro hasShelter=false (members sem shelter)
+  console.log('  🔸 Teste 4: hasShelter=false (members sem shelter)');
+  const hasShelterFalseResponse = await makeRequest('GET', '/member-profiles?hasShelter=false&limit=5');
   if (hasShelterFalseResponse && hasShelterFalseResponse.status === 200) {
     console.log(`    ✅ Status: ${hasShelterFalseResponse.status}`);
     console.log(`    📊 Encontrados: ${hasShelterFalseResponse.data.items?.length || 0}`);
-    console.log(`    🔍 Filtro: Teachers SEM shelter`);
+    console.log(`    🔍 Filtro: Members SEM shelter`);
   }
 
   // 5. Combinação de filtros
   console.log('  🔸 Teste 5: Combinação de filtros');
-  const combinedResponse = await makeRequest('GET', '/teacher-profiles?teacherSearchString=João&hasShelter=true&limit=5');
+  const combinedResponse = await makeRequest('GET', '/member-profiles?memberSearchString=João&hasShelter=true&limit=5');
   if (combinedResponse && combinedResponse.status === 200) {
     console.log(`    ✅ Status: ${combinedResponse.status}`);
     console.log(`    📊 Encontrados: ${combinedResponse.data.items?.length || 0}`);
-    console.log(`    🔍 Busca combinada: teacherSearchString=João + hasShelter=true`);
+    console.log(`    🔍 Busca combinada: memberSearchString=João + hasShelter=true`);
   }
 
   // 6. Teste de paginação com filtros
   console.log('  🔸 Teste 6: Paginação com filtros');
-  const paginationResponse = await makeRequest('GET', '/teacher-profiles?page=1&limit=3&sort=updatedAt&order=desc&hasShelter=true');
+  const paginationResponse = await makeRequest('GET', '/member-profiles?page=1&limit=3&sort=updatedAt&order=desc&hasShelter=true');
   if (paginationResponse && paginationResponse.status === 200) {
     console.log(`    ✅ Status: ${paginationResponse.status}`);
     console.log(`    📊 Total: ${paginationResponse.data.total || 0}`);
@@ -235,12 +235,12 @@ async function testTeacherProfilesFilters() {
 
 // ==================== TESTES DE LISTAGEM E PAGINAÇÃO ====================
 
-async function testTeacherProfilesListings() {
-  console.log('\n📋 Testando Listagens e Paginação de Teacher Profiles...');
+async function testMemberProfilesListings() {
+  console.log('\n📋 Testando Listagens e Paginação de Member Profiles...');
   
   // 1. Listagem paginada básica
   console.log('  🔸 Teste 1: Listagem paginada básica');
-  const paginatedResponse = await makeRequest('GET', '/teacher-profiles?page=1&limit=10');
+  const paginatedResponse = await makeRequest('GET', '/member-profiles?page=1&limit=10');
   if (paginatedResponse && paginatedResponse.status === 200) {
     console.log(`    ✅ Status: ${paginatedResponse.status}`);
     console.log(`    📊 Total: ${paginatedResponse.data.total || 0}`);
@@ -251,7 +251,7 @@ async function testTeacherProfilesListings() {
 
   // 2. Listagem simples
   console.log('  🔸 Teste 2: Listagem simples');
-  const simpleResponse = await makeRequest('GET', '/teacher-profiles/simple');
+  const simpleResponse = await makeRequest('GET', '/member-profiles/simple');
   if (simpleResponse && simpleResponse.status === 200) {
     console.log(`    ✅ Status: ${simpleResponse.status}`);
     console.log(`    📊 Total: ${simpleResponse.data?.length || 0}`);
@@ -259,7 +259,7 @@ async function testTeacherProfilesListings() {
 
   // 3. Ordenação por nome (ASC)
   console.log('  🔸 Teste 3: Ordenação por nome (sort=name, order=asc)');
-  const sortNameAscResponse = await makeRequest('GET', '/teacher-profiles?sort=name&order=asc&limit=5');
+  const sortNameAscResponse = await makeRequest('GET', '/member-profiles?sort=name&order=asc&limit=5');
   if (sortNameAscResponse && sortNameAscResponse.status === 200) {
     console.log(`    ✅ Status: ${sortNameAscResponse.status}`);
     console.log(`    📊 Ordenados: ${sortNameAscResponse.data.items?.length || 0}`);
@@ -268,7 +268,7 @@ async function testTeacherProfilesListings() {
 
   // 4. Ordenação por data de criação (DESC)
   console.log('  🔸 Teste 4: Ordenação por data de criação (sort=createdAt, order=desc)');
-  const sortCreatedDescResponse = await makeRequest('GET', '/teacher-profiles?sort=createdAt&order=desc&limit=5');
+  const sortCreatedDescResponse = await makeRequest('GET', '/member-profiles?sort=createdAt&order=desc&limit=5');
   if (sortCreatedDescResponse && sortCreatedDescResponse.status === 200) {
     console.log(`    ✅ Status: ${sortCreatedDescResponse.status}`);
     console.log(`    📊 Ordenados: ${sortCreatedDescResponse.data.items?.length || 0}`);
@@ -277,7 +277,7 @@ async function testTeacherProfilesListings() {
 
   // 5. Ordenação por data de atualização (DESC) - padrão
   console.log('  🔸 Teste 5: Ordenação por data de atualização (sort=updatedAt, order=desc)');
-  const sortUpdatedDescResponse = await makeRequest('GET', '/teacher-profiles?sort=updatedAt&order=desc&limit=5');
+  const sortUpdatedDescResponse = await makeRequest('GET', '/member-profiles?sort=updatedAt&order=desc&limit=5');
   if (sortUpdatedDescResponse && sortUpdatedDescResponse.status === 200) {
     console.log(`    ✅ Status: ${sortUpdatedDescResponse.status}`);
     console.log(`    📊 Ordenados: ${sortUpdatedDescResponse.data.items?.length || 0}`);
@@ -286,7 +286,7 @@ async function testTeacherProfilesListings() {
 
   // 6. Paginação avançada
   console.log('  🔸 Teste 6: Paginação avançada (página 2, limite 3)');
-  const advancedPaginationResponse = await makeRequest('GET', '/teacher-profiles?page=2&limit=3&sort=updatedAt&order=desc');
+  const advancedPaginationResponse = await makeRequest('GET', '/member-profiles?page=2&limit=3&sort=updatedAt&order=desc');
   if (advancedPaginationResponse && advancedPaginationResponse.status === 200) {
     console.log(`    ✅ Status: ${advancedPaginationResponse.status}`);
     console.log(`    📊 Total: ${advancedPaginationResponse.data.total || 0}`);
@@ -298,12 +298,12 @@ async function testTeacherProfilesListings() {
 
 // ==================== TESTES DE VALIDAÇÃO ====================
 
-async function testTeacherProfilesValidation() {
-  console.log('\n📋 Testando Validações de Teacher Profiles...');
+async function testMemberProfilesValidation() {
+  console.log('\n📋 Testando Validações de Member Profiles...');
   
   // 1. UserId inválido
   console.log('  🔸 Teste 1: UserId inválido');
-  const invalidUserResponse = await makeRequest('POST', '/teacher-profiles', {
+  const invalidUserResponse = await makeRequest('POST', '/member-profiles', {
     userId: '00000000-0000-0000-0000-000000000000',
     name: 'Teste',
     email: 'teste@example.com'
@@ -315,7 +315,7 @@ async function testTeacherProfilesValidation() {
   // 2. Nome muito curto
   console.log('  🔸 Teste 2: Nome muito curto');
   if (testData.users.length > 0) {
-    const shortNameResponse = await makeRequest('POST', '/teacher-profiles', {
+    const shortNameResponse = await makeRequest('POST', '/member-profiles', {
       userId: testData.users[0].id,
       name: 'A',
       email: 'teste@example.com'
@@ -328,7 +328,7 @@ async function testTeacherProfilesValidation() {
   // 3. Email inválido
   console.log('  🔸 Teste 3: Email inválido');
   if (testData.users.length > 0) {
-    const invalidEmailResponse = await makeRequest('POST', '/teacher-profiles', {
+    const invalidEmailResponse = await makeRequest('POST', '/member-profiles', {
       userId: testData.users[0].id,
       name: 'Teste',
       email: 'email-invalido'
@@ -340,7 +340,7 @@ async function testTeacherProfilesValidation() {
 
   // 4. Buscar registro inexistente
   console.log('  🔸 Teste 4: Buscar registro inexistente');
-  const notFoundResponse = await makeRequest('GET', '/teacher-profiles/00000000-0000-0000-0000-000000000000');
+  const notFoundResponse = await makeRequest('GET', '/member-profiles/00000000-0000-0000-0000-000000000000');
   if (notFoundResponse && notFoundResponse.status === 404) {
     console.log('    ✅ Erro esperado: Registro não encontrado');
   }
@@ -348,22 +348,22 @@ async function testTeacherProfilesValidation() {
 
 // ==================== TESTES DE RELACIONAMENTOS ====================
 
-async function testTeacherProfilesRelationships() {
-  console.log('\n📋 Testando Relacionamentos de Teacher Profiles...');
+async function testMemberProfilesRelationships() {
+  console.log('\n📋 Testando Relacionamentos de Member Profiles...');
   
   if (testData.users.length === 0 || testData.shelters.length === 0) {
     console.log('  ⚠️ Dados insuficientes para testar relacionamentos');
     return;
   }
 
-  // 1. Criar teacher profile com relacionamentos
-  console.log('  🔸 Teste 1: Criar teacher profile com relacionamentos');
+  // 1. Criar member profile com relacionamentos
+  console.log('  🔸 Teste 1: Criar member profile com relacionamentos');
   const createData = {
     userId: testData.users[0].id,
     shelterId: testData.shelters[0].id,
-    name: `Teacher Relacionamento ${Date.now()}`,
+    name: `Member Relacionamento ${Date.now()}`,
     phone: '+5511777777777',
-    email: `teacher${Date.now()}@example.com`,
+    email: `member${Date.now()}@example.com`,
     specialization: 'Ciências',
     experience: '3 anos',
     address: {
@@ -376,17 +376,17 @@ async function testTeacherProfilesRelationships() {
     }
   };
 
-  const createResponse = await makeRequest('POST', '/teacher-profiles', createData);
+  const createResponse = await makeRequest('POST', '/member-profiles', createData);
   if (createResponse && createResponse.status === 201) {
-    console.log(`    ✅ Teacher Profile criado: ${createResponse.data.name}`);
+    console.log(`    ✅ Member Profile criado: ${createResponse.data.name}`);
     console.log(`    👤 User vinculado: ${createResponse.data.user?.name || 'N/A'}`);
     console.log(`    🏠 Shelter vinculado: ${createResponse.data.shelter?.name || 'N/A'}`);
     const createdProfile = createResponse.data;
 
-    // 2. Atualizar shelter do teacher
-    console.log('  🔸 Teste 2: Atualizar shelter do teacher');
+    // 2. Atualizar shelter do member
+    console.log('  🔸 Teste 2: Atualizar shelter do member');
     if (testData.shelters.length > 1) {
-      const updateShelterResponse = await makeRequest('PUT', `/teacher-profiles/${createdProfile.id}`, {
+      const updateShelterResponse = await makeRequest('PUT', `/member-profiles/${createdProfile.id}`, {
         shelterId: testData.shelters[1].id
       });
       
@@ -395,55 +395,55 @@ async function testTeacherProfilesRelationships() {
       }
     }
 
-    // 3. Deletar teacher profile de teste
-    console.log('  🔸 Teste 3: Deletar teacher profile de teste');
-    const deleteResponse = await makeRequest('DELETE', `/teacher-profiles/${createdProfile.id}`);
+    // 3. Deletar member profile de teste
+    console.log('  🔸 Teste 3: Deletar member profile de teste');
+    const deleteResponse = await makeRequest('DELETE', `/member-profiles/${createdProfile.id}`);
     if (deleteResponse && deleteResponse.status === 200) {
-      console.log('    ✅ Teacher Profile de teste deletado');
+      console.log('    ✅ Member Profile de teste deletado');
     }
   }
 }
 
 // ==================== TESTES DE ESPECIALIZAÇÕES ====================
 
-async function testTeacherProfilesSpecializations() {
-  console.log('\n📋 Testando Especializações de Teacher Profiles...');
+async function testMemberProfilesSpecializations() {
+  console.log('\n📋 Testando Especializações de Member Profiles...');
   
   const specializations = ['Matemática', 'Português', 'Ciências', 'História', 'Geografia'];
   
   for (const specialization of specializations) {
-    console.log(`  🔸 Teste: Criar teacher com especialização ${specialization}`);
+    console.log(`  🔸 Teste: Criar member com especialização ${specialization}`);
     
     // Criar user temporário
     const createUserData = {
       name: `User ${specialization} ${Date.now()}`,
       email: `${specialization.toLowerCase()}${Date.now()}@example.com`,
       password: 'password123',
-      role: 'teacher'
+      role: 'member'
     };
     
     const createUserResponse = await makeRequest('POST', '/users', createUserData);
     if (createUserResponse && createUserResponse.status === 201) {
       const testUser = createUserResponse.data;
       
-      // Criar teacher profile
+      // Criar member profile
       const createProfileData = {
         userId: testUser.id,
         shelterId: testData.shelters[0]?.id,
-        name: `Teacher ${specialization} ${Date.now()}`,
+        name: `Member ${specialization} ${Date.now()}`,
         email: `${specialization.toLowerCase()}${Date.now()}@example.com`,
         specialization: specialization,
         experience: '5 anos'
       };
       
-      const createProfileResponse = await makeRequest('POST', '/teacher-profiles', createProfileData);
+      const createProfileResponse = await makeRequest('POST', '/member-profiles', createProfileData);
       if (createProfileResponse && createProfileResponse.status === 201) {
-        console.log(`    ✅ Teacher ${specialization} criado: ${createProfileResponse.data.name}`);
+        console.log(`    ✅ Member ${specialization} criado: ${createProfileResponse.data.name}`);
         
-        // Deletar teacher profile e user
-        await makeRequest('DELETE', `/teacher-profiles/${createProfileResponse.data.id}`);
+        // Deletar member profile e user
+        await makeRequest('DELETE', `/member-profiles/${createProfileResponse.data.id}`);
         await makeRequest('DELETE', `/users/${testUser.id}`);
-        console.log(`    ✅ Teacher ${specialization} deletado`);
+        console.log(`    ✅ Member ${specialization} deletado`);
       }
     }
   }
@@ -451,8 +451,8 @@ async function testTeacherProfilesSpecializations() {
 
 // ==================== CRIAÇÃO EM MASSA ====================
 
-async function createTeacherProfilesInBulk(count = 30) {
-  console.log(`\n🚀 Criando ${count} teacher profiles em massa...`);
+async function createMemberProfilesInBulk(count = 30) {
+  console.log(`\n🚀 Criando ${count} member profiles em massa...`);
   
   const firstNames = ['João', 'Maria', 'Pedro', 'Ana', 'Carlos', 'Juliana', 'Fernando', 'Patricia', 'Ricardo', 'Camila'];
   const lastNames = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Pereira', 'Costa', 'Rodrigues', 'Almeida', 'Nascimento', 'Lima'];
@@ -469,20 +469,20 @@ async function createTeacherProfilesInBulk(count = 30) {
     const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
     const timestamp = Date.now() + i;
     
-    // 1. Criar user com role teacher
+    // 1. Criar user com role member
     const userData = {
       name: `${firstName} ${lastName}`,
-      email: `teacher.${firstName.toLowerCase()}.${lastName.toLowerCase()}.${timestamp}@orfanatonib.com`,
+      email: `member.${firstName.toLowerCase()}.${lastName.toLowerCase()}.${timestamp}@orfanatonib.com`,
       password: 'Abc@123',
       phone: `+55${11 + Math.floor(Math.random() * 90)}${Math.floor(100000000 + Math.random() * 900000000)}`,
-      role: 'teacher'
+      role: 'member'
     };
     
     const userResponse = await makeRequest('POST', '/users', userData);
     if (userResponse && userResponse.status === 201) {
       const user = userResponse.data;
       
-      // 2. Criar teacher profile
+      // 2. Criar member profile
       const city = cities[Math.floor(Math.random() * cities.length)];
       const stateIndex = cities.indexOf(city);
       const state = states[stateIndex] || 'SP';
@@ -492,7 +492,7 @@ async function createTeacherProfilesInBulk(count = 30) {
         shelterId: testData.shelters.length > 0 && Math.random() > 0.3 ? testData.shelters[Math.floor(Math.random() * testData.shelters.length)].id : null,
         name: `${firstName} ${lastName}`,
         phone: `+55${11 + Math.floor(Math.random() * 90)}${Math.floor(100000000 + Math.random() * 900000000)}`,
-        email: `teacher.${firstName.toLowerCase()}.${lastName.toLowerCase()}.${timestamp}@orfanatonib.com`,
+        email: `member.${firstName.toLowerCase()}.${lastName.toLowerCase()}.${timestamp}@orfanatonib.com`,
         specialization: specializations[Math.floor(Math.random() * specializations.length)],
         experience: `${Math.floor(Math.random() * 20) + 1} anos`,
         address: {
@@ -505,12 +505,12 @@ async function createTeacherProfilesInBulk(count = 30) {
         }
       };
       
-      const profileResponse = await makeRequest('POST', '/teacher-profiles', profileData);
+      const profileResponse = await makeRequest('POST', '/member-profiles', profileData);
       if (profileResponse && profileResponse.status === 201) {
         createdProfiles.push(profileResponse.data);
         successCount++;
         if ((i + 1) % 10 === 0) {
-          console.log(`  ✅ ${i + 1}/${count} teacher profiles criados...`);
+          console.log(`  ✅ ${i + 1}/${count} member profiles criados...`);
         }
       } else {
         errorCount++;
@@ -527,26 +527,26 @@ async function createTeacherProfilesInBulk(count = 30) {
   console.log(`\n✅ Criação em massa concluída!`);
   console.log(`   📊 Sucessos: ${successCount}/${count}`);
   console.log(`   ❌ Erros: ${errorCount}/${count}`);
-  console.log(`   💾 Total de teacher profiles criados: ${createdProfiles.length}`);
+  console.log(`   💾 Total de member profiles criados: ${createdProfiles.length}`);
   
   return createdProfiles;
 }
 
 // ==================== FUNÇÃO PRINCIPAL ====================
 
-async function runTeacherProfilesAutomation() {
-  console.log('🎯 AUTOMAÇÃO COMPLETA - MÓDULO TEACHER PROFILES');
+async function runMemberProfilesAutomation() {
+  console.log('🎯 AUTOMAÇÃO COMPLETA - MÓDULO MEMBER PROFILES');
   console.log('===============================================');
   console.log('📋 Funcionalidades a serem testadas:');
-  console.log('   1. CRUD de Teacher Profiles');
+  console.log('   1. CRUD de Member Profiles');
   console.log('   2. Filtros Consolidados:');
-  console.log('      - teacherSearchString (busca por dados do teacher)');
+  console.log('      - memberSearchString (busca por dados do member)');
   console.log('      - shelterSearchString (busca por dados do shelter)');
-  console.log('      - hasShelter (teachers com/sem shelter)');
+  console.log('      - hasShelter (members com/sem shelter)');
   console.log('   3. Listagens e Paginação Avançada');
   console.log('   4. Validações de Dados');
   console.log('   5. Relacionamentos com Users e Shelters');
-  console.log('   6. Especializações de Teachers');
+  console.log('   6. Especializações de Members');
   console.log('===============================================');
 
   // Login
@@ -564,24 +564,24 @@ async function runTeacherProfilesAutomation() {
   }
 
   // Criar dados em massa
-  await createTeacherProfilesInBulk(30);
+  await createMemberProfilesInBulk(30);
   
   // Executar testes
-  await testTeacherProfilesCRUD();
-  await testTeacherProfilesFilters();
-  await testTeacherProfilesListings();
-  await testTeacherProfilesValidation();
-  await testTeacherProfilesRelationships();
-  await testTeacherProfilesSpecializations();
+  await testMemberProfilesCRUD();
+  await testMemberProfilesFilters();
+  await testMemberProfilesListings();
+  await testMemberProfilesValidation();
+  await testMemberProfilesRelationships();
+  await testMemberProfilesSpecializations();
 
   console.log('\n🎉 AUTOMAÇÃO CONCLUÍDA COM SUCESSO!');
   console.log('=====================================');
   console.log('✅ Todos os testes foram executados');
-  console.log('✅ CRUD de Teacher Profiles funcionando');
+  console.log('✅ CRUD de Member Profiles funcionando');
   console.log('✅ Filtros Consolidados funcionando:');
-  console.log('   - teacherSearchString (busca por dados do teacher)');
+  console.log('   - memberSearchString (busca por dados do member)');
   console.log('   - shelterSearchString (busca por dados do shelter)');
-  console.log('   - hasShelter (teachers com/sem shelter)');
+  console.log('   - hasShelter (members com/sem shelter)');
   console.log('✅ Listagens e paginação avançada funcionando');
   console.log('✅ Validações funcionando');
   console.log('✅ Relacionamentos funcionando');
@@ -590,7 +590,7 @@ async function runTeacherProfilesAutomation() {
 }
 
 // Executar automação
-runTeacherProfilesAutomation()
+runMemberProfilesAutomation()
   .then(() => {
     console.log('\n✅ Automação finalizada com sucesso!');
     process.exit(0);

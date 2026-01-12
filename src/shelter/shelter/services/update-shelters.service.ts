@@ -143,10 +143,6 @@ export class UpdateSheltersService {
     return this.update(id, updateDto, req, filesDict);
   }
 
-  // ---------------------------------------------------------------------------
-  // Core update
-  // ---------------------------------------------------------------------------
-
   async update(
     id: string,
     dto: UpdateShelterDto,
@@ -155,7 +151,7 @@ export class UpdateSheltersService {
   ): Promise<ShelterEntity> {
     const ctx = await this.getCtx(req);
 
-    if (!ctx.role || ctx.role === 'teacher') {
+    if (!ctx.role || ctx.role === 'member') {
       throw new ForbiddenException('Access denied');
     }
 
@@ -176,7 +172,6 @@ export class UpdateSheltersService {
       await this.updateTeams(id, dto, currentTeamsQuantity);
     }
 
-    // ✅ route também se address mudar (subtitle)
     const shouldUpdateRoute = !!dto.name || dto.description !== undefined || !!dto.address;
     if (shouldUpdateRoute) {
       await this.updateRoute(id, dto);
@@ -186,7 +181,6 @@ export class UpdateSheltersService {
     if (shouldUpdateMedia && dto.mediaItem) {
       const mediaItemToUpdate = { ...dto.mediaItem };
 
-      // Se veio arquivo e não veio fieldKey, usa o primeiro file
       if (
         mediaItemToUpdate.uploadType === UploadType.UPLOAD &&
         Object.keys(filesDict).length > 0 &&
@@ -252,7 +246,7 @@ export class UpdateSheltersService {
         const updateTeamDto: UpdateTeamDto = {
           description: teamData?.description,
           leaderProfileIds: teamData ? teamData.leaderProfileIds ?? [] : [],
-          teacherProfileIds: teamData ? teamData.teacherProfileIds ?? [] : [],
+          memberProfileIds: teamData ? teamData.memberProfileIds ?? [] : [],
         };
         await this.teamsService.update(existing.id, updateTeamDto);
       } else {
@@ -261,7 +255,7 @@ export class UpdateSheltersService {
           description: teamData?.description,
           shelterId,
           leaderProfileIds: teamData?.leaderProfileIds,
-          teacherProfileIds: teamData?.teacherProfileIds,
+          memberProfileIds: teamData?.memberProfileIds,
         };
         await this.teamsService.create(createTeamDto);
       }
@@ -437,15 +431,15 @@ export class UpdateSheltersService {
     const userIdsSet = new Set<string>();
     teams.forEach((team: any) => {
       const leaders = Array.isArray(team?.leaders) ? team.leaders : [];
-      const teachers = Array.isArray(team?.teachers) ? team.teachers : [];
+      const members = Array.isArray(team?.members) ? team.members : [];
 
       leaders.forEach((leader: any) => {
         const userId = leader?.user?.id;
         if (typeof userId === 'string' && userId) userIdsSet.add(userId);
       });
 
-      teachers.forEach((teacher: any) => {
-        const userId = teacher?.user?.id;
+      members.forEach((member: any) => {
+        const userId = member?.user?.id;
         if (typeof userId === 'string' && userId) userIdsSet.add(userId);
       });
     });
@@ -471,7 +465,7 @@ export class UpdateSheltersService {
 
     teams.forEach((team: any) => {
       const leaders = Array.isArray(team?.leaders) ? team.leaders : [];
-      const teachers = Array.isArray(team?.teachers) ? team.teachers : [];
+      const members = Array.isArray(team?.members) ? team.members : [];
 
       leaders.forEach((leader: any) => {
         const userId = leader?.user?.id;
@@ -479,10 +473,10 @@ export class UpdateSheltersService {
         leader.user.mediaItem = mediaMap.get(userId) || null;
       });
 
-      teachers.forEach((teacher: any) => {
-        const userId = teacher?.user?.id;
-        if (!teacher?.user || typeof userId !== 'string') return;
-        teacher.user.mediaItem = mediaMap.get(userId) || null;
+      members.forEach((member: any) => {
+        const userId = member?.user?.id;
+        if (!member?.user || typeof userId !== 'string') return;
+        member.user.mediaItem = mediaMap.get(userId) || null;
       });
     });
   }

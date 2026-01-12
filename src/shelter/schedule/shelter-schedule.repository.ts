@@ -54,11 +54,11 @@ export class ShelterScheduleRepository {
     });
   }
 
-  async findByTeacherId(userId: string): Promise<ShelterScheduleEntity[]> {
+  async findByMemberId(userId: string): Promise<ShelterScheduleEntity[]> {
     return this.repo.find({
       where: {
         team: {
-          teachers: {
+          members: {
             user: { id: userId }
           }
         }

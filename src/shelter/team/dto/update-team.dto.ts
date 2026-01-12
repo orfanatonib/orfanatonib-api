@@ -20,6 +20,6 @@ export class UpdateTeamDto {
   @IsArray()
   @ArrayUnique()
   @IsUUID(undefined, { each: true })
-  teacherProfileIds?: string[];
+  memberProfileIds?: string[];
 }
 

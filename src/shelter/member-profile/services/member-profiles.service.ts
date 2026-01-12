@@ -1,23 +1,23 @@
 import { ForbiddenException, Injectable, NotFoundException, BadRequestException, forwardRef, Inject } from '@nestjs/common';
 import { Request } from 'express';
 
-import { TeacherProfilesRepository } from '../repositories/teacher-profiles.repository';
+import { MemberProfilesRepository } from '../repositories/member-profiles.repository';
 import {
-  TeacherResponseDto,
-  toTeacherDto,
-} from '../dto/teacher-profile.response.dto';
-import { TeacherSimpleListDto } from '../dto/teacher-simple-list.dto';
+  MemberResponseDto,
+  toMemberDto,
+} from '../dto/member-profile.response.dto';
+import { MemberSimpleListDto } from '../dto/member-simple-list.dto';
 import { AuthContextService } from 'src/core/auth/services/auth-context.service';
-import { PageDto, TeacherProfilesQueryDto } from '../dto/teacher-profiles.query.dto';
+import { PageDto, MemberProfilesQueryDto } from '../dto/member-profiles.query.dto';
 import { TeamsService } from 'src/shelter/team/services/teams.service';
-import { ManageTeacherTeamDto } from '../dto/assign-team.dto';
+import { ManageMemberTeamDto } from '../dto/assign-team.dto';
 
 type AccessCtx = { role?: string; userId?: string | null };
 
 @Injectable()
-export class TeacherProfilesService {
+export class MemberProfilesService {
   constructor(
-    private readonly repo: TeacherProfilesRepository,
+    private readonly repo: MemberProfilesRepository,
     private readonly authCtx: AuthContextService,
     @Inject(forwardRef(() => TeamsService))
     private readonly teamsService: TeamsService,
@@ -32,14 +32,14 @@ export class TeacherProfilesService {
   }
   async findPage(
     req: Request,
-    query: TeacherProfilesQueryDto,
-  ): Promise<PageDto<TeacherResponseDto>> {
+    query: MemberProfilesQueryDto,
+  ): Promise<PageDto<MemberResponseDto>> {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
     const { items, total, page, limit } = await this.repo.findPageWithFilters(query, ctx);
     return {
-      items: items.map(toTeacherDto),
+      items: items.map(toMemberDto),
       total,
       page,
       limit,
@@ -47,22 +47,22 @@ export class TeacherProfilesService {
   }
   private assertAllowed(ctx: AccessCtx) {
     if (!ctx.role) throw new ForbiddenException('Acesso negado');
-    if (ctx.role === 'teacher') throw new ForbiddenException('Acesso negado');
+    if (ctx.role === 'member') throw new ForbiddenException('Acesso negado');
   }
 
-  async list(req: Request): Promise<TeacherSimpleListDto[]> {
+  async list(req: Request): Promise<MemberSimpleListDto[]> {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
     return await this.repo.list(ctx);
   }
 
-  async findOne(id: string, req: Request): Promise<TeacherResponseDto> {
+  async findOne(id: string, req: Request): Promise<MemberResponseDto> {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    const teacher = await this.repo.findOneWithShelterAndLeaderOrFail(id, ctx);
-    return toTeacherDto(teacher);
+    const member = await this.repo.findOneWithShelterAndLeaderOrFail(id, ctx);
+    return toMemberDto(member);
   }
 
   async createForUser(userId: string) {
@@ -73,15 +73,11 @@ export class TeacherProfilesService {
     return this.repo.removeByUserId(userId);
   }
 
-  /**
-   * Vincula professor a uma equipe de um abrigo
-   * Se já estiver vinculado a outra equipe, move para a nova
-   */
-  async manageTeam(teacherId: string, dto: ManageTeacherTeamDto, req: Request): Promise<TeacherResponseDto> {
+  async manageTeam(memberId: string, dto: ManageMemberTeamDto, req: Request): Promise<MemberResponseDto> {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    const teacher = await this.repo.findOneWithShelterAndLeaderOrFail(teacherId, ctx);
+    const member = await this.repo.findOneWithShelterAndLeaderOrFail(memberId, ctx);
 
     const teams = await this.teamsService.findByShelter(dto.shelterId);
 
@@ -91,28 +87,28 @@ export class TeacherProfilesService {
       const newTeam = await this.teamsService.create({
         numberTeam: dto.numberTeam,
         shelterId: dto.shelterId,
-        teacherProfileIds: [teacherId],
+        memberProfileIds: [memberId],
       });
       targetTeam = newTeam;
     } else {
-      if (teacher.team && teacher.team.id !== targetTeam.id) {
-        const currentTeam = await this.teamsService.findOne(teacher.team.id);
+      if (member.team && member.team.id !== targetTeam.id) {
+        const currentTeam = await this.teamsService.findOne(member.team.id);
         if (currentTeam) {
-          const currentTeacherIds = currentTeam.teachers.map(t => t.id).filter(id => id !== teacherId);
+          const currentMemberIds = currentTeam.members.map(t => t.id).filter(id => id !== memberId);
           await this.teamsService.update(currentTeam.id, {
-            teacherProfileIds: currentTeacherIds,
+            memberProfileIds: currentMemberIds,
           });
         }
       }
 
-      if (!teacher.team || teacher.team.id !== targetTeam.id) {
-        const currentTeacherIds = targetTeam.teachers.map(t => t.id).filter(id => id !== teacherId);
+      if (!member.team || member.team.id !== targetTeam.id) {
+        const currentMemberIds = targetTeam.members.map(t => t.id).filter(id => id !== memberId);
         await this.teamsService.update(targetTeam.id, {
-          teacherProfileIds: [...currentTeacherIds, teacherId],
+          memberProfileIds: [...currentMemberIds, memberId],
         });
       }
     }
 
-    return this.findOne(teacherId, req);
+    return this.findOne(memberId, req);
   }
 }

@@ -194,7 +194,7 @@ async function criarUsuario() {
     name: 'João Silva',
     email: 'joao@example.com',
     password: 'senha123',
-    role: 'teacher'
+    role: 'member'
   };
 
   const response = await client.post('/users', novoUsuario);
@@ -221,7 +221,7 @@ class CriarUsuariosAutomation extends AutomationBase {
         name: `Usuario ${i}`,
         email: `usuario${i}@example.com`,
         password: 'senha123',
-        role: 'teacher'
+        role: 'member'
       };
 
       const response = await this.client.post('/users', usuario);

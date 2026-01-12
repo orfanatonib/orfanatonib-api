@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Users API Collection",
-    "description": "Collection completa para o módulo Users - ORQUESTRADOR PRINCIPAL de Teacher e Leader Profiles\n\n🎯 Funcionalidades:\n- CRUD completo de usuários\n- Orquestração automática de Teacher/Leader profiles\n- Mudança de roles com migração automática\n- Filtros avançados e paginação\n- Controle de acesso por roles (apenas admin)",
+    "description": "Collection completa para o módulo Users - ORQUESTRADOR PRINCIPAL de Member e Leader Profiles\n\n🎯 Funcionalidades:\n- CRUD completo de usuários\n- Orquestração automática de Member/Leader profiles\n- Mudança de roles com migração automática\n- Filtros avançados e paginação\n- Controle de acesso por roles (apenas admin)",
     "version": "2.0.0",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -61,7 +61,7 @@
             {
               "key": "role",
               "value": "",
-              "description": "Filtro por role (teacher, leader, admin, user)"
+              "description": "Filtro por role (member, leader, admin, user)"
             },
             {
               "key": "active",
@@ -109,7 +109,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"items\": [\n    {\n      \"id\": \"uuid-user\",\n      \"name\": \"João Silva\",\n      \"email\": \"joao@example.com\",\n      \"phone\": \"+5511999999999\",\n      \"role\": \"teacher\",\n      \"active\": true,\n      \"completed\": true,\n      \"commonUser\": true,\n      \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n      \"updatedAt\": \"2025-09-27T21:30:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 12,\n    \"total\": 50,\n    \"totalPages\": 5,\n    \"sort\": \"updatedAt\",\n    \"order\": \"DESC\"\n  }\n}"
+          "body": "{\n  \"items\": [\n    {\n      \"id\": \"uuid-user\",\n      \"name\": \"João Silva\",\n      \"email\": \"joao@example.com\",\n      \"phone\": \"+5511999999999\",\n      \"role\": \"member\",\n      \"active\": true,\n      \"completed\": true,\n      \"commonUser\": true,\n      \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n      \"updatedAt\": \"2025-09-27T21:30:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 12,\n    \"total\": 50,\n    \"totalPages\": 5,\n    \"sort\": \"updatedAt\",\n    \"order\": \"DESC\"\n  }\n}"
         }
       ]
     },
@@ -152,7 +152,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:30:00.000Z\"\n}"
+          "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"member\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:30:00.000Z\"\n}"
         },
         {
           "name": "Usuário Não Encontrado",
@@ -191,7 +191,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
+          "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"member\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -203,7 +203,7 @@
           "host": ["{{base_url}}"],
           "path": ["users"]
         },
-        "description": "Cria um novo usuário. Se role for 'teacher' ou 'leader', cria automaticamente o profile correspondente."
+        "description": "Cria um novo usuário. Se role for 'member' ou 'leader', cria automaticamente o profile correspondente."
       },
       "response": [
         {
@@ -218,7 +218,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
+              "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"member\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -241,7 +241,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
+          "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"member\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
         },
         {
           "name": "Erro de Validação",
@@ -344,7 +344,7 @@
             }
           ],
           "cookie": [],
-          "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"João Silva Atualizado\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511888888888\",\n  \"role\": \"teacher\",\n  \"active\": false,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:45:00.000Z\"\n}"
+          "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"João Silva Atualizado\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511888888888\",\n  \"role\": \"member\",\n  \"active\": false,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:45:00.000Z\"\n}"
         }
       ]
     },
@@ -461,18 +461,18 @@
       "name": "Users - Filtros Específicos",
       "item": [
         {
-          "name": "Filtrar por Role Teacher",
+          "name": "Filtrar por Role Member",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/users?role=teacher",
+              "raw": "{{base_url}}/users?role=member",
               "host": ["{{base_url}}"],
               "path": ["users"],
               "query": [
                 {
                   "key": "role",
-                  "value": "teacher"
+                  "value": "member"
                 }
               ]
             }
@@ -556,7 +556,7 @@
       "name": "Users - Orquestração de Profiles",
       "item": [
         {
-          "name": "Criar Teacher (Profile Automático)",
+          "name": "Criar Member (Profile Automático)",
           "request": {
             "method": "POST",
             "header": [
@@ -567,7 +567,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Professor Teste\",\n  \"email\": \"professor.teste@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
+              "raw": "{\n  \"name\": \"Professor Teste\",\n  \"email\": \"professor.teste@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"member\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -579,11 +579,11 @@
               "host": ["{{base_url}}"],
               "path": ["users"]
             },
-            "description": "Cria usuário teacher e automaticamente cria Teacher Profile"
+            "description": "Cria usuário member e automaticamente cria Member Profile"
           },
           "response": [
             {
-              "name": "Teacher Criado com Profile",
+              "name": "Member Criado com Profile",
               "originalRequest": {
                 "method": "POST",
                 "header": [
@@ -594,7 +594,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"name\": \"Professor Teste\",\n  \"email\": \"professor.teste@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
+                  "raw": "{\n  \"name\": \"Professor Teste\",\n  \"email\": \"professor.teste@example.com\",\n  \"password\": \"password123\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"member\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -617,7 +617,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-teacher\",\n  \"name\": \"Professor Teste\",\n  \"email\": \"professor.teste@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"uuid-member\",\n  \"name\": \"Professor Teste\",\n  \"email\": \"professor.teste@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"member\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
             }
           ]
         },
@@ -688,7 +688,7 @@
           ]
         },
         {
-          "name": "Teacher → Leader (Migração Automática)",
+          "name": "Member → Leader (Migração Automática)",
           "request": {
             "method": "PUT",
             "header": [
@@ -711,11 +711,11 @@
               "host": ["{{base_url}}"],
               "path": ["users", "{{user_id}}"]
             },
-            "description": "Muda role de teacher para leader. Remove Teacher Profile e cria Leader Profile automaticamente."
+            "description": "Muda role de member para leader. Remove Member Profile e cria Leader Profile automaticamente."
           },
           "response": [
             {
-              "name": "Migração Teacher → Leader",
+              "name": "Migração Member → Leader",
               "originalRequest": {
                 "method": "PUT",
                 "header": [
@@ -754,7 +754,7 @@
           ]
         },
         {
-          "name": "Leader → Teacher (Migração Automática)",
+          "name": "Leader → Member (Migração Automática)",
           "request": {
             "method": "PUT",
             "header": [
@@ -765,7 +765,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"role\": \"teacher\",\n  \"active\": true\n}",
+              "raw": "{\n  \"role\": \"member\",\n  \"active\": true\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -777,11 +777,11 @@
               "host": ["{{base_url}}"],
               "path": ["users", "{{user_id}}"]
             },
-            "description": "Muda role de leader para teacher. Remove Leader Profile e cria Teacher Profile automaticamente."
+            "description": "Muda role de leader para member. Remove Leader Profile e cria Member Profile automaticamente."
           },
           "response": [
             {
-              "name": "Migração Leader → Teacher",
+              "name": "Migração Leader → Member",
               "originalRequest": {
                 "method": "PUT",
                 "header": [
@@ -792,7 +792,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"role\": \"teacher\",\n  \"active\": true\n}",
+                  "raw": "{\n  \"role\": \"member\",\n  \"active\": true\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -815,7 +815,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"Usuário Teste\",\n  \"email\": \"usuario@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:50:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"Usuário Teste\",\n  \"email\": \"usuario@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"member\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:50:00.000Z\"\n}"
             }
           ]
         },
@@ -843,7 +843,7 @@
               "host": ["{{base_url}}"],
               "path": ["users", "{{user_id}}"]
             },
-            "description": "Desativa usuário e remove automaticamente o Teacher/Leader Profile.\n\n⚠️ IMPORTANTE: Usuário desativado NÃO aparece nas listagens de Teacher/Leader Profiles!"
+            "description": "Desativa usuário e remove automaticamente o Member/Leader Profile.\n\n⚠️ IMPORTANTE: Usuário desativado NÃO aparece nas listagens de Member/Leader Profiles!"
           },
           "response": [
             {
@@ -881,7 +881,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"Usuário Teste\",\n  \"email\": \"usuario@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": false,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:55:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"Usuário Teste\",\n  \"email\": \"usuario@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"member\",\n  \"active\": false,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:55:00.000Z\"\n}"
             }
           ]
         },
@@ -909,7 +909,7 @@
               "host": ["{{base_url}}"],
               "path": ["users", "{{user_id}}"]
             },
-            "description": "Ativa usuário e recria automaticamente o Teacher/Leader Profile baseado no role.\n\n⚠️ IMPORTANTE: Usuários com active=false NÃO aparecem nas listagens de Teacher/Leader Profiles!"
+            "description": "Ativa usuário e recria automaticamente o Member/Leader Profile baseado no role.\n\n⚠️ IMPORTANTE: Usuários com active=false NÃO aparecem nas listagens de Member/Leader Profiles!"
           },
           "response": [
             {
@@ -947,7 +947,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"Usuário Teste\",\n  \"email\": \"usuario@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"teacher\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T22:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"uuid-user\",\n  \"name\": \"Usuário Teste\",\n  \"email\": \"usuario@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"role\": \"member\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": true,\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T22:00:00.000Z\"\n}"
             }
           ]
         },
@@ -967,7 +967,7 @@
                 }
               ]
             },
-            "description": "Lista usuários desativados. Estes usuários NÃO aparecem nas listagens de Teacher/Leader Profiles devido ao filtro automático 'user.active = true' aplicado nos repositories."
+            "description": "Lista usuários desativados. Estes usuários NÃO aparecem nas listagens de Member/Leader Profiles devido ao filtro automático 'user.active = true' aplicado nos repositories."
           },
           "response": [
             {
@@ -997,7 +997,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"uuid-user\",\n      \"name\": \"Usuário Desativado\",\n      \"email\": \"desativado@example.com\",\n      \"phone\": \"+5511999999999\",\n      \"role\": \"teacher\",\n      \"active\": false,\n      \"completed\": true,\n      \"commonUser\": true,\n      \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n      \"updatedAt\": \"2025-09-27T21:55:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 12,\n    \"total\": 1,\n    \"totalPages\": 1,\n    \"sort\": \"updatedAt\",\n    \"order\": \"DESC\"\n  }\n}"
+              "body": "{\n  \"items\": [\n    {\n      \"id\": \"uuid-user\",\n      \"name\": \"Usuário Desativado\",\n      \"email\": \"desativado@example.com\",\n      \"phone\": \"+5511999999999\",\n      \"role\": \"member\",\n      \"active\": false,\n      \"completed\": true,\n      \"commonUser\": true,\n      \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n      \"updatedAt\": \"2025-09-27T21:55:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 12,\n    \"total\": 1,\n    \"totalPages\": 1,\n    \"sort\": \"updatedAt\",\n    \"order\": \"DESC\"\n  }\n}"
             }
           ]
         }

@@ -17,7 +17,7 @@ export class PagelasService {
 
     const created = await this.repo.createOne({
       shelteredId: dto.shelteredId,
-      teacherProfileId: dto.teacherProfileId,
+      memberProfileId: dto.memberProfileId,
       referenceDate: dto.referenceDate,
       year,
       visit,
@@ -55,9 +55,9 @@ export class PagelasService {
   async update(id: string, dto: UpdatePagelaDto): Promise<PagelaResponseDto> {
 
     const updated = await this.repo.updateOne(id, {
-      teacher: dto.teacherProfileId === undefined
+      member: dto.memberProfileId === undefined
         ? undefined
-        : ({ id: dto.teacherProfileId } as any),
+        : ({ id: dto.memberProfileId } as any),
 
       referenceDate: dto.referenceDate ?? undefined,
       year: dto.year ?? undefined,

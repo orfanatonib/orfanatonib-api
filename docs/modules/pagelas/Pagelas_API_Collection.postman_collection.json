@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Pagelas API Collection",
-    "description": "Collection completa para todos os endpoints do módulo Pagelas - VALIDADA E FUNCIONAL com relacionamentos ManyToOne. Inclui todos os endpoints: listagem paginada, listagem simples, busca por ID, criação, atualização e remoção de pagelas. Suporta filtros avançados, paginação, ordenação e busca por texto. Relacionamentos Pagela-Sheltered-Teacher funcionando perfeitamente. Testada com automação completa.",
+    "description": "Collection completa para todos os endpoints do módulo Pagelas - VALIDADA E FUNCIONAL com relacionamentos ManyToOne. Inclui todos os endpoints: listagem paginada, listagem simples, busca por ID, criação, atualização e remoção de pagelas. Suporta filtros avançados, paginação, ordenação e busca por texto. Relacionamentos Pagela-Sheltered-Member funcionando perfeitamente. Testada com automação completa.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "version": "6.0.0"
   },
@@ -38,7 +38,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"shelteredId\": \"{{sheltered_id}}\",\n  \"teacherProfileId\": \"{{teacher_profile_id}}\",\n  \"referenceDate\": \"2025-01-15T10:00:00.000Z\",\n  \"visit\": 3,\n  \"present\": true,\n  \"notes\": \"Participou ativamente da aula\"\n}"
+              "raw": "{\n  \"shelteredId\": \"{{sheltered_id}}\",\n  \"memberProfileId\": \"{{member_profile_id}}\",\n  \"referenceDate\": \"2025-01-15T10:00:00.000Z\",\n  \"visit\": 3,\n  \"present\": true,\n  \"notes\": \"Participou ativamente da aula\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/pagelas",
@@ -64,7 +64,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"shelteredId\": \"uuid-sheltered-1\",\n  \"teacherProfileId\": \"uuid-teacher-1\",\n  \"referenceDate\": \"2025-01-15\",\n  \"visit\": 3,\n  \"year\": 2025,\n  \"present\": true,\n  \"notes\": \"Participou ativamente da aula\"\n}"
+                  "raw": "{\n  \"shelteredId\": \"uuid-sheltered-1\",\n  \"memberProfileId\": \"uuid-member-1\",\n  \"referenceDate\": \"2025-01-15\",\n  \"visit\": 3,\n  \"year\": 2025,\n  \"present\": true,\n  \"notes\": \"Participou ativamente da aula\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/pagelas",
@@ -86,7 +86,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-pagela-1\",\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\",\n  \"sheltered\": {\n    \"id\": \"uuid-sheltered-1\",\n    \"name\": \"Ana Silva\",\n    \"gender\": \"feminino\",\n    \"birthDate\": \"2010-05-15\"\n  },\n  \"teacher\": {\n    \"id\": \"uuid-teacher-1\",\n    \"active\": true,\n    \"user\": {\n      \"id\": \"uuid-user-2\",\n      \"name\": \"Maria Santos\",\n      \"email\": \"maria.santos@example.com\",\n      \"phone\": \"+5511888888888\"\n    }\n  },\n  \"referenceDate\": \"2025-01-15\",\n  \"year\": 2025,\n  \"visit\": 3,\n  \"present\": true,\n  \"notes\": \"Participou ativamente da aula\"\n}"
+              "body": "{\n  \"id\": \"uuid-pagela-1\",\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\",\n  \"sheltered\": {\n    \"id\": \"uuid-sheltered-1\",\n    \"name\": \"Ana Silva\",\n    \"gender\": \"feminino\",\n    \"birthDate\": \"2010-05-15\"\n  },\n  \"member\": {\n    \"id\": \"uuid-member-1\",\n    \"active\": true,\n    \"user\": {\n      \"id\": \"uuid-user-2\",\n      \"name\": \"Maria Santos\",\n      \"email\": \"maria.santos@example.com\",\n      \"phone\": \"+5511888888888\"\n    }\n  },\n  \"referenceDate\": \"2025-01-15\",\n  \"year\": 2025,\n  \"visit\": 3,\n  \"present\": true,\n  \"notes\": \"Participou ativamente da aula\"\n}"
             },
             {
               "name": "Erro - Validação",
@@ -100,7 +100,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"shelteredId\": \"uuid-invalido\",\n  \"teacherProfileId\": \"uuid-teacher-1\",\n  \"referenceDate\": \"data-invalida\",\n  \"visit\": 0,\n  \"present\": true\n}"
+                  "raw": "{\n  \"shelteredId\": \"uuid-invalido\",\n  \"memberProfileId\": \"uuid-member-1\",\n  \"referenceDate\": \"data-invalida\",\n  \"visit\": 0,\n  \"present\": true\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/pagelas",
@@ -136,7 +136,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"shelteredId\": \"uuid-sheltered-1\",\n  \"teacherProfileId\": \"uuid-teacher-1\",\n  \"referenceDate\": \"2025-01-15\",\n  \"visit\": 3,\n  \"year\": 2025,\n  \"present\": false\n}"
+                  "raw": "{\n  \"shelteredId\": \"uuid-sheltered-1\",\n  \"memberProfileId\": \"uuid-member-1\",\n  \"referenceDate\": \"2025-01-15\",\n  \"visit\": 3,\n  \"year\": 2025,\n  \"present\": false\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/pagelas",
@@ -172,7 +172,7 @@
                 ],
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"shelteredId\": \"uuid-sheltered-1\",\n  \"teacherProfileId\": \"uuid-teacher-1\",\n  \"referenceDate\": \"2025-01-15\",\n  \"visit\": 3,\n  \"present\": true,\n  \"notes\": \"Ano calculado automaticamente\"\n}"
+                  "raw": "{\n  \"shelteredId\": \"uuid-sheltered-1\",\n  \"memberProfileId\": \"uuid-member-1\",\n  \"referenceDate\": \"2025-01-15\",\n  \"visit\": 3,\n  \"present\": true,\n  \"notes\": \"Ano calculado automaticamente\"\n}"
                 },
                 "url": {
                   "raw": "{{base_url}}/pagelas",
@@ -194,7 +194,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-pagela-3\",\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\",\n  \"sheltered\": {\n    \"id\": \"uuid-sheltered-1\",\n    \"name\": \"Ana Silva\",\n    \"gender\": \"feminino\",\n    \"birthDate\": \"2010-05-15\"\n  },\n  \"teacher\": {\n    \"id\": \"uuid-teacher-1\",\n    \"active\": true,\n    \"user\": {\n      \"id\": \"uuid-user-2\",\n      \"name\": \"Maria Santos\",\n      \"email\": \"maria.santos@example.com\",\n      \"phone\": \"+5511888888888\"\n    }\n  },\n  \"referenceDate\": \"2025-01-15\",\n  \"year\": 2025,\n  \"visit\": 3,\n  \"present\": true,\n  \"notes\": \"Ano calculado automaticamente\"\n}"
+              "body": "{\n  \"id\": \"uuid-pagela-3\",\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\",\n  \"sheltered\": {\n    \"id\": \"uuid-sheltered-1\",\n    \"name\": \"Ana Silva\",\n    \"gender\": \"feminino\",\n    \"birthDate\": \"2010-05-15\"\n  },\n  \"member\": {\n    \"id\": \"uuid-member-1\",\n    \"active\": true,\n    \"user\": {\n      \"id\": \"uuid-user-2\",\n      \"name\": \"Maria Santos\",\n      \"email\": \"maria.santos@example.com\",\n      \"phone\": \"+5511888888888\"\n    }\n  },\n  \"referenceDate\": \"2025-01-15\",\n  \"year\": 2025,\n  \"visit\": 3,\n  \"present\": true,\n  \"notes\": \"Ano calculado automaticamente\"\n}"
             }
           ]
         },
@@ -281,7 +281,7 @@
                 }
               ],
               "cookie": [],
-              "body": "[\n  {\n    \"id\": \"uuid-pagela-1\",\n    \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n    \"updatedAt\": \"2025-09-27T21:00:00.000Z\",\n    \"sheltered\": {\n      \"id\": \"uuid-sheltered-1\",\n      \"name\": \"Ana Silva\",\n      \"gender\": \"feminino\",\n      \"birthDate\": \"2010-05-15\"\n    },\n    \"teacher\": {\n      \"id\": \"uuid-teacher-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-2\",\n        \"name\": \"Maria Santos\",\n        \"email\": \"maria.santos@example.com\",\n        \"phone\": \"+5511888888888\"\n      }\n    },\n    \"referenceDate\": \"2025-01-15\",\n    \"year\": 2025,\n    \"visit\": 3,\n    \"present\": true,\n    \"notes\": \"Participou ativamente da aula\"\n  },\n  {\n    \"id\": \"uuid-pagela-2\",\n    \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n    \"updatedAt\": \"2025-09-27T21:00:00.000Z\",\n    \"sheltered\": {\n      \"id\": \"uuid-sheltered-1\",\n      \"name\": \"Ana Silva\",\n      \"gender\": \"feminino\",\n      \"birthDate\": \"2010-05-15\"\n    },\n    \"teacher\": {\n      \"id\": \"uuid-teacher-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-2\",\n        \"name\": \"Maria Santos\",\n        \"email\": \"maria.santos@example.com\",\n        \"phone\": \"+5511888888888\"\n      }\n    },\n    \"referenceDate\": \"2025-01-22\",\n    \"year\": 2025,\n    \"visit\": 4,\n    \"present\": true,\n    \"notes\": null\n  }\n]"
+              "body": "[\n  {\n    \"id\": \"uuid-pagela-1\",\n    \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n    \"updatedAt\": \"2025-09-27T21:00:00.000Z\",\n    \"sheltered\": {\n      \"id\": \"uuid-sheltered-1\",\n      \"name\": \"Ana Silva\",\n      \"gender\": \"feminino\",\n      \"birthDate\": \"2010-05-15\"\n    },\n    \"member\": {\n      \"id\": \"uuid-member-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-2\",\n        \"name\": \"Maria Santos\",\n        \"email\": \"maria.santos@example.com\",\n        \"phone\": \"+5511888888888\"\n      }\n    },\n    \"referenceDate\": \"2025-01-15\",\n    \"year\": 2025,\n    \"visit\": 3,\n    \"present\": true,\n    \"notes\": \"Participou ativamente da aula\"\n  },\n  {\n    \"id\": \"uuid-pagela-2\",\n    \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n    \"updatedAt\": \"2025-09-27T21:00:00.000Z\",\n    \"sheltered\": {\n      \"id\": \"uuid-sheltered-1\",\n      \"name\": \"Ana Silva\",\n      \"gender\": \"feminino\",\n      \"birthDate\": \"2010-05-15\"\n    },\n    \"member\": {\n      \"id\": \"uuid-member-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-2\",\n        \"name\": \"Maria Santos\",\n        \"email\": \"maria.santos@example.com\",\n        \"phone\": \"+5511888888888\"\n      }\n    },\n    \"referenceDate\": \"2025-01-22\",\n    \"year\": 2025,\n    \"visit\": 4,\n    \"present\": true,\n    \"notes\": null\n  }\n]"
             }
           ]
         },
@@ -384,7 +384,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"uuid-pagela-1\",\n      \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n      \"updatedAt\": \"2025-09-27T21:00:00.000Z\",\n      \"sheltered\": {\n        \"id\": \"uuid-sheltered-1\",\n        \"name\": \"Ana Silva\",\n        \"gender\": \"feminino\",\n        \"birthDate\": \"2010-05-15\"\n      },\n      \"teacher\": {\n        \"id\": \"uuid-teacher-1\",\n        \"active\": true,\n        \"user\": {\n          \"id\": \"uuid-user-2\",\n          \"name\": \"Maria Santos\",\n          \"email\": \"maria.santos@example.com\",\n          \"phone\": \"+5511888888888\"\n        }\n      },\n      \"referenceDate\": \"2025-01-15\",\n      \"year\": 2025,\n      \"visit\": 3,\n      \"present\": true,\n      \"notes\": \"Participou ativamente da aula\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"limit\": 20\n}"
+              "body": "{\n  \"items\": [\n    {\n      \"id\": \"uuid-pagela-1\",\n      \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n      \"updatedAt\": \"2025-09-27T21:00:00.000Z\",\n      \"sheltered\": {\n        \"id\": \"uuid-sheltered-1\",\n        \"name\": \"Ana Silva\",\n        \"gender\": \"feminino\",\n        \"birthDate\": \"2010-05-15\"\n      },\n      \"member\": {\n        \"id\": \"uuid-member-1\",\n        \"active\": true,\n        \"user\": {\n          \"id\": \"uuid-user-2\",\n          \"name\": \"Maria Santos\",\n          \"email\": \"maria.santos@example.com\",\n          \"phone\": \"+5511888888888\"\n        }\n      },\n      \"referenceDate\": \"2025-01-15\",\n      \"year\": 2025,\n      \"visit\": 3,\n      \"present\": true,\n      \"notes\": \"Participou ativamente da aula\"\n    }\n  ],\n  \"total\": 1,\n  \"page\": 1,\n  \"limit\": 20\n}"
             }
           ]
         },
@@ -410,7 +410,7 @@
                 }
               ]
             },
-            "description": "Busca uma pagela específica por ID. Retorna dados completos incluindo relacionamentos com sheltered e teacher. Disponível para todos os roles autenticados."
+            "description": "Busca uma pagela específica por ID. Retorna dados completos incluindo relacionamentos com sheltered e member. Disponível para todos os roles autenticados."
           },
           "response": [
             {
@@ -439,7 +439,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-pagela-1\",\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\",\n  \"sheltered\": {\n    \"id\": \"uuid-sheltered-1\",\n    \"name\": \"Ana Silva\",\n    \"gender\": \"feminino\",\n    \"birthDate\": \"2010-05-15\"\n  },\n  \"teacher\": {\n    \"id\": \"uuid-teacher-1\",\n    \"active\": true,\n    \"user\": {\n      \"id\": \"uuid-user-2\",\n      \"name\": \"Maria Santos\",\n      \"email\": \"maria.santos@example.com\",\n      \"phone\": \"+5511888888888\"\n    }\n  },\n  \"referenceDate\": \"2025-01-15\",\n  \"year\": 2025,\n  \"visit\": 3,\n  \"present\": true,\n  \"notes\": \"Participou ativamente da aula\"\n}"
+              "body": "{\n  \"id\": \"uuid-pagela-1\",\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\",\n  \"sheltered\": {\n    \"id\": \"uuid-sheltered-1\",\n    \"name\": \"Ana Silva\",\n    \"gender\": \"feminino\",\n    \"birthDate\": \"2010-05-15\"\n  },\n  \"member\": {\n    \"id\": \"uuid-member-1\",\n    \"active\": true,\n    \"user\": {\n      \"id\": \"uuid-user-2\",\n      \"name\": \"Maria Santos\",\n      \"email\": \"maria.santos@example.com\",\n      \"phone\": \"+5511888888888\"\n    }\n  },\n  \"referenceDate\": \"2025-01-15\",\n  \"year\": 2025,\n  \"visit\": 3,\n  \"present\": true,\n  \"notes\": \"Participou ativamente da aula\"\n}"
             },
             {
               "name": "Erro - Pagela Não Encontrada",
@@ -540,7 +540,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-pagela-1\",\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:30:00.000Z\",\n  \"sheltered\": {\n    \"id\": \"uuid-sheltered-1\",\n    \"name\": \"Ana Silva\",\n    \"gender\": \"feminino\",\n    \"birthDate\": \"2010-05-15\"\n  },\n  \"teacher\": {\n    \"id\": \"uuid-teacher-1\",\n    \"active\": true,\n    \"user\": {\n      \"id\": \"uuid-user-2\",\n      \"name\": \"Maria Santos\",\n      \"email\": \"maria.santos@example.com\",\n      \"phone\": \"+5511888888888\"\n    }\n  },\n  \"referenceDate\": \"2025-01-15\",\n  \"year\": 2025,\n  \"visit\": 3,\n  \"present\": false,\n  \"notes\": \"Faltou por motivo de saúde\"\n}"
+              "body": "{\n  \"id\": \"uuid-pagela-1\",\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:30:00.000Z\",\n  \"sheltered\": {\n    \"id\": \"uuid-sheltered-1\",\n    \"name\": \"Ana Silva\",\n    \"gender\": \"feminino\",\n    \"birthDate\": \"2010-05-15\"\n  },\n  \"member\": {\n    \"id\": \"uuid-member-1\",\n    \"active\": true,\n    \"user\": {\n      \"id\": \"uuid-user-2\",\n      \"name\": \"Maria Santos\",\n      \"email\": \"maria.santos@example.com\",\n      \"phone\": \"+5511888888888\"\n    }\n  },\n  \"referenceDate\": \"2025-01-15\",\n  \"year\": 2025,\n  \"visit\": 3,\n  \"present\": false,\n  \"notes\": \"Faltou por motivo de saúde\"\n}"
             },
             {
               "name": "Erro - Pagela Não Encontrada",
@@ -702,7 +702,7 @@
           ]
         }
       ],
-      "description": "Endpoints para gerenciamento completo de Pagelas (controle de presença e atividades dos sheltered) com autenticação JWT obrigatória. Inclui validações de duplicatas, cálculo automático de ano, paginação, filtros avançados e busca por texto. Relacionamentos ManyToOne com Sheltered e Teacher funcionando perfeitamente. Testada com automação completa - todos os endpoints validados e funcionais."
+      "description": "Endpoints para gerenciamento completo de Pagelas (controle de presença e atividades dos sheltered) com autenticação JWT obrigatória. Inclui validações de duplicatas, cálculo automático de ano, paginação, filtros avançados e busca por texto. Relacionamentos ManyToOne com Sheltered e Member funcionando perfeitamente. Testada com automação completa - todos os endpoints validados e funcionais."
     }
   ]
 }

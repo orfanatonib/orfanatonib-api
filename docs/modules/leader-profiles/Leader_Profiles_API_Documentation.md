@@ -57,7 +57,7 @@ GET {{base_url}}/leader-profiles?page=1&limit=12&sort=updatedAt&order=desc&activ
         "id": "uuid",
         "number": 1,
         "weekday": "SUNDAY",
-        "teachers": [
+        "members": [
           {
             "id": "uuid",
             "active": true,
@@ -149,7 +149,7 @@ GET {{base_url}}/leader-profiles/123e4567-e89b-12d3-a456-426614174000
     "id": "uuid",
     "number": 1,
     "weekday": "SUNDAY",
-    "teachers": []
+    "members": []
   },
   "createdAt": "2024-01-01T00:00:00.000Z",
   "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -193,7 +193,7 @@ GET {{base_url}}/leader-profiles/by-shelter/123e4567-e89b-12d3-a456-426614174000
     "id": "123e4567-e89b-12d3-a456-426614174000",
     "number": 1,
     "weekday": "SUNDAY",
-    "teachers": []
+    "members": []
   },
   "createdAt": "2024-01-01T00:00:00.000Z",
   "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -338,7 +338,7 @@ Content-Type: application/json
   id: string;
   active: boolean;
   user: UserMiniDto;
-  shelter: ShelterWithTeachersDto | null;
+  shelter: ShelterWithMembersDto | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -358,18 +358,18 @@ Content-Type: application/json
 }
 ```
 
-### ShelterWithTeachersDto
+### ShelterWithMembersDto
 
 ```typescript
 {
   id: string;
   number: number;
   weekday: Weekday;
-  teachers: TeacherMiniDto[];
+  members: MemberMiniDto[];
 }
 ```
 
-### TeacherMiniDto
+### MemberMiniDto
 
 ```typescript
 {

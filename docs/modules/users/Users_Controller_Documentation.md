@@ -8,7 +8,7 @@ O **UsersController** gerencia todas as operações CRUD de usuários do sistema
 
 - ✅ **CRUD Completo** de usuários
 - ✅ **Apenas Admin**: Todos os endpoints requerem `AdminRoleGuard`
-- ✅ **Orquestração Automática** de Teacher/Leader profiles
+- ✅ **Orquestração Automática** de Member/Leader profiles
 - ✅ **Gerenciamento de Imagens**: Upload e atualização de imagens de perfil
 - ✅ **Controle Total**: Admin pode alterar qualquer campo de qualquer usuário
 - ✅ **Sem Validação de Senha Atual**: Admin pode alterar senhas sem conhecer a senha atual
@@ -25,7 +25,7 @@ O **UsersController** gerencia todas as operações CRUD de usuários do sistema
 
 ### 1. **POST /users** - Criar Novo Usuário
 
-Cria um novo usuário no sistema e automaticamente cria o profile correspondente (Teacher ou Leader) baseado no role.
+Cria um novo usuário no sistema e automaticamente cria o profile correspondente (Member ou Leader) baseado no role.
 
 #### Request
 
@@ -42,7 +42,7 @@ Cria um novo usuário no sistema e automaticamente cria o profile correspondente
   "email": "joao@example.com",
   "password": "senha123456",
   "phone": "+5511999999999",
-  "role": "teacher",
+  "role": "member",
   "active": false,
   "completed": false,
   "commonUser": true
@@ -56,7 +56,7 @@ Cria um novo usuário no sistema e automaticamente cria o profile correspondente
 - `phone` (string): Telefone do usuário
 
 **Campos Opcionais:**
-- `role` (enum): Role do usuário (`teacher`, `leader`, `admin`, `user`) - padrão: `teacher`
+- `role` (enum): Role do usuário (`member`, `leader`, `admin`, `user`) - padrão: `member`
 - `active` (boolean): Status ativo - padrão: `false`
 - `completed` (boolean): Status completado - padrão: `false`
 - `commonUser` (boolean): Usuário comum - padrão: `true`
@@ -73,7 +73,7 @@ curl -X POST \
     "email": "joao@example.com",
     "password": "senha123456",
     "phone": "+5511999999999",
-    "role": "teacher",
+    "role": "member",
     "active": true
   }'
 ```
@@ -86,7 +86,7 @@ curl -X POST \
   "email": "joao@example.com",
   "name": "João Silva",
   "phone": "+5511999999999",
-  "role": "teacher",
+  "role": "member",
   "active": true,
   "completed": false,
   "commonUser": true,
@@ -97,7 +97,7 @@ curl -X POST \
 
 #### Orquestração Automática
 
-- Se `role = "teacher"` → Cria automaticamente **Teacher Profile**
+- Se `role = "member"` → Cria automaticamente **Member Profile**
 - Se `role = "leader"` → Cria automaticamente **Leader Profile**
 - Se `role = "admin"` → Não cria profile específico
 
@@ -120,7 +120,7 @@ Lista todos os usuários com paginação, filtros e ordenação.
 | `page` | number | Número da página | 1 |
 | `limit` | number | Itens por página (máx: 100) | 12 |
 | `q` | string | Busca por nome, email, telefone ou role | - |
-| `role` | string | Filtro por role (`teacher`, `leader`, `admin`, `user`) | - |
+| `role` | string | Filtro por role (`member`, `leader`, `admin`, `user`) | - |
 | `active` | string | Filtro por status ativo (`true`/`false`) | - |
 | `completed` | string | Filtro por status completado (`true`/`false`) | - |
 | `sort` | string | Campo de ordenação (`name`, `email`, `phone`, `role`, `createdAt`, `updatedAt`) | `updatedAt` |
@@ -130,7 +130,7 @@ Lista todos os usuários com paginação, filtros e ordenação.
 
 ```bash
 curl -X GET \
-  'https://api.example.com/users?page=1&limit=10&role=teacher&active=true&sort=name&order=ASC' \
+  'https://api.example.com/users?page=1&limit=10&role=member&active=true&sort=name&order=ASC' \
   -H 'Authorization: Bearer seu_token_admin'
 ```
 
@@ -144,7 +144,7 @@ curl -X GET \
       "email": "joao@example.com",
       "name": "João Silva",
       "phone": "+5511999999999",
-      "role": "teacher",
+      "role": "member",
       "active": true,
       "completed": true,
       "commonUser": true,
@@ -207,7 +207,7 @@ curl -X GET \
   "email": "joao@example.com",
   "name": "João Silva",
   "phone": "+5511999999999",
-  "role": "teacher",
+  "role": "member",
   "active": true,
   "completed": true,
   "commonUser": true,
@@ -255,7 +255,7 @@ Atualiza um usuário existente. **Admin pode alterar TUDO**, incluindo senha sem
 - `email` (string): Email (deve ser único)
 - `phone` (string): Telefone
 - `password` (string, mínimo 6 caracteres): **Nova senha (admin não precisa da senha atual)**
-- `role` (enum): Role (`teacher`, `leader`, `admin`, `user`)
+- `role` (enum): Role (`member`, `leader`, `admin`, `user`)
 - `active` (boolean): Status ativo
 - `completed` (boolean): Status completado
 - `commonUser` (boolean): Usuário comum
@@ -316,10 +316,10 @@ curl -X PUT \
 
 #### Orquestração de Mudança de Role
 
-- **teacher → leader**: Remove Teacher Profile, cria Leader Profile
-- **leader → teacher**: Remove Leader Profile, cria Teacher Profile
-- **teacher/leader → admin**: Remove profile específico
-- **admin → teacher/leader**: Cria profile correspondente
+- **member → leader**: Remove Member Profile, cria Leader Profile
+- **leader → member**: Remove Leader Profile, cria Member Profile
+- **member/leader → admin**: Remove profile específico
+- **admin → member/leader**: Cria profile correspondente
 
 #### ⚠️ Importante - Alteração de Senha
 
@@ -362,7 +362,7 @@ curl -X DELETE \
 
 #### Orquestração de Exclusão
 
-- Remove automaticamente **Teacher Profile** (se existir)
+- Remove automaticamente **Member Profile** (se existir)
 - Remove automaticamente **Leader Profile** (se existir)
 - Remove o usuário
 - Mantém integridade referencial
@@ -437,7 +437,7 @@ interface UserEntity {
   refreshToken: string | null;  // Token de refresh
   createdAt: Date;              // Data de criação
   updatedAt: Date;              // Data de atualização
-  teacherProfile?: TeacherProfileEntity;  // Profile de professor
+  memberProfile?: MemberProfileEntity;  // Profile de professor
   leaderProfile?: LeaderProfileEntity;    // Profile de líder
 }
 ```
@@ -447,7 +447,7 @@ interface UserEntity {
 ```typescript
 enum UserRole {
   ADMIN = 'admin',
-  TEACHER = 'teacher',
+  MEMBER = 'member',
   LEADER = 'leader',
   USER = 'user'
 }
@@ -476,11 +476,11 @@ interface PaginatedResponse<T> {
 ### Criação de Usuário
 
 ```
-POST /users com role = "teacher"
+POST /users com role = "member"
   ↓
 Cria UserEntity
   ↓
-Cria TeacherProfile automaticamente
+Cria MemberProfile automaticamente
 ```
 
 ```
@@ -494,9 +494,9 @@ Cria LeaderProfile automaticamente
 ### Mudança de Role
 
 ```
-PUT /users/:id com role = "leader" (usuário era teacher)
+PUT /users/:id com role = "leader" (usuário era member)
   ↓
-Remove TeacherProfile
+Remove MemberProfile
   ↓
 Cria LeaderProfile
   ↓
@@ -506,15 +506,15 @@ Atualiza UserEntity
 ### Ativação/Desativação
 
 ```
-PUT /users/:id com active = true (usuário teacher)
+PUT /users/:id com active = true (usuário member)
   ↓
-Se não existe TeacherProfile
+Se não existe MemberProfile
   ↓
-Cria TeacherProfile
+Cria MemberProfile
 
-PUT /users/:id com active = false (usuário teacher)
+PUT /users/:id com active = false (usuário member)
   ↓
-Remove TeacherProfile
+Remove MemberProfile
 ```
 
 ---
@@ -597,7 +597,7 @@ Remove TeacherProfile
 
 ## 📝 Exemplos de Uso
 
-### Exemplo 1: Criar Teacher
+### Exemplo 1: Criar Member
 
 ```javascript
 const response = await fetch('/users', {
@@ -611,17 +611,17 @@ const response = await fetch('/users', {
     email: 'joao@example.com',
     password: 'senha123456',
     phone: '+5511999999999',
-    role: 'teacher',
+    role: 'member',
     active: true
   })
 });
 
 const user = await response.json();
 console.log('Usuário criado:', user);
-// TeacherProfile criado automaticamente
+// MemberProfile criado automaticamente
 ```
 
-### Exemplo 2: Mudar Teacher para Leader
+### Exemplo 2: Mudar Member para Leader
 
 ```javascript
 const response = await fetch(`/users/${userId}`, {
@@ -637,7 +637,7 @@ const response = await fetch(`/users/${userId}`, {
 });
 
 const updatedUser = await response.json();
-// TeacherProfile removido, LeaderProfile criado automaticamente
+// MemberProfile removido, LeaderProfile criado automaticamente
 ```
 
 ### Exemplo 3: Alterar Senha (Admin não precisa da senha atual)
@@ -663,7 +663,7 @@ const response = await fetch(`/users/${userId}`, {
 const params = new URLSearchParams({
   page: '1',
   limit: '20',
-  role: 'teacher',
+  role: 'member',
   active: 'true',
   sort: 'name',
   order: 'ASC'

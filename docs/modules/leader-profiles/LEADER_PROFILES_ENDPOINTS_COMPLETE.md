@@ -92,12 +92,12 @@ GET /leader-profiles?teamId=uuid-da-equipe
               "description": "Equipe de Ensino"
             }
           ],
-          "teachers": [
+          "members": [
             {
-              "id": "uuid-teacher-1",
+              "id": "uuid-member-1",
               "active": true,
               "user": {
-                "id": "uuid-user-teacher",
+                "id": "uuid-user-member",
                 "name": "Nome do Professor",
                 "email": "professor@email.com",
                 "phone": "11888888888"
@@ -258,9 +258,9 @@ Retorna todos os abrigos do líder logado, com todas as equipes e status de part
             "email": "lider1@email.com"
           }
         ],
-        "teachers": [
+        "members": [
           {
-            "id": "uuid-teacher-1",
+            "id": "uuid-member-1",
             "name": "Nome Professor",
             "email": "professor@email.com"
           }
@@ -321,9 +321,9 @@ Retorna todas as equipes com seus abrigos e membros (líderes e professores).
         "phone": "11999999999"
       }
     ],
-    "teachers": [
+    "members": [
       {
-        "id": "uuid-teacher",
+        "id": "uuid-member",
         "name": "Nome Professor",
         "email": "professor@email.com",
         "phone": "11888888888"

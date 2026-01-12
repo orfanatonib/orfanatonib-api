@@ -10,7 +10,7 @@ import { CreateUserService } from './services/create-user.service';
 import { GetUsersService } from './services/get-user.service';
 import { UserController } from './user.controller';
 
-import { TeacherProfilesModule } from 'src/shelter/teacher-profile/teacher-profiles.module';
+import { MemberProfilesModule } from 'src/shelter/member-profile/member-profiles.module';
 import { LeaderProfilesModule } from 'src/shelter/leader-profile/leader-profiles.module';
 import { MediaModule } from 'src/shared/media/media.module';
 import { AuthModule } from 'src/core/auth/auth.module';
@@ -24,7 +24,7 @@ import { ProfileController } from './profile.controller';
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserEntity, ShelterEntity, MediaItemEntity]),
-    TeacherProfilesModule,
+    MemberProfilesModule,
     LeaderProfilesModule,
     MediaModule,
     AuthModule,

@@ -15,7 +15,7 @@ async function login() {
   try {
     console.log('🔐 Fazendo login como admin...');
     const response = await axios.post(`${BASE_URL}/auth/login`, ADMIN_CREDENTIALS);
-    
+
     if (response.status === 201) {
       authToken = response.data.accessToken;
       console.log('✅ Login realizado com sucesso!');
@@ -36,7 +36,7 @@ async function makeRequest(method, url, data = null, isFormData = false) {
         'Authorization': `Bearer ${authToken}`,
       }
     };
-    
+
     if (isFormData) {
       config.headers = {
         ...config.headers,
@@ -49,7 +49,7 @@ async function makeRequest(method, url, data = null, isFormData = false) {
     } else {
       config.headers['Content-Type'] = 'application/json';
     }
-    
+
     const response = await axios(config);
     return response;
   } catch (error) {
@@ -126,10 +126,11 @@ function getRandomElement(array) {
 }
 
 function getRandomDate(daysFromNow = 30) {
-  const today = new Date();
+  // ✅ Eventos a partir de janeiro de 2026
+  const baseDate = new Date('2026-01-01');
   const randomDays = Math.floor(Math.random() * daysFromNow);
-  const eventDate = new Date(today);
-  eventDate.setDate(today.getDate() + randomDays);
+  const eventDate = new Date(baseDate);
+  eventDate.setDate(baseDate.getDate() + randomDays);
   eventDate.setHours(19, 0, 0, 0); // 19:00
   return eventDate.toISOString().split('T')[0]; // YYYY-MM-DD
 }
@@ -137,11 +138,13 @@ function getRandomDate(daysFromNow = 30) {
 // ==================== CRIAR EVENTO ====================
 
 async function createEvent() {
+  const audiences = ['all', 'members', 'leaders'];
   const eventData = {
     title: getRandomElement(EVENT_TITLES),
-    date: getRandomDate(60), // Eventos nos próximos 60 dias
+    date: getRandomDate(60), // Eventos distribuídos nos primeiros 60 dias de 2026
     location: getRandomElement(LOCATIONS),
     description: getRandomElement(DESCRIPTIONS),
+    audience: getRandomElement(audiences), // ✅ Campo obrigatório adicionado após refatoração
     media: {
       title: `Imagem do evento: ${getRandomElement(EVENT_TITLES)}`,
       description: 'Imagem promocional do evento',
@@ -157,7 +160,7 @@ async function createEvent() {
     formData.append('eventData', JSON.stringify(eventData));
 
     const response = await makeRequest('POST', '/events', formData, true);
-    
+
     if (response && response.status === 201) {
       console.log(`  ✅ Evento criado: "${eventData.title}" - ${eventData.date}`);
       return response.data;
@@ -175,14 +178,14 @@ async function createEvent() {
 
 async function createMultipleEvents(count = 15) {
   console.log(`\n📅 Criando ${count} eventos...\n`);
-  
+
   const createdEvents = [];
   let successCount = 0;
   let errorCount = 0;
 
   for (let i = 0; i < count; i++) {
     const event = await createEvent();
-    
+
     if (event) {
       createdEvents.push(event);
       successCount++;
@@ -206,9 +209,9 @@ async function createMultipleEvents(count = 15) {
 
 async function testListAllEvents() {
   console.log('\n📋 Testando listagem de todos os eventos...');
-  
+
   const response = await makeRequest('GET', '/events');
-  
+
   if (response && response.status === 200) {
     console.log(`  ✅ ${response.data.length} eventos encontrados`);
     return true;
@@ -220,9 +223,9 @@ async function testListAllEvents() {
 
 async function testGetUpcomingEvents() {
   console.log('\n📅 Testando busca de eventos futuros...');
-  
+
   const response = await makeRequest('GET', '/events/upcoming');
-  
+
   if (response && response.status === 200) {
     console.log(`  ✅ ${response.data.length} eventos futuros encontrados`);
     return true;
@@ -234,9 +237,9 @@ async function testGetUpcomingEvents() {
 
 async function testGetEventById(eventId) {
   console.log(`\n🔍 Testando busca de evento por ID: ${eventId}...`);
-  
+
   const response = await makeRequest('GET', `/events/${eventId}`);
-  
+
   if (response && response.status === 200) {
     console.log(`  ✅ Evento encontrado: "${response.data.title}"`);
     return true;
@@ -270,7 +273,7 @@ async function runAutomation() {
 
   await testListAllEvents();
   await testGetUpcomingEvents();
-  
+
   const firstEvent = createdEvents[0];
   if (firstEvent) {
     await testGetEventById(firstEvent.id);

@@ -19,8 +19,8 @@ export class GetUsersQueryDto {
   q?: string;
 
   @IsOptional()
-  @IsIn(['user', 'admin', 'leader', 'teacher'])
-  role?: 'user' | 'admin' | 'leader' | 'teacher';
+  @IsIn(['user', 'admin', 'leader', 'member'])
+  role?: 'user' | 'admin' | 'leader' | 'member';
 
   @IsOptional()
   @IsBooleanString()

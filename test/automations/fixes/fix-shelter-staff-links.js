@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * Fix: vincular leaders e teachers aos abrigos.
+ * Fix: vincular leaders e members aos abrigos.
  *
  * Estratégia:
  * - Listar TODOS os shelters via GET /shelters?page&limit (paginado)
- * - Buscar leader-profiles/simple e teacher-profiles/simple
+ * - Buscar leader-profiles/simple e member-profiles/simple
  * - Para cada shelter, garantir teamsQuantity >= 1 e preencher teams[1..teamsQuantity]
- *   com leaderProfileIds e teacherProfileIds (IDs vindos do /simple)
+ *   com leaderProfileIds e memberProfileIds (IDs vindos do /simple)
  * - Atualizar via PUT /shelters/:id enviando multipart/form-data com shelterData
  *
  * Obs: o endpoint de shelters exige multipart com campo shelterData (mesmo sem arquivo).
@@ -93,14 +93,14 @@ async function listAllShelters(limit = 50) {
   return all;
 }
 
-function genExtraTeacherUser(i) {
+function genExtraMemberUser(i) {
   const ts = Date.now();
   return {
-    name: `Auto Teacher Extra ${i}`,
-    email: `auto_teacher_extra_${i}_${ts}@teste.com`,
+    name: `Auto Member Extra ${i}`,
+    email: `auto_member_extra_${i}_${ts}@teste.com`,
     password: 'Abc@123',
     phone: `(11) 95555-${String(i).padStart(4, '0')}`,
-    role: 'teacher',
+    role: 'member',
     active: true,
     completed: false,
     commonUser: true,
@@ -108,7 +108,7 @@ function genExtraTeacherUser(i) {
 }
 
 async function main() {
-  log('🔧 Fix vínculos: leaders/teachers -> shelters', colors.bright);
+  log('🔧 Fix vínculos: leaders/members -> shelters', colors.bright);
 
   // Health
   await axios.get(`${BASE_URL}/`);
@@ -125,39 +125,39 @@ async function main() {
 
   // Carregar profiles depois de saber quantos shelters existem
   let leadersRes = await get('/leader-profiles/simple');
-  let teachersRes = await get('/teacher-profiles/simple');
+  let membersRes = await get('/member-profiles/simple');
 
   let leaderIds = (leadersRes.data || []).map(x => x.leaderProfileId || x.id).filter(Boolean);
-  let teacherIds = (teachersRes.data || []).map(x => x.teacherProfileId || x.id).filter(Boolean);
+  let memberIds = (membersRes.data || []).map(x => x.memberProfileId || x.id).filter(Boolean);
 
   log(`👨‍💼 Leader profiles: ${leaderIds.length}`, leaderIds.length ? colors.green : colors.yellow);
-  log(`👩‍🏫 Teacher profiles: ${teacherIds.length}`, teacherIds.length ? colors.green : colors.yellow);
+  log(`👩‍🏫 Member profiles: ${memberIds.length}`, memberIds.length ? colors.green : colors.yellow);
 
-  // Garantir teachers suficientes (teacher profile é 1:1 com team)
-  if (teacherIds.length < shelters.length) {
-    const deficit = shelters.length - teacherIds.length;
-    log(`⚠️ Teachers insuficientes para 1 por shelter. Criando ${deficit} users teacher extras...`, colors.yellow);
+  // Garantir members suficientes (member profile é 1:1 com team)
+  if (memberIds.length < shelters.length) {
+    const deficit = shelters.length - memberIds.length;
+    log(`⚠️ Members insuficientes para 1 por shelter. Criando ${deficit} users member extras...`, colors.yellow);
     for (let i = 1; i <= deficit; i++) {
       // eslint-disable-next-line no-await-in-loop
-      await postJson('/users', genExtraTeacherUser(i));
+      await postJson('/users', genExtraMemberUser(i));
     }
-    // Recarregar teacher profiles
-    teachersRes = await get('/teacher-profiles/simple');
-    teacherIds = (teachersRes.data || []).map(x => x.teacherProfileId || x.id).filter(Boolean);
-    log(`👩‍🏫 Teacher profiles (após criação): ${teacherIds.length}`, colors.green);
+    // Recarregar member profiles
+    membersRes = await get('/member-profiles/simple');
+    memberIds = (membersRes.data || []).map(x => x.memberProfileId || x.id).filter(Boolean);
+    log(`👩‍🏫 Member profiles (após criação): ${memberIds.length}`, colors.green);
   }
 
-  if (!leaderIds.length || !teacherIds.length) {
-    log('❌ Sem leader/teacher profiles suficientes para vincular. Abortando.', colors.red);
+  if (!leaderIds.length || !memberIds.length) {
+    log('❌ Sem leader/member profiles suficientes para vincular. Abortando.', colors.red);
     process.exit(1);
   }
 
   let updated = 0;
   let failed = 0;
 
-  // IMPORTANTE: teacher profile só pode estar em UMA team (teacher_profiles.team_id),
-  // então precisamos DISTRIBUIR sem reusar, senão os primeiros shelters ficam sem teacher.
-  const teacherPool = [...teacherIds];
+  // IMPORTANTE: member profile só pode estar em UMA team (member_profiles.team_id),
+  // então precisamos DISTRIBUIR sem reusar, senão os primeiros shelters ficam sem member.
+  const memberPool = [...memberIds];
 
   // Processar em batches para evitar sobrecarga
   const batches = chunk(shelters, 10);
@@ -166,17 +166,17 @@ async function main() {
     // eslint-disable-next-line no-await-in-loop
     await Promise.all(batch.map(async (s) => {
       try {
-        // Fix padronizado: 1 team por shelter (simplifica e garante teacher único)
+        // Fix padronizado: 1 team por shelter (simplifica e garante member único)
         const teamsQuantity = 1;
 
         const teams = [];
         for (let t = 1; t <= teamsQuantity; t++) {
-          const teacherId = teacherPool.length ? teacherPool.shift() : teacherIds[(updated + failed) % teacherIds.length];
+          const memberId = memberPool.length ? memberPool.shift() : memberIds[(updated + failed) % memberIds.length];
           teams.push({
             numberTeam: t,
             description: `Equipe ${t}`,
             leaderProfileIds: pickSomeIds(leaderIds, 2),
-            teacherProfileIds: teacherId ? [teacherId] : [],
+            memberProfileIds: memberId ? [memberId] : [],
           });
         }
 

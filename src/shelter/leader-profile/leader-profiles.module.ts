@@ -6,7 +6,7 @@ import { LeaderProfilesRepository } from './repositories/leader-profiles.reposit
 import { LeaderProfilesService } from './services/leader-profiles.service';
 import { LeaderProfilesController } from './leader-profiles.controller';
 
-import { TeacherProfilesModule } from '../teacher-profile/teacher-profiles.module';
+import { MemberProfilesModule } from '../member-profile/member-profiles.module';
 import { SheltersModule } from '../shelter/shelters.module';
 import { UserModule } from 'src/core/user/user.module';
 import { AuthModule } from 'src/core/auth/auth.module';
@@ -17,7 +17,7 @@ import { ShelterEntity } from '../shelter/entities/shelter.entity/shelter.entity
 @Module({
   imports: [
     TypeOrmModule.forFeature([LeaderProfileEntity, ShelterEntity]),
-    forwardRef(() => TeacherProfilesModule),
+    forwardRef(() => MemberProfilesModule),
     forwardRef(() => SheltersModule),
     forwardRef(() => UserModule),
     forwardRef(() => AuthModule),

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { UserRepository } from '../user.repository';
-import { TeacherProfilesService } from 'src/shelter/teacher-profile/services/teacher-profiles.service';
+import { MemberProfilesService } from 'src/shelter/member-profile/services/member-profiles.service';
 import { LeaderProfilesService } from 'src/shelter/leader-profile/services/leader-profiles.service';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
@@ -11,7 +11,7 @@ export class DeleteUserService {
 
   constructor(
     private readonly userRepo: UserRepository,
-    private readonly teacherService: TeacherProfilesService,
+    private readonly memberService: MemberProfilesService,
     private readonly leaderService: LeaderProfilesService,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly s3Service: AwsS3Service,
@@ -31,7 +31,7 @@ export class DeleteUserService {
       this.logger.log(`Imagem do usuário deletada: ${userImage.id}`);
     }
 
-    await this.teacherService.removeByUserId(id);
+    await this.memberService.removeByUserId(id);
     await this.leaderService.removeByUserId(id);
     await this.userRepo.delete(id);
     return { message: 'UserEntity deleted' };

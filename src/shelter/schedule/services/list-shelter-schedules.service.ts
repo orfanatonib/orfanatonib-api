@@ -28,8 +28,8 @@ export class ListShelterSchedulesService {
       return this.scheduleRepo.findByLeaderId(userId);
     }
 
-    if (role === 'teacher' && userId) {
-      return this.scheduleRepo.findByTeacherId(userId);
+    if (role === 'member' && userId) {
+      return this.scheduleRepo.findByMemberId(userId);
     }
 
     return [];

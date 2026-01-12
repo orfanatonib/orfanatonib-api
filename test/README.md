@@ -22,7 +22,7 @@ test/
     │
     ├── users/                      # Automação de usuários
     ├── shelters/                   # Automação de abrigos
-    ├── teacher-profiles/           # Automação de professores
+    ├── member-profiles/           # Automação de professores
     ├── leader-profiles/            # Automação de líderes
     ├── sheltered/                  # Automação de abrigados
     ├── pagelas/                    # Automação de pagelas
@@ -60,7 +60,7 @@ node test/run-all-automations.js
 ```
 
 Este script executará **todas as automações na ordem correta**, incluindo:
-1. Core data (Users, Shelters, Teachers, Leaders)
+1. Core data (Users, Shelters, Members, Leaders)
 2. Fixes (correções de relacionamentos)
 3. Dados principais (Sheltered, Pagelas)
 4. Conteúdo (Events, Pages, Documents, etc.)
@@ -104,7 +104,7 @@ Foi criada uma **biblioteca compartilhada** em `automations/shared/` que:
 ```
 test/
 ├── run-all-automations.js
-├── create-shelters-and-teachers.js    ❌ Arquivo solto
+├── create-shelters-and-members.js    ❌ Arquivo solto
 ├── create-leaders-for-shelters.js     ❌ Arquivo solto
 ├── fix-shelter-staff-links.js         ❌ Arquivo solto
 ├── fix-sheltered-relationships.js     ❌ Arquivo solto
@@ -143,11 +143,11 @@ O `run-all-automations.js` executa as automações nesta ordem:
 1. **Core Data** - Estrutura básica
    - Users
    - Shelters
-   - Teacher Profiles
+   - Member Profiles
    - Leader Profiles
 
 2. **Fixes** - Correções de relacionamentos
-   - Fix: vincular leaders/teachers aos shelters
+   - Fix: vincular leaders/members aos shelters
 
 3. **Dados Principais**
    - Sheltered

@@ -142,7 +142,7 @@ class ApiClient {
       users: [],
       shelters: [],
       leaderProfiles: [],
-      teacherProfiles: [],
+      memberProfiles: [],
       teams: []
     };
 
@@ -168,11 +168,11 @@ class ApiClient {
         console.log(`  👔 ${testData.leaderProfiles.length} leader profiles encontrados`);
       }
 
-      // Teacher Profiles
-      const teachersResponse = await this.get('/teacher-profiles/simple', { silent: true });
-      if (teachersResponse) {
-        testData.teacherProfiles = teachersResponse.data || [];
-        console.log(`  👨‍🏫 ${testData.teacherProfiles.length} teacher profiles encontrados`);
+      // Member Profiles
+      const membersResponse = await this.get('/member-profiles/simple', { silent: true });
+      if (membersResponse) {
+        testData.memberProfiles = membersResponse.data || [];
+        console.log(`  👨‍🏫 ${testData.memberProfiles.length} member profiles encontrados`);
       }
 
       // Teams

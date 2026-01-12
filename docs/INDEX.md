@@ -32,7 +32,7 @@ docs/
 │   ├── users/
 │   ├── shelters/
 │   ├── leader-profiles/
-│   ├── teacher-profiles/
+│   ├── member-profiles/
 │   ├── sheltered/
 │   └── pagelas/
 └── guides/                                # Guias gerais
@@ -104,7 +104,7 @@ docs/
 ### Features
 - ✅ Gestão de endereços
 - ✅ Media items (fotos)
-- ✅ Relacionamentos com leaders e teachers
+- ✅ Relacionamentos com leaders e members
 - ✅ Filtros por localização
 
 ---
@@ -140,22 +140,22 @@ docs/
 
 ---
 
-## 👩‍🏫 5. Teacher Profiles
+## 👩‍🏫 5. Member Profiles
 
 **Perfis de Professores**
 
 ### Arquivos
-- [`modules/teacher-profiles/README.md`](./modules/teacher-profiles/README.md)
-- [`modules/teacher-profiles/Teacher_Profiles_API_Collection.postman_collection.json`](./modules/teacher-profiles/Teacher_Profiles_API_Collection.postman_collection.json)
-- [`modules/teacher-profiles/TEACHER_PROFILES_COMPLETE_GUIDE.md`](./modules/teacher-profiles/TEACHER_PROFILES_COMPLETE_GUIDE.md)
-- [`modules/teacher-profiles/TEACHER_PROFILES_INDEX.md`](./modules/teacher-profiles/TEACHER_PROFILES_INDEX.md)
+- [`modules/member-profiles/README.md`](./modules/member-profiles/README.md)
+- [`modules/member-profiles/Member_Profiles_API_Collection.postman_collection.json`](./modules/member-profiles/Member_Profiles_API_Collection.postman_collection.json)
+- [`modules/member-profiles/MEMBER_PROFILES_COMPLETE_GUIDE.md`](./modules/member-profiles/MEMBER_PROFILES_COMPLETE_GUIDE.md)
+- [`modules/member-profiles/MEMBER_PROFILES_INDEX.md`](./modules/member-profiles/MEMBER_PROFILES_INDEX.md)
 
 ### Endpoints Principais
-- `POST /teacher-profiles` - Criar profile
-- `GET /teacher-profiles` - Listar com paginação
-- `GET /teacher-profiles/simple` - Listagem simplificada
-- `GET /teacher-profiles/:id` - Buscar por ID
-- `PUT /teacher-profiles/:id` - Atualizar profile
+- `POST /member-profiles` - Criar profile
+- `GET /member-profiles` - Listar com paginação
+- `GET /member-profiles/simple` - Listagem simplificada
+- `GET /member-profiles/:id` - Buscar por ID
+- `PUT /member-profiles/:id` - Atualizar profile
 
 ### Features
 - ✅ Especializações
@@ -210,7 +210,7 @@ docs/
 - `DELETE /pagelas/:id` - Deletar pagela
 
 ### Features
-- ✅ Vinculação a sheltered e teachers
+- ✅ Vinculação a sheltered e members
 - ✅ Filtros por ano, visita, presença
 - ✅ Busca avançada
 - ✅ Estatísticas
@@ -282,7 +282,7 @@ node tests/automations/shelters/shelters-complete-automation.js
 | Users | ✅ | ✅ | ✅ | 2025-09-27 |
 | Shelters | ✅ | ✅ | ✅ | 2025-09-30 |
 | Leader Profiles | ✅ | ✅ v6.0.0 | ✅ | **2025-10-23** ⭐ |
-| Teacher Profiles | ✅ | ✅ | ✅ | 2025-09-30 |
+| Member Profiles | ✅ | ✅ | ✅ | 2025-09-30 |
 | Sheltered | ✅ | ✅ | ✅ | 2025-09-27 |
 | Pagelas | ✅ | ✅ | ✅ | 2025-09-28 |
 
@@ -298,7 +298,7 @@ node tests/automations/shelters/shelters-complete-automation.js
 
 ### 2025-09-30
 - ✅ Shelters com media items
-- ✅ Teacher Profiles refatorado
+- ✅ Member Profiles refatorado
 - ✅ Sheltered com campos opcionais
 
 ### 2025-09-27

@@ -22,6 +22,6 @@ export class CreateTeamDto {
   @IsArray()
   @ArrayUnique()
   @IsUUID(undefined, { each: true })
-  teacherProfileIds?: string[];
+  memberProfileIds?: string[];
 }
 

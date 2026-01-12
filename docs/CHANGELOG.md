@@ -60,10 +60,10 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ### 🏠 Shelters
 - **ADD**: Sistema de Media Items (fotos)
-- **ADD**: Relacionamento com leaders e teachers
+- **ADD**: Relacionamento com leaders e members
 - **UPDATE**: Estrutura de endereços melhorada
 
-### 👩‍🏫 Teacher Profiles
+### 👩‍🏫 Member Profiles
 - **ADD**: Especializações de professores
 - **ADD**: Vinculação a shelters
 - **REFACTOR**: Filtros consolidados
@@ -80,7 +80,7 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 ### 🔐 Auth
 - **ADD**: Sistema de autenticação JWT
 - **ADD**: Login e refresh token
-- **ADD**: Controle de acesso por roles (admin, leader, teacher)
+- **ADD**: Controle de acesso por roles (admin, leader, member)
 
 ### 👥 Users
 - **ADD**: CRUD completo de usuários
@@ -98,7 +98,7 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 - **ADD**: Vinculação a shelters (ManyToOne)
 - **ADD**: Operações de atribuição/movimentação
 
-### 👩‍🏫 Teacher Profiles
+### 👩‍🏫 Member Profiles
 - **ADD**: Gestão de perfis de professores
 - **ADD**: Vinculação a shelters
 
@@ -109,7 +109,7 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ### 📝 Pagelas
 - **ADD**: Sistema de relatórios
-- **ADD**: Vinculação a sheltered e teachers
+- **ADD**: Vinculação a sheltered e members
 - **ADD**: Filtros por ano, visita, presença
 
 ### 🧪 Automações
