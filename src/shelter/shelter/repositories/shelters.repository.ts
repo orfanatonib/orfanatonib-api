@@ -119,7 +119,6 @@ export class SheltersRepository {
       shelterName,
     } = q;
 
-    // Step 1: Build query to get shelter IDs with pagination
     const sortMap: Record<string, string> = {
       name: 'shelter.name',
       createdAt: 'shelter.createdAt',
@@ -175,11 +174,9 @@ export class SheltersRepository {
       );
     }
 
-    // Get total count
     const totalQb = idQb.clone();
     const total = await totalQb.getCount();
 
-    // Apply sorting and pagination on IDs
     idQb.orderBy('orderField', orderDir as 'ASC' | 'DESC')
       .offset((page - 1) * limit)
       .limit(limit);
@@ -190,7 +187,6 @@ export class SheltersRepository {
       return { items: [], total };
     }
 
-    // Step 2: Load full shelter entities with all relations
     const ids = shelterIds.map(row => row.id);
     const itemsQb = this.buildShelterBaseQB()
       .where('shelter.id IN (:...ids)', { ids })
@@ -212,10 +208,6 @@ export class SheltersRepository {
     return qb.getMany();
   }
 
-  /**
-   * Busca os IDs dos abrigos onde o líder está em pelo menos uma equipe
-   * Usado para depois buscar todos os abrigos com todas as equipes
-   */
   async findShelterIdsForLeader(userId: string): Promise<string[]> {
     const result = await this.shelterRepo
       .createQueryBuilder('shelter')
@@ -258,7 +250,6 @@ export class SheltersRepository {
 
     const shelter = shelterData[0];
 
-    // Buscar teams do abrigo
     const teamsData = await manager.query(`
       SELECT t.id, t.numberTeam, t.description, t.createdAt, t.updatedAt
       FROM teams t
@@ -287,7 +278,6 @@ export class SheltersRepository {
       WHERE t.shelter_id = ?
     `, [id]);
 
-    // Construir o objeto ShelterEntity manualmente
     const shelterEntity = new ShelterEntity();
     shelterEntity.id = shelter.id;
     shelterEntity.name = shelter.name;

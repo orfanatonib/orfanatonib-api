@@ -33,14 +33,11 @@ export class UpdateShelterScheduleService {
       }
     }
 
-    // Determine the new visit number and team (from dto or keep current)
     const newVisitNumber = dto.visitNumber ?? schedule.visitNumber;
     const newTeamId = dto.teamId ?? schedule.team.id;
 
-    // Validate visit number uniqueness for the team (if visitNumber is being set or changed)
     if (dto.visitNumber !== undefined || dto.teamId !== undefined) {
       const existingSchedule = await this.scheduleRepo.findByTeamIdAndVisitNumber(newTeamId, newVisitNumber);
-      // Only throw error if it's a different schedule
       if (existingSchedule && existingSchedule.id !== id) {
         throw new BadRequestException(
           `A schedule for this team with visit number ${newVisitNumber} already exists. Cannot create duplicate visit.`
@@ -57,13 +54,11 @@ export class UpdateShelterScheduleService {
     if (dto.meetingRoom !== undefined) updateData.meetingRoom = dto.meetingRoom;
     if (dto.teamId !== undefined) updateData.team = { id: dto.teamId };
 
-    // Always delete and recreate events based on what's provided
     const newVisitDate = dto.visitDate ?? schedule.visitDate;
     const newMeetingDate = dto.meetingDate ?? schedule.meetingDate;
 
     await this.scheduleRepo.update(id, updateData);
 
-    // Handle event updates - delete old and recreate based on dates
     await this.deleteExistingEvents(id);
 
     const team = await this.teamsService.findOneEntity(newTeamId);

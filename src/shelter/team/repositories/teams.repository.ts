@@ -95,7 +95,6 @@ export class TeamsRepository {
       team.leaders = [];
     }
 
-    // Add only new leaders (avoid duplicates)
     const existingLeaderIds = new Set(team.leaders.map(l => l.id));
     const newLeaders = leaders.filter(leader => !existingLeaderIds.has(leader.id));
     team.leaders.push(...newLeaders);
@@ -145,21 +144,18 @@ export class TeamsRepository {
       throw new NotFoundException(`Team with ID ${id} not found`);
     }
 
-    // Atualizar campos simples
     if (dto.numberTeam !== undefined) team.numberTeam = dto.numberTeam;
     if (dto.description !== undefined) team.description = dto.description;
 
-    // Atualizar relacionamentos ManyToMany
     if (dto.leaderProfileIds !== undefined) {
       const leaders = await this.leaderProfileRepo.findByIds(dto.leaderProfileIds);
       team.leaders = leaders;
     }
 
     if (dto.memberProfileIds !== undefined) {
-      // Import MemberProfileEntity and use its repository
       const memberProfileRepo = this.teamRepo.manager.getRepository('MemberProfileEntity');
       const members = await memberProfileRepo.findByIds(dto.memberProfileIds);
-      team.members = members as any; // If needed, cast to MemberProfileEntity[]
+      team.members = members as any;
     }
 
     return this.teamRepo.save(team);

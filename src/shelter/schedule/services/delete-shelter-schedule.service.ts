@@ -21,7 +21,6 @@ export class DeleteShelterScheduleService {
       throw new NotFoundException(`Shelter schedule with ID ${id} not found`);
     }
 
-    // Delete all associated events
     try {
       const events = await this.eventRepo.findByScheduleId(id);
       if (events.length > 0) {

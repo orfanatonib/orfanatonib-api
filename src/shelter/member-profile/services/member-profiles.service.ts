@@ -73,10 +73,6 @@ export class MemberProfilesService {
     return this.repo.removeByUserId(userId);
   }
 
-  /**
-   * Vincula professor a uma equipe de um abrigo
-   * Se já estiver vinculado a outra equipe, move para a nova
-   */
   async manageTeam(memberId: string, dto: ManageMemberTeamDto, req: Request): Promise<MemberResponseDto> {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);

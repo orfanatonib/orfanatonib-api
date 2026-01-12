@@ -143,10 +143,6 @@ export class UpdateSheltersService {
     return this.update(id, updateDto, req, filesDict);
   }
 
-  // ---------------------------------------------------------------------------
-  // Core update
-  // ---------------------------------------------------------------------------
-
   async update(
     id: string,
     dto: UpdateShelterDto,
@@ -176,7 +172,6 @@ export class UpdateSheltersService {
       await this.updateTeams(id, dto, currentTeamsQuantity);
     }
 
-    // ✅ route também se address mudar (subtitle)
     const shouldUpdateRoute = !!dto.name || dto.description !== undefined || !!dto.address;
     if (shouldUpdateRoute) {
       await this.updateRoute(id, dto);
@@ -186,7 +181,6 @@ export class UpdateSheltersService {
     if (shouldUpdateMedia && dto.mediaItem) {
       const mediaItemToUpdate = { ...dto.mediaItem };
 
-      // Se veio arquivo e não veio fieldKey, usa o primeiro file
       if (
         mediaItemToUpdate.uploadType === UploadType.UPLOAD &&
         Object.keys(filesDict).length > 0 &&

@@ -198,7 +198,6 @@ export class AttendanceReaderService {
                 }
             }
 
-            // 2. Pendência de REUNIÃO
             if (schedule.meetingDate && new Date(schedule.meetingDate) < today) {
                 const attendance = await this.attendanceRepo.findOne({
                     where: {
