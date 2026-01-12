@@ -59,7 +59,7 @@ export class LeaderProfilesService {
 
   private assertAllowed(ctx: AccessCtx) {
     if (!ctx.role) throw new ForbiddenException('Acesso negado');
-    if (ctx.role === 'teacher') throw new ForbiddenException('Acesso negado');
+    if (ctx.role === 'member') throw new ForbiddenException('Acesso negado');
   }
 
   async list(req: Request): Promise<LeaderSimpleListDto[]> {
@@ -73,7 +73,7 @@ export class LeaderProfilesService {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    const leader = await this.repo.findOneWithSheltersAndTeachersOrFail(id);
+    const leader = await this.repo.findOneWithSheltersAndMembersOrFail(id);
     return toLeaderDto(leader);
   }
 
@@ -93,7 +93,7 @@ export class LeaderProfilesService {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    const leader = await this.repo.findOneWithSheltersAndTeachersOrFail(leaderId);
+    const leader = await this.repo.findOneWithSheltersAndMembersOrFail(leaderId);
 
     await this.teamsService.removeLeaderFromAllTeams(leaderId);
 
@@ -161,7 +161,7 @@ export class LeaderProfilesService {
 
     const shelters = await this.shelterRepo.find({
       where: { id: In(shelterIds) },
-      relations: ['address', 'teams', 'teams.leaders', 'teams.leaders.user', 'teams.teachers', 'teams.teachers.user'],
+      relations: ['address', 'teams', 'teams.leaders', 'teams.leaders.user', 'teams.members', 'teams.members.user'],
       order: {
         name: 'ASC',
         teams: {

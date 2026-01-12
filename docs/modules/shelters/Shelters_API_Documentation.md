@@ -72,7 +72,7 @@ GET {{base_url}}/shelters?page=1&limit=10&sort=name&order=ASC&nameSearchString=C
           "commonUser": false
         }
       },
-      "teachers": [
+      "members": [
         {
           "id": "uuid",
           "active": true,
@@ -214,7 +214,7 @@ GET {{base_url}}/shelters/123e4567-e89b-12d3-a456-426614174000
       "commonUser": false
     }
   },
-  "teachers": [],
+  "members": [],
   "weekday": "monday",
   "createdAt": "2024-01-01T00:00:00.000Z",
   "updatedAt": "2024-01-01T00:00:00.000Z"
@@ -243,7 +243,7 @@ Cria um novo shelter.
     "complement": "string"
   },
   "leaderProfileId": "string (UUID)",
-  "teacherProfileIds": ["string (UUID)"]
+  "memberProfileIds": ["string (UUID)"]
 }
 ```
 
@@ -266,7 +266,7 @@ Content-Type: application/json
     "complement": "Apto 45"
   },
   "leaderProfileId": "123e4567-e89b-12d3-a456-426614174000",
-  "teacherProfileIds": ["987fcdeb-51a2-43d7-b456-426614174000"]
+  "memberProfileIds": ["987fcdeb-51a2-43d7-b456-426614174000"]
 }
 ```
 
@@ -302,7 +302,7 @@ Content-Type: application/json
       "commonUser": false
     }
   },
-  "teachers": [
+  "members": [
     {
       "id": "987fcdeb-51a2-43d7-b456-426614174000",
       "active": true,
@@ -350,7 +350,7 @@ Atualiza um shelter existente.
     "complement": "string"
   },
   "leaderProfileId": "string (UUID)",
-  "teacherProfileIds": ["string (UUID)"]
+  "memberProfileIds": ["string (UUID)"]
 }
 ```
 
@@ -373,7 +373,7 @@ Content-Type: application/json
     "complement": "Casa 2"
   },
   "leaderProfileId": "123e4567-e89b-12d3-a456-426614174000",
-  "teacherProfileIds": ["987fcdeb-51a2-43d7-b456-426614174000"]
+  "memberProfileIds": ["987fcdeb-51a2-43d7-b456-426614174000"]
 }
 ```
 
@@ -409,7 +409,7 @@ Content-Type: application/json
       "commonUser": false
     }
   },
-  "teachers": [
+  "members": [
     {
       "id": "987fcdeb-51a2-43d7-b456-426614174000",
       "active": true,
@@ -478,7 +478,7 @@ DELETE {{base_url}}/shelters/123e4567-e89b-12d3-a456-426614174000
   time: string | null;
   address: AddressResponseDto;
   leader: CoordinatorWithUserDto | null;
-  teachers: TeacherWithUserDto[];
+  members: MemberWithUserDto[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -545,7 +545,7 @@ DELETE {{base_url}}/shelters/123e4567-e89b-12d3-a456-426614174000
 }
 ```
 
-### TeacherWithUserDto
+### MemberWithUserDto
 
 ```typescript
 {
@@ -598,7 +598,7 @@ enum Weekday {
 ### Campos Opcionais (Create)
 - `time` - Horário do shelter
 - `leaderProfileId` - ID do líder
-- `teacherProfileIds` - Array de IDs dos professores
+- `memberProfileIds` - Array de IDs dos professores
 
 ## Exemplos de Uso
 

@@ -109,20 +109,20 @@ export class TeamsService {
       return result;
     }
 
-    // For teachers, find the team they belong to
-    if (role === 'teacher') {
-      console.log(`[TeamsService] Role is teacher - fetching all teams to filter`);
+    // For members, find the team they belong to
+    if (role === 'member') {
+      console.log(`[TeamsService] Role is member - fetching all teams to filter`);
       const allTeams = await this.repository.findAll();
       console.log(`[TeamsService] Found ${allTeams.length} total teams`);
       
-      const teacherTeams = allTeams.filter(team => {
-        const isInTeam = team.teachers && team.teachers.some(teacher => teacher.user?.id === userId);
-        console.log(`[TeamsService] Team ${team.id}: hasTeachers=${!!team.teachers}, isTeacherInTeam=${isInTeam}`);
+      const memberTeams = allTeams.filter(team => {
+        const isInTeam = team.members && team.members.some(member => member.user?.id === userId);
+        console.log(`[TeamsService] Team ${team.id}: hasMembers=${!!team.members}, isMemberInTeam=${isInTeam}`);
         return isInTeam;
       });
       
-      console.log(`[TeamsService] Teacher returning ${teacherTeams.length} teams`);
-      const dtos = teacherTeams.map(team => this.toDto(team));
+      console.log(`[TeamsService] Member returning ${memberTeams.length} teams`);
+      const dtos = memberTeams.map(team => this.toDto(team));
       console.log(`[TeamsService] Converted to ${dtos.length} DTOs`);
       return dtos;
     }
@@ -157,11 +157,11 @@ export class TeamsService {
         email: leader.user?.email || '',
         phone: leader.user?.phone || '',
       })),
-      teachers: (entity.teachers || []).map(teacher => ({
-        id: teacher.id || '', // ID do perfil
-        name: teacher.user?.name || '',
-        email: teacher.user?.email || '',
-        phone: teacher.user?.phone || '',
+      members: (entity.members || []).map(member => ({
+        id: member.id || '', // ID do perfil
+        name: member.user?.name || '',
+        email: member.user?.email || '',
+        phone: member.user?.phone || '',
       })),
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,

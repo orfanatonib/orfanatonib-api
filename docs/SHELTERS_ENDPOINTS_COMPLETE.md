@@ -115,7 +115,7 @@ interface Paginated<ShelterResponseDto> {
               }
             }
           ],
-          "teachers": [
+          "members": [
             {
               "id": "uuid-here",
               "active": true,
@@ -133,7 +133,7 @@ interface Paginated<ShelterResponseDto> {
         }
       ],
       "leaders": [...],  // Agregado de todos os líderes de todas as equipes
-      "teachers": [...], // Agregado de todos os professores de todas as equipes
+      "members": [...], // Agregado de todos os professores de todas as equipes
       "mediaItem": {
         "id": "uuid-here",
         "title": "Foto do Abrigo",
@@ -272,7 +272,7 @@ interface ShelterResponseDto {
   address: AddressResponseDto;
   teams: TeamWithMembersDto[];
   leaders: CoordinatorWithUserDto[];  // Agregado de todas as equipes
-  teachers: TeacherWithUserDto[];     // Agregado de todas as equipes
+  members: MemberWithUserDto[];     // Agregado de todas as equipes
   mediaItem?: MediaItemResponseDto | null;
   createdAt: Date;
   updatedAt: Date;
@@ -290,7 +290,7 @@ interface ShelterResponseDto {
   "address": { ... },
   "teams": [ ... ],
   "leaders": [ ... ],
-  "teachers": [ ... ],
+  "members": [ ... ],
   "mediaItem": { ... },
   "createdAt": "2025-01-01T00:00:00.000Z",
   "updatedAt": "2025-01-01T00:00:00.000Z"
@@ -386,13 +386,13 @@ interface CreateShelterRequestDto {
       "numberTeam": 1,
       "description": "Equipe matutina",
       "leaderProfileIds": ["uuid-lider-1"],
-      "teacherProfileIds": ["uuid-professor-1", "uuid-professor-2"]
+      "memberProfileIds": ["uuid-professor-1", "uuid-professor-2"]
     },
     {
       "numberTeam": 2,
       "description": "Equipe vespertina",
       "leaderProfileIds": ["uuid-lider-2"],
-      "teacherProfileIds": ["uuid-professor-3"]
+      "memberProfileIds": ["uuid-professor-3"]
     }
   ],
   "mediaItem": {
@@ -439,7 +439,7 @@ formData.append('shelterData', JSON.stringify({
     {
       numberTeam: 1,
       leaderProfileIds: ["uuid-lider-1"],
-      teacherProfileIds: ["uuid-professor-1"]
+      memberProfileIds: ["uuid-professor-1"]
     }
   ],
   mediaItem: {
@@ -517,7 +517,7 @@ interface UpdateShelterRequestDto {
       "numberTeam": 1,
       "description": "Equipe atualizada",
       "leaderProfileIds": ["uuid-lider-1"],
-      "teacherProfileIds": ["uuid-professor-1"]
+      "memberProfileIds": ["uuid-professor-1"]
     }
   ]
 }
@@ -733,14 +733,14 @@ interface LeaderSimpleListDto {
 
 ---
 
-### GET /teacher-profiles/simple - Listar Professores (Simplificado)
+### GET /member-profiles/simple - Listar Professores (Simplificado)
 
 Lista todos os professores em formato simplificado para uso em selects/dropdowns.
 
 #### Request
 
 ```http
-GET /teacher-profiles/simple
+GET /member-profiles/simple
 Authorization: Bearer <token>
 ```
 
@@ -749,8 +749,8 @@ Authorization: Bearer <token>
 **Status:** `200 OK`
 
 ```typescript
-interface TeacherSimpleListDto {
-  teacherProfileId: string;  // ID do perfil de professor (use este ID para vincular)
+interface MemberSimpleListDto {
+  memberProfileId: string;  // ID do perfil de professor (use este ID para vincular)
   name: string;              // Nome do professor
   vinculado: boolean;        // Indica se já está vinculado a uma equipe
 }
@@ -761,21 +761,21 @@ interface TeacherSimpleListDto {
 ```json
 [
   {
-    "teacherProfileId": "uuid-professor-1",
+    "memberProfileId": "uuid-professor-1",
     "name": "Pedro Costa",
     "vinculado": false
   },
   {
-    "teacherProfileId": "uuid-professor-2",
+    "memberProfileId": "uuid-professor-2",
     "name": "Ana Lima",
     "vinculado": true
   }
 ]
 ```
 
-**Uso:** Use o campo `teacherProfileId` no array `teacherProfileIds` ao criar/editar equipes.
+**Uso:** Use o campo `memberProfileId` no array `memberProfileIds` ao criar/editar equipes.
 
-**Nota:** Use o campo `leaderProfileId` (não `id`) para vincular líderes às equipes. Use o campo `teacherProfileId` (não `id`) para vincular professores às equipes.
+**Nota:** Use o campo `leaderProfileId` (não `id`) para vincular líderes às equipes. Use o campo `memberProfileId` (não `id`) para vincular professores às equipes.
 
 ---
 
@@ -875,7 +875,7 @@ interface TeamInputDto {
   numberTeam: number;                    // Obrigatório (mínimo 1)
   description?: string;                  // Opcional
   leaderProfileIds?: string[];           // Opcional (array de UUIDs)
-  teacherProfileIds?: string[];          // Opcional (array de UUIDs)
+  memberProfileIds?: string[];          // Opcional (array de UUIDs)
 }
 ```
 
@@ -939,7 +939,7 @@ interface ShelterResponseDto {
   address: AddressResponseDto;
   teams: TeamWithMembersDto[];
   leaders: CoordinatorWithUserDto[];  // Agregado de todas as equipes
-  teachers: TeacherWithUserDto[];     // Agregado de todas as equipes
+  members: MemberWithUserDto[];     // Agregado de todas as equipes
   mediaItem?: MediaItemResponseDto | null;
   createdAt: Date;
   updatedAt: Date;
@@ -989,7 +989,7 @@ interface TeamWithMembersDto {
   numberTeam: number;
   description?: string;
   leaders: CoordinatorWithUserDto[];
-  teachers: TeacherWithUserDto[];
+  members: MemberWithUserDto[];
 }
 ```
 
@@ -1003,10 +1003,10 @@ interface CoordinatorWithUserDto {
 }
 ```
 
-### TeacherWithUserDto
+### MemberWithUserDto
 
 ```typescript
-interface TeacherWithUserDto {
+interface MemberWithUserDto {
   id: string;
   active: boolean;
   user: UserMiniDto;
@@ -1084,11 +1084,11 @@ interface LeaderSimpleListDto {
 }
 ```
 
-### TeacherSimpleListDto
+### MemberSimpleListDto
 
 ```typescript
-interface TeacherSimpleListDto {
-  teacherProfileId: string;  // ID do perfil de professor (use para vincular)
+interface MemberSimpleListDto {
+  memberProfileId: string;  // ID do perfil de professor (use para vincular)
   name: string;              // Nome do professor
   vinculado: boolean;        // Indica se já está vinculado a uma equipe
 }
@@ -1114,7 +1114,7 @@ interface TeacherSimpleListDto {
 
 ### 403 Forbidden
 - Usuário sem permissão (apenas `admin` e `leader` podem criar/editar/deletar)
-- `teacher` tentando acessar endpoints restritos
+- `member` tentando acessar endpoints restritos
 
 ### 404 Not Found
 - Abrigo não encontrado

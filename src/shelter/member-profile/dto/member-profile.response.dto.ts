@@ -1,5 +1,5 @@
 import { Exclude, Expose, Type, Transform, plainToInstance } from 'class-transformer';
-import { TeacherProfileEntity } from '../entities/teacher-profile.entity/teacher-profile.entity';
+import { MemberProfileEntity } from '../entities/member-profile.entity/member-profile.entity';
 
 @Exclude()
 class UserMiniDto {
@@ -13,7 +13,7 @@ class UserMiniDto {
 }
 
 @Exclude()
-export class TeacherMiniDto {
+export class MemberMiniDto {
   @Expose() id!: string;
   @Expose() active!: boolean;
 
@@ -55,7 +55,7 @@ export class ShelterMiniWithCoordinatorDto {
 }
 
 @Exclude()
-export class TeacherResponseDto {
+export class MemberResponseDto {
   @Expose() id!: string;
   @Expose() active!: boolean;
 
@@ -93,6 +93,6 @@ export class TeacherResponseDto {
   @Expose() updatedAt!: Date;
 }
 
-export function toTeacherDto(entity: TeacherProfileEntity): TeacherResponseDto {
-  return plainToInstance(TeacherResponseDto, entity, { excludeExtraneousValues: true });
+export function toMemberDto(entity: MemberProfileEntity): MemberResponseDto {
+  return plainToInstance(MemberResponseDto, entity, { excludeExtraneousValues: true });
 }

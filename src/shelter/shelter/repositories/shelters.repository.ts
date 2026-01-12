@@ -21,7 +21,7 @@ import { QuerySheltersDto } from '../dto/query-shelters.dto';
 import { ShelterEntity } from '../entities/shelter.entity/shelter.entity';
 import { AddressEntity } from 'src/shelter/address/entities/address.entity/address.entity';
 import { LeaderProfileEntity } from 'src/shelter/leader-profile/entities/leader-profile.entity/leader-profile.entity';
-import { TeacherProfileEntity } from 'src/shelter/teacher-profile/entities/teacher-profile.entity/teacher-profile.entity';
+import { MemberProfileEntity } from 'src/shelter/member-profile/entities/member-profile.entity/member-profile.entity';
 import { TeamEntity } from 'src/shelter/team/entities/team.entity';
 import { UserEntity } from 'src/core/user/entities/user.entity';
 import { ShelterSelectOptionDto, toShelterSelectOption } from '../dto/shelter-select-option.dto';
@@ -47,8 +47,8 @@ export class SheltersRepository {
     @InjectRepository(LeaderProfileEntity)
     private readonly leaderRepo: Repository<LeaderProfileEntity>,
 
-    @InjectRepository(TeacherProfileEntity)
-    private readonly teacherProfileRepo: Repository<TeacherProfileEntity>,
+    @InjectRepository(MemberProfileEntity)
+    private readonly memberProfileRepo: Repository<MemberProfileEntity>,
 
     @InjectRepository(TeamEntity)
     private readonly teamRepo: Repository<TeamEntity>,
@@ -69,7 +69,7 @@ export class SheltersRepository {
       .leftJoinAndSelect('shelter.address', 'address')
       .leftJoinAndSelect('shelter.teams', 'teams')
       .leftJoinAndSelect('teams.leaders', 'leaders')
-      .leftJoinAndSelect('teams.teachers', 'teachers')
+      .leftJoinAndSelect('teams.members', 'members')
       .leftJoin('leaders.user', 'leaderUser')
       .addSelect([
         'leaderUser.id',
@@ -80,15 +80,15 @@ export class SheltersRepository {
         'leaderUser.completed',
         'leaderUser.commonUser',
       ])
-      .leftJoin('teachers.user', 'teacherUser')
+      .leftJoin('members.user', 'memberUser')
       .addSelect([
-        'teacherUser.id',
-        'teacherUser.name',
-        'teacherUser.email',
-        'teacherUser.phone',
-        'teacherUser.active',
-        'teacherUser.completed',
-        'teacherUser.commonUser',
+        'memberUser.id',
+        'memberUser.name',
+        'memberUser.email',
+        'memberUser.phone',
+        'memberUser.active',
+        'memberUser.completed',
+        'memberUser.commonUser',
       ]);
   }
 
@@ -99,8 +99,8 @@ export class SheltersRepository {
 
     if (role === 'leader') {
       qb.andWhere('leaderUser.id = :uid', { uid: userId }).distinct(true);
-    } else if (role === 'teacher') {
-      qb.andWhere('teacherUser.id = :uid', { uid: userId }).distinct(true);
+    } else if (role === 'member') {
+      qb.andWhere('memberUser.id = :uid', { uid: userId }).distinct(true);
     } else {
       qb.andWhere('1 = 0');
     }
@@ -137,8 +137,8 @@ export class SheltersRepository {
       .leftJoin('shelter.teams', 'teams')
       .leftJoin('teams.leaders', 'leaders')
       .leftJoin('leaders.user', 'leaderUser')
-      .leftJoin('teams.teachers', 'teachers')
-      .leftJoin('teachers.user', 'teacherUser')
+      .leftJoin('teams.members', 'members')
+      .leftJoin('members.user', 'memberUser')
       .select('shelter.id', 'id')
       .addSelect(orderBy, 'orderField')
       .distinct(true);
@@ -165,7 +165,7 @@ export class SheltersRepository {
               AND LOWER(lu.name) LIKE LOWER(:searchString)
         ) OR EXISTS (
             SELECT 1 FROM teams t
-            JOIN teacher_profiles tp ON tp.team_id = t.id
+            JOIN member_profiles tp ON tp.team_id = t.id
           JOIN users tu ON tu.id = tp.user_id
             WHERE t.shelter_id = shelter.id
               AND LOWER(tu.name) LIKE LOWER(:searchString)
@@ -234,7 +234,7 @@ export class SheltersRepository {
       .where('shelter.id = :id', { id })
       .orderBy('shelter.name', 'ASC')
       .addOrderBy('teams.numberTeam', 'ASC')
-      .addOrderBy('teachers.createdAt', 'ASC');
+      .addOrderBy('members.createdAt', 'ASC');
     this.applyRoleFilter(qb, ctx);
 
     return qb.getOne();
@@ -277,11 +277,11 @@ export class SheltersRepository {
       WHERE t.shelter_id = ?
     `, [id]);
 
-    const teachersData = await manager.query(`
+    const membersData = await manager.query(`
       SELECT tp.id, tp.active, tp.createdAt, tp.updatedAt, tp.user_id, tp.team_id,
              u.id as user_id, u.name, u.email, u.phone, u.active as user_active, u.completed, u.commonUser, u.role,
              t.id as team_id, t.numberTeam as team_numberTeam
-      FROM teacher_profiles tp
+      FROM member_profiles tp
       JOIN users u ON u.id = tp.user_id
       JOIN teams t ON t.id = tp.team_id
       WHERE t.shelter_id = ?
@@ -343,31 +343,31 @@ export class SheltersRepository {
           return leaderEntity;
         });
 
-      const teamTeachers = teachersData
+      const teamMembers = membersData
         .filter((td: any) => td.team_id === teamData.id)
-        .map((teacherData: any) => {
-          const teacherEntity = new TeacherProfileEntity();
-          teacherEntity.id = teacherData.id;
-          teacherEntity.active = teacherData.active;
-          teacherEntity.createdAt = teacherData.createdAt;
-          teacherEntity.updatedAt = teacherData.updatedAt;
+        .map((memberData: any) => {
+          const memberEntity = new MemberProfileEntity();
+          memberEntity.id = memberData.id;
+          memberEntity.active = memberData.active;
+          memberEntity.createdAt = memberData.createdAt;
+          memberEntity.updatedAt = memberData.updatedAt;
 
           const userEntity = new UserEntity();
-          userEntity.id = teacherData.user_id;
-          userEntity.name = teacherData.name;
-          userEntity.email = teacherData.email;
-          userEntity.phone = teacherData.phone;
-          userEntity.active = teacherData.user_active;
-          userEntity.completed = teacherData.completed;
-          userEntity.commonUser = teacherData.commonUser;
-          userEntity.role = teacherData.role;
+          userEntity.id = memberData.user_id;
+          userEntity.name = memberData.name;
+          userEntity.email = memberData.email;
+          userEntity.phone = memberData.phone;
+          userEntity.active = memberData.user_active;
+          userEntity.completed = memberData.completed;
+          userEntity.commonUser = memberData.commonUser;
+          userEntity.role = memberData.role;
 
-          teacherEntity.user = userEntity;
-          return teacherEntity;
+          memberEntity.user = userEntity;
+          return memberEntity;
         });
 
       teamEntity.leaders = teamLeaders;
-      teamEntity.teachers = teamTeachers;
+      teamEntity.members = teamMembers;
       return teamEntity;
     });
 
@@ -456,7 +456,7 @@ export class SheltersRepository {
   async deleteById(id: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const txShelter = manager.withRepository(this.shelterRepo);
-      const txTeacher = manager.withRepository(this.teacherProfileRepo);
+      const txMember = manager.withRepository(this.memberProfileRepo);
       const txLeader = manager.withRepository(this.leaderRepo);
       const txAddress = manager.withRepository(this.addressRepo);
       const txTeam = manager.withRepository(this.teamRepo);
@@ -478,7 +478,7 @@ export class SheltersRepository {
         );
 
         await manager.query(
-          `UPDATE teacher_profiles SET team_id = NULL WHERE team_id = ?`,
+          `UPDATE member_profiles SET team_id = NULL WHERE team_id = ?`,
           [team.id]
         );
       }

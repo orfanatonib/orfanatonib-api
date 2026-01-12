@@ -115,7 +115,7 @@ interface LeaderResponseDto {
       numberTeam: number;    // Número da equipe: 1, 2, 3, 4... (tipo number)
       description?: string;
     }[];
-    teachers: {              // Professores de todas as equipes do líder neste abrigo
+    members: {              // Professores de todas as equipes do líder neste abrigo
       id: string;
       active: boolean;
       user: {
@@ -140,10 +140,10 @@ Líder
   └── shelters[] (Array de Abrigos)
         ├── Abrigo 1
         │     ├── teams[] (Equipes do líder neste abrigo)
-        │     └── teachers[] (Professores das equipes)
+        │     └── members[] (Professores das equipes)
         ├── Abrigo 2
         │     ├── teams[] (Equipes do líder neste abrigo)
-        │     └── teachers[] (Professores das equipes)
+        │     └── members[] (Professores das equipes)
         └── ...
 ```
 
@@ -228,7 +228,7 @@ Authorization: Bearer {token}
               "description": "Equipe Vespertina"
             }
           ],
-          "teachers": [
+          "members": [
             {
               "id": "660e8400-e29b-41d4-a716-446655440000",
               "active": true,
@@ -254,7 +254,7 @@ Authorization: Bearer {token}
               "description": "Equipe Principal"
             }
           ],
-          "teachers": []
+          "members": []
         }
       ],
       "createdAt": "2024-11-29T10:00:00.000Z",
@@ -359,7 +359,7 @@ Authorization: Bearer {token}
           "description": "Equipe Vespertina"
         }
       ],
-      "teachers": [
+      "members": [
         {
           "id": "660e8400-e29b-41d4-a716-446655440000",
           "active": true,
@@ -569,7 +569,7 @@ interface LeaderResponseDto {
 - Cada abrigo contém:
   - `id` e `name` do abrigo
   - `teams` (array de equipes do líder neste abrigo) com `id`, `numberTeam` e `description`
-  - `teachers` (array de professores de todas as equipes do líder neste abrigo)
+  - `members` (array de professores de todas as equipes do líder neste abrigo)
 - Quando o líder não está vinculado a nenhuma equipe, `shelters` é um array vazio `[]`
 - Os abrigos são agrupados automaticamente: se o líder está em múltiplas equipes do mesmo abrigo, todas aparecem no mesmo objeto
 
@@ -601,15 +601,15 @@ interface ShelterMiniWithCoordinatorDto {
   id: string;                // UUID do abrigo
   name: string;              // Nome do abrigo
   teams: TeamMiniDto[];      // ⭐ Array de equipes do líder neste abrigo
-  teachers: TeacherMiniDto[];  // Professores de todas as equipes do líder neste abrigo
+  members: MemberMiniDto[];  // Professores de todas as equipes do líder neste abrigo
 }
 ```
 
 **Nota:** A estrutura mostra `shelters[].teams[]`, indicando que o líder pode estar em múltiplas equipes do mesmo abrigo, refletindo o relacionamento ManyToMany: Líder → Múltiplas Equipes → Abrigos.
 
-#### TeacherMiniDto (DTO Interno)
+#### MemberMiniDto (DTO Interno)
 ```typescript
-interface TeacherMiniDto {
+interface MemberMiniDto {
   id: string;                // UUID do perfil do professor
   active: boolean;           // Status ativo/inativo
   user: UserMiniDto;         // Dados do usuário
@@ -737,7 +737,7 @@ interface LeaderMiniDto {
 
 ### Com Professores
 - Líderes e professores podem estar na mesma equipe
-- Um líder pode ver os professores de todas as suas equipes na resposta (`shelters[].teachers`)
+- Um líder pode ver os professores de todas as suas equipes na resposta (`shelters[].members`)
 
 ### Com Usuários
 - Cada perfil de líder está vinculado a **1 usuário**

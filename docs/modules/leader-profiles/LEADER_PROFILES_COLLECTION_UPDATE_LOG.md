@@ -61,7 +61,7 @@ Atualizar a collection do Postman para refletir **exatamente** as estruturas dos
     "name": string,
     "number": number,
     "weekday": Weekday,
-    "teachers": TeacherMiniDto[]
+    "members": MemberMiniDto[]
   } | null,  // ← Pode ser null
   "createdAt": Date,
   "updatedAt": Date
@@ -126,9 +126,9 @@ Atualizar a collection do Postman para refletir **exatamente** as estruturas dos
 
 - ✅ Todos os campos obrigatórios dos DTOs
 - ✅ Tipos de dados corretos (UUID, string, boolean, Date)
-- ✅ Estruturas aninhadas (user, shelter, teachers)
+- ✅ Estruturas aninhadas (user, shelter, members)
 - ✅ Valores null quando apropriado
-- ✅ Arrays de teachers vazios e populados
+- ✅ Arrays de members vazios e populados
 - ✅ Paginação com `pageCount` correto
 - ✅ Filtros combinados funcionando
 

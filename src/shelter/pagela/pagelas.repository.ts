@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { PagelaEntity } from './entities/pagela.entity';
 import { ShelteredEntity } from 'src/shelter/sheltered/entities/sheltered.entity';
-import { TeacherProfileEntity } from 'src/shelter/teacher-profile/entities/teacher-profile.entity/teacher-profile.entity';
+import { MemberProfileEntity } from 'src/shelter/member-profile/entities/member-profile.entity/member-profile.entity';
 import { PagelaFiltersDto } from './dto/pagela-filters.dto';
 
 @Injectable()
@@ -14,8 +14,8 @@ export class PagelasRepository {
     private readonly repo: Repository<PagelaEntity>,
     @InjectRepository(ShelteredEntity)
     private readonly shelteredRepo: Repository<ShelteredEntity>,
-    @InjectRepository(TeacherProfileEntity)
-    private readonly teacherRepo: Repository<TeacherProfileEntity>,
+    @InjectRepository(MemberProfileEntity)
+    private readonly memberRepo: Repository<MemberProfileEntity>,
   ) { }
 
   private baseQB(): SelectQueryBuilder<PagelaEntity> {
@@ -23,10 +23,10 @@ export class PagelasRepository {
       .createQueryBuilder('p')
       .leftJoin('p.sheltered', 'sheltered')
       .addSelect(['sheltered.id', 'sheltered.name'])
-      .leftJoin('p.teacher', 'teacher')
-      .addSelect(['teacher.id'])
-      .leftJoin('teacher.user', 'teacherUser')
-      .addSelect(['teacherUser.id', 'teacherUser.name']);
+      .leftJoin('p.member', 'member')
+      .addSelect(['member.id'])
+      .leftJoin('member.user', 'memberUser')
+      .addSelect(['memberUser.id', 'memberUser.name']);
   }
 
   private applyFilters(
@@ -58,7 +58,7 @@ export class PagelasRepository {
           CAST(p.visit AS CHAR) LIKE :searchStringRaw OR
           CAST(p.year AS CHAR) LIKE :searchStringRaw OR
           LOWER(COALESCE(p.notes, '')) LIKE LOWER(:searchString) OR
-          LOWER(COALESCE(teacherUser.name, '')) LIKE LOWER(:searchString)
+          LOWER(COALESCE(memberUser.name, '')) LIKE LOWER(:searchString)
         )`,
         { searchString: like, searchStringRaw: `%${f.searchString.trim()}%` }
       );
@@ -98,13 +98,13 @@ export class PagelasRepository {
   async findOneByChildYearVisitOrNull(shelteredId: string, year: number, visit: number): Promise<PagelaEntity | null> {
     return this.repo.findOne({
       where: { sheltered: { id: shelteredId }, year, visit },
-      relations: { sheltered: true, teacher: true },
+      relations: { sheltered: true, member: true },
     });
   }
 
   async createOne(data: {
     shelteredId: string;
-    teacherProfileId: string;
+    memberProfileId: string;
     referenceDate: string;
     year: number;
     visit: number;
@@ -114,14 +114,14 @@ export class PagelasRepository {
     return this.dataSource.transaction(async (manager) => {
       const txPagela = manager.withRepository(this.repo);
       const txSheltered = manager.withRepository(this.shelteredRepo);
-      const txTeacher = manager.withRepository(this.teacherRepo);
+      const txMember = manager.withRepository(this.memberRepo);
 
-      const [sheltered, teacher] = await Promise.all([
+      const [sheltered, member] = await Promise.all([
         txSheltered.findOne({ where: { id: data.shelteredId } }),
-        txTeacher.findOne({ where: { id: data.teacherProfileId } }),
+        txMember.findOne({ where: { id: data.memberProfileId } }),
       ]);
       if (!sheltered) throw new NotFoundException('Sheltered not found');
-      if (!teacher) throw new NotFoundException('TeacherProfile not found');
+      if (!member) throw new NotFoundException('MemberProfile not found');
 
       const existing = await txPagela.findOne({
         where: { sheltered: { id: data.shelteredId }, year: data.year, visit: data.visit },
@@ -132,7 +132,7 @@ export class PagelasRepository {
 
       const entity = txPagela.create({
         sheltered,
-        teacher,
+        member,
         referenceDate: data.referenceDate,
         year: data.year,
         visit: data.visit,
@@ -156,11 +156,11 @@ export class PagelasRepository {
       const txPagela = manager.withRepository(this.repo);
       const entity = await txPagela.findOne({
         where: { id },
-        relations: { sheltered: true, teacher: true },
+        relations: { sheltered: true, member: true },
       });
       if (!entity) throw new NotFoundException('Pagela not found');
 
-      if (data.teacher) {
+      if (data.member) {
       }
 
       Object.assign(entity, data);

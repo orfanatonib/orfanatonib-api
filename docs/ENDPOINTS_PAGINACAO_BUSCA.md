@@ -90,11 +90,11 @@ Authorization: Bearer {token}
           "numberTeam": 1,
           "description": "Equipe Matutina",
           "leaders": [...],
-          "teachers": [...]
+          "members": [...]
         }
       ],
       "leaders": [...],
-      "teachers": [...],
+      "members": [...],
       "createdAt": "2024-11-29T10:00:00.000Z",
       "updatedAt": "2024-11-29T10:00:00.000Z"
     }
@@ -236,7 +236,7 @@ O parâmetro `searchString` busca nos seguintes campos:
 - ✅ **Número da visita** (`pagela.visit`) - convertido para string
 - ✅ **Ano** (`pagela.year`) - convertido para string
 - ✅ **Observação** (`pagela.notes`)
-- ✅ **Nome do professor que lançou a pagela** (`teacher.user.name`)
+- ✅ **Nome do professor que lançou a pagela** (`member.user.name`)
 
 **Nota:** A busca é case-insensitive e usa `LIKE` (busca parcial). Para números (visita e ano), a busca funciona convertendo para string.
 
@@ -263,7 +263,7 @@ Authorization: Bearer {token}
         "id": "0af63fc5-80fe-4503-919d-c8faacb527c9",
         "name": "Maria Silva"
       },
-      "teacher": {
+      "member": {
         "id": "cc0e8400-e29b-41d4-a716-446655440000",
         "active": true,
         "user": {

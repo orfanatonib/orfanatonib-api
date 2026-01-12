@@ -5,7 +5,7 @@ export type ShelterLite = {
   name: string;
 };
 
-export type TeacherProfileLite = {
+export type MemberProfileLite = {
   id: string;
   active: boolean;
   shelter: ShelterLite | null;
@@ -27,6 +27,6 @@ export class MeResponseDto {
   commonUser!: boolean;
   role!: UserRole;
 
-  teacherProfile!: TeacherProfileLite | null;
+  memberProfile!: MemberProfileLite | null;
   leaderProfile!: CoordinatorProfileLite | null;
 }

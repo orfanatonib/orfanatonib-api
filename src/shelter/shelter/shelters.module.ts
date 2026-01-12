@@ -11,7 +11,7 @@ import { CreateSheltersService } from './services/create-shelters.service';
 import { SheltersRepository } from './repositories/shelters.repository';
 import { ShelterEntity } from './entities/shelter.entity/shelter.entity';
 
-import { TeacherProfilesModule } from '../teacher-profile/teacher-profiles.module';
+import { MemberProfilesModule } from '../member-profile/member-profiles.module';
 import { AddressesModule } from '../address/addresses.module';
 import { LeaderProfilesModule } from '../leader-profile/leader-profiles.module';
 import { AddressEntity } from '../address/entities/address.entity/address.entity';
@@ -29,7 +29,7 @@ import { MediaItemEntity } from 'src/shared/media/media-item/media-item.entity';
   imports: [
     TypeOrmModule.forFeature([ShelterEntity, AddressEntity, RouteEntity, TeamEntity, MediaItemEntity]),
     forwardRef(() => AddressesModule),
-    forwardRef(() => TeacherProfilesModule),
+    forwardRef(() => MemberProfilesModule),
     forwardRef(() => LeaderProfilesModule),
     forwardRef(() => ShelteredModule),
     forwardRef(() => AuthModule),

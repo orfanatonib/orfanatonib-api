@@ -64,15 +64,15 @@ export class GetSheltersService {
 
     teams.forEach((team: any) => {
       const leaders = Array.isArray(team?.leaders) ? team.leaders : [];
-      const teachers = Array.isArray(team?.teachers) ? team.teachers : [];
+      const members = Array.isArray(team?.members) ? team.members : [];
 
       leaders.forEach((leader: any) => {
         const userId = leader?.user?.id;
         if (typeof userId === 'string' && userId) userIdsSet.add(userId);
       });
 
-      teachers.forEach((teacher: any) => {
-        const userId = teacher?.user?.id;
+      members.forEach((member: any) => {
+        const userId = member?.user?.id;
         if (typeof userId === 'string' && userId) userIdsSet.add(userId);
       });
     });
@@ -101,7 +101,7 @@ export class GetSheltersService {
 
     teams.forEach((team: any) => {
       const leaders = Array.isArray(team?.leaders) ? team.leaders : [];
-      const teachers = Array.isArray(team?.teachers) ? team.teachers : [];
+      const members = Array.isArray(team?.members) ? team.members : [];
 
       leaders.forEach((leader: any) => {
         const userId = leader?.user?.id;
@@ -109,17 +109,17 @@ export class GetSheltersService {
         leader.user.mediaItem = mediaMap.get(userId) || null;
       });
 
-      teachers.forEach((teacher: any) => {
-        const userId = teacher?.user?.id;
-        if (!teacher?.user || typeof userId !== 'string') return;
-        teacher.user.mediaItem = mediaMap.get(userId) || null;
+      members.forEach((member: any) => {
+        const userId = member?.user?.id;
+        if (!member?.user || typeof userId !== 'string') return;
+        member.user.mediaItem = mediaMap.get(userId) || null;
       });
     });
   }
 
   async findAllPaginated(q: QuerySheltersDto, req: Request): Promise<Paginated<ShelterResponseDto>> {
     const ctx = await this.getCtx(req);
-    if (!ctx.role || ctx.role === 'teacher') throw new ForbiddenException('Acesso negado');
+    if (!ctx.role || ctx.role === 'member') throw new ForbiddenException('Acesso negado');
 
     const { page = 1, limit = 10 } = q;
     const { items, total } = await this.sheltersRepository.findAllPaginated(q, ctx);

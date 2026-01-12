@@ -7,7 +7,7 @@ export class TeamLeaderDto {
   @Expose() phone!: string;
 }
 
-export class TeamTeacherDto {
+export class TeamMemberDto {
   @Expose() id!: string; // ID do perfil do professor
   @Expose() name!: string;
   @Expose() email!: string;
@@ -45,8 +45,8 @@ export class TeamResponseDto {
   leaders!: TeamLeaderDto[];
 
   @Expose()
-  @Type(() => TeamTeacherDto)
-  teachers!: TeamTeacherDto[];
+  @Type(() => TeamMemberDto)
+  members!: TeamMemberDto[];
 
   @Expose() createdAt!: Date;
   @Expose() updatedAt!: Date;

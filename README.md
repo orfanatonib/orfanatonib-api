@@ -2,7 +2,7 @@
 
 ## 📋 Visão Geral
 
-API REST desenvolvida com NestJS para gerenciar um sistema completo de orfanato, incluindo usuários, abrigos, crianças abrigadas, perfis de líderes e professores, além de páginas de conteúdo (eventos, vídeos, imagens, ideias, materiais de visita, meditações, etc.).
+API REST desenvolvida com NestJS para gerenciar um sistema completo de orfanato, incluindo usuários, abrigos, crianças abrigadas, perfis de líderes e membros, além de páginas de conteúdo (eventos, vídeos, imagens, ideias, materiais de visita, meditações, etc.).
 
 ## 🏗️ Arquitetura
 
@@ -16,7 +16,7 @@ API REST desenvolvida com NestJS para gerenciar um sistema completo de orfanato,
 - **Shelters** - Gerenciamento de abrigos, equipes, endereços
 - **Sheltered** - Crianças abrigadas, dados pessoais, responsáveis
 - **Leader Profiles** - Perfis de líderes/coordenadores
-- **Teacher Profiles** - Perfis de professores
+- **Member Profiles** - Perfis de membros
 - **Pagelas** - Sistema de relatórios e visitas
 
 #### 📄 Páginas de Conteúdo
@@ -43,7 +43,7 @@ orfanatonib-api/
 │   │   ├── shelters/
 │   │   ├── sheltered/
 │   │   ├── leader-profiles/
-│   │   ├── teacher-profiles/
+│   │   ├── member-profiles/
 │   │   └── pagelas/
 │   ├── guides/                 # Guias gerais
 │   ├── MODULO_*.md            # Guias completos para frontend
@@ -66,7 +66,7 @@ orfanatonib-api/
 │   │   ├── shelters/
 │   │   ├── sheltered/
 │   │   ├── leader-profiles/
-│   │   ├── teacher-profiles/
+│   │   ├── member-profiles/
 │   │   └── pagelas/
 │   └── run-all-automations.js  # Script master para todas as automações
 └── src/                        # Código fonte da aplicação
@@ -111,9 +111,9 @@ npm run start:dev
 - **[Changelog](docs/CHANGELOG.md)** - Histórico de mudanças
 
 ### 🎯 Guias para Frontend
-- **[Módulo Abrigo](docs/MODULO_ABRIGO.md)** - Guia completo de abrigos, equipes, líderes e professores
+- **[Módulo Abrigo](docs/MODULO_ABRIGO.md)** - Guia completo de abrigos, equipes, líderes e membros
 - **[Módulo Líder](docs/MODULO_LIDER.md)** - Guia completo de perfis de líderes
-- **[Módulo Professor](docs/MODULO_PROFESSOR.md)** - Guia completo de perfis de professores
+- **[Módulo Membro](docs/MODULO_MEMBRO.md)** - Guia completo de perfis de membros
 - **[Módulo Materiais de Visita](docs/MODULO_MATERIAIS_VISITA.md)** - Guia de materiais bíblicos
 
 ### 📦 Documentação por Módulo
@@ -123,7 +123,7 @@ Cada módulo tem sua própria documentação em `docs/modules/[módulo]/`:
 - **[Shelters](docs/modules/shelters/README.md)** - Gerenciamento de abrigos
 - **[Sheltered](docs/modules/sheltered/README.md)** - Crianças abrigadas
 - **[Leader Profiles](docs/modules/leader-profiles/README.md)** - Perfis de líderes
-- **[Teacher Profiles](docs/modules/teacher-profiles/README.md)** - Perfis de professores
+- **[Member Profiles](docs/modules/member-profiles/README.md)** - Perfis de membros
 - **[Pagelas](docs/modules/pagelas/README.md)** - Sistema de relatórios
 
 ## 🧪 Testes e Automações
@@ -171,7 +171,7 @@ node test/automations/meditations/meditations-complete-automation.js
 - ✅ Feedbacks (20 feedbacks)
 - ✅ Informatives (15 informativos)
 - ✅ Meditations (10 meditações)
-- ✅ Users, Shelters, Sheltered, Leaders, Teachers, Pagelas
+- ✅ Users, Shelters, Sheltered, Leaders, Members, Pagelas
 
 ## 📊 Postman Collections
 
@@ -182,7 +182,7 @@ Todas as collections estão disponíveis em `docs/modules/[módulo]/`:
 - `Shelters_API_Collection.postman_collection.json`
 - `Sheltered_API_Collection.postman_collection.json`
 - `Leader_Profiles_API_Collection.postman_collection.json`
-- `Teacher_Profiles_API_Collection.postman_collection.json`
+- `Member_Profiles_API_Collection.postman_collection.json`
 - `Pagelas_API_Collection.postman_collection.json`
 
 ### Ambiente Postman
@@ -206,8 +206,8 @@ Use o arquivo `docs/Orfanatonib_API_Environment.postman_environment.json` para c
 
 ### Roles de Usuário
 - `admin` - Acesso total ao sistema
-- `coordinator` (leader) - Gerencia abrigos e professores
-- `teacher` - Acesso limitado aos seus dados
+- `coordinator` (leader) - Gerencia abrigos e membros
+- `member` - Acesso limitado aos seus dados
 
 ### Padrões de API
 - RESTful endpoints
@@ -218,7 +218,7 @@ Use o arquivo `docs/Orfanatonib_API_Environment.postman_environment.json` para c
 
 ### Estrutura de Relacionamentos
 ```
-User → Leader/Teacher Profile → Team → Shelter
+User → Leader/Member Profile → Team → Shelter
 Sheltered → Shelter (direto)
 ```
 

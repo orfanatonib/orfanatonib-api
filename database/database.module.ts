@@ -22,7 +22,7 @@ import { IdeasPageEntity } from 'src/content/page/ideas-page/entities/ideas-page
 import { InformativeEntity } from 'src/content/informative/entities/informative.entity';
 import { SiteFeedbackEntity } from 'src/communication/feedback/entity/site-feedback.entity';
 import { ShelterEntity } from 'src/shelter/shelter/entities/shelter.entity/shelter.entity';
-import { TeacherProfileEntity } from 'src/shelter/teacher-profile/entities/teacher-profile.entity/teacher-profile.entity';
+import { MemberProfileEntity } from 'src/shelter/member-profile/entities/member-profile.entity/member-profile.entity';
 import { LeaderProfileEntity } from 'src/shelter/leader-profile/entities/leader-profile.entity/leader-profile.entity';
 import { AddressEntity } from 'src/shelter/address/entities/address.entity/address.entity';
 import { ShelteredEntity } from 'src/shelter/sheltered/entities/sheltered.entity';
@@ -70,7 +70,7 @@ import { FeatureFlagEntity } from 'src/core/feature-flags/entities/feature-flag.
             InformativeEntity,
             SiteFeedbackEntity,
             ShelterEntity,
-            TeacherProfileEntity,
+            MemberProfileEntity,
             LeaderProfileEntity,
             AddressEntity,
             ShelteredEntity,

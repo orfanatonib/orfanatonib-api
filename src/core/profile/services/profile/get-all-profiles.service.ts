@@ -128,11 +128,11 @@ export class GetAllProfilesService {
         WHERE 1=1
       `;
     } else if (requestingUserRole === UserRole.LEADER) {
-      // Leader: apenas teachers das equipes onde é líder
+      // Leader: apenas members das equipes onde é líder
       baseQuery = `
         SELECT DISTINCT u.*, pd.birthDate, up.loveLanguages, up.temperaments, up.favoriteColor
         FROM users u
-        INNER JOIN teacher_profiles tp ON tp.user_id = u.id
+        INNER JOIN member_profiles tp ON tp.user_id = u.id
         INNER JOIN teams t ON t.id = tp.team_id
         INNER JOIN leader_teams lt ON lt.team_id = t.id
         INNER JOIN leader_profiles lp ON lp.id = lt.leader_id
@@ -144,7 +144,7 @@ export class GetAllProfilesService {
       countQuery = `
         SELECT COUNT(DISTINCT u.id) as total
         FROM users u
-        INNER JOIN teacher_profiles tp ON tp.user_id = u.id
+        INNER JOIN member_profiles tp ON tp.user_id = u.id
         INNER JOIN teams t ON t.id = tp.team_id
         INNER JOIN leader_teams lt ON lt.team_id = t.id
         INNER JOIN leader_profiles lp ON lp.id = lt.leader_id

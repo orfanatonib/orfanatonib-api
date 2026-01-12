@@ -1,12 +1,16 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AttendanceEntity } from './entities/attendance.entity';
-import { AttendanceService } from './attendance.service';
+
 import { AttendanceController } from './attendance.controller';
 import { ShelterScheduleEntity } from 'src/shelter/schedule/entities/shelter-schedule.entity';
 import { TeamEntity } from 'src/shelter/team/entities/team.entity';
 import { UserEntity } from 'src/core/user/entities/user.entity';
 import { AuthModule } from 'src/core/auth/auth.module';
+
+import { AttendanceAccessService } from './services/attendance-access.service';
+import { AttendanceReaderService } from './services/attendance-reader.service';
+import { AttendanceWriterService } from './services/attendance-writer.service';
 
 @Module({
   imports: [
@@ -18,8 +22,15 @@ import { AuthModule } from 'src/core/auth/auth.module';
       UserEntity
     ])
   ],
-  providers: [AttendanceService],
+  providers: [
+    AttendanceAccessService,
+    AttendanceReaderService,
+    AttendanceWriterService
+  ],
   controllers: [AttendanceController],
-  exports: [AttendanceService],
+  exports: [
+    AttendanceReaderService,
+    AttendanceWriterService
+  ],
 })
-export class AttendanceModule {}
+export class AttendanceModule { }

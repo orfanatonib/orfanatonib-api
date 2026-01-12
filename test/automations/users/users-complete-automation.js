@@ -91,7 +91,7 @@ async function testUsersCRUD() {
     email: `teste${Date.now()}@example.com`,
     password: 'password123',
     phone: '+5511999999999',
-    role: 'teacher'
+    role: 'member'
   };
   
   const createResponse = await makeRequest('POST', '/users', createData);
@@ -149,8 +149,8 @@ async function testUsersFilters() {
   }
 
   // 3. Filtro por role
-  console.log('  🔸 Teste 3: Filtro por role (role=teacher)');
-  const roleResponse = await makeRequest('GET', '/users?role=teacher&limit=5');
+  console.log('  🔸 Teste 3: Filtro por role (role=member)');
+  const roleResponse = await makeRequest('GET', '/users?role=member&limit=5');
   if (roleResponse && roleResponse.status === 200) {
     console.log(`    ✅ Status: ${roleResponse.status}`);
     console.log(`    📊 Encontrados: ${roleResponse.data.items?.length || 0}`);
@@ -224,7 +224,7 @@ async function testUsersValidation() {
     email: 'email-invalido',
     password: 'password123',
     phone: '+5511999999999',
-    role: 'teacher'
+    role: 'member'
   });
   if (invalidEmailResponse && invalidEmailResponse.status === 400) {
     console.log('    ✅ Erro esperado: Email inválido rejeitado');
@@ -237,7 +237,7 @@ async function testUsersValidation() {
     email: 'teste@example.com',
     password: '123',
     phone: '+5511999999999',
-    role: 'teacher'
+    role: 'member'
   });
   if (shortPasswordResponse && shortPasswordResponse.status === 400) {
     console.log('    ✅ Erro esperado: Senha muito curta rejeitada');
@@ -262,7 +262,7 @@ async function testUsersValidation() {
     name: 'Teste',
     email: 'teste@example.com',
     password: 'password123',
-    role: 'teacher'
+    role: 'member'
   });
   if (noPhoneResponse && noPhoneResponse.status === 400) {
     console.log('    ✅ Erro esperado: Phone obrigatório rejeitado');
@@ -276,7 +276,7 @@ async function testUsersValidation() {
       email: testData.users[0].email, // Usar email existente
       password: 'password123',
       phone: '+5511999999999',
-      role: 'teacher'
+      role: 'member'
     });
     if (duplicateEmailResponse && duplicateEmailResponse.status === 400) {
       console.log('    ✅ Erro esperado: Email duplicado rejeitado');
@@ -303,7 +303,7 @@ async function testUsersAuthentication() {
     email: `auth${Date.now()}@example.com`,
     password: 'password123',
     phone: '+5511888888888',
-    role: 'teacher'
+    role: 'member'
   };
   
   const createResponse = await makeRequest('POST', '/users', createData);
@@ -352,7 +352,7 @@ async function testUsersAuthentication() {
 async function testUsersRoles() {
   console.log('\n📋 Testando Roles de Users...');
   
-  const roles = ['admin', 'leader', 'teacher'];
+  const roles = ['admin', 'leader', 'member'];
   
   for (const role of roles) {
     console.log(`  🔸 Teste: Criar user com role ${role}`);
@@ -383,7 +383,7 @@ async function testUsersStatistics() {
   
   // 1. Contar users por role
   console.log('  🔸 Teste 1: Contar users por role');
-  const roles = ['admin', 'leader', 'teacher'];
+  const roles = ['admin', 'leader', 'member'];
   
   for (const role of roles) {
     const roleResponse = await makeRequest('GET', `/users?role=${role}&limit=1000`);
@@ -416,7 +416,7 @@ async function createUsersInBulk(count = 50) {
   
   const firstNames = ['João', 'Maria', 'Pedro', 'Ana', 'Carlos', 'Juliana', 'Fernando', 'Patricia', 'Ricardo', 'Camila', 'Lucas', 'Beatriz', 'Rafael', 'Mariana', 'Gabriel', 'Isabela', 'Thiago', 'Larissa', 'Bruno', 'Amanda'];
   const lastNames = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Pereira', 'Costa', 'Rodrigues', 'Almeida', 'Nascimento', 'Lima', 'Araújo', 'Fernandes', 'Carvalho', 'Gomes', 'Martins', 'Rocha', 'Ribeiro', 'Alves', 'Monteiro', 'Mendes'];
-  const roles = ['admin', 'leader', 'teacher'];
+  const roles = ['admin', 'leader', 'member'];
   
   const createdUsers = [];
   let successCount = 0;

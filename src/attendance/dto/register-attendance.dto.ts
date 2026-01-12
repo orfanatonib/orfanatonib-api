@@ -1,5 +1,5 @@
 import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
-import { AttendanceType } from '../entities/attendance.entity';
+import { AttendanceType, AttendanceCategory } from '../entities/attendance.entity';
 
 export class RegisterAttendanceDto {
   @IsUUID()
@@ -9,6 +9,10 @@ export class RegisterAttendanceDto {
   @IsEnum(AttendanceType)
   @IsNotEmpty()
   type: AttendanceType;
+
+  @IsEnum(AttendanceCategory)
+  @IsOptional()
+  category?: AttendanceCategory = AttendanceCategory.VISIT;
 
   @IsString()
   @IsOptional()

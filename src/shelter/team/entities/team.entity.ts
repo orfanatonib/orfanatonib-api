@@ -2,7 +2,7 @@ import { BaseEntity } from 'src/shared/entity/base.entity';
 import { Entity, Column, ManyToOne, OneToMany, JoinColumn, ManyToMany } from 'typeorm';
 import { ShelterEntity } from 'src/shelter/shelter/entities/shelter.entity/shelter.entity';
 import { LeaderProfileEntity } from 'src/shelter/leader-profile/entities/leader-profile.entity/leader-profile.entity';
-import { TeacherProfileEntity } from 'src/shelter/teacher-profile/entities/teacher-profile.entity/teacher-profile.entity';
+import { MemberProfileEntity } from 'src/shelter/member-profile/entities/member-profile.entity/member-profile.entity';
 
 @Entity('teams')
 export class TeamEntity extends BaseEntity {
@@ -24,9 +24,9 @@ export class TeamEntity extends BaseEntity {
   })
   leaders: LeaderProfileEntity[];
 
-  @OneToMany(() => TeacherProfileEntity, (teacher) => teacher.team, {
+  @OneToMany(() => MemberProfileEntity, (member) => member.team, {
     cascade: false,
   })
-  teachers: TeacherProfileEntity[];
+  members: MemberProfileEntity[];
 }
 

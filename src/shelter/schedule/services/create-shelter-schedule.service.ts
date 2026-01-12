@@ -97,7 +97,7 @@ export class CreateShelterScheduleService {
         description: `${dto.lessonContent}\n\n${teamInfo}`,
         date: dto.visitDate!,
         location: visitLocation,
-        audience: EventAudience.TEACHERS,
+        audience: EventAudience.MEMBERS,
         shelterSchedule: { id: schedule.id },
       });
     } catch (error) {
@@ -121,7 +121,7 @@ export class CreateShelterScheduleService {
         description: `${dto.observation || 'Reunião de planejamento'}\n\n${teamInfo}`,
         date: dto.meetingDate!,
         location: dto.meetingRoom || 'NIB - Nova Igreja Batista',
-        audience: EventAudience.TEACHERS,
+        audience: EventAudience.MEMBERS,
         shelterSchedule: { id: schedule.id },
       });
     } catch (error) {

@@ -36,11 +36,11 @@ export class ShelteredRepository {
         .leftJoin('leader.user', 'leaderUser')
         .andWhere('leaderUser.id = :uid', { uid: userId })
         .distinct(true);
-    } else if (role === 'teacher') {
+    } else if (role === 'member') {
       qb.leftJoin('shelter.teams', 'team')
-        .leftJoin('team.teachers', 'teachers')
-        .leftJoin('teachers.user', 'teacherUser')
-        .andWhere('teacherUser.id = :uid', { uid: userId })
+        .leftJoin('team.members', 'members')
+        .leftJoin('members.user', 'memberUser')
+        .andWhere('memberUser.id = :uid', { uid: userId })
         .distinct(true);
     }
   }
@@ -166,11 +166,11 @@ export class ShelteredRepository {
         .leftJoin('team.leaders', 'leader')
         .leftJoin('leader.user', 'leaderUser')
         .andWhere('leaderUser.id = :uid', { uid: userId });
-    } else if (role === 'teacher') {
+    } else if (role === 'member') {
       qb.leftJoin('shelter.teams', 'team')
-        .leftJoin('team.teachers', 'teachers')
-        .leftJoin('teachers.user', 'teacherUser')
-        .andWhere('teacherUser.id = :uid', { uid: userId });
+        .leftJoin('team.members', 'members')
+        .leftJoin('members.user', 'memberUser')
+        .andWhere('memberUser.id = :uid', { uid: userId });
     }
     const count = await qb.getCount();
     return count > 0;

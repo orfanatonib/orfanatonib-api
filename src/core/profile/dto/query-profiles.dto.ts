@@ -30,7 +30,7 @@ export class QueryProfilesDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['admin', 'teacher', 'leader'])
+  @IsIn(['admin', 'member', 'leader'])
   role?: string; // Filtro por role
 
   // Filtros de preferências

@@ -149,7 +149,7 @@ export class UpdateShelterScheduleService {
         description: `${data.lessonContent}\n\n${teamInfo}`,
         date: visitDate,
         location: visitLocation,
-        audience: EventAudience.TEACHERS,
+        audience: EventAudience.MEMBERS,
         shelterSchedule: { id: scheduleId },
       });
     } catch (error) {
@@ -174,7 +174,7 @@ export class UpdateShelterScheduleService {
         description: `${data.observation || 'Reunião de planejamento'}\n\n${teamInfo}`,
         date: meetingDate,
         location: data.meetingRoom || 'NIB - Nova Igreja Batista',
-        audience: EventAudience.TEACHERS,
+        audience: EventAudience.MEMBERS,
         shelterSchedule: { id: scheduleId },
       });
     } catch (error) {
@@ -203,7 +203,7 @@ export class UpdateShelterScheduleService {
         description: `${data.lessonContent}\n\n${teamInfo}`,
         date: data.visitDate,
         location: visitLocation,
-        audience: EventAudience.TEACHERS,
+        audience: EventAudience.MEMBERS,
       });
 
       await this.eventRepo.create({
@@ -211,7 +211,7 @@ export class UpdateShelterScheduleService {
         description: `${data.observation || 'Reunião de planejamento'}\n\n${teamInfo}`,
         date: data.meetingDate,
         location: data.meetingRoom || 'NIB - Nova Igreja Batista',
-        audience: EventAudience.TEACHERS,
+        audience: EventAudience.MEMBERS,
       });
     } catch (error) {
       this.logger.error(`Error creating events for schedule`, error.stack);

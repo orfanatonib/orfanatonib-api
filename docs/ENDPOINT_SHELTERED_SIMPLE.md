@@ -16,7 +16,7 @@ Authorization: Bearer <token>
 
 - **Admin**: Acesso a todos os abrigados
 - **Leader**: Acesso apenas aos abrigados dos abrigos onde o líder está vinculado a pelo menos uma equipe
-- **Teacher**: Acesso apenas aos abrigados dos abrigos onde o professor está vinculado a uma equipe
+- **Member**: Acesso apenas aos abrigados dos abrigos onde o professor está vinculado a uma equipe
 
 ## 📥 Request
 
@@ -335,7 +335,7 @@ GET /sheltered/simple?page=1&limit=10
 - Acesso apenas aos abrigados dos abrigos onde o líder está vinculado a **pelo menos uma equipe**
 - O filtro é aplicado automaticamente baseado no JWT do usuário logado
 
-### Teacher
+### Member
 - Acesso apenas aos abrigados dos abrigos onde o professor está vinculado a **uma equipe**
 - O filtro é aplicado automaticamente baseado no JWT do usuário logado
 
@@ -449,7 +449,7 @@ curl -X PATCH "http://localhost:3000/sheltered/550e8400-e29b-41d4-a716-446655440
 
 - **Admin**: Pode atualizar status de qualquer abrigado
 - **Leader**: Pode atualizar status apenas de abrigados dos abrigos onde está vinculado
-- **Teacher**: Pode atualizar status apenas de abrigados dos abrigos onde está vinculado
+- **Member**: Pode atualizar status apenas de abrigados dos abrigos onde está vinculado
 
 ## 🔗 Endpoints Relacionados
 

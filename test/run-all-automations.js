@@ -6,10 +6,10 @@ const automations = [
   { name: 'Users', script: 'automations/users/users-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Profiles', script: 'automations/profiles/profiles-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Shelters', script: 'automations/shelters/shelters-complete-automation.js', timeoutMs: 5 * 60_000 },
-  { name: 'Teacher Profiles', script: 'automations/teacher-profiles/teacher-profiles-complete-automation.js', timeoutMs: 5 * 60_000 },
+  { name: 'Member Profiles', script: 'automations/member-profiles/member-profiles-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Leader Profiles', script: 'automations/leader-profiles/leader-profiles-complete-automation.js', timeoutMs: 5 * 60_000 },
 
-  { name: 'Fix: vincular leaders/teachers aos shelters', script: 'automations/fixes/fix-shelter-staff-links.js', timeoutMs: 10 * 60_000 },
+  { name: 'Fix: vincular leaders/members aos shelters', script: 'automations/fixes/fix-shelter-staff-links.js', timeoutMs: 10 * 60_000 },
 
   { name: 'Sheltered', script: 'automations/sheltered/sheltered-complete-automation.js', timeoutMs: 10 * 60_000 },
   { name: 'Pagelas', script: 'automations/pagelas/pagelas-complete-automation.js', timeoutMs: 10 * 60_000 },

@@ -69,7 +69,7 @@ export class TeamInputDto {
   @IsArray()
   @ArrayUnique()
   @IsUUID(undefined, { each: true })
-  teacherProfileIds?: string[];
+  memberProfileIds?: string[];
 }
 
 export class UpdateShelterDto {

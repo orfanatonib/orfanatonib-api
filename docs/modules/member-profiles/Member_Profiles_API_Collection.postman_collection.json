@@ -1,7 +1,7 @@
 {
   "info": {
-    "name": "Teacher Profiles API Collection",
-    "description": "Collection completa para todos os endpoints do módulo Teacher Profiles - VALIDADA E FUNCIONAL com filtros consolidados. Inclui todos os 6 endpoints: listagem paginada, listagem simples, busca por ID, busca por shelter, vinculação e desvinculação de shelters. Suporta filtros consolidados (teacherSearchString, shelterSearchString, hasShelter), paginação, ordenação e operações em massa. Relacionamento Teacher-Shelter (OneToMany) funcionando perfeitamente.",
+    "name": "Member Profiles API Collection",
+    "description": "Collection completa para todos os endpoints do módulo Member Profiles - VALIDADA E FUNCIONAL com filtros consolidados. Inclui todos os 6 endpoints: listagem paginada, listagem simples, busca por ID, busca por shelter, vinculação e desvinculação de shelters. Suporta filtros consolidados (memberSearchString, shelterSearchString, hasShelter), paginação, ordenação e operações em massa. Relacionamento Member-Shelter (OneToMany) funcionando perfeitamente.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "version": "6.0.0"
   },
@@ -24,20 +24,20 @@
   ],
   "item": [
     {
-      "name": "Teacher Profiles",
+      "name": "Member Profiles",
       "item": [
         {
-          "name": "Listar Teacher Profiles (Paginação)",
+          "name": "Listar Member Profiles (Paginação)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/teacher-profiles?page=1&limit=12&sort=updatedAt&order=desc",
+              "raw": "{{base_url}}/member-profiles?page=1&limit=12&sort=updatedAt&order=desc",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "teacher-profiles"
+                "member-profiles"
               ],
               "query": [
                 {
@@ -61,9 +61,9 @@
                   "description": "Ordem da ordenação (asc, desc)"
                 },
                 {
-                  "key": "teacherSearchString",
+                  "key": "memberSearchString",
                   "value": "",
-                  "description": "🔍 FILTRO CONSOLIDADO: Busca por dados do teacher (nome, email, telefone)"
+                  "description": "🔍 FILTRO CONSOLIDADO: Busca por dados do member (nome, email, telefone)"
                 },
                 {
                   "key": "shelterSearchString",
@@ -73,11 +73,11 @@
                 {
                   "key": "hasShelter",
                   "value": "",
-                  "description": "🔍 FILTRO CONSOLIDADO: Filtrar por teachers com shelter (true, false)"
+                  "description": "🔍 FILTRO CONSOLIDADO: Filtrar por members com shelter (true, false)"
                 }
               ]
             },
-            "description": "Lista todos os teacher profiles com paginação e filtros consolidados. FILTROS CONSOLIDADOS: teacherSearchString (busca por dados do teacher), shelterSearchString (busca por dados do shelter), hasShelter (teachers com/sem shelter). Disponível apenas para admin e leader (teachers não têm acesso)."
+            "description": "Lista todos os member profiles com paginação e filtros consolidados. FILTROS CONSOLIDADOS: memberSearchString (busca por dados do member), shelterSearchString (busca por dados do shelter), hasShelter (members com/sem shelter). Disponível apenas para admin e leader (members não têm acesso)."
           },
           "response": [
             {
@@ -86,12 +86,12 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles?page=1&limit=12&sort=updatedAt&order=desc",
+                  "raw": "{{base_url}}/member-profiles?page=1&limit=12&sort=updatedAt&order=desc",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles"
+                    "member-profiles"
                   ],
                   "query": [
                     {
@@ -123,20 +123,20 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-teacher-1\",\n  \"active\": true,\n  \"user\": {\n    \"id\": \"uuid-user-2\",\n    \"name\": \"Maria Santos\",\n    \"email\": \"maria.santos@example.com\",\n    \"phone\": \"+5511888888888\",\n    \"active\": true,\n    \"completed\": true,\n    \"commonUser\": false\n  },\n  \"shelter\": {\n    \"id\": \"uuid-shelter-1\",\n    \"name\": \"Abrigo Central\",\n    \"leader\": {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"João Silva\",\n        \"email\": \"joao.silva@example.com\",\n        \"phone\": \"+5511999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  },\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"uuid-member-1\",\n  \"active\": true,\n  \"user\": {\n    \"id\": \"uuid-user-2\",\n    \"name\": \"Maria Santos\",\n    \"email\": \"maria.santos@example.com\",\n    \"phone\": \"+5511888888888\",\n    \"active\": true,\n    \"completed\": true,\n    \"commonUser\": false\n  },\n  \"shelter\": {\n    \"id\": \"uuid-shelter-1\",\n    \"name\": \"Abrigo Central\",\n    \"leader\": {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"João Silva\",\n        \"email\": \"joao.silva@example.com\",\n        \"phone\": \"+5511999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  },\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
             },
             {
-              "name": "Erro - Acesso Negado (Teacher)",
+              "name": "Erro - Acesso Negado (Member)",
               "originalRequest": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles?page=1&limit=12",
+                  "raw": "{{base_url}}/member-profiles?page=1&limit=12",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles"
+                    "member-profiles"
                   ],
                   "query": [
                     {
@@ -168,23 +168,23 @@
           "name": "🔍 Filtros Consolidados - Exemplos",
           "item": [
             {
-              "name": "Buscar por Teacher (teacherSearchString)",
+              "name": "Buscar por Member (memberSearchString)",
               "request": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles?teacherSearchString=Maria&limit=10",
+                  "raw": "{{base_url}}/member-profiles?memberSearchString=Maria&limit=10",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles"
+                    "member-profiles"
                   ],
                   "query": [
                     {
-                      "key": "teacherSearchString",
+                      "key": "memberSearchString",
                       "value": "Maria",
-                      "description": "Busca por nome, email ou telefone do teacher"
+                      "description": "Busca por nome, email ou telefone do member"
                     },
                     {
                       "key": "limit",
@@ -192,7 +192,7 @@
                     }
                   ]
                 },
-                "description": "Exemplo de uso do filtro teacherSearchString para buscar teachers por nome, email ou telefone."
+                "description": "Exemplo de uso do filtro memberSearchString para buscar members por nome, email ou telefone."
               }
             },
             {
@@ -201,12 +201,12 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles?shelterSearchString=Casa&limit=10",
+                  "raw": "{{base_url}}/member-profiles?shelterSearchString=Casa&limit=10",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles"
+                    "member-profiles"
                   ],
                   "query": [
                     {
@@ -220,27 +220,27 @@
                     }
                   ]
                 },
-                "description": "Exemplo de uso do filtro shelterSearchString para buscar teachers por dados do shelter vinculado."
+                "description": "Exemplo de uso do filtro shelterSearchString para buscar members por dados do shelter vinculado."
               }
             },
             {
-              "name": "Teachers COM Shelter (hasShelter=true)",
+              "name": "Members COM Shelter (hasShelter=true)",
               "request": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles?hasShelter=true&limit=10",
+                  "raw": "{{base_url}}/member-profiles?hasShelter=true&limit=10",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles"
+                    "member-profiles"
                   ],
                   "query": [
                     {
                       "key": "hasShelter",
                       "value": "true",
-                      "description": "Filtrar apenas teachers vinculados a shelters"
+                      "description": "Filtrar apenas members vinculados a shelters"
                     },
                     {
                       "key": "limit",
@@ -248,27 +248,27 @@
                     }
                   ]
                 },
-                "description": "Exemplo de uso do filtro hasShelter=true para buscar apenas teachers vinculados a shelters."
+                "description": "Exemplo de uso do filtro hasShelter=true para buscar apenas members vinculados a shelters."
               }
             },
             {
-              "name": "Teachers SEM Shelter (hasShelter=false)",
+              "name": "Members SEM Shelter (hasShelter=false)",
               "request": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles?hasShelter=false&limit=10",
+                  "raw": "{{base_url}}/member-profiles?hasShelter=false&limit=10",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles"
+                    "member-profiles"
                   ],
                   "query": [
                     {
                       "key": "hasShelter",
                       "value": "false",
-                      "description": "Filtrar apenas teachers sem shelter vinculado"
+                      "description": "Filtrar apenas members sem shelter vinculado"
                     },
                     {
                       "key": "limit",
@@ -276,7 +276,7 @@
                     }
                   ]
                 },
-                "description": "Exemplo de uso do filtro hasShelter=false para buscar apenas teachers sem shelter vinculado."
+                "description": "Exemplo de uso do filtro hasShelter=false para buscar apenas members sem shelter vinculado."
               }
             },
             {
@@ -285,18 +285,18 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles?teacherSearchString=João&hasShelter=true&sort=name&order=asc&limit=5",
+                  "raw": "{{base_url}}/member-profiles?memberSearchString=João&hasShelter=true&sort=name&order=asc&limit=5",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles"
+                    "member-profiles"
                   ],
                   "query": [
                     {
-                      "key": "teacherSearchString",
+                      "key": "memberSearchString",
                       "value": "João",
-                      "description": "Busca por teacher chamado João"
+                      "description": "Busca por member chamado João"
                     },
                     {
                       "key": "hasShelter",
@@ -319,28 +319,28 @@
                     }
                   ]
                 },
-                "description": "Exemplo de combinação de filtros consolidados: buscar teachers chamados João que estejam vinculados a shelters, ordenados por nome."
+                "description": "Exemplo de combinação de filtros consolidados: buscar members chamados João que estejam vinculados a shelters, ordenados por nome."
               }
             }
           ],
-          "description": "Exemplos práticos de uso dos filtros consolidados do Teacher Profiles API."
+          "description": "Exemplos práticos de uso dos filtros consolidados do Member Profiles API."
         },
         {
-          "name": "Listar Teacher Profiles Simples",
+          "name": "Listar Member Profiles Simples",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/teacher-profiles/simple",
+              "raw": "{{base_url}}/member-profiles/simple",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "teacher-profiles",
+                "member-profiles",
                 "simple"
               ]
             },
-            "description": "Lista todos os teacher profiles em formato simplificado. Disponível apenas para admin e leader."
+            "description": "Lista todos os member profiles em formato simplificado. Disponível apenas para admin e leader."
           },
           "response": [
             {
@@ -349,12 +349,12 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/simple",
+                  "raw": "{{base_url}}/member-profiles/simple",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
+                    "member-profiles",
                     "simple"
                   ]
                 }
@@ -369,48 +369,48 @@
                 }
               ],
               "cookie": [],
-              "body": "[\n  {\n    \"teacherProfileId\": \"uuid-teacher-1\",\n    \"name\": \"João Silva\",\n    \"vinculado\": true\n  },\n  {\n    \"teacherProfileId\": \"uuid-teacher-2\",\n    \"name\": \"Ana Santos\",\n    \"vinculado\": false\n  },\n  {\n    \"teacherProfileId\": \"uuid-teacher-3\",\n    \"name\": \"Pedro Costa\",\n    \"vinculado\": true\n  }\n]"
+              "body": "[\n  {\n    \"memberProfileId\": \"uuid-member-1\",\n    \"name\": \"João Silva\",\n    \"vinculado\": true\n  },\n  {\n    \"memberProfileId\": \"uuid-member-2\",\n    \"name\": \"Ana Santos\",\n    \"vinculado\": false\n  },\n  {\n    \"memberProfileId\": \"uuid-member-3\",\n    \"name\": \"Pedro Costa\",\n    \"vinculado\": true\n  }\n]"
             }
           ]
         },
         {
-          "name": "Buscar Teacher Profile por ID",
+          "name": "Buscar Member Profile por ID",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/teacher-profiles/:id",
+              "raw": "{{base_url}}/member-profiles/:id",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "teacher-profiles",
+                "member-profiles",
                 ":id"
               ],
               "variable": [
                 {
                   "key": "id",
-                  "value": "{{teacher_profile_id}}",
-                  "description": "UUID do teacher profile"
+                  "value": "{{member_profile_id}}",
+                  "description": "UUID do member profile"
                 }
               ]
             },
-            "description": "Busca um teacher profile específico por ID. Disponível apenas para admin e leader."
+            "description": "Busca um member profile específico por ID. Disponível apenas para admin e leader."
           },
           "response": [
             {
-              "name": "Sucesso - Teacher Profile Encontrado",
+              "name": "Sucesso - Member Profile Encontrado",
               "originalRequest": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/uuid-teacher-1",
+                  "raw": "{{base_url}}/member-profiles/uuid-member-1",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
-                    "uuid-teacher-1"
+                    "member-profiles",
+                    "uuid-member-1"
                   ]
                 }
               },
@@ -424,20 +424,20 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"id\": \"uuid-teacher-1\",\n  \"active\": true,\n  \"user\": {\n    \"id\": \"uuid-user-2\",\n    \"name\": \"Maria Santos\",\n    \"email\": \"maria.santos@example.com\",\n    \"phone\": \"+5511888888888\",\n    \"active\": true,\n    \"completed\": true,\n    \"commonUser\": false\n  },\n  \"shelter\": {\n    \"id\": \"uuid-shelter-1\",\n    \"name\": \"Abrigo Central\",\n    \"leader\": {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"João Silva\",\n        \"email\": \"joao.silva@example.com\",\n        \"phone\": \"+5511999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  },\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
+              "body": "{\n  \"id\": \"uuid-member-1\",\n  \"active\": true,\n  \"user\": {\n    \"id\": \"uuid-user-2\",\n    \"name\": \"Maria Santos\",\n    \"email\": \"maria.santos@example.com\",\n    \"phone\": \"+5511888888888\",\n    \"active\": true,\n    \"completed\": true,\n    \"commonUser\": false\n  },\n  \"shelter\": {\n    \"id\": \"uuid-shelter-1\",\n    \"name\": \"Abrigo Central\",\n    \"leader\": {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"João Silva\",\n        \"email\": \"joao.silva@example.com\",\n        \"phone\": \"+5511999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      }\n    }\n  },\n  \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n  \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n}"
             },
             {
-              "name": "Erro - Teacher Profile Não Encontrado",
+              "name": "Erro - Member Profile Não Encontrado",
               "originalRequest": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/uuid-inexistente",
+                  "raw": "{{base_url}}/member-profiles/uuid-inexistente",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
+                    "member-profiles",
                     "uuid-inexistente"
                   ]
                 }
@@ -452,22 +452,22 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"statusCode\": 404,\n  \"message\": \"TeacherProfile não encontrado\",\n  \"error\": \"Not Found\"\n}"
+              "body": "{\n  \"statusCode\": 404,\n  \"message\": \"MemberProfile não encontrado\",\n  \"error\": \"Not Found\"\n}"
             }
           ]
         },
         {
-          "name": "Buscar Teachers por Shelter ID",
+          "name": "Buscar Members por Shelter ID",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/teacher-profiles/by-shelter/:shelterId",
+              "raw": "{{base_url}}/member-profiles/by-shelter/:shelterId",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "teacher-profiles",
+                "member-profiles",
                 "by-shelter",
                 ":shelterId"
               ],
@@ -479,21 +479,21 @@
                 }
               ]
             },
-            "description": "Lista todos os teachers vinculados a um shelter específico. Disponível apenas para admin e leader com acesso ao shelter."
+            "description": "Lista todos os members vinculados a um shelter específico. Disponível apenas para admin e leader com acesso ao shelter."
           },
           "response": [
             {
-              "name": "Sucesso - Teachers do Shelter",
+              "name": "Sucesso - Members do Shelter",
               "originalRequest": {
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/by-shelter/uuid-shelter-1",
+                  "raw": "{{base_url}}/member-profiles/by-shelter/uuid-shelter-1",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
+                    "member-profiles",
                     "by-shelter",
                     "uuid-shelter-1"
                   ]
@@ -509,7 +509,7 @@
                 }
               ],
               "cookie": [],
-              "body": "[\n  {\n    \"id\": \"uuid-teacher-1\",\n    \"active\": true,\n    \"user\": {\n      \"id\": \"uuid-user-1\",\n      \"name\": \"João Silva\",\n      \"email\": \"joao.silva@example.com\",\n      \"phone\": \"+5511999999999\",\n      \"active\": true,\n      \"completed\": true,\n      \"commonUser\": false\n    },\n    \"shelter\": {\n      \"id\": \"uuid-shelter-1\",\n      \"name\": \"Abrigo Central\",\n      \"leader\": {\n        \"id\": \"uuid-leader-1\",\n        \"active\": true,\n        \"user\": {\n          \"id\": \"uuid-leader-user-1\",\n          \"name\": \"Maria Santos\",\n          \"email\": \"maria.santos@example.com\",\n          \"phone\": \"+5511888888888\",\n          \"active\": true,\n          \"completed\": true,\n          \"commonUser\": false\n        }\n      }\n    },\n    \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n    \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n  }\n]"
+              "body": "[\n  {\n    \"id\": \"uuid-member-1\",\n    \"active\": true,\n    \"user\": {\n      \"id\": \"uuid-user-1\",\n      \"name\": \"João Silva\",\n      \"email\": \"joao.silva@example.com\",\n      \"phone\": \"+5511999999999\",\n      \"active\": true,\n      \"completed\": true,\n      \"commonUser\": false\n    },\n    \"shelter\": {\n      \"id\": \"uuid-shelter-1\",\n      \"name\": \"Abrigo Central\",\n      \"leader\": {\n        \"id\": \"uuid-leader-1\",\n        \"active\": true,\n        \"user\": {\n          \"id\": \"uuid-leader-user-1\",\n          \"name\": \"Maria Santos\",\n          \"email\": \"maria.santos@example.com\",\n          \"phone\": \"+5511888888888\",\n          \"active\": true,\n          \"completed\": true,\n          \"commonUser\": false\n        }\n      }\n    },\n    \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n    \"updatedAt\": \"2025-09-27T21:00:00.000Z\"\n  }\n]"
             },
             {
               "name": "Erro - Shelter Não Encontrado",
@@ -517,12 +517,12 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/by-shelter/uuid-inexistente",
+                  "raw": "{{base_url}}/member-profiles/by-shelter/uuid-inexistente",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
+                    "member-profiles",
                     "by-shelter",
                     "uuid-inexistente"
                   ]
@@ -543,7 +543,7 @@
           ]
         },
         {
-          "name": "Atribuir Teacher a Shelter",
+          "name": "Atribuir Member a Shelter",
           "request": {
             "method": "PATCH",
             "header": [
@@ -557,28 +557,28 @@
               "raw": "{\n  \"shelterId\": \"{{shelter_id}}\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/teacher-profiles/:teacherId/assign-shelter",
+              "raw": "{{base_url}}/member-profiles/:memberId/assign-shelter",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "teacher-profiles",
-                ":teacherId",
+                "member-profiles",
+                ":memberId",
                 "assign-shelter"
               ],
               "variable": [
                 {
-                  "key": "teacherId",
-                  "value": "{{teacher_profile_id}}",
-                  "description": "UUID do teacher profile"
+                  "key": "memberId",
+                  "value": "{{member_profile_id}}",
+                  "description": "UUID do member profile"
                 }
               ]
             },
-            "description": "Atribui um teacher a um shelter. Disponível apenas para admin e leader com acesso ao shelter."
+            "description": "Atribui um member a um shelter. Disponível apenas para admin e leader com acesso ao shelter."
           },
           "response": [
             {
-              "name": "Sucesso - Teacher Atribuído",
+              "name": "Sucesso - Member Atribuído",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -592,13 +592,13 @@
                   "raw": "{\n  \"shelterId\": \"uuid-shelter-1\"\n}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/uuid-teacher-1/assign-shelter",
+                  "raw": "{{base_url}}/member-profiles/uuid-member-1/assign-shelter",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
-                    "uuid-teacher-1",
+                    "member-profiles",
+                    "uuid-member-1",
                     "assign-shelter"
                   ]
                 }
@@ -613,10 +613,10 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"message\": \"Teacher atribuído ao shelter com sucesso\"\n}"
+              "body": "{\n  \"message\": \"Member atribuído ao shelter com sucesso\"\n}"
             },
             {
-              "name": "Erro - Teacher Não Encontrado",
+              "name": "Erro - Member Não Encontrado",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -630,12 +630,12 @@
                   "raw": "{\n  \"shelterId\": \"uuid-shelter-1\"\n}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/uuid-inexistente/assign-shelter",
+                  "raw": "{{base_url}}/member-profiles/uuid-inexistente/assign-shelter",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
+                    "member-profiles",
                     "uuid-inexistente",
                     "assign-shelter"
                   ]
@@ -651,7 +651,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"statusCode\": 404,\n  \"message\": \"TeacherProfile não encontrado\",\n  \"error\": \"Not Found\"\n}"
+              "body": "{\n  \"statusCode\": 404,\n  \"message\": \"MemberProfile não encontrado\",\n  \"error\": \"Not Found\"\n}"
             },
             {
               "name": "Erro - Shelter Não Encontrado",
@@ -668,13 +668,13 @@
                   "raw": "{\n  \"shelterId\": \"uuid-shelter-inexistente\"\n}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/uuid-teacher-1/assign-shelter",
+                  "raw": "{{base_url}}/member-profiles/uuid-member-1/assign-shelter",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
-                    "uuid-teacher-1",
+                    "member-profiles",
+                    "uuid-member-1",
                     "assign-shelter"
                   ]
                 }
@@ -692,7 +692,7 @@
               "body": "{\n  \"statusCode\": 404,\n  \"message\": \"Shelter não encontrado\",\n  \"error\": \"Not Found\"\n}"
             },
             {
-              "name": "Erro - Teacher Já Vinculado",
+              "name": "Erro - Member Já Vinculado",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -706,13 +706,13 @@
                   "raw": "{\n  \"shelterId\": \"uuid-shelter-2\"\n}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/uuid-teacher-1/assign-shelter",
+                  "raw": "{{base_url}}/member-profiles/uuid-member-1/assign-shelter",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
-                    "uuid-teacher-1",
+                    "member-profiles",
+                    "uuid-member-1",
                     "assign-shelter"
                   ]
                 }
@@ -727,7 +727,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"statusCode\": 400,\n  \"message\": \"Teacher já está vinculado a outro Shelter\",\n  \"error\": \"Bad Request\"\n}"
+              "body": "{\n  \"statusCode\": 400,\n  \"message\": \"Member já está vinculado a outro Shelter\",\n  \"error\": \"Bad Request\"\n}"
             },
             {
               "name": "Erro - Sem Acesso ao Shelter",
@@ -744,13 +744,13 @@
                   "raw": "{\n  \"shelterId\": \"uuid-shelter-sem-acesso\"\n}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/uuid-teacher-1/assign-shelter",
+                  "raw": "{{base_url}}/member-profiles/uuid-member-1/assign-shelter",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
-                    "uuid-teacher-1",
+                    "member-profiles",
+                    "uuid-member-1",
                     "assign-shelter"
                   ]
                 }
@@ -770,7 +770,7 @@
           ]
         },
         {
-          "name": "Desatribuir Teacher de Shelter",
+          "name": "Desatribuir Member de Shelter",
           "request": {
             "method": "PATCH",
             "header": [
@@ -784,28 +784,28 @@
               "raw": "{\n  \"shelterId\": \"{{shelter_id}}\"\n}"
             },
             "url": {
-              "raw": "{{base_url}}/teacher-profiles/:teacherId/unassign-shelter",
+              "raw": "{{base_url}}/member-profiles/:memberId/unassign-shelter",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "teacher-profiles",
-                ":teacherId",
+                "member-profiles",
+                ":memberId",
                 "unassign-shelter"
               ],
               "variable": [
                 {
-                  "key": "teacherId",
-                  "value": "{{teacher_profile_id}}",
-                  "description": "UUID do teacher profile"
+                  "key": "memberId",
+                  "value": "{{member_profile_id}}",
+                  "description": "UUID do member profile"
                 }
               ]
             },
-            "description": "Remove um teacher de um shelter. Disponível apenas para admin e leader com acesso ao shelter."
+            "description": "Remove um member de um shelter. Disponível apenas para admin e leader com acesso ao shelter."
           },
           "response": [
             {
-              "name": "Sucesso - Teacher Desatribuído",
+              "name": "Sucesso - Member Desatribuído",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -819,13 +819,13 @@
                   "raw": "{\n  \"shelterId\": \"uuid-shelter-1\"\n}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/uuid-teacher-1/unassign-shelter",
+                  "raw": "{{base_url}}/member-profiles/uuid-member-1/unassign-shelter",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
-                    "uuid-teacher-1",
+                    "member-profiles",
+                    "uuid-member-1",
                     "unassign-shelter"
                   ]
                 }
@@ -840,7 +840,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"message\": \"Teacher removido do shelter com sucesso\"\n}"
+              "body": "{\n  \"message\": \"Member removido do shelter com sucesso\"\n}"
             },
             {
               "name": "Sucesso - Desatribuir Sem Shelter ID",
@@ -857,13 +857,13 @@
                   "raw": "{}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/uuid-teacher-1/unassign-shelter",
+                  "raw": "{{base_url}}/member-profiles/uuid-member-1/unassign-shelter",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
-                    "uuid-teacher-1",
+                    "member-profiles",
+                    "uuid-member-1",
                     "unassign-shelter"
                   ]
                 }
@@ -878,10 +878,10 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"message\": \"Teacher removido do shelter com sucesso\"\n}"
+              "body": "{\n  \"message\": \"Member removido do shelter com sucesso\"\n}"
             },
             {
-              "name": "Erro - Teacher Não Encontrado",
+              "name": "Erro - Member Não Encontrado",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -895,12 +895,12 @@
                   "raw": "{\n  \"shelterId\": \"uuid-shelter-1\"\n}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/uuid-inexistente/unassign-shelter",
+                  "raw": "{{base_url}}/member-profiles/uuid-inexistente/unassign-shelter",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
+                    "member-profiles",
                     "uuid-inexistente",
                     "unassign-shelter"
                   ]
@@ -916,10 +916,10 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"statusCode\": 404,\n  \"message\": \"TeacherProfile não encontrado\",\n  \"error\": \"Not Found\"\n}"
+              "body": "{\n  \"statusCode\": 404,\n  \"message\": \"MemberProfile não encontrado\",\n  \"error\": \"Not Found\"\n}"
             },
             {
-              "name": "Erro - Teacher Não Pertence ao Shelter",
+              "name": "Erro - Member Não Pertence ao Shelter",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -933,13 +933,13 @@
                   "raw": "{\n  \"shelterId\": \"uuid-shelter-diferente\"\n}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/uuid-teacher-1/unassign-shelter",
+                  "raw": "{{base_url}}/member-profiles/uuid-member-1/unassign-shelter",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
-                    "uuid-teacher-1",
+                    "member-profiles",
+                    "uuid-member-1",
                     "unassign-shelter"
                   ]
                 }
@@ -954,10 +954,10 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"statusCode\": 400,\n  \"message\": \"Teacher não pertence ao shelter informado\",\n  \"error\": \"Bad Request\"\n}"
+              "body": "{\n  \"statusCode\": 400,\n  \"message\": \"Member não pertence ao shelter informado\",\n  \"error\": \"Bad Request\"\n}"
             },
             {
-              "name": "Erro - Teacher Sem Shelter",
+              "name": "Erro - Member Sem Shelter",
               "originalRequest": {
                 "method": "PATCH",
                 "header": [
@@ -971,13 +971,13 @@
                   "raw": "{}"
                 },
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles/uuid-teacher-sem-shelter/unassign-shelter",
+                  "raw": "{{base_url}}/member-profiles/uuid-member-sem-shelter/unassign-shelter",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles",
-                    "uuid-teacher-sem-shelter",
+                    "member-profiles",
+                    "uuid-member-sem-shelter",
                     "unassign-shelter"
                   ]
                 }
@@ -992,7 +992,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"statusCode\": 403,\n  \"message\": \"Teacher não possui shelter para desvincular\",\n  \"error\": \"Forbidden\"\n}"
+              "body": "{\n  \"statusCode\": 403,\n  \"message\": \"Member não possui shelter para desvincular\",\n  \"error\": \"Forbidden\"\n}"
             }
           ]
         },
@@ -1002,22 +1002,22 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/teacher-profiles?limit=100",
+              "raw": "{{base_url}}/member-profiles?limit=100",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
-                "teacher-profiles"
+                "member-profiles"
               ],
               "query": [
                 {
                   "key": "limit",
                   "value": "100",
-                  "description": "Buscar todos os teacher profiles para estatísticas"
+                  "description": "Buscar todos os member profiles para estatísticas"
                 }
               ]
             },
-            "description": "Endpoint para obter estatísticas completas dos teacher profiles. Retorna informações sobre distribuição por shelters, professores ativos/inativos, e vinculações. Útil para monitoramento e análise de dados."
+            "description": "Endpoint para obter estatísticas completas dos member profiles. Retorna informações sobre distribuição por shelters, professores ativos/inativos, e vinculações. Útil para monitoramento e análise de dados."
           },
           "response": [
             {
@@ -1026,12 +1026,12 @@
                 "method": "GET",
                 "header": [],
                 "url": {
-                  "raw": "{{base_url}}/teacher-profiles?limit=100",
+                  "raw": "{{base_url}}/member-profiles?limit=100",
                   "host": [
                     "{{base_url}}"
                   ],
                   "path": [
-                    "teacher-profiles"
+                    "member-profiles"
                   ],
                   "query": [
                     {
@@ -1051,12 +1051,12 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"items\": [\n    {\n      \"id\": \"uuid-teacher-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"Ana Silva\",\n        \"email\": \"ana.silva.teacher.0@example.com\",\n        \"phone\": \"11999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      },\n      \"shelter\": {\n        \"id\": \"uuid-shelter-1\",\n        \"name\": \"Abrigo Central\",\n        \"address\": {\n          \"id\": \"uuid-address-1\",\n          \"street\": \"Rua das Flores\",\n          \"number\": \"123\",\n          \"district\": \"Centro\",\n          \"city\": \"São Paulo\",\n          \"state\": \"SP\",\n          \"postalCode\": \"01234-567\",\n          \"complement\": \"Apto 45\"\n        },\n        \"leaders\": [\n          {\n            \"id\": \"uuid-leader-1\",\n            \"active\": true,\n            \"user\": {\n              \"id\": \"uuid-user-leader-1\",\n              \"name\": \"João Silva\",\n              \"email\": \"joao@example.com\",\n              \"phone\": \"11999999999\",\n              \"active\": true,\n              \"completed\": true,\n              \"commonUser\": false\n            }\n          }\n        ],\n        \"teachers\": [],\n        \"createdAt\": \"2025-01-15T10:00:00.000Z\",\n        \"updatedAt\": \"2025-01-15T10:00:00.000Z\"\n      },\n      \"createdAt\": \"2025-01-15T10:00:00.000Z\",\n      \"updatedAt\": \"2025-01-15T10:00:00.000Z\"\n    }\n  ],\n  \"total\": 43,\n  \"page\": 1,\n  \"limit\": 100\n}"
+              "body": "{\n  \"items\": [\n    {\n      \"id\": \"uuid-member-1\",\n      \"active\": true,\n      \"user\": {\n        \"id\": \"uuid-user-1\",\n        \"name\": \"Ana Silva\",\n        \"email\": \"ana.silva.member.0@example.com\",\n        \"phone\": \"11999999999\",\n        \"active\": true,\n        \"completed\": true,\n        \"commonUser\": false\n      },\n      \"shelter\": {\n        \"id\": \"uuid-shelter-1\",\n        \"name\": \"Abrigo Central\",\n        \"address\": {\n          \"id\": \"uuid-address-1\",\n          \"street\": \"Rua das Flores\",\n          \"number\": \"123\",\n          \"district\": \"Centro\",\n          \"city\": \"São Paulo\",\n          \"state\": \"SP\",\n          \"postalCode\": \"01234-567\",\n          \"complement\": \"Apto 45\"\n        },\n        \"leaders\": [\n          {\n            \"id\": \"uuid-leader-1\",\n            \"active\": true,\n            \"user\": {\n              \"id\": \"uuid-user-leader-1\",\n              \"name\": \"João Silva\",\n              \"email\": \"joao@example.com\",\n              \"phone\": \"11999999999\",\n              \"active\": true,\n              \"completed\": true,\n              \"commonUser\": false\n            }\n          }\n        ],\n        \"members\": [],\n        \"createdAt\": \"2025-01-15T10:00:00.000Z\",\n        \"updatedAt\": \"2025-01-15T10:00:00.000Z\"\n      },\n      \"createdAt\": \"2025-01-15T10:00:00.000Z\",\n      \"updatedAt\": \"2025-01-15T10:00:00.000Z\"\n    }\n  ],\n  \"total\": 43,\n  \"page\": 1,\n  \"limit\": 100\n}"
             }
           ]
         }
       ],
-      "description": "Endpoints para gerenciamento completo de Teacher Profiles com autenticação JWT obrigatória e controle de acesso granular por roles. TESTADO E VALIDADO COM 100% DE SUCESSO. Inclui todos os 6 endpoints principais, FILTROS CONSOLIDADOS (teacherSearchString, shelterSearchString, hasShelter), paginação, ordenação, vinculação/desvinculação de shelters e operações em massa. Suporta 43 teacher profiles e 50 shelters com distribuição equilibrada."
+      "description": "Endpoints para gerenciamento completo de Member Profiles com autenticação JWT obrigatória e controle de acesso granular por roles. TESTADO E VALIDADO COM 100% DE SUCESSO. Inclui todos os 6 endpoints principais, FILTROS CONSOLIDADOS (memberSearchString, shelterSearchString, hasShelter), paginação, ordenação, vinculação/desvinculação de shelters e operações em massa. Suporta 43 member profiles e 50 shelters com distribuição equilibrada."
     }
   ]
 }

@@ -4,7 +4,7 @@ import { ShelterScheduleEntity } from 'src/shelter/schedule/entities/shelter-sch
 
 export enum EventAudience {
   ALL = 'all',
-  TEACHERS = 'teachers',
+  MEMBERS = 'members',
   LEADERS = 'leaders',
 }
 

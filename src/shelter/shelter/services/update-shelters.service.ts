@@ -155,7 +155,7 @@ export class UpdateSheltersService {
   ): Promise<ShelterEntity> {
     const ctx = await this.getCtx(req);
 
-    if (!ctx.role || ctx.role === 'teacher') {
+    if (!ctx.role || ctx.role === 'member') {
       throw new ForbiddenException('Access denied');
     }
 
@@ -252,7 +252,7 @@ export class UpdateSheltersService {
         const updateTeamDto: UpdateTeamDto = {
           description: teamData?.description,
           leaderProfileIds: teamData ? teamData.leaderProfileIds ?? [] : [],
-          teacherProfileIds: teamData ? teamData.teacherProfileIds ?? [] : [],
+          memberProfileIds: teamData ? teamData.memberProfileIds ?? [] : [],
         };
         await this.teamsService.update(existing.id, updateTeamDto);
       } else {
@@ -261,7 +261,7 @@ export class UpdateSheltersService {
           description: teamData?.description,
           shelterId,
           leaderProfileIds: teamData?.leaderProfileIds,
-          teacherProfileIds: teamData?.teacherProfileIds,
+          memberProfileIds: teamData?.memberProfileIds,
         };
         await this.teamsService.create(createTeamDto);
       }
@@ -437,15 +437,15 @@ export class UpdateSheltersService {
     const userIdsSet = new Set<string>();
     teams.forEach((team: any) => {
       const leaders = Array.isArray(team?.leaders) ? team.leaders : [];
-      const teachers = Array.isArray(team?.teachers) ? team.teachers : [];
+      const members = Array.isArray(team?.members) ? team.members : [];
 
       leaders.forEach((leader: any) => {
         const userId = leader?.user?.id;
         if (typeof userId === 'string' && userId) userIdsSet.add(userId);
       });
 
-      teachers.forEach((teacher: any) => {
-        const userId = teacher?.user?.id;
+      members.forEach((member: any) => {
+        const userId = member?.user?.id;
         if (typeof userId === 'string' && userId) userIdsSet.add(userId);
       });
     });
@@ -471,7 +471,7 @@ export class UpdateSheltersService {
 
     teams.forEach((team: any) => {
       const leaders = Array.isArray(team?.leaders) ? team.leaders : [];
-      const teachers = Array.isArray(team?.teachers) ? team.teachers : [];
+      const members = Array.isArray(team?.members) ? team.members : [];
 
       leaders.forEach((leader: any) => {
         const userId = leader?.user?.id;
@@ -479,10 +479,10 @@ export class UpdateSheltersService {
         leader.user.mediaItem = mediaMap.get(userId) || null;
       });
 
-      teachers.forEach((teacher: any) => {
-        const userId = teacher?.user?.id;
-        if (!teacher?.user || typeof userId !== 'string') return;
-        teacher.user.mediaItem = mediaMap.get(userId) || null;
+      members.forEach((member: any) => {
+        const userId = member?.user?.id;
+        if (!member?.user || typeof userId !== 'string') return;
+        member.user.mediaItem = mediaMap.get(userId) || null;
       });
     });
   }

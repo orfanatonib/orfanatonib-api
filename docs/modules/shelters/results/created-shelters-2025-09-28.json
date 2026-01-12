@@ -27,7 +27,7 @@
         "updatedAt": "2025-09-28T00:01:06.127Z"
       },
       "leader": null,
-      "teachers": [],
+      "members": [],
       "createdAt": "2025-09-28T00:01:06.136Z",
       "updatedAt": "2025-09-28T00:01:06.136Z"
     },
@@ -48,7 +48,7 @@
         "updatedAt": "2025-09-28T00:01:06.668Z"
       },
       "leader": null,
-      "teachers": [],
+      "members": [],
       "createdAt": "2025-09-28T00:01:06.673Z",
       "updatedAt": "2025-09-28T00:01:06.673Z"
     },
@@ -69,7 +69,7 @@
         "updatedAt": "2025-09-28T00:01:07.195Z"
       },
       "leader": null,
-      "teachers": [],
+      "members": [],
       "createdAt": "2025-09-28T00:01:07.202Z",
       "updatedAt": "2025-09-28T00:01:07.202Z"
     },
@@ -90,7 +90,7 @@
         "updatedAt": "2025-09-28T00:01:07.723Z"
       },
       "leader": null,
-      "teachers": [],
+      "members": [],
       "createdAt": "2025-09-28T00:01:07.727Z",
       "updatedAt": "2025-09-28T00:01:07.727Z"
     },
@@ -111,7 +111,7 @@
         "updatedAt": "2025-09-28T00:01:08.255Z"
       },
       "leader": null,
-      "teachers": [],
+      "members": [],
       "createdAt": "2025-09-28T00:01:08.259Z",
       "updatedAt": "2025-09-28T00:01:08.259Z"
     },
@@ -132,7 +132,7 @@
         "updatedAt": "2025-09-28T00:01:08.794Z"
       },
       "leader": null,
-      "teachers": [],
+      "members": [],
       "createdAt": "2025-09-28T00:01:08.801Z",
       "updatedAt": "2025-09-28T00:01:08.801Z"
     },
@@ -153,7 +153,7 @@
         "updatedAt": "2025-09-28T00:01:09.322Z"
       },
       "leader": null,
-      "teachers": [],
+      "members": [],
       "createdAt": "2025-09-28T00:01:09.325Z",
       "updatedAt": "2025-09-28T00:01:09.325Z"
     },
@@ -174,7 +174,7 @@
         "updatedAt": "2025-09-28T00:01:09.855Z"
       },
       "leader": null,
-      "teachers": [],
+      "members": [],
       "createdAt": "2025-09-28T00:01:09.858Z",
       "updatedAt": "2025-09-28T00:01:09.858Z"
     },
@@ -195,7 +195,7 @@
         "updatedAt": "2025-09-28T00:01:10.384Z"
       },
       "leader": null,
-      "teachers": [],
+      "members": [],
       "createdAt": "2025-09-28T00:01:10.388Z",
       "updatedAt": "2025-09-28T00:01:10.388Z"
     },
@@ -216,7 +216,7 @@
         "updatedAt": "2025-09-28T00:01:10.924Z"
       },
       "leader": null,
-      "teachers": [],
+      "members": [],
       "createdAt": "2025-09-28T00:01:10.928Z",
       "updatedAt": "2025-09-28T00:01:10.928Z"
     }

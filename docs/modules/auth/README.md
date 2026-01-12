@@ -16,7 +16,7 @@ O módulo Auth gerencia a autenticação e autorização do sistema de orfanato,
 ### Roles do Sistema
 - `admin` - Acesso total ao sistema
 - `coordinator` (leader) - Gerencia abrigos e professores
-- `teacher` - Acesso limitado aos próprios dados
+- `member` - Acesso limitado aos próprios dados
 
 ## 🚀 Endpoints
 
@@ -40,7 +40,7 @@ O módulo Auth gerencia a autenticação e autorização do sistema de orfanato,
   "email": "joao@example.com",
   "phone": "+5511999999999",
   "password": "password123",
-  "role": "teacher"
+  "role": "member"
 }
 ```
 
@@ -51,7 +51,7 @@ O módulo Auth gerencia a autenticação e autorização do sistema de orfanato,
   "name": "João Silva",
   "phone": "+5511999999999",
   "password": "password123",
-  "role": "teacher"
+  "role": "member"
 }
 ```
 
@@ -68,7 +68,7 @@ Content-Type: application/json
 {
   "sub": "user-uuid",
   "email": "user@example.com",
-  "role": "teacher",
+  "role": "member",
   "iat": 1759008614,
   "exp": 1759613414
 }
@@ -200,7 +200,7 @@ Authorization: Bearer {access_token}
   "message": [
     "email must be a valid email",
     "password must be at least 6 characters",
-    "role must be one of: admin, coordinator, teacher"
+    "role must be one of: admin, coordinator, member"
   ],
   "error": "Bad Request"
 }
@@ -223,7 +223,7 @@ Authorization: Bearer {access_token}
 ### Roles Válidos
 - `admin` - Administrador
 - `coordinator` - Coordenador/Líder
-- `teacher` - Professor
+- `member` - Professor
 
 ## 🧪 Testes
 

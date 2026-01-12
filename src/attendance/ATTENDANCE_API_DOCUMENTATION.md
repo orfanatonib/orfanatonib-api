@@ -193,16 +193,16 @@ Este documento descreve todos os endpoints disponíveis para o módulo de regist
     "totalMembers": 3,
     "pendingMembers": [
       {
-        "memberId": "uuid-teacher-1",
+        "memberId": "uuid-member-1",
         "memberName": "João Silva",
         "memberEmail": "joao@email.com",
-        "role": "teacher"
+        "role": "member"
       },
       {
-        "memberId": "uuid-teacher-2",
+        "memberId": "uuid-member-2",
         "memberName": "Maria Santos",
         "memberEmail": "maria@email.com",
-        "role": "teacher"
+        "role": "member"
       }
     ]
   }
@@ -276,16 +276,16 @@ Este documento descreve todos os endpoints disponíveis para o módulo de regist
   "shelterName": "Orfanato Luz do Amanhã",
   "members": [
     {
-      "id": "uuid-teacher-1",
+      "id": "uuid-member-1",
       "name": "Maria Santos",
       "email": "maria@email.com",
-      "role": "teacher"
+      "role": "member"
     },
     {
-      "id": "uuid-teacher-2",
+      "id": "uuid-member-2",
       "name": "Pedro Silva",
       "email": "pedro@email.com",
-      "role": "teacher"
+      "role": "member"
     }
   ]
 }
@@ -391,8 +391,8 @@ Este documento descreve todos os endpoints disponíveis para o módulo de regist
         "teamNumber": 1,
         "description": "Equipe matutina",
         "members": [
-          { "id": "uuid-teacher-1", "name": "Maria", "email": "maria@email.com", "role": "teacher" },
-          { "id": "uuid-teacher-2", "name": "Pedro", "email": "pedro@email.com", "role": "teacher" }
+          { "id": "uuid-member-1", "name": "Maria", "email": "maria@email.com", "role": "member" },
+          { "id": "uuid-member-2", "name": "Pedro", "email": "pedro@email.com", "role": "member" }
         ]
       }
     ]
@@ -424,8 +424,8 @@ Este documento descreve todos os endpoints disponíveis para o módulo de regist
         "teamNumber": 1,
         "description": "Equipe matutina",
         "members": [
-          { "id": "uuid-teacher-1", "name": "Maria", "email": "maria@email.com", "role": "teacher" },
-          { "id": "uuid-teacher-2", "name": "Pedro", "email": "pedro@email.com", "role": "teacher" }
+          { "id": "uuid-member-1", "name": "Maria", "email": "maria@email.com", "role": "member" },
+          { "id": "uuid-member-2", "name": "Pedro", "email": "pedro@email.com", "role": "member" }
         ]
       },
       {
@@ -433,7 +433,7 @@ Este documento descreve todos os endpoints disponíveis para o módulo de regist
         "teamNumber": 2,
         "description": "Equipe vespertina",
         "members": [
-          { "id": "uuid-teacher-3", "name": "Carlos", "email": "carlos@email.com", "role": "teacher" }
+          { "id": "uuid-member-3", "name": "Carlos", "email": "carlos@email.com", "role": "member" }
         ]
       }
     ]
@@ -447,8 +447,8 @@ Este documento descreve todos os endpoints disponíveis para o módulo de regist
         "teamNumber": 1,
         "description": "Equipe única",
         "members": [
-          { "id": "uuid-teacher-4", "name": "Ana Silva", "email": "ana@email.com", "role": "teacher" },
-          { "id": "uuid-teacher-5", "name": "João Santos", "email": "joao@email.com", "role": "teacher" }
+          { "id": "uuid-member-4", "name": "Ana Silva", "email": "ana@email.com", "role": "member" },
+          { "id": "uuid-member-5", "name": "João Santos", "email": "joao@email.com", "role": "member" }
         ]
       }
     ]
@@ -557,7 +557,7 @@ enum AttendanceType {
   memberId: string;
   memberName: string;
   memberEmail: string;
-  role: 'teacher'; // sempre 'teacher' (líderes não têm pendências)
+  role: 'member'; // sempre 'member' (líderes não têm pendências)
 }
 ```
 
@@ -619,7 +619,7 @@ enum AttendanceType {
   id: string;
   name: string;
   email: string;
-  role: 'leader' | 'teacher';
+  role: 'leader' | 'member';
 }
 ```
 
@@ -692,7 +692,7 @@ enum AttendanceType {
   lessonContent: string;
   observation?: string;
   meetingRoom?: string;
-  totalTeachers: number;
+  totalMembers: number;
   presentCount: number;
   absentCount: number;
   pendingCount: number;
@@ -1027,7 +1027,7 @@ curl -X GET http://localhost:3333/attendance/leader/shelters-teams-members \
             "lessonContent": "Lição sobre valores",
             "observation": "Atividade realizada com sucesso",
             "meetingRoom": "Sala 3",
-            "totalTeachers": 3,
+            "totalMembers": 3,
             "presentCount": 3,
             "absentCount": 0,
             "pendingCount": 0,
@@ -1036,7 +1036,7 @@ curl -X GET http://localhost:3333/attendance/leader/shelters-teams-members \
                 "id": "uuid-attendance-1",
                 "type": "present",
                 "comment": "Chegou pontualmente",
-                "memberId": "uuid-teacher-1",
+                "memberId": "uuid-member-1",
                 "memberName": "Maria Silva",
                 "memberEmail": "maria@email.com",
                 "createdAt": "2024-01-15T08:00:00Z",

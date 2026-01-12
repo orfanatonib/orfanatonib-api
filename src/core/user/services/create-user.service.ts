@@ -8,7 +8,7 @@ import { UserRepository } from '../user.repository';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UserEntity } from '../entities/user.entity';
 
-import { TeacherProfilesService } from 'src/shelter/teacher-profile/services/teacher-profiles.service';
+import { MemberProfilesService } from 'src/shelter/member-profile/services/member-profiles.service';
 import { LeaderProfilesService } from 'src/shelter/leader-profile/services/leader-profiles.service';
 import { UserRole } from 'src/core/auth/auth.types';
 
@@ -18,7 +18,7 @@ export class CreateUserService {
 
   constructor(
     private readonly userRepo: UserRepository,
-    private readonly teacherService: TeacherProfilesService,
+    private readonly memberService: MemberProfilesService,
     private readonly leaderService: LeaderProfilesService,
   ) { }
 
@@ -37,8 +37,8 @@ export class CreateUserService {
 
     if (user.role === UserRole.LEADER) {
       await this.leaderService.createForUser(user.id);
-    } else if (user.role === UserRole.TEACHER) {
-      await this.teacherService.createForUser(user.id);
+    } else if (user.role === UserRole.MEMBER) {
+      await this.memberService.createForUser(user.id);
     }
     return user;
   }

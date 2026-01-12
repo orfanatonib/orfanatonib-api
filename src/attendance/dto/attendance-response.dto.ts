@@ -1,6 +1,6 @@
 import { IsDateString, IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min, Max, IsIn } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import { AttendanceType } from '../entities/attendance.entity';
+import { AttendanceType, AttendanceCategory } from '../entities/attendance.entity';
 
 export class AttendanceResponseDto {
   @IsUUID()
@@ -8,6 +8,9 @@ export class AttendanceResponseDto {
 
   @IsEnum(AttendanceType)
   type: AttendanceType;
+
+  @IsEnum(AttendanceCategory)
+  category: AttendanceCategory;
 
   @IsString()
   @IsOptional()
@@ -66,7 +69,7 @@ export class PendingMemberDto {
   memberId: string;
   memberName: string;
   memberEmail: string;
-  role: 'leader' | 'teacher';
+  role: 'leader' | 'member';
 }
 
 export class PendingForLeaderDto {
@@ -76,13 +79,11 @@ export class PendingForLeaderDto {
   @IsNumber()
   visitNumber: number;
 
-  @IsDateString()
-  @IsOptional()
-  visitDate?: string;
+  @IsEnum(AttendanceCategory)
+  category: AttendanceCategory;
 
   @IsDateString()
-  @IsOptional()
-  meetingDate?: string;
+  date: string;
 
   @IsString()
   lessonContent: string;
@@ -93,7 +94,7 @@ export class PendingForLeaderDto {
 
   @IsString()
   @IsOptional()
-  meetingRoom?: string;
+  location?: string;
 
   @IsString()
   teamName: string;
@@ -114,13 +115,11 @@ export class PendingForMemberDto {
   @IsNumber()
   visitNumber: number;
 
-  @IsDateString()
-  @IsOptional()
-  visitDate?: string;
+  @IsEnum(AttendanceCategory)
+  category: AttendanceCategory;
 
   @IsDateString()
-  @IsOptional()
-  meetingDate?: string;
+  date: string;
 
   @IsString()
   lessonContent: string;
@@ -131,7 +130,7 @@ export class PendingForMemberDto {
 
   @IsString()
   @IsOptional()
-  meetingRoom?: string;
+  location?: string;
 
   @IsUUID()
   teamId: string;
@@ -175,6 +174,10 @@ export class AttendanceFiltersDto extends PaginationDto {
   @IsOptional()
   type?: AttendanceType;
 
+  @IsEnum(AttendanceCategory)
+  @IsOptional()
+  category?: AttendanceCategory;
+
   @IsUUID()
   @IsOptional()
   teamId?: string;
@@ -182,6 +185,14 @@ export class AttendanceFiltersDto extends PaginationDto {
   @IsUUID()
   @IsOptional()
   memberId?: string;
+
+  @IsUUID()
+  @IsOptional()
+  scheduleId?: string;
+
+  @IsString()
+  @IsOptional()
+  memberName?: string;
 
   @IsIn(['asc', 'desc'])
   @IsOptional()
@@ -222,8 +233,9 @@ export class TeamMemberDto {
   @IsString()
   email: string;
 
-  @IsIn(['leader', 'teacher'])
-  role: 'leader' | 'teacher';
+  @IsIn(['leader', 'member'])
+  @IsOptional()
+  role: 'leader' | 'member';
 }
 
 export class TeamScheduleDto {
@@ -233,13 +245,11 @@ export class TeamScheduleDto {
   @IsNumber()
   visitNumber: number;
 
-  @IsDateString()
-  @IsOptional()
-  visitDate?: string;
+  @IsEnum(AttendanceCategory)
+  category: AttendanceCategory;
 
   @IsDateString()
-  @IsOptional()
-  meetingDate?: string;
+  date: string;
 
   @IsString()
   lessonContent: string;
@@ -250,7 +260,7 @@ export class TeamScheduleDto {
 
   @IsString()
   @IsOptional()
-  meetingRoom?: string;
+  location?: string;
 
   @IsUUID()
   teamId: string;
@@ -314,6 +324,9 @@ export class AttendanceRecordDto {
   @IsEnum(AttendanceType)
   type: AttendanceType;
 
+  @IsEnum(AttendanceCategory)
+  category: AttendanceCategory;
+
   @IsString()
   @IsOptional()
   comment?: string;
@@ -342,13 +355,11 @@ export class ScheduleWithAttendanceDto {
   @IsNumber()
   visitNumber: number;
 
-  @IsDateString()
-  @IsOptional()
-  visitDate?: string;
+  @IsEnum(AttendanceCategory)
+  category: AttendanceCategory;
 
   @IsDateString()
-  @IsOptional()
-  meetingDate?: string;
+  date: string;
 
   @IsString()
   lessonContent: string;
@@ -359,10 +370,13 @@ export class ScheduleWithAttendanceDto {
 
   @IsString()
   @IsOptional()
-  meetingRoom?: string;
+  @IsString()
+  @IsOptional()
+  location?: string;
+
 
   @IsNumber()
-  totalTeachers: number;
+  totalMembers: number;
 
   @IsNumber()
   presentCount: number;

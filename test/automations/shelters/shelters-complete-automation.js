@@ -12,7 +12,7 @@ let testData = {
   users: [],
   shelters: [],
   leaderProfiles: [],
-  teacherProfiles: []
+  memberProfiles: []
 };
 
 // ==================== UTILITÁRIOS ====================
@@ -102,11 +102,11 @@ async function getTestData() {
       console.log(`  👨‍💼 ${testData.leaderProfiles.length} leader profiles encontrados`);
     }
 
-    // Obter teacher profiles
-    const teachersResponse = await makeRequest('GET', '/teacher-profiles/simple');
-    if (teachersResponse) {
-      testData.teacherProfiles = teachersResponse.data || [];
-      console.log(`  👩‍🏫 ${testData.teacherProfiles.length} teacher profiles encontrados`);
+    // Obter member profiles
+    const membersResponse = await makeRequest('GET', '/member-profiles/simple');
+    if (membersResponse) {
+      testData.memberProfiles = membersResponse.data || [];
+      console.log(`  👩‍🏫 ${testData.memberProfiles.length} member profiles encontrados`);
     }
 
     console.log('✅ Dados obtidos com sucesso!');
@@ -425,7 +425,7 @@ async function testSheltersRelationships() {
     console.log(`    ✅ Shelter criado: ${createShelterResponse.data.name}`);
     console.log(`    📝 Descrição: ${createShelterResponse.data.description || 'N/A'}`);
     const createdShelter = createShelterResponse.data;
-    console.log('  ℹ️ Relacionamentos (leaders/teachers/sheltered) não são testados aqui para evitar endpoints inexistentes.');
+    console.log('  ℹ️ Relacionamentos (leaders/members/sheltered) não são testados aqui para evitar endpoints inexistentes.');
 
     // 2. Deletar shelter de teste
     console.log('  🔸 Teste 2: Deletar shelter de teste');

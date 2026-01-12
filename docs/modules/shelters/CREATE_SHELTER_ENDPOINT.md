@@ -13,7 +13,7 @@ Cria um novo abrigo no sistema com suas equipes, endereço, imagem e rota associ
 **Permissões:**
 - ✅ **Admin** - Pode criar abrigos
 - ❌ **Leader** - **NÃO** pode criar abrigos
-- ❌ **Teacher** - **NÃO** pode criar abrigos
+- ❌ **Member** - **NÃO** pode criar abrigos
 
 ---
 
@@ -97,7 +97,7 @@ Array de objetos que define líderes e professores para equipes específicas:
     numberTeam: number;              // Número da equipe (1 até teamsQuantity)
     description?: string;             // Descrição da equipe (opcional)
     leaderProfileIds?: string[];      // Array de UUIDs de líderes (opcional)
-    teacherProfileIds?: string[];     // Array de UUIDs de professores (opcional)
+    memberProfileIds?: string[];     // Array de UUIDs de professores (opcional)
   }
 ]
 ```
@@ -185,7 +185,7 @@ Authorization: Bearer {token}
       "numberTeam": 1,
       "description": "Equipe principal",
       "leaderProfileIds": ["123e4567-e89b-12d3-a456-426614174000"],
-      "teacherProfileIds": [
+      "memberProfileIds": [
         "987fcdeb-51a2-43d7-b456-426614174000",
         "456e7890-e12b-34c5-d678-901234567890"
       ]
@@ -300,9 +300,9 @@ Authorization: Bearer {token}
           }
         }
       ],
-      "teachers": [
+      "members": [
         {
-          "id": "teacher-profile-id",
+          "id": "member-profile-id",
           "active": true,
           "user": {
             "id": "user-id-2",
@@ -321,14 +321,14 @@ Authorization: Bearer {token}
       "numberTeam": 2,
       "description": null,
       "leaders": [],
-      "teachers": []
+      "members": []
     },
     {
       "id": "345e6789-e01b-23c4-d567-890123456789",
       "numberTeam": 3,
       "description": null,
       "leaders": [],
-      "teachers": []
+      "members": []
     }
   ],
   "leaders": [
@@ -346,9 +346,9 @@ Authorization: Bearer {token}
       }
     }
   ],
-  "teachers": [
+  "members": [
     {
-      "id": "teacher-profile-id",
+      "id": "member-profile-id",
       "active": true,
       "user": {
         "id": "user-id-2",
@@ -390,7 +390,7 @@ Authorization: Bearer {token}
 | `address` | object | Endereço completo do abrigo |
 | `teams` | array | Array de equipes com líderes e professores |
 | `leaders` | array | Array agregado de todos os líderes de todas as equipes |
-| `teachers` | array | Array agregado de todos os professores de todas as equipes |
+| `members` | array | Array agregado de todos os professores de todas as equipes |
 | `mediaItem` | object \| null | Imagem do abrigo (se fornecida) |
 | `createdAt` | string (ISO 8601) | Data de criação |
 | `updatedAt` | string (ISO 8601) | Data de última atualização |
@@ -475,7 +475,7 @@ Authorization: Bearer {token}
 
 ### 403 Forbidden
 
-**Usuário sem permissão (Teacher):**
+**Usuário sem permissão (Member):**
 ```json
 {
   "statusCode": 403,
@@ -519,7 +519,7 @@ Authorization: Bearer {token}
    - ✅ Array de objetos
    - ✅ Cada `numberTeam` deve estar entre 1 e `teamsQuantity`
    - ✅ Não pode haver duplicatas de `numberTeam`
-   - ✅ `leaderProfileIds` e `teacherProfileIds` devem ser arrays de UUIDs válidos
+   - ✅ `leaderProfileIds` e `memberProfileIds` devem ser arrays de UUIDs válidos
 
 5. **`mediaItem`** (se fornecido):
    - ✅ Se `uploadType = "upload"`: `fieldKey` e arquivo são obrigatórios
@@ -619,13 +619,13 @@ shelterData: {
       "numberTeam": 1,
       "description": "Equipe matutina - Crianças de 6 a 10 anos",
       "leaderProfileIds": ["leader-uuid-1"],
-      "teacherProfileIds": ["teacher-uuid-1", "teacher-uuid-2"]
+      "memberProfileIds": ["member-uuid-1", "member-uuid-2"]
     },
     {
       "numberTeam": 2,
       "description": "Equipe vespertina - Crianças de 11 a 14 anos",
       "leaderProfileIds": ["leader-uuid-2"],
-      "teacherProfileIds": ["teacher-uuid-3"]
+      "memberProfileIds": ["member-uuid-3"]
     },
     {
       "numberTeam": 3,
@@ -659,32 +659,32 @@ shelterImage: [arquivo binário - imagem.jpg]
       "numberTeam": 1,
       "description": "Equipe matutina - Crianças de 6 a 10 anos",
       "leaders": [ /* ... */ ],
-      "teachers": [ /* ... */ ]
+      "members": [ /* ... */ ]
     },
     {
       "id": "team-2-uuid",
       "numberTeam": 2,
       "description": "Equipe vespertina - Crianças de 11 a 14 anos",
       "leaders": [ /* ... */ ],
-      "teachers": [ /* ... */ ]
+      "members": [ /* ... */ ]
     },
     {
       "id": "team-3-uuid",
       "numberTeam": 3,
       "description": "Equipe noturna - Adolescentes de 15 a 17 anos",
       "leaders": [ /* ... */ ],
-      "teachers": []
+      "members": []
     },
     {
       "id": "team-4-uuid",
       "numberTeam": 4,
       "description": null,
       "leaders": [],
-      "teachers": []
+      "members": []
     }
   ],
   "leaders": [ /* todos os líderes agregados */ ],
-  "teachers": [ /* todos os professores agregados */ ],
+  "members": [ /* todos os professores agregados */ ],
   "mediaItem": { /* ... */ },
   "createdAt": "2024-01-01T00:00:00.000Z",
   "updatedAt": "2024-01-01T00:00:00.000Z"

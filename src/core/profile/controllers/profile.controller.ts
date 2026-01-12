@@ -92,8 +92,8 @@ export class ProfileController {
 
     const userRole = await this.authContextService.getRole(req);
 
-    // Teachers and Leaders can only update their own profiles
-    if (userRole === UserRole.TEACHER || userRole === UserRole.LEADER) {
+    // Members and Leaders can only update their own profiles
+    if (userRole === UserRole.MEMBER || userRole === UserRole.LEADER) {
       return this.updateProfileService.execute(userId, updateProfileDto);
     }
 

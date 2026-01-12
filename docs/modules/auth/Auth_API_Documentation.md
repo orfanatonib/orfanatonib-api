@@ -98,7 +98,7 @@ POST /auth/register
   "email": "joao@example.com",
   "phone": "+5511999999999",
   "password": "password123",
-  "role": "teacher"
+  "role": "member"
 }
 ```
 
@@ -111,7 +111,7 @@ Authorization: Bearer {{access_token}}
 ## 🎭 Roles Disponíveis
 
 - `admin` - Administrador
-- `teacher` - Professor
+- `member` - Professor
 - `leader` - Líder (anteriormente coordinator)
 
 ## 📊 Respostas de Exemplo
@@ -145,7 +145,7 @@ Authorization: Bearer {{access_token}}
   "createdAt": "2024-01-01T00:00:00.000Z",
   "updatedAt": "2024-01-01T00:00:00.000Z",
   "role": "admin",
-  "teacherProfile": null,
+  "memberProfile": null,
   "leaderProfile": {
     "id": "leader_profile_id",
     "active": true,
@@ -199,7 +199,7 @@ A collection inclui testes automatizados que:
 - Todos os endpoints que requerem autenticação precisam do header `Authorization: Bearer {{access_token}}`
 - O token JWT tem tempo de expiração limitado
 - Use o endpoint `/auth/refresh` para renovar tokens expirados
-- O campo `role` aceita: `admin`, `teacher`, `leader`
+- O campo `role` aceita: `admin`, `member`, `leader`
 - O campo `phone` deve estar no formato internacional (ex: +5511999999999)
 
 ## 🐛 Troubleshooting

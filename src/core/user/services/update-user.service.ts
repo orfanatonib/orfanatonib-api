@@ -9,7 +9,7 @@ import { UserRepository } from '../user.repository';
 import { UpdateUserDto } from '../dto/update-user.dto';
 import { UserEntity } from '../entities/user.entity';
 
-import { TeacherProfilesService } from 'src/shelter/teacher-profile/services/teacher-profiles.service';
+import { MemberProfilesService } from 'src/shelter/member-profile/services/member-profiles.service';
 import { LeaderProfilesService } from 'src/shelter/leader-profile/services/leader-profiles.service';
 import { UserRole } from 'src/core/auth/auth.types';
 
@@ -19,7 +19,7 @@ export class UpdateUserService {
 
   constructor(
     private readonly userRepo: UserRepository,
-    private readonly teacherService: TeacherProfilesService,
+    private readonly memberService: MemberProfilesService,
     private readonly leaderService: LeaderProfilesService,
   ) { }
 
@@ -39,18 +39,18 @@ export class UpdateUserService {
 
     if (willChangeRole) {
 
-      if (nextRole === UserRole.TEACHER) {
+      if (nextRole === UserRole.MEMBER) {
         await this.leaderService.removeByUserId(id);
         if (nextActive) {
           try {
-            await this.teacherService.createForUser(id);
+            await this.memberService.createForUser(id);
           } catch {
           }
         } else {
-          await this.teacherService.removeByUserId(id);
+          await this.memberService.removeByUserId(id);
         }
       } else if (nextRole === UserRole.LEADER) {
-        await this.teacherService.removeByUserId(id);
+        await this.memberService.removeByUserId(id);
         if (nextActive) {
           try {
             await this.leaderService.createForUser(id);
@@ -60,20 +60,20 @@ export class UpdateUserService {
           await this.leaderService.removeByUserId(id);
         }
       } else {
-        await this.teacherService.removeByUserId(id);
+        await this.memberService.removeByUserId(id);
         await this.leaderService.removeByUserId(id);
       }
     }
 
     if (!willChangeRole && activeInDto) {
-      if (nextRole === UserRole.TEACHER) {
+      if (nextRole === UserRole.MEMBER) {
         if (nextActive) {
           try {
-            await this.teacherService.createForUser(id);
+            await this.memberService.createForUser(id);
           } catch {
           }
         } else {
-          await this.teacherService.removeByUserId(id);
+          await this.memberService.removeByUserId(id);
         }
       } else if (nextRole === UserRole.LEADER) {
         if (nextActive) {

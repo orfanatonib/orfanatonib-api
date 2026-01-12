@@ -108,7 +108,7 @@
           "_postman_previewlanguage": "json",
           "header": [],
           "cookie": [],
-          "body": "{\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": \"uuid-user-1\",\n    \"email\": \"joao.silva@example.com\",\n    \"phone\": \"+5511999999999\",\n    \"name\": \"João Silva\",\n    \"active\": true,\n    \"completed\": true,\n    \"commonUser\": false,\n    \"role\": \"admin\",\n    \"teacherProfile\": null,\n    \"leaderProfile\": {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"clubs\": [\n        {\n          \"id\": \"uuid-shelter-1\",\n          \"number\": 1,\n          \"weekday\": \"monday\"\n        }\n      ]\n    }\n  }\n}"
+          "body": "{\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"user\": {\n    \"id\": \"uuid-user-1\",\n    \"email\": \"joao.silva@example.com\",\n    \"phone\": \"+5511999999999\",\n    \"name\": \"João Silva\",\n    \"active\": true,\n    \"completed\": true,\n    \"commonUser\": false,\n    \"role\": \"admin\",\n    \"memberProfile\": null,\n    \"leaderProfile\": {\n      \"id\": \"uuid-leader-1\",\n      \"active\": true,\n      \"clubs\": [\n        {\n          \"id\": \"uuid-shelter-1\",\n          \"number\": 1,\n          \"weekday\": \"monday\"\n        }\n      ]\n    }\n  }\n}"
         }
       ]
     },
@@ -372,7 +372,7 @@
           "_postman_previewlanguage": "json",
           "header": [],
           "cookie": [],
-          "body": "{\n  \"id\": \"user_id\",\n  \"name\": \"Admin User\",\n  \"email\": \"admin@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": false,\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00.000Z\",\n  \"role\": \"admin\",\n  \"teacherProfile\": null,\n  \"leaderProfile\": {\n    \"id\": \"leader_profile_id\",\n    \"active\": true,\n    \"shelter\": {\n      \"id\": \"shelter_id\",\n      \"number\": 1,\n      \"weekday\": \"monday\"\n    }\n  }\n}"
+          "body": "{\n  \"id\": \"user_id\",\n  \"name\": \"Admin User\",\n  \"email\": \"admin@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": false,\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00.000Z\",\n  \"role\": \"admin\",\n  \"memberProfile\": null,\n  \"leaderProfile\": {\n    \"id\": \"leader_profile_id\",\n    \"active\": true,\n    \"shelter\": {\n      \"id\": \"shelter_id\",\n      \"number\": 1,\n      \"weekday\": \"monday\"\n    }\n  }\n}"
         }
       ]
     },
@@ -388,7 +388,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"password\": \"password123\",\n  \"role\": \"teacher\"\n}"
+          "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"password\": \"password123\",\n  \"role\": \"member\"\n}"
         },
         "url": {
           "raw": "{{base_url}}/auth/register",
@@ -415,7 +415,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"password\": \"password123\",\n  \"role\": \"teacher\"\n}"
+              "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"password\": \"password123\",\n  \"role\": \"member\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/auth/register",
@@ -433,7 +433,7 @@
           "_postman_previewlanguage": "json",
           "header": [],
           "cookie": [],
-          "body": "{\n  \"id\": \"new_user_id\",\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true,\n  \"role\": \"teacher\",\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00.000Z\"\n}"
+          "body": "{\n  \"id\": \"new_user_id\",\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"active\": true,\n  \"completed\": false,\n  \"commonUser\": true,\n  \"role\": \"member\",\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00.000Z\"\n}"
         }
       ]
     },

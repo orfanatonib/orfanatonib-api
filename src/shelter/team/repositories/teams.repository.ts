@@ -36,8 +36,8 @@ export class TeamsRepository {
         'shelter.address',
         'leaders',
         'leaders.user',
-        'teachers',
-        'teachers.user',
+        'members',
+        'members.user',
       ],
     });
   }
@@ -45,7 +45,7 @@ export class TeamsRepository {
   async findByShelter(shelterId: string): Promise<TeamEntity[]> {
     return this.teamRepo.find({
       where: { shelter: { id: shelterId } },
-      relations: ['shelter', 'leaders', 'leaders.user', 'teachers', 'teachers.user'],
+      relations: ['shelter', 'leaders', 'leaders.user', 'members', 'members.user'],
     });
   }
 
@@ -56,8 +56,8 @@ export class TeamsRepository {
       .leftJoinAndSelect('shelter.address', 'address')
       .leftJoinAndSelect('team.leaders', 'leaders')
       .leftJoinAndSelect('leaders.user', 'leaderUser')
-      .leftJoinAndSelect('team.teachers', 'teachers')
-      .leftJoinAndSelect('teachers.user', 'teacherUser')
+      .leftJoinAndSelect('team.members', 'members')
+      .leftJoinAndSelect('members.user', 'memberUser')
       .where('leaders.id = :leaderProfileId', { leaderProfileId })
       .getMany();
   }
@@ -75,14 +75,14 @@ export class TeamsRepository {
         shelter: { id: shelterId },
         numberTeam: numberTeam,
       },
-      relations: ['shelter', 'leaders', 'leaders.user', 'teachers', 'teachers.user'],
+      relations: ['shelter', 'leaders', 'leaders.user', 'members', 'members.user'],
     });
   }
 
   async addLeadersToTeam(teamId: string, leaderProfileIds: string[]): Promise<TeamEntity> {
     const team = await this.teamRepo.findOne({
       where: { id: teamId },
-      relations: ['leaders', 'leaders.user', 'shelter', 'teachers', 'teachers.user'],
+      relations: ['leaders', 'leaders.user', 'shelter', 'members', 'members.user'],
     });
 
     if (!team) {
@@ -106,7 +106,7 @@ export class TeamsRepository {
   async removeLeadersFromTeam(teamId: string, leaderProfileIds: string[]): Promise<TeamEntity> {
     const team = await this.teamRepo.findOne({
       where: { id: teamId },
-      relations: ['leaders', 'leaders.user', 'shelter', 'teachers', 'teachers.user'],
+      relations: ['leaders', 'leaders.user', 'shelter', 'members', 'members.user'],
     });
 
     if (!team) {
@@ -138,7 +138,7 @@ export class TeamsRepository {
   async update(id: string, dto: UpdateTeamDto): Promise<TeamEntity> {
     const team = await this.teamRepo.findOne({
       where: { id },
-      relations: ['leaders', 'teachers', 'shelter']
+      relations: ['leaders', 'members', 'shelter']
     });
 
     if (!team) {
@@ -155,11 +155,11 @@ export class TeamsRepository {
       team.leaders = leaders;
     }
 
-    if (dto.teacherProfileIds !== undefined) {
-      // Import TeacherProfileEntity and use its repository
-      const teacherProfileRepo = this.teamRepo.manager.getRepository('TeacherProfileEntity');
-      const teachers = await teacherProfileRepo.findByIds(dto.teacherProfileIds);
-      team.teachers = teachers as any; // If needed, cast to TeacherProfileEntity[]
+    if (dto.memberProfileIds !== undefined) {
+      // Import MemberProfileEntity and use its repository
+      const memberProfileRepo = this.teamRepo.manager.getRepository('MemberProfileEntity');
+      const members = await memberProfileRepo.findByIds(dto.memberProfileIds);
+      team.members = members as any; // If needed, cast to MemberProfileEntity[]
     }
 
     return this.teamRepo.save(team);

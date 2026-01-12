@@ -5,9 +5,9 @@
       "message": "Internal server error"
     },
     "name": "Ana Silva",
-    "email": "ana.silva.teacher.0@example.com",
+    "email": "ana.silva.member.0@example.com",
     "phone": "+5581233059719",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -16,9 +16,9 @@
       "message": "Internal server error"
     },
     "name": "Bruno Santos",
-    "email": "bruno.santos.teacher.1@example.com",
+    "email": "bruno.santos.member.1@example.com",
     "phone": "+5531520353875",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -27,9 +27,9 @@
       "message": "Internal server error"
     },
     "name": "Carlos Oliveira",
-    "email": "carlos.oliveira.teacher.2@example.com",
+    "email": "carlos.oliveira.member.2@example.com",
     "phone": "+5521408859594",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -38,9 +38,9 @@
       "message": "Internal server error"
     },
     "name": "Diana Costa",
-    "email": "diana.costa.teacher.3@example.com",
+    "email": "diana.costa.member.3@example.com",
     "phone": "+5571410071266",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -49,9 +49,9 @@
       "message": "Internal server error"
     },
     "name": "Eduardo Lima",
-    "email": "eduardo.lima.teacher.4@example.com",
+    "email": "eduardo.lima.member.4@example.com",
     "phone": "+5581732691727",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -60,9 +60,9 @@
       "message": "Internal server error"
     },
     "name": "Fernanda Rocha",
-    "email": "fernanda.rocha.teacher.5@example.com",
+    "email": "fernanda.rocha.member.5@example.com",
     "phone": "+5511793271679",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -71,9 +71,9 @@
       "message": "Internal server error"
     },
     "name": "Gabriel Alves",
-    "email": "gabriel.alves.teacher.6@example.com",
+    "email": "gabriel.alves.member.6@example.com",
     "phone": "+5581343242906",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -82,9 +82,9 @@
       "message": "Internal server error"
     },
     "name": "Helena Pereira",
-    "email": "helena.pereira.teacher.7@example.com",
+    "email": "helena.pereira.member.7@example.com",
     "phone": "+5571430434686",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -93,9 +93,9 @@
       "message": "Internal server error"
     },
     "name": "Igor Martins",
-    "email": "igor.martins.teacher.8@example.com",
+    "email": "igor.martins.member.8@example.com",
     "phone": "+5521846741866",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -104,9 +104,9 @@
       "message": "Internal server error"
     },
     "name": "Julia Ferreira",
-    "email": "julia.ferreira.teacher.9@example.com",
+    "email": "julia.ferreira.member.9@example.com",
     "phone": "+5531490791522",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -115,9 +115,9 @@
       "message": "Internal server error"
     },
     "name": "Kleber Souza",
-    "email": "kleber.souza.teacher.10@example.com",
+    "email": "kleber.souza.member.10@example.com",
     "phone": "+5585837098977",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -126,9 +126,9 @@
       "message": "Internal server error"
     },
     "name": "Larissa Barbosa",
-    "email": "larissa.barbosa.teacher.11@example.com",
+    "email": "larissa.barbosa.member.11@example.com",
     "phone": "+5541955946808",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -137,9 +137,9 @@
       "message": "Internal server error"
     },
     "name": "Marcos Dias",
-    "email": "marcos.dias.teacher.12@example.com",
+    "email": "marcos.dias.member.12@example.com",
     "phone": "+5561164843195",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -148,9 +148,9 @@
       "message": "Internal server error"
     },
     "name": "Natália Campos",
-    "email": "natlia.campos.teacher.13@example.com",
+    "email": "natlia.campos.member.13@example.com",
     "phone": "+5595810048446",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -159,9 +159,9 @@
       "message": "Internal server error"
     },
     "name": "Otávio Nunes",
-    "email": "otvio.nunes.teacher.14@example.com",
+    "email": "otvio.nunes.member.14@example.com",
     "phone": "+5551711875180",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -170,9 +170,9 @@
       "message": "Internal server error"
     },
     "name": "Patrícia Vieira",
-    "email": "patrcia.vieira.teacher.15@example.com",
+    "email": "patrcia.vieira.member.15@example.com",
     "phone": "+5595218299413",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -181,9 +181,9 @@
       "message": "Internal server error"
     },
     "name": "Rafael Mendes",
-    "email": "rafael.mendes.teacher.16@example.com",
+    "email": "rafael.mendes.member.16@example.com",
     "phone": "+5581324544845",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -192,9 +192,9 @@
       "message": "Internal server error"
     },
     "name": "Sandra Gomes",
-    "email": "sandra.gomes.teacher.17@example.com",
+    "email": "sandra.gomes.member.17@example.com",
     "phone": "+5595948947386",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -203,9 +203,9 @@
       "message": "Internal server error"
     },
     "name": "Thiago Ramos",
-    "email": "thiago.ramos.teacher.18@example.com",
+    "email": "thiago.ramos.member.18@example.com",
     "phone": "+5581454339373",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -214,9 +214,9 @@
       "message": "Internal server error"
     },
     "name": "Vanessa Lopes",
-    "email": "vanessa.lopes.teacher.19@example.com",
+    "email": "vanessa.lopes.member.19@example.com",
     "phone": "+5595656561163",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -225,9 +225,9 @@
       "message": "Internal server error"
     },
     "name": "Wagner Cardoso",
-    "email": "wagner.cardoso.teacher.20@example.com",
+    "email": "wagner.cardoso.member.20@example.com",
     "phone": "+5561331624016",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -236,9 +236,9 @@
       "message": "Internal server error"
     },
     "name": "Ximena Reis",
-    "email": "ximena.reis.teacher.21@example.com",
+    "email": "ximena.reis.member.21@example.com",
     "phone": "+5581191200567",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -247,9 +247,9 @@
       "message": "Internal server error"
     },
     "name": "Yuri Moreira",
-    "email": "yuri.moreira.teacher.22@example.com",
+    "email": "yuri.moreira.member.22@example.com",
     "phone": "+5531305115615",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -258,9 +258,9 @@
       "message": "Internal server error"
     },
     "name": "Zélia Castro",
-    "email": "zlia.castro.teacher.23@example.com",
+    "email": "zlia.castro.member.23@example.com",
     "phone": "+5571732589999",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -269,9 +269,9 @@
       "message": "Internal server error"
     },
     "name": "Adriano Araújo",
-    "email": "adriano.arajo.teacher.24@example.com",
+    "email": "adriano.arajo.member.24@example.com",
     "phone": "+5585172245649",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -280,9 +280,9 @@
       "message": "Internal server error"
     },
     "name": "Beatriz Melo",
-    "email": "beatriz.melo.teacher.25@example.com",
+    "email": "beatriz.melo.member.25@example.com",
     "phone": "+5531470409013",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -291,9 +291,9 @@
       "message": "Internal server error"
     },
     "name": "César Carvalho",
-    "email": "csar.carvalho.teacher.26@example.com",
+    "email": "csar.carvalho.member.26@example.com",
     "phone": "+5585877071505",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -302,9 +302,9 @@
       "message": "Internal server error"
     },
     "name": "Daniela Teixeira",
-    "email": "daniela.teixeira.teacher.27@example.com",
+    "email": "daniela.teixeira.member.27@example.com",
     "phone": "+5541854567667",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -313,9 +313,9 @@
       "message": "Internal server error"
     },
     "name": "Emanuel Monteiro",
-    "email": "emanuel.monteiro.teacher.28@example.com",
+    "email": "emanuel.monteiro.member.28@example.com",
     "phone": "+5571241175104",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -324,9 +324,9 @@
       "message": "Internal server error"
     },
     "name": "Fabiana Fernandes",
-    "email": "fabiana.fernandes.teacher.29@example.com",
+    "email": "fabiana.fernandes.member.29@example.com",
     "phone": "+5561673671831",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -335,9 +335,9 @@
       "message": "Internal server error"
     },
     "name": "Gustavo Rodrigues",
-    "email": "gustavo.rodrigues.teacher.30@example.com",
+    "email": "gustavo.rodrigues.member.30@example.com",
     "phone": "+5595578273150",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -346,9 +346,9 @@
       "message": "Internal server error"
     },
     "name": "Hortência Cavalcanti",
-    "email": "hortncia.cavalcanti.teacher.31@example.com",
+    "email": "hortncia.cavalcanti.member.31@example.com",
     "phone": "+5511103803856",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -357,9 +357,9 @@
       "message": "Internal server error"
     },
     "name": "Ivan Nascimento",
-    "email": "ivan.nascimento.teacher.32@example.com",
+    "email": "ivan.nascimento.member.32@example.com",
     "phone": "+5561587646407",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -368,9 +368,9 @@
       "message": "Internal server error"
     },
     "name": "Jéssica Freitas",
-    "email": "jssica.freitas.teacher.33@example.com",
+    "email": "jssica.freitas.member.33@example.com",
     "phone": "+5551702345110",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -379,9 +379,9 @@
       "message": "Internal server error"
     },
     "name": "Kátia Machado",
-    "email": "ktia.machado.teacher.34@example.com",
+    "email": "ktia.machado.member.34@example.com",
     "phone": "+5571559162179",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -390,9 +390,9 @@
       "message": "Internal server error"
     },
     "name": "Leonardo Andrade",
-    "email": "leonardo.andrade.teacher.35@example.com",
+    "email": "leonardo.andrade.member.35@example.com",
     "phone": "+5581323304787",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -401,9 +401,9 @@
       "message": "Internal server error"
     },
     "name": "Mariana Cunha",
-    "email": "mariana.cunha.teacher.36@example.com",
+    "email": "mariana.cunha.member.36@example.com",
     "phone": "+5581697224002",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -412,9 +412,9 @@
       "message": "Internal server error"
     },
     "name": "Nelson Moura",
-    "email": "nelson.moura.teacher.37@example.com",
+    "email": "nelson.moura.member.37@example.com",
     "phone": "+5551321360128",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -423,9 +423,9 @@
       "message": "Internal server error"
     },
     "name": "Olívia Bezerra",
-    "email": "olvia.bezerra.teacher.38@example.com",
+    "email": "olvia.bezerra.member.38@example.com",
     "phone": "+5561135677532",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {
@@ -434,9 +434,9 @@
       "message": "Internal server error"
     },
     "name": "Paulo Correia",
-    "email": "paulo.correia.teacher.39@example.com",
+    "email": "paulo.correia.member.39@example.com",
     "phone": "+5581603707299",
-    "role": "teacher",
+    "role": "member",
     "success": false
   },
   {

@@ -195,7 +195,7 @@ Retorna a entidade `UserEntity` atualizada:
   "name": "João Silva",
   "email": "joao@example.com",
   "phone": "+5511999999999",
-  "role": "teacher",
+  "role": "member",
   "active": true,
   "completed": true,
   "commonUser": true,
