@@ -182,7 +182,8 @@ export class AttendanceReaderService {
                     }
                 });
 
-                if (!attendance) {
+                // Incluir se não houver registro OU se houver registro de falta (ABSENT)
+                if (!attendance || attendance.type === AttendanceType.ABSENT) {
                     pendings.push({
                         scheduleId: schedule.id,
                         category: AttendanceCategory.VISIT,
@@ -207,7 +208,8 @@ export class AttendanceReaderService {
                     }
                 });
 
-                if (!attendance) {
+                // Incluir se não houver registro OU se houver registro de falta (ABSENT)
+                if (!attendance || attendance.type === AttendanceType.ABSENT) {
                     pendings.push({
                         scheduleId: schedule.id,
                         category: AttendanceCategory.MEETING,
