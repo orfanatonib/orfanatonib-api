@@ -17,7 +17,9 @@ import {
     ShelterWithTeamsDto,
     TeamWithSchedulesDto,
     ScheduleWithAttendanceDto,
-    AttendanceRecordDto
+    AttendanceRecordDto,
+    AllPendingsResponseDto,
+    TeamPendingsDto
 } from '../dto/attendance-response.dto';
 
 @Injectable()
@@ -33,200 +35,216 @@ export class AttendanceReaderService {
         private readonly accessService: AttendanceAccessService,
     ) { }
 
-    async findPendingsForLeader(userId: string, teamId: string, today: Date): Promise<PendingForLeaderDto[]> {
+    async findAllPendings(userId: string, today: Date): Promise<AllPendingsResponseDto> {
         if (!userId) {
             throw new ForbiddenException('Usuário não identificado no token');
         }
 
         const user = await this.accessService.getUserWithMembership(userId);
-        await this.accessService.assertLeaderAccess(user, teamId);
 
-        const team = await this.teamRepo.findOne({
-            where: { id: teamId },
-            relations: ['members', 'members.user', 'shelter']
-        });
+        const leaderPendings: TeamPendingsDto[] = [];
+        const memberPendings: PendingForMemberDto[] = [];
 
-        if (!team) {
-            throw new NotFoundException('Time não encontrado');
+        // === LEADER PENDINGS (Admin vê todas, Líder vê suas equipes) ===
+        const leaderTeamIds = user.role === UserRole.ADMIN
+            ? []
+            : await this.accessService.getLeaderTeamIds(user.id);
+
+        let leaderTeams: TeamEntity[] = [];
+
+        if (user.role === UserRole.ADMIN) {
+            leaderTeams = await this.teamRepo.find({
+                relations: ['members', 'members.user', 'shelter'],
+                order: { numberTeam: 'ASC' }
+            });
+        } else if (leaderTeamIds.length > 0) {
+            leaderTeams = await this.teamRepo.find({
+                where: { id: In(leaderTeamIds) },
+                relations: ['members', 'members.user', 'shelter'],
+                order: { numberTeam: 'ASC' }
+            });
         }
 
-        const schedules = await this.scheduleRepo.createQueryBuilder('schedule')
-            .leftJoinAndSelect('schedule.team', 'team')
-            .where('schedule.team.id = :teamId', { teamId })
-            .andWhere('(schedule.visitDate < :today OR schedule.meetingDate < :today)', { today: today.toISOString().slice(0, 10) })
-            .orderBy('COALESCE(schedule.visitDate, schedule.meetingDate)', 'DESC')
-            .getMany();
+        for (const team of leaderTeams) {
+            const schedules = await this.scheduleRepo.createQueryBuilder('schedule')
+                .leftJoinAndSelect('schedule.team', 'scheduleTeam')
+                .where('schedule.team.id = :teamId', { teamId: team.id })
+                .andWhere('(schedule.visitDate < :today OR schedule.meetingDate < :today)', { today: today.toISOString().slice(0, 10) })
+                .orderBy('COALESCE(schedule.visitDate, schedule.meetingDate)', 'DESC')
+                .getMany();
 
-        const pendings: PendingForLeaderDto[] = [];
-        const memberUsers = team.members?.map(t => t.user).filter(u => u) ?? [];
+            const pendings: PendingForLeaderDto[] = [];
+            const memberUsers = team.members?.map(t => t.user).filter(u => u) ?? [];
 
-        for (const schedule of schedules) {
-            if (schedule.visitDate && new Date(schedule.visitDate) < today) {
-                const attendances = await this.attendanceRepo.find({
-                    where: {
-                        shelterSchedule: { id: schedule.id },
-                        category: AttendanceCategory.VISIT
-                    },
-                    relations: ['member']
-                });
+            for (const schedule of schedules) {
+                if (schedule.visitDate && new Date(schedule.visitDate) < today) {
+                    const attendances = await this.attendanceRepo.find({
+                        where: {
+                            shelterSchedule: { id: schedule.id },
+                            category: AttendanceCategory.VISIT
+                        },
+                        relations: ['member']
+                    });
 
-                const missingMembers: PendingMemberDto[] = [];
+                    const missingMembers: PendingMemberDto[] = [];
 
-                for (const member of memberUsers) {
-                    const hasAttendance = attendances.some(a => a.member.id === member.id);
-                    if (!hasAttendance) {
-                        missingMembers.push({
-                            memberId: member.id,
-                            memberName: member.name,
-                            memberEmail: member.email,
-                            role: 'member'
+                    for (const member of memberUsers) {
+                        const hasAttendance = attendances.some(a => a.member.id === member.id);
+                        if (!hasAttendance) {
+                            missingMembers.push({
+                                memberId: member.id,
+                                memberName: member.name,
+                                memberEmail: member.email,
+                                role: 'member'
+                            });
+                        }
+                    }
+
+                    if (missingMembers.length > 0) {
+                        pendings.push({
+                            scheduleId: schedule.id,
+                            category: AttendanceCategory.VISIT,
+                            date: schedule.visitDate,
+                            location: `Abrigo - ${team.shelter.name}`,
+                            visitNumber: schedule.visitNumber,
+                            lessonContent: schedule.lessonContent,
+                            pendingMembers: missingMembers,
+                            teamName: team.description || `Equipe ${team.numberTeam}`,
+                            shelterName: team.shelter.name,
+                            totalMembers: memberUsers.length
                         });
                     }
                 }
 
-                if (missingMembers.length > 0) {
-                    pendings.push({
-                        scheduleId: schedule.id,
-                        category: AttendanceCategory.VISIT,
-                        date: schedule.visitDate,
-                        location: `Abrigo - ${team.shelter.name}`,
-                        visitNumber: schedule.visitNumber,
-                        lessonContent: schedule.lessonContent,
-                        pendingMembers: missingMembers,
-                        teamName: team.description || `Equipe ${team.numberTeam}`,
-                        shelterName: team.shelter.name,
-                        totalMembers: memberUsers.length
+                if (schedule.meetingDate && new Date(schedule.meetingDate) < today) {
+                    const attendances = await this.attendanceRepo.find({
+                        where: {
+                            shelterSchedule: { id: schedule.id },
+                            category: AttendanceCategory.MEETING
+                        },
+                        relations: ['member']
                     });
-                }
-            }
 
-            if (schedule.meetingDate && new Date(schedule.meetingDate) < today) {
-                const attendances = await this.attendanceRepo.find({
-                    where: {
-                        shelterSchedule: { id: schedule.id },
-                        category: AttendanceCategory.MEETING
-                    },
-                    relations: ['member']
-                });
+                    const missingMembers: PendingMemberDto[] = [];
 
-                const missingMembers: PendingMemberDto[] = [];
+                    for (const member of memberUsers) {
+                        const hasAttendance = attendances.some(a => a.member.id === member.id);
+                        if (!hasAttendance) {
+                            missingMembers.push({
+                                memberId: member.id,
+                                memberName: member.name,
+                                memberEmail: member.email,
+                                role: 'member'
+                            });
+                        }
+                    }
 
-                for (const member of memberUsers) {
-                    const hasAttendance = attendances.some(a => a.member.id === member.id);
-                    if (!hasAttendance) {
-                        missingMembers.push({
-                            memberId: member.id,
-                            memberName: member.name,
-                            memberEmail: member.email,
-                            role: 'member'
+                    if (missingMembers.length > 0) {
+                        pendings.push({
+                            scheduleId: schedule.id,
+                            category: AttendanceCategory.MEETING,
+                            date: schedule.meetingDate,
+                            location: `NIB - ${schedule.meetingRoom || 'Sem local'}`,
+                            visitNumber: schedule.visitNumber,
+                            lessonContent: schedule.lessonContent,
+                            pendingMembers: missingMembers,
+                            teamName: team.description || `Equipe ${team.numberTeam}`,
+                            shelterName: team.shelter.name,
+                            totalMembers: memberUsers.length
                         });
                     }
                 }
-
-                if (missingMembers.length > 0) {
-                    pendings.push({
-                        scheduleId: schedule.id,
-                        category: AttendanceCategory.MEETING,
-                        date: schedule.meetingDate,
-                        location: `NIB - ${schedule.meetingRoom || 'Sem local'}`,
-                        visitNumber: schedule.visitNumber,
-                        lessonContent: schedule.lessonContent,
-                        pendingMembers: missingMembers,
-                        teamName: team.description || `Equipe ${team.numberTeam}`,
-                        shelterName: team.shelter.name,
-                        totalMembers: memberUsers.length
-                    });
-                }
             }
-        }
 
-        return pendings;
-    }
-
-    async findPendingsForMember(memberId: string, today: Date): Promise<PendingForMemberDto[]> {
-        if (!memberId) {
-            throw new ForbiddenException('Membro não identificado');
-        }
-
-        const teams = await this.teamRepo.createQueryBuilder('team')
-            .leftJoin('team.members', 'member')
-            .leftJoin('member.user', 'user')
-            .leftJoinAndSelect('team.shelter', 'shelter')
-            .where('user.id = :memberId', { memberId })
-            .getMany();
-
-        if (teams.length === 0) {
-            return [];
-        }
-
-        const teamIds = teams.map(t => t.id);
-
-        const schedules = await this.scheduleRepo.createQueryBuilder('schedule')
-            .leftJoinAndSelect('schedule.team', 'team')
-            .where('schedule.team.id IN (:...teamIds)', { teamIds })
-            .andWhere('(schedule.visitDate < :today OR schedule.meetingDate < :today)', { today: today.toISOString().slice(0, 10) })
-            .orderBy('COALESCE(schedule.visitDate, schedule.meetingDate)', 'DESC')
-            .getMany();
-
-        const pendings: PendingForMemberDto[] = [];
-
-        for (const schedule of schedules) {
-            const team = teams.find(t => t.id === schedule.team.id);
-
-            if (schedule.visitDate && new Date(schedule.visitDate) < today) {
-                const attendance = await this.attendanceRepo.findOne({
-                    where: {
-                        shelterSchedule: { id: schedule.id },
-                        member: { id: memberId },
-                        category: AttendanceCategory.VISIT
-                    }
+            if (pendings.length > 0) {
+                leaderPendings.push({
+                    teamId: team.id,
+                    teamName: team.description || `Equipe ${team.numberTeam}`,
+                    shelterName: team.shelter.name,
+                    pendings
                 });
-
-                // Incluir se não houver registro OU se houver registro de falta (ABSENT)
-                if (!attendance || attendance.type === AttendanceType.ABSENT) {
-                    pendings.push({
-                        scheduleId: schedule.id,
-                        category: AttendanceCategory.VISIT,
-                        date: schedule.visitDate,
-                        location: `Abrigo - ${team?.shelter?.name || 'Local desconhecido'}`,
-                        visitNumber: schedule.visitNumber,
-                        teamNumber: schedule.team.numberTeam,
-                        shelterName: team?.shelter?.name || '',
-                        teamName: team?.description || `Equipe ${team?.numberTeam}`,
-                        lessonContent: schedule.lessonContent || '',
-                        teamId: schedule.team.id
-                    });
-                }
             }
+        }
 
-            if (schedule.meetingDate && new Date(schedule.meetingDate) < today) {
-                const attendance = await this.attendanceRepo.findOne({
-                    where: {
-                        shelterSchedule: { id: schedule.id },
-                        member: { id: memberId },
-                        category: AttendanceCategory.MEETING
+        // === MEMBER PENDINGS (pendências pessoais do usuário) ===
+        // Admin não tem pendências pessoais de membro
+        if (user.role !== UserRole.ADMIN) {
+            const memberTeams = await this.teamRepo.createQueryBuilder('team')
+                .leftJoin('team.members', 'member')
+                .leftJoin('member.user', 'memberUser')
+                .leftJoinAndSelect('team.shelter', 'shelter')
+                .where('memberUser.id = :userId', { userId })
+                .getMany();
+
+            if (memberTeams.length > 0) {
+                const memberTeamIds = memberTeams.map(t => t.id);
+
+                const memberSchedules = await this.scheduleRepo.createQueryBuilder('schedule')
+                    .leftJoinAndSelect('schedule.team', 'team')
+                    .where('schedule.team.id IN (:...memberTeamIds)', { memberTeamIds })
+                    .andWhere('(schedule.visitDate < :today OR schedule.meetingDate < :today)', { today: today.toISOString().slice(0, 10) })
+                    .orderBy('COALESCE(schedule.visitDate, schedule.meetingDate)', 'DESC')
+                    .getMany();
+
+                for (const schedule of memberSchedules) {
+                    const team = memberTeams.find(t => t.id === schedule.team.id);
+
+                    if (schedule.visitDate && new Date(schedule.visitDate) < today) {
+                        const attendance = await this.attendanceRepo.findOne({
+                            where: {
+                                shelterSchedule: { id: schedule.id },
+                                member: { id: userId },
+                                category: AttendanceCategory.VISIT
+                            }
+                        });
+
+                        // Incluir se não houver registro (não lançada pelo líder)
+                        if (!attendance) {
+                            memberPendings.push({
+                                scheduleId: schedule.id,
+                                category: AttendanceCategory.VISIT,
+                                date: schedule.visitDate,
+                                location: `Abrigo - ${team?.shelter?.name || 'Local desconhecido'}`,
+                                visitNumber: schedule.visitNumber,
+                                teamNumber: schedule.team.numberTeam,
+                                shelterName: team?.shelter?.name || '',
+                                teamName: team?.description || `Equipe ${team?.numberTeam}`,
+                                lessonContent: schedule.lessonContent || '',
+                                teamId: schedule.team.id
+                            });
+                        }
                     }
-                });
 
-                // Incluir se não houver registro OU se houver registro de falta (ABSENT)
-                if (!attendance || attendance.type === AttendanceType.ABSENT) {
-                    pendings.push({
-                        scheduleId: schedule.id,
-                        category: AttendanceCategory.MEETING,
-                        date: schedule.meetingDate,
-                        location: `NIB - ${schedule.meetingRoom || 'Sem local'}`,
-                        visitNumber: schedule.visitNumber,
-                        teamNumber: schedule.team.numberTeam,
-                        shelterName: team?.shelter?.name || '',
-                        teamName: team?.description || `Equipe ${team?.numberTeam}`,
-                        lessonContent: schedule.lessonContent || '',
-                        teamId: schedule.team.id
-                    });
+                    if (schedule.meetingDate && new Date(schedule.meetingDate) < today) {
+                        const attendance = await this.attendanceRepo.findOne({
+                            where: {
+                                shelterSchedule: { id: schedule.id },
+                                member: { id: userId },
+                                category: AttendanceCategory.MEETING
+                            }
+                        });
+
+                        // Incluir se não houver registro (não lançada pelo líder)
+                        if (!attendance) {
+                            memberPendings.push({
+                                scheduleId: schedule.id,
+                                category: AttendanceCategory.MEETING,
+                                date: schedule.meetingDate,
+                                location: `NIB - ${schedule.meetingRoom || 'Sem local'}`,
+                                visitNumber: schedule.visitNumber,
+                                teamNumber: schedule.team.numberTeam,
+                                shelterName: team?.shelter?.name || '',
+                                teamName: team?.description || `Equipe ${team?.numberTeam}`,
+                                lessonContent: schedule.lessonContent || '',
+                                teamId: schedule.team.id
+                            });
+                        }
+                    }
                 }
             }
         }
 
-        return pendings;
+        return { leaderPendings, memberPendings };
     }
 
     async listTeamMembers(userId: string, teamId: string) {

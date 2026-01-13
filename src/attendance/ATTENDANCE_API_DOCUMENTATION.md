@@ -12,8 +12,7 @@ Este documento descreve todos os endpoints disponíveis para o módulo de regist
   - [Listar Times do Líder](#listar-times-do-líder)
   - [Listar Times + Membros (agrupado por abrigo)](#listar-times--membros-agrupado-por-abrigo)
   - [Listar Hierarquia Completa](#listar-hierarquia-completa-abrigos--equipes--membros)
-- [Pendências do Líder](#pendências-do-líder)
-- [Pendências do Membro](#pendências-do-membro)
+- [Pendências Unificadas](#pendências-unificadas)
 - [Novos Endpoints (v2)](#novos-endpoints-v2)
   - [Listar Registros de Presença com Filtros](#listar-registros-de-presença-com-filtros)
   - [Estatísticas de Presença do Usuário](#estatísticas-de-presença-do-usuário)
@@ -164,94 +163,96 @@ Este documento descreve todos os endpoints disponíveis para o módulo de regist
 
 ---
 
-### Pendências do Líder
+### Pendências Unificadas
 
-**Endpoint:** `GET /attendance/pending/leader?teamId={teamId}`
-
-**Autenticação:** JWT (JwtAuthGuard)
-
-**Permissão:** Admin ou Leader (AdminOrLeaderRoleGuard) — apenas times liderados pelo usuário
-
-**Descrição:** Retorna reuniões e visitas já realizadas (meetingDate ou visitDate < hoje) do time informado onde ainda existem membros sem presença/falta lançada (pagela pendente). Útil para o líder saber em quais eventos precisa lançar a pagela do time.
-
-**Query Parameters:**
-- `teamId` (required): UUID do time
-
-**Response (200):**
-```json
-[
-  {
-    "scheduleId": "uuid-evento-1",
-    "visitNumber": 1,
-    "visitDate": "2024-01-10",
-    "meetingDate": "2024-01-08",
-    "lessonContent": "Lição sobre valores",
-    "observation": null,
-    "meetingRoom": "Sala 3",
-    "teamName": "Equipe Matutina",
-    "shelterName": "Orfanato Luz do Amanhã",
-    "totalMembers": 3,
-    "pendingMembers": [
-      {
-        "memberId": "uuid-member-1",
-        "memberName": "João Silva",
-        "memberEmail": "joao@email.com",
-        "role": "member"
-      },
-      {
-        "memberId": "uuid-member-2",
-        "memberName": "Maria Santos",
-        "memberEmail": "maria@email.com",
-        "role": "member"
-      }
-    ]
-  }
-]
-```
-
-**Erros:**
-- `404 Not Found` - Time não encontrado
-
----
-
-### Pendências do Membro
-
-**Endpoint:** `GET /attendance/pending/member`
+**Endpoint:** `GET /attendance/pending/all`
 
 **Autenticação:** JWT (JwtAuthGuard)
 
 **Permissão:** Todos os usuários autenticados
 
-**Descrição:** Retorna reuniões e visitas já realizadas em que o **professor** ainda não registrou sua presença ou ausência. Líderes não têm pendências.
+**Descrição:** Retorna todas as pendências de presença em uma única chamada, combinando pendências de líder e de membro.
+
+**Comportamento por tipo de usuário:**
+- **Admin**: `leaderPendings` contém pendências de **todas** as equipes; `memberPendings` está vazio
+- **Líder**: `leaderPendings` contém pendências das equipes que lidera; `memberPendings` contém suas pendências pessoais (se também for membro)
+- **Membro**: `leaderPendings` está vazio; `memberPendings` contém suas pendências pessoais
 
 **Response (200):**
 ```json
-[
-  {
-    "scheduleId": "uuid-evento-1",
-    "visitNumber": 1,
-    "visitDate": "2024-01-10",
-    "meetingDate": "2024-01-08",
-    "lessonContent": "Lição sobre valores",
-    "teamId": "uuid-time-1",
-    "teamNumber": 1,
-    "shelterName": "Orfanato Luz do Amanhã"
-  },
-  {
-    "scheduleId": "uuid-evento-2",
-    "visitNumber": 2,
-    "visitDate": "2024-01-15",
-    "meetingDate": null,
-    "lessonContent": "Lição sobre respeito",
-    "teamId": "uuid-time-1",
-    "teamNumber": 1,
-    "shelterName": "Orfanato Luz do Amanhã"
-  }
-]
+{
+  "leaderPendings": [
+    {
+      "teamId": "uuid-time-1",
+      "teamName": "Equipe Matutina",
+      "shelterName": "Orfanato Luz do Amanhã",
+      "pendings": [
+        {
+          "scheduleId": "uuid-evento-1",
+          "category": "visit",
+          "date": "2024-01-10",
+          "location": "Abrigo - Orfanato Luz do Amanhã",
+          "visitNumber": 1,
+          "lessonContent": "Lição sobre valores",
+          "teamName": "Equipe Matutina",
+          "shelterName": "Orfanato Luz do Amanhã",
+          "totalMembers": 3,
+          "pendingMembers": [
+            {
+              "memberId": "uuid-member-1",
+              "memberName": "João Silva",
+              "memberEmail": "joao@email.com",
+              "role": "member"
+            }
+          ]
+        },
+        {
+          "scheduleId": "uuid-evento-1",
+          "category": "meeting",
+          "date": "2024-01-08",
+          "location": "NIB - Sala 3",
+          "visitNumber": 1,
+          "lessonContent": "Lição sobre valores",
+          "teamName": "Equipe Matutina",
+          "shelterName": "Orfanato Luz do Amanhã",
+          "totalMembers": 3,
+          "pendingMembers": [
+            {
+              "memberId": "uuid-member-1",
+              "memberName": "João Silva",
+              "memberEmail": "joao@email.com",
+              "role": "member"
+            },
+            {
+              "memberId": "uuid-member-2",
+              "memberName": "Maria Santos",
+              "memberEmail": "maria@email.com",
+              "role": "member"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "memberPendings": [
+    {
+      "scheduleId": "uuid-evento-3",
+      "category": "visit",
+      "date": "2024-01-15",
+      "location": "Abrigo - Orfanato Luz do Amanhã",
+      "visitNumber": 2,
+      "lessonContent": "Lição sobre respeito",
+      "teamId": "uuid-time-1",
+      "teamNumber": 1,
+      "teamName": "Equipe Matutina",
+      "shelterName": "Orfanato Luz do Amanhã"
+    }
+  ]
+}
 ```
 
 **Erros:**
-- `404 Not Found` - Usuário não encontrado
+- `403 Forbidden` - Usuário não identificado
 
 ---
 
@@ -466,7 +467,7 @@ Este documento descreve todos os endpoints disponíveis para o módulo de regist
 2) Equipe → Professores: ao clicar no time, chame `GET /attendance/team/:teamId/members` para listar apenas professores (líderes não registram presença).
 3) Equipe → Eventos: chame `GET /attendance/team/:teamId/schedules` para mostrar visitas/reuniões com estatísticas de presença.
 4) Lançamento: use `POST /attendance/register/team` (pagela apenas para professores) ou `POST /attendance/register` (individual para professores).
-5) Alertas: exiba `GET /attendance/pending/leader?teamId=...` (professores sem registro) e `GET /attendance/pending/member` (apenas para professores).
+5) Alertas: exiba `GET /attendance/pending/all` para obter todas as pendências em uma única chamada (retorna `leaderPendings` e `memberPendings`).
 
 ---
 
@@ -538,16 +539,33 @@ enum AttendanceType {
 ```typescript
 {
   scheduleId: string;
+  category: 'visit' | 'meeting'; // Categoria do evento
+  date: string; // Data do evento (YYYY-MM-DD)
+  location: string; // Localização ("Abrigo - Nome" ou "NIB - Sala")
   visitNumber: number;
-  visitDate?: string;
-  meetingDate?: string;
   lessonContent: string;
-  observation?: string;
-  meetingRoom?: string;
   teamName: string;
   shelterName: string;
   totalMembers: number;
   pendingMembers: PendingMemberDto[];
+}
+```
+
+#### AllPendingsResponseDto
+```typescript
+{
+  leaderPendings: TeamPendingsDto[]; // Pendências para líder/admin lançar
+  memberPendings: PendingForMemberDto[]; // Pendências pessoais do usuário
+}
+```
+
+#### TeamPendingsDto
+```typescript
+{
+  teamId: string;
+  teamName: string;
+  shelterName: string;
+  pendings: PendingForLeaderDto[];
 }
 ```
 
@@ -565,12 +583,11 @@ enum AttendanceType {
 ```typescript
 {
   scheduleId: string;
+  category: 'visit' | 'meeting'; // Categoria do evento
+  date: string; // Data do evento (YYYY-MM-DD)
+  location: string; // Localização ("Abrigo - Nome" ou "NIB - Sala")
   visitNumber: number;
-  visitDate?: string;
-  meetingDate?: string;
   lessonContent: string;
-  observation?: string;
-  meetingRoom?: string;
   teamId: string;
   teamNumber: number;
   teamName: string;
@@ -750,16 +767,16 @@ curl -X POST http://localhost:3333/attendance/register/team \
   }'
 ```
 
-### Consultar pendências do líder
+### Consultar todas as pendências (endpoint unificado)
 ```bash
-curl -X GET "http://localhost:3333/attendance/pending/leader?teamId=team-1" \
+curl -X GET "http://localhost:3333/attendance/pending/all" \
   -H "Authorization: Bearer <token>"
-```
 
-### Consultar pendências do membro
-```bash
-curl -X GET http://localhost:3333/attendance/pending/member \
-  -H "Authorization: Bearer <token>"
+# Retorna:
+# {
+#   "leaderPendings": [...],  // Pendências das equipes (admin/líder)
+#   "memberPendings": [...]   // Pendências pessoais do usuário
+# }
 ```
 
 ### Listar registros com filtros
@@ -1058,18 +1075,23 @@ curl -X GET http://localhost:3333/attendance/leader/shelters-teams-members \
 
 ## Fluxo de Uso no Frontend
 
+### Endpoint único de pendências
+Use `GET /attendance/pending/all` para obter todas as pendências em uma única chamada:
+- `leaderPendings`: Pendências das equipes que o usuário lidera (ou todas, se admin)
+- `memberPendings`: Pendências pessoais do usuário (quando é membro de alguma equipe)
+
 ### Para Líder/Admin:
 1. **Visão geral completa:** `GET /attendance/sheets/hierarchical` para ver todas as pagelas organizadas por abrigo→equipe→agendamento
 2. **Dashboard inicial:** `GET /attendance/leader/shelters-teams-members` para hierarquia de membros
 3. **Selecionar abrigo → equipe → membros** para interface drill-down
 4. **Ver estatísticas:** `GET /attendance/leader/stats/team/:teamId` para métricas do time
 5. **Listar eventos:** `GET /attendance/team/:teamId/schedules` com paginação e filtros
-6. **Ver pendências:** `GET /attendance/pending/leader?teamId=...` para alertas
+6. **Ver pendências:** `GET /attendance/pending/all` → usar `leaderPendings` para alertas das equipes
 7. **Registrar presença:** `POST /attendance/register/team` (pagela em lote)
 
-### Para Membro (Professor/Líder individual):
+### Para Membro:
 1. **Dashboard pessoal:** `GET /attendance/stats` para estatísticas próprias
-2. **Ver pendências:** `GET /attendance/pending/member` para eventos pendentes
+2. **Ver pendências:** `GET /attendance/pending/all` → usar `memberPendings` para eventos pendentes
 3. **Listar histórico:** `GET /attendance/records` para histórico completo
 4. **Registrar presença:** `POST /attendance/register` para presença individual
 
