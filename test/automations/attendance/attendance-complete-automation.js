@@ -81,7 +81,7 @@ async function createAttendancesForAllSchedules(attendanceRate = 0.85) {
   // Agrupar schedules por time, ignorando schedules sem teamId
   const schedulesByTeam = {};
   testData.schedules.forEach(schedule => {
-    const teamId = schedule.team?.id || schedule.teamId;
+    const teamId = schedule.team?.id || schedule.teamId || schedule.shelter?.team?.id;
     if (!teamId) {
       Logger.warning(`Schedule ${schedule.id} ignorado: sem teamId definido.`);
       skippedCount++;

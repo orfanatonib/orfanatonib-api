@@ -12,6 +12,8 @@ const automations = [
   { name: 'Fix: vincular leaders/members aos shelters', script: 'automations/fixes/fix-shelter-staff-links.js', timeoutMs: 10 * 60_000 },
 
   { name: 'Sheltered', script: 'automations/sheltered/sheltered-complete-automation.js', timeoutMs: 10 * 60_000 },
+  { name: 'Shelter Schedules', script: 'automations/shelter-schedules/shelter-schedules-complete-automation.js', timeoutMs: 10 * 60_000 },
+  { name: 'Attendance', script: 'automations/attendance/attendance-complete-automation.js', timeoutMs: 10 * 60_000 },
   { name: 'Pagelas', script: 'automations/pagelas/pagelas-complete-automation.js', timeoutMs: 10 * 60_000 },
 
   { name: 'Events', script: 'automations/events/events-complete-automation.js', timeoutMs: 5 * 60_000 },

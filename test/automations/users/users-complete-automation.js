@@ -18,7 +18,7 @@ async function login() {
   try {
     console.log('🔐 Fazendo login como admin...');
     const response = await axios.post(`${BASE_URL}/auth/login`, ADMIN_CREDENTIALS);
-    
+
     if (response.status === 201) {
       authToken = response.data.accessToken;
       console.log('✅ Login realizado com sucesso!');
@@ -40,11 +40,11 @@ async function makeRequest(method, url, data = null) {
         'Content-Type': 'application/json'
       }
     };
-    
+
     if (data) {
       config.data = data;
     }
-    
+
     const response = await axios(config);
     return response;
   } catch (error) {
@@ -55,7 +55,7 @@ async function makeRequest(method, url, data = null) {
 
 async function getTestData() {
   console.log('📊 Obtendo dados necessários para os testes...');
-  
+
   try {
     // Obter users existentes
     const usersResponse = await makeRequest('GET', '/users/simple');
@@ -83,7 +83,7 @@ async function getTestData() {
 
 async function testUsersCRUD() {
   console.log('\n📋 Testando CRUD de Users...');
-  
+
   // 1. Criar User
   console.log('  🔸 Teste 1: Criar User');
   const createData = {
@@ -93,12 +93,12 @@ async function testUsersCRUD() {
     phone: '+5511999999999',
     role: 'member'
   };
-  
+
   const createResponse = await makeRequest('POST', '/users', createData);
   if (createResponse && createResponse.status === 201) {
     console.log(`    ✅ User criado: ${createResponse.data.name}`);
     const createdUser = createResponse.data;
-    
+
     // 2. Buscar User por ID
     console.log('  🔸 Teste 2: Buscar User por ID');
     const getResponse = await makeRequest('GET', `/users/${createdUser.id}`);
@@ -112,7 +112,7 @@ async function testUsersCRUD() {
       name: `${createData.name} - Atualizado`,
       role: 'leader'
     };
-    
+
     const updateResponse = await makeRequest('PUT', `/users/${createdUser.id}`, updateData);
     if (updateResponse && updateResponse.status === 200) {
       console.log(`    ✅ User atualizado: ${updateResponse.data.name}`);
@@ -131,7 +131,7 @@ async function testUsersCRUD() {
 
 async function testUsersFilters() {
   console.log('\n📋 Testando Filtros de Users...');
-  
+
   // 1. Filtro por busca geral
   console.log('  🔸 Teste 1: Filtro por busca geral (q=João)');
   const searchResponse = await makeRequest('GET', '/users?q=João&limit=5');
@@ -185,7 +185,7 @@ async function testUsersFilters() {
 
 async function testUsersListings() {
   console.log('\n📋 Testando Listagens de Users...');
-  
+
   // 1. Listagem paginada
   console.log('  🔸 Teste 1: Listagem paginada');
   const paginatedResponse = await makeRequest('GET', '/users?page=1&limit=10');
@@ -216,7 +216,7 @@ async function testUsersListings() {
 
 async function testUsersValidation() {
   console.log('\n📋 Testando Validações de Users...');
-  
+
   // 1. Email inválido
   console.log('  🔸 Teste 1: Email inválido');
   const invalidEmailResponse = await makeRequest('POST', '/users', {
@@ -295,7 +295,7 @@ async function testUsersValidation() {
 
 async function testUsersAuthentication() {
   console.log('\n📋 Testando Autenticação de Users...');
-  
+
   // 1. Criar user para teste de login
   console.log('  🔸 Teste 1: Criar user para teste de login');
   const createData = {
@@ -305,7 +305,7 @@ async function testUsersAuthentication() {
     phone: '+5511888888888',
     role: 'member'
   };
-  
+
   const createResponse = await makeRequest('POST', '/users', createData);
   if (createResponse && createResponse.status === 201) {
     console.log(`    ✅ User criado: ${createResponse.data.name}`);
@@ -351,9 +351,9 @@ async function testUsersAuthentication() {
 
 async function testUsersRoles() {
   console.log('\n📋 Testando Roles de Users...');
-  
+
   const roles = ['admin', 'leader', 'member'];
-  
+
   for (const role of roles) {
     console.log(`  🔸 Teste: Criar user com role ${role}`);
     const createData = {
@@ -362,11 +362,11 @@ async function testUsersRoles() {
       password: 'password123',
       role: role
     };
-    
+
     const createResponse = await makeRequest('POST', '/users', createData);
     if (createResponse && createResponse.status === 201) {
       console.log(`    ✅ User ${role} criado: ${createResponse.data.name}`);
-      
+
       // Deletar user de teste
       const deleteResponse = await makeRequest('DELETE', `/users/${createResponse.data.id}`);
       if (deleteResponse && deleteResponse.status === 200) {
@@ -380,11 +380,11 @@ async function testUsersRoles() {
 
 async function testUsersStatistics() {
   console.log('\n📋 Testando Estatísticas de Users...');
-  
+
   // 1. Contar users por role
   console.log('  🔸 Teste 1: Contar users por role');
   const roles = ['admin', 'leader', 'member'];
-  
+
   for (const role of roles) {
     const roleResponse = await makeRequest('GET', `/users?role=${role}&limit=1000`);
     if (roleResponse && roleResponse.status === 200) {
@@ -397,12 +397,12 @@ async function testUsersStatistics() {
   console.log('  🔸 Teste 2: Contar users ativos/inativos');
   const activeResponse = await makeRequest('GET', '/users?isActive=true&limit=1000');
   const inactiveResponse = await makeRequest('GET', '/users?isActive=false&limit=1000');
-  
+
   if (activeResponse && activeResponse.status === 200) {
     const activeCount = activeResponse.data.items?.length || 0;
     console.log(`    📊 Users ativos: ${activeCount}`);
   }
-  
+
   if (inactiveResponse && inactiveResponse.status === 200) {
     const inactiveCount = inactiveResponse.data.items?.length || 0;
     console.log(`    📊 Users inativos: ${inactiveCount}`);
@@ -411,51 +411,89 @@ async function testUsersStatistics() {
 
 // ==================== CRIAÇÃO EM MASSA ====================
 
-async function createUsersInBulk(count = 50) {
-  console.log(`\n🚀 Criando ${count} usuários em massa...`);
-  
+async function createUsersInBulk(memberCount = 1200, leaderCount = 120) {
+  console.log(`\n🚀 Criando usuários em massa...`);
+  console.log(`   👥 Members: ${memberCount}`);
+  console.log(`   👨‍💼 Leaders: ${leaderCount}`);
+  console.log(`   📊 Total: ${memberCount + leaderCount}`);
+
   const firstNames = ['João', 'Maria', 'Pedro', 'Ana', 'Carlos', 'Juliana', 'Fernando', 'Patricia', 'Ricardo', 'Camila', 'Lucas', 'Beatriz', 'Rafael', 'Mariana', 'Gabriel', 'Isabela', 'Thiago', 'Larissa', 'Bruno', 'Amanda'];
   const lastNames = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Pereira', 'Costa', 'Rodrigues', 'Almeida', 'Nascimento', 'Lima', 'Araújo', 'Fernandes', 'Carvalho', 'Gomes', 'Martins', 'Rocha', 'Ribeiro', 'Alves', 'Monteiro', 'Mendes'];
-  const roles = ['admin', 'leader', 'member'];
-  
+
   const createdUsers = [];
   let successCount = 0;
   let errorCount = 0;
-  
-  for (let i = 0; i < count; i++) {
+
+  // Criar members
+  for (let i = 0; i < memberCount; i++) {
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
     const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-    const role = roles[Math.floor(Math.random() * roles.length)];
     const timestamp = Date.now() + i;
-    
+
     const userData = {
       name: `${firstName} ${lastName}`,
-      email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${timestamp}@orfanatonib.com`,
+      email: `member.${firstName.toLowerCase()}.${lastName.toLowerCase()}.${timestamp}@orfanatonib.com`,
       password: 'Abc@123',
       phone: `+55${11 + Math.floor(Math.random() * 90)}${Math.floor(100000000 + Math.random() * 900000000)}`,
-      role: role
+      role: 'member',
+      active: true, // ✅ Ativo por padrão
+      completed: false,
+      commonUser: true
     };
-    
+
     const response = await makeRequest('POST', '/users', userData);
     if (response && response.status === 201) {
       createdUsers.push(response.data);
       successCount++;
-      if ((i + 1) % 10 === 0) {
-        console.log(`  ✅ ${i + 1}/${count} usuários criados...`);
+      if ((i + 1) % 100 === 0) {
+        console.log(`  ✅ ${i + 1}/${memberCount} members criados...`);
       }
     } else {
       errorCount++;
     }
-    
-    // Pequeno delay para não sobrecarregar o servidor
-    await new Promise(resolve => setTimeout(resolve, 50));
+
+    // Pequeno delay
+    await new Promise(resolve => setTimeout(resolve, 30));
   }
-  
+
+  // Criar leaders
+  for (let i = 0; i < leaderCount; i++) {
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const timestamp = Date.now() + memberCount + i;
+
+    const userData = {
+      name: `${firstName} ${lastName}`,
+      email: `leader.${firstName.toLowerCase()}.${lastName.toLowerCase()}.${timestamp}@orfanatonib.com`,
+      password: 'Abc@123',
+      phone: `+55${11 + Math.floor(Math.random() * 90)}${Math.floor(100000000 + Math.random() * 900000000)}`,
+      role: 'leader',
+      active: true, // ✅ Ativo por padrão
+      completed: true,
+      commonUser: true
+    };
+
+    const response = await makeRequest('POST', '/users', userData);
+    if (response && response.status === 201) {
+      createdUsers.push(response.data);
+      successCount++;
+      if ((i + 1) % 20 === 0) {
+        console.log(`  ✅ ${i + 1}/${leaderCount} leaders criados...`);
+      }
+    } else {
+      errorCount++;
+    }
+
+    // Pequeno delay
+    await new Promise(resolve => setTimeout(resolve, 30));
+  }
+
+  const totalExpected = memberCount + leaderCount;
   console.log(`\n✅ Criação em massa concluída!`);
-  console.log(`   📊 Sucessos: ${successCount}/${count}`);
-  console.log(`   ❌ Erros: ${errorCount}/${count}`);
+  console.log(`   📊 Sucessos: ${successCount}/${totalExpected}`);
+  console.log(`   ❌ Erros: ${errorCount}/${totalExpected}`);
   console.log(`   💾 Total de usuários criados: ${createdUsers.length}`);
-  
+
   return createdUsers;
 }
 
@@ -488,9 +526,9 @@ async function runUsersAutomation() {
     return;
   }
 
-  // Criar dados em massa
-  await createUsersInBulk(50);
-  
+  // Criar dados em massa: 1200 members + 120 leaders = 1320 users
+  await createUsersInBulk(1200, 120);
+
   // Executar testes
   await testUsersCRUD();
   await testUsersFilters();

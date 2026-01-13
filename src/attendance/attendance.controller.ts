@@ -67,21 +67,12 @@ export class AttendanceController {
     return results;
   }
 
-  @UseGuards(AdminOrLeaderRoleGuard)
-  @Get('pending/leader')
-  async getLeaderPendings(@Req() req: AuthRequest, @Query('teamId') teamId: string) {
+  @Get('pending/all')
+  async getAllPendings(@Req() req: AuthRequest) {
     const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    this.logger.log(`Listing pending schedules for leader. User: ${userId}, Team: ${teamId}`);
+    this.logger.log(`Listing all pending schedules. User: ${userId}`);
     if (!userId) throw new ForbiddenException('User not identified');
-    return this.attendanceReader.findPendingsForLeader(userId, teamId, new Date());
-  }
-
-  @Get('pending/member')
-  async getMemberPendings(@Req() req: AuthRequest) {
-    const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    this.logger.log(`Listing pending schedules for member. User: ${userId}`);
-    if (!userId) throw new ForbiddenException('User not identified');
-    return this.attendanceReader.findPendingsForMember(userId, new Date());
+    return this.attendanceReader.findAllPendings(userId, new Date());
   }
 
   @UseGuards(AdminOrLeaderRoleGuard)
