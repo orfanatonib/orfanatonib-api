@@ -66,26 +66,12 @@ export class AttendanceWriterService {
         const memberUsers = team.members?.map(t => t.user).filter(u => u) ?? [];
         const members = [...memberUsers];
         const results: AttendanceEntity[] = [];
-
-        const oppositeCategory = category === AttendanceCategory.VISIT
-            ? AttendanceCategory.MEETING 
-            : AttendanceCategory.VISIT;
-
         for (const att of attendances) {
             const member = members.find(m => m.id === att.memberId);
             if (!member) {
                 throw new BadRequestException(`Membro ${att.memberId} não encontrado no time`);
             }
 
-            const deletedOpposite = await this.attendanceRepo.delete({
-                member: { id: member.id },
-                shelterSchedule: { id: schedule.id },
-                category: oppositeCategory
-            });
-
-            if (deletedOpposite.affected && deletedOpposite.affected > 0) {
-                this.logger.warn(`⚠️ Removido ${deletedOpposite.affected} registro(s) da categoria oposta (${oppositeCategory}) para membro ${member.id} no schedule ${scheduleId}`);
-            }
 
             const existing = await this.attendanceRepo.findOne({
                 where: {
@@ -140,19 +126,6 @@ export class AttendanceWriterService {
         const user = await this.accessService.getUserWithMembership(memberId);
         await this.accessService.assertTeamMembership(user, schedule.team.id);
 
-        const oppositeCategory = category === AttendanceCategory.VISIT
-            ? AttendanceCategory.MEETING 
-            : AttendanceCategory.VISIT;
-
-        const deletedOpposite = await this.attendanceRepo.delete({
-            member: { id: memberId },
-            shelterSchedule: { id: scheduleId },
-            category: oppositeCategory
-        });
-
-        if (deletedOpposite.affected && deletedOpposite.affected > 0) {
-            this.logger.warn(`⚠️ Removido ${deletedOpposite.affected} registro(s) da categoria oposta (${oppositeCategory}) para membro ${memberId} no schedule ${scheduleId}`);
-        }
 
         const existing = await this.attendanceRepo.findOne({
             where: {

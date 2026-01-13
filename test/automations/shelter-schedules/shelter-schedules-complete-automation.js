@@ -60,7 +60,7 @@ async function createSchedulesForAllTeams(schedulesPerTeam = 12) {
   let errorCount = 0;
   let skippedCount = 0;
 
-  const currentYear = new Date().getFullYear();
+  // Dados serão criados para o ano de 2026
 
   // Iterar sobre TODOS os times
   for (let teamIndex = 0; teamIndex < testData.teams.length; teamIndex++) {
@@ -90,14 +90,15 @@ async function createSchedulesForAllTeams(schedulesPerTeam = 12) {
         continue;
       }
 
-      // Calcular datas (distribuir ao longo do ano)
+      // Calcular datas (distribuir ao longo do ano de 2026)
       // Reunião: segunda-feira antes da visita
       // Visita: sábado
+      const baseYear = 2026; // ✅ Ano base: 2026
       const monthIndex = (visitNum - 1) % 12;
       const weekInMonth = Math.floor(Math.random() * 3) + 1; // 1-3 semana do mês
 
-      const meetingDate = generateDate(currentYear, monthIndex, weekInMonth, 1); // Segunda
-      const visitDate = generateDate(currentYear, monthIndex, weekInMonth, 6); // Sábado
+      const meetingDate = generateDate(baseYear, monthIndex, weekInMonth, 1); // Segunda
+      const visitDate = generateDate(baseYear, monthIndex, weekInMonth, 6); // Sábado
 
       const scheduleData = {
         teamId: teamId,
@@ -211,8 +212,8 @@ async function testShelterScheduleCRUD() {
   const createData = {
     teamId: teamId,
     visitNumber: 999, // Número alto para não conflitar
-    visitDate: '2025-12-25',
-    meetingDate: '2025-12-20',
+    visitDate: '2026-12-25',
+    meetingDate: '2026-12-20',
     lessonContent: 'Lição de teste - CRUD',
     observation: 'Schedule de teste para CRUD',
     meetingRoom: 'Sala de Testes'
@@ -301,7 +302,7 @@ async function runShelterScheduleAutomation() {
   }
 
   // Criar schedules para TODOS os times
-  const creationSummary = await createSchedulesForAllTeams(12); // 12 visitas por time (mensal)
+  const creationSummary = await createSchedulesForAllTeams(8); // 8 visitas por time
 
   if (creationSummary.errorCount > 0) {
     throw new Error(`Ocorreram erros ao criar schedules (${creationSummary.errorCount}).`);

@@ -355,7 +355,7 @@ export class AttendanceReaderService {
 
         if (user.role === UserRole.ADMIN) {
             const teams = await this.teamRepo.find({
-                relations: ['shelter'],
+                relations: ['shelter', 'members'],
                 order: { numberTeam: 'ASC' }
             });
 
@@ -364,7 +364,8 @@ export class AttendanceReaderService {
                 teamNumber: team.numberTeam,
                 shelterId: team.shelter.id,
                 shelterName: team.shelter.name,
-                description: team.description
+                description: team.description,
+                memberCount: team.members?.length || 0
             }));
         }
 
@@ -376,7 +377,7 @@ export class AttendanceReaderService {
 
         const leaderTeams = await this.teamRepo.find({
             where: { id: In(leaderTeamIds) },
-            relations: ['shelter'],
+            relations: ['shelter', 'members'],
             order: { numberTeam: 'ASC' }
         });
 

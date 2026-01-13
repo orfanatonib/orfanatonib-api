@@ -19,7 +19,7 @@ async function login() {
   try {
     console.log('🔐 Fazendo login como admin...');
     const response = await axios.post(`${BASE_URL}/auth/login`, ADMIN_CREDENTIALS);
-    
+
     if (response.status === 201) {
       authToken = response.data.accessToken;
       console.log('✅ Login realizado com sucesso!');
@@ -41,11 +41,11 @@ async function makeRequest(method, url, data = null) {
         'Content-Type': 'application/json'
       }
     };
-    
+
     if (data) {
       config.data = data;
     }
-    
+
     const response = await axios(config);
     return response;
   } catch (error) {
@@ -56,7 +56,7 @@ async function makeRequest(method, url, data = null) {
 
 async function getTestData() {
   console.log('📊 Obtendo dados necessários para os testes...');
-  
+
   try {
     // Obter users (para criar member profiles)
     const usersResponse = await makeRequest('GET', '/users/simple');
@@ -88,94 +88,52 @@ async function getTestData() {
 }
 
 // ==================== TESTES DE CRUD ====================
+// ✅ Member profiles não têm endpoints diretos de POST/DELETE
+// ✅ São gerenciados através do relacionamento com Users
+// ✅ Testamos apenas GET e PUT (atualização de equipe/shelter)
 
 async function testMemberProfilesCRUD() {
-  console.log('\n📋 Testando CRUD de Member Profiles...');
-  
-  // 1. Criar User primeiro (se necessário)
-  let testUser = null;
-  if (testData.users.length === 0) {
-    console.log('  🔸 Criando user para teste...');
-    const createUserData = {
-      name: `User Member Test ${Date.now()}`,
-      email: `member${Date.now()}@example.com`,
-      password: 'password123',
-      role: 'member'
-    };
-    
-    const createUserResponse = await makeRequest('POST', '/users', createUserData);
-    if (createUserResponse && createUserResponse.status === 201) {
-      testUser = createUserResponse.data;
-      console.log(`    ✅ User criado: ${testUser.name}`);
-    }
-  } else {
-    testUser = testData.users[0];
-  }
+  console.log('\n📋 Testando operações disponíveis em Member Profiles...');
 
-  if (!testUser) {
-    console.log('  ⚠️ Não foi possível criar/encontrar user para teste');
+  if (testData.memberProfiles.length === 0) {
+    console.log('  ⚠️ Nenhum member profile encontrado para testes');
+    console.log('  💡 Execute a automação de users primeiro para criar users com role="member"');
     return;
   }
 
-  // 2. Criar Member Profile
-  console.log('  🔸 Teste 1: Criar Member Profile');
-  const createData = {
-    userId: testUser.id,
-    shelterId: testData.shelters[0]?.id,
-    name: `Member Profile Teste ${Date.now()}`,
-    phone: '+5511999999999',
-    email: `member${Date.now()}@example.com`,
-    specialization: 'Matemática',
-    experience: '5 anos',
-    address: {
-      street: 'Rua dos Members',
-      number: '123',
-      district: 'Centro',
-      city: 'São Paulo',
-      state: 'SP',
-      postalCode: '01234-567'
-    }
-  };
-  
-  const createResponse = await makeRequest('POST', '/member-profiles', createData);
-  if (createResponse && createResponse.status === 201) {
-    console.log(`    ✅ Member Profile criado: ${createResponse.data.name}`);
-    const createdProfile = createResponse.data;
-    
-    // 3. Buscar Member Profile por ID
-    console.log('  🔸 Teste 2: Buscar Member Profile por ID');
-    const getResponse = await makeRequest('GET', `/member-profiles/${createdProfile.id}`);
-    if (getResponse && getResponse.status === 200) {
-      console.log(`    ✅ Member Profile encontrado: ${getResponse.data.name}`);
-    }
+  const testProfile = testData.memberProfiles[0];
 
-    // 4. Atualizar Member Profile
-    console.log('  🔸 Teste 3: Atualizar Member Profile');
-    const updateData = {
-      name: `${createData.name} - Atualizado`,
-      specialization: 'Português',
-      experience: '7 anos'
-    };
-    
-    const updateResponse = await makeRequest('PUT', `/member-profiles/${createdProfile.id}`, updateData);
-    if (updateResponse && updateResponse.status === 200) {
-      console.log(`    ✅ Member Profile atualizado: ${updateResponse.data.name}`);
-    }
-
-    // 5. Deletar Member Profile
-    console.log('  🔸 Teste 4: Deletar Member Profile');
-    const deleteResponse = await makeRequest('DELETE', `/member-profiles/${createdProfile.id}`);
-    if (deleteResponse && deleteResponse.status === 200) {
-      console.log('    ✅ Member Profile deletado com sucesso');
-    }
+  // 1. Buscar Member Profile por ID
+  console.log('  🔸 Teste 1: Buscar Member Profile por ID (GET)');
+  const getResponse = await makeRequest('GET', `/member-profiles/${testProfile.id}`);
+  if (getResponse && getResponse.status === 200) {
+    console.log(`    ✅ Member Profile encontrado: ${getResponse.data.name || 'N/A'}`);
   }
+
+  // 2. Atualizar Member Profile (atribuir a um team/shelter)
+  console.log('  🔸 Teste 2: Atualizar Member Profile (PUT)');
+  if (testData.shelters.length > 0) {
+    const updateData = {
+      shelterId: testData.shelters[0].id
+    };
+
+    const updateResponse = await makeRequest('PUT', `/member-profiles/${testProfile.id}`, updateData);
+    if (updateResponse && updateResponse.status === 200) {
+      console.log(`    ✅ Member Profile atualizado com shelter`);
+    }
+  } else {
+    console.log(`    ⚠️ Pulado: Nenhum shelter disponível para teste`);
+  }
+
+  console.log('  ℹ️  Member profiles são criados/deletados automaticamente com Users');
+  console.log('  ℹ️  Não há endpoints diretos POST/DELETE para member-profiles');
 }
 
 // ==================== TESTES DE FILTROS CONSOLIDADOS ====================
 
 async function testMemberProfilesFilters() {
   console.log('\n📋 Testando Filtros Consolidados de Member Profiles...');
-  
+
   // 1. Filtro por memberSearchString (busca por dados do member)
   console.log('  🔸 Teste 1: memberSearchString (busca por dados do member)');
   const memberSearchResponse = await makeRequest('GET', '/member-profiles?memberSearchString=Maria&limit=5');
@@ -237,7 +195,7 @@ async function testMemberProfilesFilters() {
 
 async function testMemberProfilesListings() {
   console.log('\n📋 Testando Listagens e Paginação de Member Profiles...');
-  
+
   // 1. Listagem paginada básica
   console.log('  🔸 Teste 1: Listagem paginada básica');
   const paginatedResponse = await makeRequest('GET', '/member-profiles?page=1&limit=10');
@@ -300,236 +258,86 @@ async function testMemberProfilesListings() {
 
 async function testMemberProfilesValidation() {
   console.log('\n📋 Testando Validações de Member Profiles...');
-  
-  // 1. UserId inválido
-  console.log('  🔸 Teste 1: UserId inválido');
-  const invalidUserResponse = await makeRequest('POST', '/member-profiles', {
-    userId: '00000000-0000-0000-0000-000000000000',
-    name: 'Teste',
-    email: 'teste@example.com'
-  });
-  if (invalidUserResponse && invalidUserResponse.status === 400) {
-    console.log('    ✅ Erro esperado: UserId inválido rejeitado');
-  }
 
-  // 2. Nome muito curto
-  console.log('  🔸 Teste 2: Nome muito curto');
-  if (testData.users.length > 0) {
-    const shortNameResponse = await makeRequest('POST', '/member-profiles', {
-      userId: testData.users[0].id,
-      name: 'A',
-      email: 'teste@example.com'
-    });
-    if (shortNameResponse && shortNameResponse.status === 400) {
-      console.log('    ✅ Erro esperado: Nome muito curto rejeitado');
-    }
-  }
-
-  // 3. Email inválido
-  console.log('  🔸 Teste 3: Email inválido');
-  if (testData.users.length > 0) {
-    const invalidEmailResponse = await makeRequest('POST', '/member-profiles', {
-      userId: testData.users[0].id,
-      name: 'Teste',
-      email: 'email-invalido'
-    });
-    if (invalidEmailResponse && invalidEmailResponse.status === 400) {
-      console.log('    ✅ Erro esperado: Email inválido rejeitado');
-    }
-  }
-
-  // 4. Buscar registro inexistente
-  console.log('  🔸 Teste 4: Buscar registro inexistente');
+  // 1. Buscar registro inexistente
+  console.log('  🔸 Teste 1: Buscar registro inexistente');
   const notFoundResponse = await makeRequest('GET', '/member-profiles/00000000-0000-0000-0000-000000000000');
   if (notFoundResponse && notFoundResponse.status === 404) {
     console.log('    ✅ Erro esperado: Registro não encontrado');
   }
+
+  console.log('  ℹ️  Validações de criação são feitas através do endpoint de Users');
 }
 
 // ==================== TESTES DE RELACIONAMENTOS ====================
 
 async function testMemberProfilesRelationships() {
   console.log('\n📋 Testando Relacionamentos de Member Profiles...');
-  
-  if (testData.users.length === 0 || testData.shelters.length === 0) {
+
+  if (testData.memberProfiles.length === 0 || testData.shelters.length === 0) {
     console.log('  ⚠️ Dados insuficientes para testar relacionamentos');
     return;
   }
 
-  // 1. Criar member profile com relacionamentos
-  console.log('  🔸 Teste 1: Criar member profile com relacionamentos');
-  const createData = {
-    userId: testData.users[0].id,
-    shelterId: testData.shelters[0].id,
-    name: `Member Relacionamento ${Date.now()}`,
-    phone: '+5511777777777',
-    email: `member${Date.now()}@example.com`,
-    specialization: 'Ciências',
-    experience: '3 anos',
-    address: {
-      street: 'Rua dos Relacionamentos',
-      number: '456',
-      district: 'Teste',
-      city: 'São Paulo',
-      state: 'SP',
-      postalCode: '01234-567'
-    }
-  };
+  const testProfile = testData.memberProfiles[0];
 
-  const createResponse = await makeRequest('POST', '/member-profiles', createData);
-  if (createResponse && createResponse.status === 201) {
-    console.log(`    ✅ Member Profile criado: ${createResponse.data.name}`);
-    console.log(`    👤 User vinculado: ${createResponse.data.user?.name || 'N/A'}`);
-    console.log(`    🏠 Shelter vinculado: ${createResponse.data.shelter?.name || 'N/A'}`);
-    const createdProfile = createResponse.data;
+  // 1. Verificar relacionamento com user
+  console.log('  🔸 Teste 1: Verificar relacionamento com User');
+  const getResponse = await makeRequest('GET', `/member-profiles/${testProfile.id}`);
+  if (getResponse && getResponse.status === 200) {
+    console.log(`    ✅ Member Profile: ${getResponse.data.name || 'N/A'}`);
+    console.log(`    👤 User vinculado: ${getResponse.data.user?.name || 'N/A'}`);
+    console.log(`    🏠 Shelter atual: ${getResponse.data.shelter?.name || 'Nenhum'}`);
+  }
 
-    // 2. Atualizar shelter do member
-    console.log('  🔸 Teste 2: Atualizar shelter do member');
-    if (testData.shelters.length > 1) {
-      const updateShelterResponse = await makeRequest('PUT', `/member-profiles/${createdProfile.id}`, {
-        shelterId: testData.shelters[1].id
-      });
-      
-      if (updateShelterResponse && updateShelterResponse.status === 200) {
-        console.log(`    ✅ Shelter atualizado: ${updateShelterResponse.data.shelter?.name || 'N/A'}`);
-      }
-    }
+  // 2. Atualizar shelter do member
+  console.log('  🔸 Teste 2: Atualizar shelter do member');
+  if (testData.shelters.length > 0) {
+    const updateShelterResponse = await makeRequest('PUT', `/member-profiles/${testProfile.id}`, {
+      shelterId: testData.shelters[0].id
+    });
 
-    // 3. Deletar member profile de teste
-    console.log('  🔸 Teste 3: Deletar member profile de teste');
-    const deleteResponse = await makeRequest('DELETE', `/member-profiles/${createdProfile.id}`);
-    if (deleteResponse && deleteResponse.status === 200) {
-      console.log('    ✅ Member Profile de teste deletado');
+    if (updateShelterResponse && updateShelterResponse.status === 200) {
+      console.log(`    ✅ Shelter atualizado: ${updateShelterResponse.data.shelter?.name || 'N/A'}`);
     }
   }
+  console.log('  ℹ️  Member profiles são gerenciados através do relacionamento com Users');
 }
 
 // ==================== TESTES DE ESPECIALIZAÇÕES ====================
+// ✅ Teste de especializações removido pois requer criação direta de member profiles
+// ✅ Member profiles podem ter diferentes especializações, mas são gerenciados via Users
 
 async function testMemberProfilesSpecializations() {
-  console.log('\n📋 Testando Especializações de Member Profiles...');
-  
-  const specializations = ['Matemática', 'Português', 'Ciências', 'História', 'Geografia'];
-  
-  for (const specialization of specializations) {
-    console.log(`  🔸 Teste: Criar member com especialização ${specialization}`);
-    
-    // Criar user temporário
-    const createUserData = {
-      name: `User ${specialization} ${Date.now()}`,
-      email: `${specialization.toLowerCase()}${Date.now()}@example.com`,
-      password: 'password123',
-      role: 'member'
-    };
-    
-    const createUserResponse = await makeRequest('POST', '/users', createUserData);
-    if (createUserResponse && createUserResponse.status === 201) {
-      const testUser = createUserResponse.data;
-      
-      // Criar member profile
-      const createProfileData = {
-        userId: testUser.id,
-        shelterId: testData.shelters[0]?.id,
-        name: `Member ${specialization} ${Date.now()}`,
-        email: `${specialization.toLowerCase()}${Date.now()}@example.com`,
-        specialization: specialization,
-        experience: '5 anos'
-      };
-      
-      const createProfileResponse = await makeRequest('POST', '/member-profiles', createProfileData);
-      if (createProfileResponse && createProfileResponse.status === 201) {
-        console.log(`    ✅ Member ${specialization} criado: ${createProfileResponse.data.name}`);
-        
-        // Deletar member profile e user
-        await makeRequest('DELETE', `/member-profiles/${createProfileResponse.data.id}`);
-        await makeRequest('DELETE', `/users/${testUser.id}`);
-        console.log(`    ✅ Member ${specialization} deletado`);
-      }
-    }
+  console.log('\n📋 Verificando especializações de Member Profiles existentes...');
+
+  if (testData.memberProfiles.length === 0) {
+    console.log('  ⚠️ Nenhum member profile disponível');
+    return;
   }
+
+  console.log(`  ✅ ${testData.memberProfiles.length} member profiles no sistema`);
+  console.log('  ℹ️  Especializações são definidas ao criar/atualizar users com role="member"');
 }
 
 // ==================== CRIAÇÃO EM MASSA ====================
+// ✅ Member profiles são criados automaticamente quando users com role 'member' são criados
+// ✅ Portanto, não precisamos criar member profiles diretamente - eles já existem
 
 async function createMemberProfilesInBulk(count = 30) {
-  console.log(`\n🚀 Criando ${count} member profiles em massa...`);
-  
-  const firstNames = ['João', 'Maria', 'Pedro', 'Ana', 'Carlos', 'Juliana', 'Fernando', 'Patricia', 'Ricardo', 'Camila'];
-  const lastNames = ['Silva', 'Santos', 'Oliveira', 'Souza', 'Pereira', 'Costa', 'Rodrigues', 'Almeida', 'Nascimento', 'Lima'];
-  const specializations = ['Matemática', 'Português', 'Ciências', 'História', 'Geografia', 'Inglês', 'Artes', 'Educação Física'];
-  const cities = ['São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Curitiba', 'Porto Alegre'];
-  const states = ['SP', 'RJ', 'MG', 'PR', 'RS'];
-  
-  const createdProfiles = [];
-  let successCount = 0;
-  let errorCount = 0;
-  
-  for (let i = 0; i < count; i++) {
-    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-    const timestamp = Date.now() + i;
-    
-    // 1. Criar user com role member
-    const userData = {
-      name: `${firstName} ${lastName}`,
-      email: `member.${firstName.toLowerCase()}.${lastName.toLowerCase()}.${timestamp}@orfanatonib.com`,
-      password: 'Abc@123',
-      phone: `+55${11 + Math.floor(Math.random() * 90)}${Math.floor(100000000 + Math.random() * 900000000)}`,
-      role: 'member'
-    };
-    
-    const userResponse = await makeRequest('POST', '/users', userData);
-    if (userResponse && userResponse.status === 201) {
-      const user = userResponse.data;
-      
-      // 2. Criar member profile
-      const city = cities[Math.floor(Math.random() * cities.length)];
-      const stateIndex = cities.indexOf(city);
-      const state = states[stateIndex] || 'SP';
-      
-      const profileData = {
-        userId: user.id,
-        shelterId: testData.shelters.length > 0 && Math.random() > 0.3 ? testData.shelters[Math.floor(Math.random() * testData.shelters.length)].id : null,
-        name: `${firstName} ${lastName}`,
-        phone: `+55${11 + Math.floor(Math.random() * 90)}${Math.floor(100000000 + Math.random() * 900000000)}`,
-        email: `member.${firstName.toLowerCase()}.${lastName.toLowerCase()}.${timestamp}@orfanatonib.com`,
-        specialization: specializations[Math.floor(Math.random() * specializations.length)],
-        experience: `${Math.floor(Math.random() * 20) + 1} anos`,
-        address: {
-          street: `Rua dos Professores`,
-          number: String(Math.floor(Math.random() * 9999) + 1),
-          district: `Bairro ${city}`,
-          city: city,
-          state: state,
-          postalCode: `${String(Math.floor(Math.random() * 90000) + 10000)}-${String(Math.floor(Math.random() * 900) + 100)}`
-        }
-      };
-      
-      const profileResponse = await makeRequest('POST', '/member-profiles', profileData);
-      if (profileResponse && profileResponse.status === 201) {
-        createdProfiles.push(profileResponse.data);
-        successCount++;
-        if ((i + 1) % 10 === 0) {
-          console.log(`  ✅ ${i + 1}/${count} member profiles criados...`);
-        }
-      } else {
-        errorCount++;
-        await makeRequest('DELETE', `/users/${user.id}`);
-      }
-    } else {
-      errorCount++;
-    }
-    
-    // Pequeno delay para não sobrecarregar o servidor
-    await new Promise(resolve => setTimeout(resolve, 100));
+  console.log(`\n✅ Member profiles são criados automaticamente com users role='member'`);
+  console.log(`📋 Listando member profiles já existentes no sistema...\n`);
+
+  const response = await makeRequest('GET', '/member-profiles/simple');
+  if (response && response.data) {
+    const profiles = response.data;
+    console.log(`✅ ${profiles.length} member profiles encontrados no sistema`);
+    return profiles;
   }
-  
-  console.log(`\n✅ Criação em massa concluída!`);
-  console.log(`   📊 Sucessos: ${successCount}/${count}`);
-  console.log(`   ❌ Erros: ${errorCount}/${count}`);
-  console.log(`   💾 Total de member profiles criados: ${createdProfiles.length}`);
-  
-  return createdProfiles;
+
+  console.log(`⚠️ Nenhum member profile encontrado.`);
+  console.log(`💡 Dica: Execute a automação de users primeiro para criar users com role='member'`);
+  return [];
 }
 
 // ==================== FUNÇÃO PRINCIPAL ====================
@@ -565,7 +373,7 @@ async function runMemberProfilesAutomation() {
 
   // Criar dados em massa
   await createMemberProfilesInBulk(30);
-  
+
   // Executar testes
   await testMemberProfilesCRUD();
   await testMemberProfilesFilters();
