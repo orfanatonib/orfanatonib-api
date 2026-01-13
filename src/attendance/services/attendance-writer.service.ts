@@ -139,6 +139,7 @@ export class AttendanceWriterService {
             this.logger.debug(`Atualizando registro existente para membro ${memberId}, category: ${category}`);
             existing.type = type;
             existing.comment = comment;
+            existing.shelterSchedule = schedule; // Ensure deep relations are available for mapping
             const saved = await this.attendanceRepo.save(existing);
             return this.mapToResponseDto(saved);
         }
