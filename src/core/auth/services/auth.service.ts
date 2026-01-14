@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Logger, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger, NotFoundException, Inject, forwardRef, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
@@ -366,6 +366,21 @@ export class AuthService {
       phone: user.phone,
       name: user.name,
       role: user.role,
+      commonUser: user.commonUser,
+      image: imageMedia ? {
+        id: imageMedia.id,
+        title: imageMedia.title,
+        description: imageMedia.description,
+        url: imageMedia.url,
+        uploadType: imageMedia.uploadType,
+        mediaType: imageMedia.mediaType,
+        isLocalFile: imageMedia.isLocalFile,
+        platformType: imageMedia.platformType,
+        originalName: imageMedia.originalName,
+        size: imageMedia.size,
+        createdAt: imageMedia.createdAt,
+        updatedAt: imageMedia.updatedAt,
+      } : null,
       personalData: personalData ? {
         birthDate: personalData.birthDate
           ? (personalData.birthDate instanceof Date
