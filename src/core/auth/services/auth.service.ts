@@ -560,7 +560,7 @@ export class AuthService {
       `<p>Sua senha foi alterada com sucesso.</p>
        <p>Agora você pode acessar sua conta com a nova senha.</p>
        <div style="text-align: center; margin: 30px 0;">
-         <a href="https://orfanatonib.com.br" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Acessar Plataforma</a>
+         <a href="https://orfanatonib.com" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Acessar Plataforma</a>
        </div>`
     );
 
