@@ -8,7 +8,6 @@ import {
   Delete,
   UseGuards,
   ParseUUIDPipe,
-  Logger,
   Req,
 } from '@nestjs/common';
 import { Request } from 'express';
@@ -22,8 +21,6 @@ import { AuthContextService } from 'src/core/auth/services/auth-context.service'
 @Controller('teams')
 @UseGuards(JwtAuthGuard)
 export class TeamsController {
-  private readonly logger = new Logger(TeamsController.name);
-
   constructor(
     private readonly service: TeamsService,
     private readonly authContext: AuthContextService,
@@ -31,10 +28,7 @@ export class TeamsController {
 
   @Post()
   async create(@Body() dto: CreateTeamDto): Promise<TeamResponseDto> {
-    this.logger.log('Creating new team');
-    const result = await this.service.create(dto);
-    this.logger.log(`Team created successfully: ${result.id}`);
-    return result;
+    return this.service.create(dto);
   }
 
   @Get()
@@ -44,23 +38,14 @@ export class TeamsController {
 
   @Get('my-teams')
   async findMyTeams(@Req() req: Request): Promise<TeamResponseDto[]> {
-    this.logger.log('=== GET /teams/my-teams endpoint called ===');
-    
     const userId = await this.authContext.getUserId(req);
-    this.logger.log(`✓ Extracted userId: ${userId}`);
-    
     const role = await this.authContext.getRole(req);
-    this.logger.log(`✓ Extracted role: ${role}`);
 
     if (!userId || !role) {
-      this.logger.warn(`⚠ Missing userId or role - userId: ${userId}, role: ${role}`);
       return [];
     }
 
-    this.logger.log(`→ Calling findByUserContext with userId=${userId}, role=${role}`);
-    const result = await this.service.findByUserContext(userId, role);
-    this.logger.log(`✓ Got ${result.length} teams from service`);
-    return result;
+    return this.service.findByUserContext(userId, role);
   }
 
   @Get('by-shelter/:shelterId')
@@ -82,17 +67,12 @@ export class TeamsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateTeamDto,
   ): Promise<TeamResponseDto> {
-    this.logger.log(`Updating team: ${id}`);
-    const result = await this.service.update(id, dto);
-    this.logger.log(`Team updated successfully: ${id}`);
-    return result;
+    return this.service.update(id, dto);
   }
 
   @Delete(':id')
   async remove(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
-    this.logger.log(`Deleting team: ${id}`);
     await this.service.remove(id);
-    this.logger.log(`Team deleted successfully: ${id}`);
   }
 }
 
