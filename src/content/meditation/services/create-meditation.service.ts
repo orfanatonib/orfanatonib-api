@@ -3,6 +3,8 @@ import {
   Injectable,
   Logger,
   BadRequestException,
+  ConflictException,
+  HttpException,
 } from '@nestjs/common';
 import { RouteService } from 'src/infrastructure/route/route.service';
 import { RouteType } from 'src/infrastructure/route/route-page.entity';
@@ -24,7 +26,7 @@ export class CreateMeditationService {
     private readonly s3Service: AwsS3Service,
     private readonly routeService: RouteService,
     private readonly mediaItemProcessor: MediaItemProcessor,
-  ) {}
+  ) { }
 
   async create(
     dto: CreateMeditationDto,
@@ -51,7 +53,7 @@ export class CreateMeditationService {
       });
 
       if (hasConflict) {
-        throw new BadRequestException('Conflict with dates of an existing meditation.');
+        throw new ConflictException('Duplicate meditation date detected (409)');
       }
 
       const meditation = this.meditationRepo.create({
@@ -97,7 +99,7 @@ export class CreateMeditationService {
         title: savedMeditation.topic,
         subtitle: '',
         idToFetch: savedMeditation.id,
-        entityType:  MediaTargetType.Meditation,
+        entityType: MediaTargetType.Meditation,
         description: `Weekly meditation from ${dto.startDate} to ${dto.endDate}`,
         entityId: savedMeditation.id,
         type: RouteType.DOC,
@@ -108,6 +110,9 @@ export class CreateMeditationService {
 
       return savedMeditation;
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error('Error creating meditation', error.stack);
       throw new BadRequestException(
         error?.message || 'Unexpected error creating meditation.',

@@ -12,6 +12,7 @@ import {
   Logger,
   UseGuards,
   NotFoundException,
+  HttpException,
 } from '@nestjs/common';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
@@ -67,6 +68,9 @@ export class VideosPageController {
       this.logger.log(`Videos page created successfully: ${result.id}`);
       return result;
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error('Error creating videos page', error);
       throw new BadRequestException('Error creating videos page.');
     }
@@ -103,6 +107,9 @@ export class VideosPageController {
       this.logger.log(`Videos page updated successfully: ${id}`);
       return result;
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error('Error updating videos page', error);
       throw new BadRequestException('Error updating videos page.');
     }
@@ -118,7 +125,7 @@ export class VideosPageController {
     try {
       return await this.getService.findOne(id);
     } catch (err) {
-      if (err instanceof NotFoundException) throw err;
+      if (err instanceof HttpException) throw err;
       this.logger.error('Error fetching videos page', err);
       throw new BadRequestException('Error fetching videos page.');
     }

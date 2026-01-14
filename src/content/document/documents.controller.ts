@@ -12,6 +12,7 @@ import {
   UploadedFiles,
   Logger,
   UseGuards,
+  HttpException,
 } from '@nestjs/common';
 import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { plainToInstance } from 'class-transformer';
@@ -37,7 +38,7 @@ export class DocumentsController {
     private readonly updateService: UpdateDocumentService,
     private readonly getService: GetDocumentService,
     private readonly deleteService: DeleteDocumentService,
-  ) {}
+  ) { }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
@@ -56,6 +57,9 @@ export class DocumentsController {
       dto = plainToInstance(CreateDocumentDto, parsed);
       await validateOrReject(dto);
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error('Error processing document data', error);
       throw new BadRequestException('Error processing document data.');
     }
@@ -99,6 +103,9 @@ export class DocumentsController {
       dto.id = id;
       await validateOrReject(dto);
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error('Error processing document data', error);
       throw new BadRequestException('Error processing document data.');
     }

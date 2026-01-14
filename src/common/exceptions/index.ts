@@ -3,3 +3,4 @@ export * from './app.exception';
 export * from './business.exception';
 export * from './rule.exception';
 export * from './process.exception';
+export * from './too-many-requests.exception';
