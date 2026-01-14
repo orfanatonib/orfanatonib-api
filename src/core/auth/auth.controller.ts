@@ -8,11 +8,16 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Query } from '@nestjs/common';
 
+import { PasswordRecoveryService } from './services/password-recovery.service';
+
 @Controller('auth')
 export class AuthController {
   private readonly logger = new Logger(AuthController.name);
 
-  constructor(private readonly authService: AuthService) { }
+  constructor(
+    private readonly authService: AuthService,
+    private readonly passwordRecoveryService: PasswordRecoveryService,
+  ) { }
 
   @Post('login')
   async login(@Body() dto: LoginDto) {
@@ -72,7 +77,7 @@ export class AuthController {
   @Post('forgot-password')
   async forgotPassword(@Body() dto: ForgotPasswordDto) {
     this.logger.log(`Password reset requested for: ${dto.email}`);
-    const result = await this.authService.forgotPassword(dto);
+    const result = await this.passwordRecoveryService.forgotPassword(dto);
     this.logger.log(`Password reset processed for: ${dto.email}`);
     return result;
   }
@@ -80,12 +85,12 @@ export class AuthController {
   @Get('reset-password/validate')
   async validateResetToken(@Query('token') token: string) {
     this.logger.log(`Validating reset token`);
-    return this.authService.validateResetToken(token);
+    return this.passwordRecoveryService.validateResetToken(token);
   }
 
   @Post('reset-password')
   async resetPassword(@Body() dto: ResetPasswordDto) {
     this.logger.log(`Resetting password with token`);
-    return this.authService.resetPassword(dto);
+    return this.passwordRecoveryService.resetPassword(dto);
   }
 }
