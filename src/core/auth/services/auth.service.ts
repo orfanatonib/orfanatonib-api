@@ -480,10 +480,8 @@ export class AuthService {
       return { message: 'Se o email existir, as instruções foram enviadas.' };
     }
 
-    // 1. Verificar status no SES
     const sesCheck = await this.sesIdentityService.checkAndResendSesVerification(user.email);
 
-    // 2. Se NÃO verificado, o checkAndResend já disparou o email de verify
     if (sesCheck.verificationEmailSent || !sesCheck.alreadyVerified) {
       return {
         status: 'VERIFICATION_EMAIL_SENT',
@@ -491,18 +489,13 @@ export class AuthService {
       };
     }
 
-    // 3. Se verificado, enviar email de recuperação
-
-    // Gerar token seguro
     const resetToken = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 30); // 30 minutos de expiração
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
 
-    // Invalidar tokens anteriores do usuário
     await this.passwordResetTokenRepo.invalidateTokensForUser(user.id);
     await this.passwordResetTokenRepo.createToken(user.id, resetToken, expiresAt);
 
-    // Determinar Base URL baseado no ambiente
     const env = process.env.ENVIRONMENT || 'local';
     let baseUrl = 'http://localhost:5173';
 
@@ -556,15 +549,12 @@ export class AuthService {
 
     const user = validToken.user;
 
-    // Atualizar senha
     await this.updateUserService.update(user.id, {
       password: dto.newPassword,
     });
 
-    // Deletar o token usado
     await this.passwordResetTokenRepo.deleteToken(dto.token);
 
-    // Enviar email de confirmação
     const emailHtml = EmailTemplateGenerator.generate(
       'Senha Alterada',
       user.name,

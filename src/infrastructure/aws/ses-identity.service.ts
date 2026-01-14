@@ -29,15 +29,6 @@ export class SesIdentityService {
       const attrs = result.VerificationAttributes?.[email];
       const verificationStatus = attrs?.VerificationStatus;
 
-      if (!attrs) {
-      } else {
-      }
-
-      // Se já existir (attrs), verificar status
-      // Se for Success -> Já verificado
-      // Se for Pending -> Já enviado, não reenviar automaticamente para evitar spam
-      // Se for Failed ou não existir -> Enviar
-
       if (verificationStatus === 'Success') {
         return {
           verificationEmailSent: false,
@@ -46,18 +37,15 @@ export class SesIdentityService {
         };
       }
 
-      // Se estiver pendente, consideramos que já foi enviado recentemente
       if (verificationStatus === 'Pending') {
         this.logger.log(`Verificação SES já está pendente para: ${email}. Não reenviaremos email.`);
         return {
-          verificationEmailSent: true, // Já foi enviado antes
+          verificationEmailSent: true,
           alreadyVerified: false,
           verificationStatus: 'Pending',
         };
       }
 
-      // Se chegar aqui, significa que não existe attrs ou status é Failed/etc
-      // Então enviamos a validação
       {
         const verifyCommand = new VerifyEmailIdentityCommand({ EmailAddress: email });
         await this.awsSesService['sesClient'].send(verifyCommand);

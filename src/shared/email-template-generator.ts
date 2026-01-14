@@ -2,7 +2,6 @@ export class EmailTemplateGenerator {
     static generate(title: string, userName: string, bodyContent: string): string {
         const logoUrl = process.env.APP_LOGO_URL || '';
 
-        // Cores extraídas do Contact Template
         const COLOR_BLACK = '#000000';
         const COLOR_WHITE = '#FFFFFF';
         const COLOR_YELLOW = '#FFD700';
@@ -29,14 +28,12 @@ export class EmailTemplateGenerator {
             <td align="center">
               <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: ${COLOR_WHITE}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                 
-                <!-- Logo Header -->
                 <tr>
                   <td style="background-color: ${COLOR_WHITE}; padding: 20px 24px; text-align: center;">
                     ${headerContent}
                   </td>
                 </tr>
 
-                <!-- 3 Color Bars (Green, Red, Yellow) -->
                 <tr>
                   <td style="padding: 0; background-color: ${COLOR_WHITE};">
                     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
@@ -49,7 +46,6 @@ export class EmailTemplateGenerator {
                   </td>
                 </tr>
 
-                <!-- Title Section (Yellow bg) -->
                 <tr>
                   <td style="background-color: ${COLOR_YELLOW}; padding: 26px 24px; text-align: center; border-bottom: 4px solid ${COLOR_BLACK};">
                     <h1 style="margin: 0; color: ${COLOR_BLACK}; font-size: 24px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
@@ -58,7 +54,6 @@ export class EmailTemplateGenerator {
                   </td>
                 </tr>
 
-                <!-- Content Body -->
                 <tr>
                   <td style="padding: 30px 24px; background-color: ${COLOR_WHITE}; line-height: 1.6;">
                     <p style="margin-top: 0;">Olá, <strong>${userName}</strong>,</p>
@@ -70,7 +65,6 @@ export class EmailTemplateGenerator {
                   </td>
                 </tr>
 
-                <!-- Footer with Bars -->
                 <tr>
                   <td style="padding: 0; background-color: ${COLOR_WHITE};">
                     <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
@@ -83,7 +77,6 @@ export class EmailTemplateGenerator {
                   </td>
                 </tr>
                 
-                <!-- Footer Text -->
                 <tr>
                   <td style="background-color: ${COLOR_WHITE}; padding: 18px 24px; text-align: center;">
                     <p style="margin: 0; color: ${COLOR_BLACK}; font-size: 14px; font-weight: 700;">
