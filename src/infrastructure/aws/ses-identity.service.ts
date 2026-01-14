@@ -11,7 +11,7 @@ export interface SesVerificationResult {
 export class SesIdentityService {
   private readonly logger = new Logger(SesIdentityService.name);
 
-  constructor(private readonly awsSesService: AwsSESService) {}
+  constructor(private readonly awsSesService: AwsSESService) { }
 
   async checkAndResendSesVerification(email: string): Promise<SesVerificationResult> {
 
@@ -33,7 +33,32 @@ export class SesIdentityService {
       } else {
       }
 
-      if (!attrs || verificationStatus !== 'Success') {
+      // Se já existir (attrs), verificar status
+      // Se for Success -> Já verificado
+      // Se for Pending -> Já enviado, não reenviar automaticamente para evitar spam
+      // Se for Failed ou não existir -> Enviar
+
+      if (verificationStatus === 'Success') {
+        return {
+          verificationEmailSent: false,
+          alreadyVerified: true,
+          verificationStatus: 'Success',
+        };
+      }
+
+      // Se estiver pendente, consideramos que já foi enviado recentemente
+      if (verificationStatus === 'Pending') {
+        this.logger.log(`Verificação SES já está pendente para: ${email}. Não reenviaremos email.`);
+        return {
+          verificationEmailSent: true, // Já foi enviado antes
+          alreadyVerified: false,
+          verificationStatus: 'Pending',
+        };
+      }
+
+      // Se chegar aqui, significa que não existe attrs ou status é Failed/etc
+      // Então enviamos a validação
+      {
         const verifyCommand = new VerifyEmailIdentityCommand({ EmailAddress: email });
         await this.awsSesService['sesClient'].send(verifyCommand);
         this.logger.log(`Email de verificação SES enviado com sucesso para: ${email}`);
@@ -42,12 +67,6 @@ export class SesIdentityService {
           verificationEmailSent: true,
           alreadyVerified: false,
           verificationStatus: verificationStatus || 'NotStarted',
-        };
-      } else {
-        return {
-          verificationEmailSent: false,
-          alreadyVerified: true,
-          verificationStatus: 'Success',
         };
       }
     } catch (err) {
@@ -60,7 +79,6 @@ export class SesIdentityService {
   }
 
   async verifyEmailIdentitySES(email: string): Promise<SesVerificationResult> {
-
     try {
       if (!this.awsSesService['sesClient'] || typeof this.awsSesService['sesClient'].send !== 'function') {
         this.logger.warn('Cliente SES não disponível. Pulando cadastro/verificação de email.');

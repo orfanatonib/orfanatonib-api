@@ -33,7 +33,7 @@ export class AwsSESService {
     htmlBody?: string,
   ): Promise<void> {
     const from =
-      this.configService.get<string>('SES_DEFAULT_FROM') ?? 'no-reply@rodolfo-silva.com';
+      this.configService.get<string>('SES_DEFAULT_FROM') ?? 'no-reply@orfanatonib.com';
 
     const toAddresses = to
       .split(',')

@@ -4,6 +4,9 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RegisterUserDto } from './dto/register.dto';
 import { CompleteUserDto } from './dto/complete-register.dto';
 import { AuthService } from './services/auth.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { Query } from '@nestjs/common';
 
 @Controller('auth')
 export class AuthController {
@@ -64,5 +67,25 @@ export class AuthController {
     const result = await this.authService.register(data);
     this.logger.log('User registered successfully');
     return result;
+  }
+
+  @Post('forgot-password')
+  async forgotPassword(@Body() dto: ForgotPasswordDto) {
+    this.logger.log(`Password reset requested for: ${dto.email}`);
+    const result = await this.authService.forgotPassword(dto);
+    this.logger.log(`Password reset processed for: ${dto.email}`);
+    return result;
+  }
+
+  @Get('reset-password/validate')
+  async validateResetToken(@Query('token') token: string) {
+    this.logger.log(`Validating reset token`);
+    return this.authService.validateResetToken(token);
+  }
+
+  @Post('reset-password')
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    this.logger.log(`Resetting password with token`);
+    return this.authService.resetPassword(dto);
   }
 }

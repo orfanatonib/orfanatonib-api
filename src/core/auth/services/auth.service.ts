@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, Logger, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Logger, NotFoundException, Inject, forwardRef, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
@@ -17,6 +17,12 @@ import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { PersonalDataRepository } from 'src/core/profile/repositories/personal-data.repository';
 import { UserPreferencesRepository } from 'src/core/profile/repositories/user-preferences.repository';
 import { SesIdentityService } from 'src/infrastructure/aws/ses-identity.service';
+import { EmailService } from 'src/infrastructure/aws/email.service';
+import { ForgotPasswordDto } from '../dto/forgot-password.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
+import { PasswordResetTokenRepository } from '../repositories/password-reset-token.repository';
+import * as crypto from 'crypto';
+import { EmailTemplateGenerator } from 'src/shared/email-template-generator';
 
 @Injectable()
 export class AuthService {
@@ -37,6 +43,8 @@ export class AuthService {
     @Inject(forwardRef(() => UserPreferencesRepository))
     private readonly userPreferencesRepository: UserPreferencesRepository,
     private readonly sesIdentityService: SesIdentityService,
+    private readonly emailService: EmailService,
+    private readonly passwordResetTokenRepo: PasswordResetTokenRepository,
   ) {
     this.googleClient = new OAuth2Client(
       configService.getOrThrow<string>('GOOGLE_CLIENT_ID'),
@@ -366,6 +374,21 @@ export class AuthService {
       phone: user.phone,
       name: user.name,
       role: user.role,
+      commonUser: user.commonUser,
+      image: imageMedia ? {
+        id: imageMedia.id,
+        title: imageMedia.title,
+        description: imageMedia.description,
+        url: imageMedia.url,
+        uploadType: imageMedia.uploadType,
+        mediaType: imageMedia.mediaType,
+        isLocalFile: imageMedia.isLocalFile,
+        platformType: imageMedia.platformType,
+        originalName: imageMedia.originalName,
+        size: imageMedia.size,
+        createdAt: imageMedia.createdAt,
+        updatedAt: imageMedia.updatedAt,
+      } : null,
       personalData: personalData ? {
         birthDate: personalData.birthDate
           ? (personalData.birthDate instanceof Date
@@ -448,6 +471,118 @@ export class AuthService {
           : undefined,
       },
     };
+  }
+
+  async forgotPassword(data: ForgotPasswordDto) {
+    const user = await this.getUsersService.findByEmail(data.email);
+    if (!user) {
+      // Retornar 200 mesmo se não achar para evitar enumeração de usuários
+      return { message: 'Se o email existir, as instruções foram enviadas.' };
+    }
+
+    // 1. Verificar status no SES
+    const sesCheck = await this.sesIdentityService.checkAndResendSesVerification(user.email);
+
+    // 2. Se NÃO verificado, o checkAndResend já disparou o email de verify
+    if (sesCheck.verificationEmailSent || !sesCheck.alreadyVerified) {
+      return {
+        status: 'VERIFICATION_EMAIL_SENT',
+        message: 'Seu email ainda não foi verificado na AWS. Um novo email de verificação foi enviado.',
+      };
+    }
+
+    // 3. Se verificado, enviar email de recuperação
+
+    // Gerar token seguro
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 30); // 30 minutos de expiração
+
+    // Invalidar tokens anteriores do usuário
+    await this.passwordResetTokenRepo.invalidateTokensForUser(user.id);
+    await this.passwordResetTokenRepo.createToken(user.id, resetToken, expiresAt);
+
+    // Determinar Base URL baseado no ambiente
+    const env = process.env.ENVIRONMENT || 'local';
+    let baseUrl = 'http://localhost:5173';
+
+    if (env === 'prod' || env === 'production') {
+      baseUrl = 'https://www.orfanatonib.com';
+    } else if (env === 'staging') {
+      baseUrl = 'https://staging.orfanatonib.com';
+    }
+
+    const resetLink = `${baseUrl}/recuperar-senha/${resetToken}`;
+
+    const emailHtml = EmailTemplateGenerator.generate(
+      'Recuperação de Senha',
+      user.name,
+      `<p>Recebemos uma solicitação para redefinir sua senha.</p>
+       <p>Clique no botão abaixo para criar uma nova senha:</p>
+       <div style="text-align: center; margin: 30px 0;">
+         <a href="${resetLink}" class="button" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Redefinir Senha</a>
+       </div>
+       <p style="font-size: 14px; color: #666;">Ou copie e cole o link abaixo no seu navegador:</p>
+       <p style="font-size: 12px; color: #4F46E5; word-break: break-all;">${resetLink}</p>
+       <p>Este link é válido por 30 minutos.</p>`
+    );
+
+    await this.emailService.sendEmailViaSES(
+      user.email,
+      'Recuperação de Senha - Orfanatos NIB',
+      `Olá ${user.name},\n\nRecebemos uma solicitação para redefinir sua senha.\nClique no link abaixo: \n${resetLink}`,
+      emailHtml
+    );
+
+    return {
+      status: 'RESET_LINK_SENT',
+      message: 'Se o email existir, as instruções foram enviadas.'
+    };
+  }
+
+  async validateResetToken(token: string) {
+    const validToken = await this.passwordResetTokenRepo.findValidToken(token);
+    if (!validToken) {
+      throw new BadRequestException('Token inválido ou expirado.');
+    }
+    return { valid: true, email: validToken.user.email };
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const validToken = await this.passwordResetTokenRepo.findValidToken(dto.token);
+    if (!validToken) {
+      throw new BadRequestException('Token inválido ou expirado.');
+    }
+
+    const user = validToken.user;
+
+    // Atualizar senha
+    await this.updateUserService.update(user.id, {
+      password: dto.newPassword,
+    });
+
+    // Deletar o token usado
+    await this.passwordResetTokenRepo.deleteToken(dto.token);
+
+    // Enviar email de confirmação
+    const emailHtml = EmailTemplateGenerator.generate(
+      'Senha Alterada',
+      user.name,
+      `<p>Sua senha foi alterada com sucesso.</p>
+       <p>Agora você pode acessar sua conta com a nova senha.</p>
+       <div style="text-align: center; margin: 30px 0;">
+         <a href="https://orfanatonib.com.br" style="background-color: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">Acessar Plataforma</a>
+       </div>`
+    );
+
+    await this.emailService.sendEmailViaSES(
+      user.email,
+      'Senha Alterada com Sucesso - Orfanatos NIB',
+      `Olá ${user.name},\n\nSua senha foi alterada com sucesso.`,
+      emailHtml
+    );
+
+    return { message: 'Senha alterada com sucesso.' };
   }
 
   private buildUserResponse(user: UserEntity): Partial<UserEntity> {
