@@ -476,7 +476,6 @@ export class AuthService {
   async forgotPassword(data: ForgotPasswordDto) {
     const user = await this.getUsersService.findByEmail(data.email);
     if (!user) {
-      // Retornar 200 mesmo se não achar para evitar enumeração de usuários
       return { message: 'Se o email existir, as instruções foram enviadas.' };
     }
 
