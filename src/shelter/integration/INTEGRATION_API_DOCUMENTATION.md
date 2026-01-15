@@ -100,10 +100,18 @@ Cria uma nova integração com upload opcional de imagem.
   "churchYears": 5,
   "previousMinistry": "Louvor",
   "integrationYear": 2024,
-  "media": {
-    "title": "Foto do João",
-    "description": "Foto de perfil"
-  }
+  "images": [
+    {
+      "title": "Foto do João",
+      "description": "Foto de perfil",
+      "url": "https://example.com/photo.jpg"
+    },
+    {
+      "title": "Documento João",
+      "description": "Documento de identidade",
+      "url": "https://example.com/document.jpg"
+    }
+  ]
 }
 ```
 
@@ -118,9 +126,9 @@ Cria uma nova integração com upload opcional de imagem.
 | `churchYears` | `number` | ❌ | `@IsInt()` | Anos de igreja (inteiro) |
 | `previousMinistry` | `string` | ❌ | - | Ministério anterior |
 | `integrationYear` | `number` | ❌ | `@IsInt()` | Ano da integração (inteiro) |
-| `media` | `object` | ❌ | - | Metadados da imagem (opcional) |
-| `media.title` | `string` | ❌ | - | Título da imagem |
-| `media.description` | `string` | ❌ | - | Descrição da imagem |
+| `images` | `MediaItemDto[]` | ❌ | - | Array de metadados das imagens (opcional) |
+| `images[].title` | `string` | ❌ | - | Título da imagem |
+| `images[].description` | `string` | ❌ | - | Descrição da imagem |
 
 > **Nota:** Todos os campos são opcionais, permitindo flexibilidade no cadastro.
 
@@ -140,7 +148,7 @@ Cria uma nova integração com upload opcional de imagem.
   "churchYears": 5,
   "previousMinistry": "Louvor",
   "integrationYear": 2024,
-  "image": {
+  "images": [{
     "id": "uuid-v4",
     "title": "Foto do João",
     "description": "Foto de perfil",
@@ -150,7 +158,7 @@ Cria uma nova integração com upload opcional de imagem.
     "isLocalFile": true,
     "originalName": "joao.jpg",
     "size": 245678
-  },
+  }],
   "createdAt": "2024-01-14T22:00:00.000Z",
   "updatedAt": "2024-01-14T22:00:00.000Z"
 }
@@ -326,7 +334,7 @@ GET /integrations/550e8400-e29b-41d4-a716-446655440000
   "churchYears": 5,
   "previousMinistry": "Louvor",
   "integrationYear": 2024,
-  "image": {
+  "images": [{
     "id": "uuid-v4",
     "title": "Foto do João",
     "description": "Foto de perfil",
@@ -336,7 +344,7 @@ GET /integrations/550e8400-e29b-41d4-a716-446655440000
     "isLocalFile": true,
     "originalName": "joao.jpg",
     "size": 245678
-  },
+  }],
   "createdAt": "2024-01-14T22:00:00.000Z",
   "updatedAt": "2024-01-14T22:00:00.000Z"
 }
@@ -384,10 +392,13 @@ Atualiza uma integração existente. Permite atualizar dados e/ou substituir a i
   "churchYears": 6,
   "previousMinistry": "Intercessão",
   "integrationYear": 2023,
-  "media": {
-    "title": "Nova foto",
-    "description": "Foto atualizada"
-  }
+  "images": [
+    {
+      "title": "Nova foto João",
+      "description": "Foto atualizada",
+      "url": "https://example.com/new-photo.jpg"
+    }
+  ]
 }
 ```
 
@@ -402,10 +413,10 @@ Atualiza uma integração existente. Permite atualizar dados e/ou substituir a i
 | `churchYears` | `number` | ❌ | `@IsInt()` | Anos de igreja (inteiro) |
 | `previousMinistry` | `string` | ❌ | - | Ministério anterior |
 | `integrationYear` | `number` | ❌ | `@IsInt()` | Ano da integração (inteiro) |
-| `media` | `object` | ❌ | - | Metadados da imagem (opcional) |
-| `media.id` | `string` | ❌ | - | ID da imagem existente |
-| `media.title` | `string` | ❌ | - | Título da imagem |
-| `media.description` | `string` | ❌ | - | Descrição da imagem |
+| `images` | `MediaItemDto[]` | ❌ | - | Array de metadados das imagens (opcional) |
+| `images[].id` | `string` | ❌ | - | ID da imagem existente |
+| `images[].title` | `string` | ❌ | - | Título da imagem |
+| `images[].description` | `string` | ❌ | - | Descrição da imagem |
 
 > **Nota:** Apenas os campos enviados serão atualizados (partial update).
 
@@ -507,7 +518,7 @@ Estrutura de resposta padrão para uma integração.
   churchYears?: number;          // Anos de igreja
   previousMinistry?: string;     // Ministério anterior
   integrationYear?: number;      // Ano da integração
-  image?: {                      // Imagem (null se não houver)
+  images?: {                     // Array de imagens (vazio se não houver)
     id: string;
     title: string;
     description: string;
@@ -518,7 +529,7 @@ Estrutura de resposta padrão para uma integração.
     platformType?: string;
     originalName?: string;
     size?: number;               // Tamanho em bytes
-  } | null;
+  }[];
   createdAt: Date;               // Data de criação
   updatedAt: Date;               // Data de atualização
 }
@@ -541,10 +552,12 @@ curl -X POST http://localhost:3000/integrations \
     "churchYears": 2,
     "previousMinistry": "Dança",
     "integrationYear": 2024,
-    "media": {
-      "title": "Foto Maria",
-      "description": "Foto de perfil"
-    }
+    "images": [
+      {
+        "title": "Foto Maria",
+        "description": "Foto de perfil"
+      }
+    ]
   }' \
   -F 'file=@/path/to/photo.jpg'
 ```
@@ -636,3 +649,4 @@ Armazena as imagens associadas às integrações com `targetType = 'Integration'
 ## Suporte
 
 Para dúvidas ou problemas, consulte os logs da aplicação ou entre em contato com a equipe de desenvolvimento.
+
