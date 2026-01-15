@@ -9,9 +9,9 @@
 #          ./deploy-complete.sh staging a1b2c3d
 #          ./deploy-complete.sh prod
 
-set -e
+set -euo pipefail
 
-# Cores para output
+trap 'error_handler $? $LINENO' ERR
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
@@ -20,28 +20,213 @@ CYAN='\033[0;36m'
 MAGENTA='\033[0;35m'
 NC='\033[0m' # No Color
 
-# Profile AWS (pode ser sobrescrito com variável de ambiente)
+DEPLOYMENT_STARTED=false
+IMAGE_PUSHED=false
+DEPLOY_EXECUTED=false
+BACKUP_CREATED=false
+DEPLOYMENT_ID=$(date +%Y%m%d_%H%M%S)_${ENVIRONMENT:-unknown}
+perform_health_checks() {
+    echo -e "${BLUE}🔍 Performing health checks...${NC}"
+
+    local health_url="http://${PUBLIC_IP}/health"
+    local max_attempts=6
+    local attempt=1
+    local health_ok=false
+
+    while [ $attempt -le $max_attempts ] && [ "$health_ok" = false ]; do
+        echo -e "${CYAN}   Health check attempt $attempt/$max_attempts...${NC}"
+
+        if curl -f -s --max-time 10 "$health_url" >/dev/null 2>&1; then
+            local health_response
+            health_response=$(curl -s --max-time 10 "$health_url" 2>/dev/null || echo "")
+
+            if echo "$health_response" | grep -q '"status":"ok"'; then
+                echo -e "${GREEN}✅ Health check passed!${NC}"
+                health_ok=true
+
+                local memory_usage
+                memory_usage=$(echo "$health_response" | grep -o '"percentage":[0-9.]*' | cut -d':' -f2 | tr -d '"' || echo "0")
+
+                if (( $(echo "$memory_usage > 90" | bc -l 2>/dev/null || echo "0") )); then
+                    echo -e "${YELLOW}⚠️  Warning: High memory usage (${memory_usage}%)${NC}"
+                else
+                    echo -e "${GREEN}📊 Memory usage: ${memory_usage}%${NC}"
+                fi
+            else
+                echo -e "${YELLOW}   Health endpoint responded but status not OK${NC}"
+            fi
+        else
+            echo -e "${YELLOW}   Health endpoint not responding (attempt $attempt/$max_attempts)${NC}"
+        fi
+
+        if [ "$health_ok" = false ]; then
+            sleep 5
+            ((attempt++))
+        fi
+    done
+
+    if [ "$health_ok" = true ]; then
+        echo -e "${GREEN}🎯 All health checks passed!${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ Health checks failed after $max_attempts attempts${NC}"
+        echo -e "${RED}💡 Check application logs on EC2 instance: $INSTANCE_ID${NC}"
+        return 1
+    fi
+}
+
+error_handler() {
+    local exit_code=$1
+    local line_number=$2
+
+    echo -e "\n${RED}╔════════════════════════════════════════════════════════╗${NC}" >&2
+    echo -e "${RED}║   ❌ DEPLOYMENT FAILED - Initiating rollback          ║${NC}" >&2
+    echo -e "${RED}╚════════════════════════════════════════════════════════╝${NC}" >&2
+
+    echo -e "${RED}❌ Error occurred at line ${line_number} with exit code ${exit_code}${NC}" >&2
+    echo -e "${YELLOW}📋 Deployment ID: ${DEPLOYMENT_ID}${NC}" >&2
+
+    perform_rollback
+
+    log_error "Deployment failed at line ${line_number}" "${exit_code}"
+
+    exit "${exit_code}"
+}
+
+perform_rollback() {
+    echo -e "${YELLOW}🔄 Starting rollback procedure...${NC}"
+
+    if [ "$DEPLOY_EXECUTED" = true ]; then
+        echo -e "${YELLOW}↩️  Attempting to rollback deployment...${NC}"
+        rollback_deployment || echo -e "${RED}⚠️  Deployment rollback failed${NC}"
+    fi
+
+    if [ "$IMAGE_PUSHED" = true ]; then
+        echo -e "${YELLOW}🗑️  Cleaning up pushed images...${NC}"
+        echo -e "${BLUE}ℹ️  ECR images are kept for rollback purposes${NC}"
+    fi
+
+    echo -e "${YELLOW}🔄 Rollback completed${NC}"
+}
+
+rollback_deployment() {
+    if [ -n "${INSTANCE_ID:-}" ] && [ -n "${BACKUP_TAG:-}" ]; then
+        echo -e "${YELLOW}↩️  Rolling back to previous version...${NC}"
+
+        aws ssm send-command \
+            --profile "$AWS_PROFILE" \
+            --document-name "AWS-RunShellScript" \
+            --targets "Key=instanceids,Values=$INSTANCE_ID" \
+            --parameters "commands=[
+                'cd /home/ubuntu/orfanato-nib-api',
+                'sudo docker stop orfanato-nib-api || true',
+                'sudo docker run -d --name orfanato-nib-api-rollback --restart unless-stopped -p 80:3000 $REPOSITORY_URI:$BACKUP_TAG',
+                'sudo docker system prune -f'
+            ]" \
+            --comment "Rollback deployment to previous version" \
+            --output text >/dev/null 2>&1
+
+        echo -e "${GREEN}✅ Rollback executed successfully${NC}"
+        return 0
+    else
+        echo -e "${RED}❌ Cannot rollback: missing instance ID or backup tag${NC}"
+        return 1
+    fi
+}
+
+log_error() {
+    local message=$1
+    local exit_code=$2
+    local log_file="${PROJECT_ROOT}/deployment_error_${DEPLOYMENT_ID}.log"
+
+    {
+        echo "=== DEPLOYMENT ERROR LOG ==="
+        echo "Timestamp: $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "Environment: ${ENVIRONMENT:-unknown}"
+        echo "Deployment ID: $DEPLOYMENT_ID"
+        echo "Exit Code: $exit_code"
+        echo "Error Message: $message"
+        echo "Working Directory: $(pwd)"
+        echo "User: $(whoami)"
+        echo "AWS Profile: $AWS_PROFILE"
+        echo ""
+        echo "Recent commands:"
+        history | tail -10
+        echo ""
+        echo "Environment variables:"
+        env | grep -E "(AWS|ENV|NODE|PORT)" | head -20
+        echo ""
+        echo "Disk usage:"
+        df -h 2>/dev/null || echo "df command failed"
+        echo ""
+        echo "Memory usage:"
+        free -h 2>/dev/null || echo "free command failed"
+    } > "$log_file"
+
+    echo -e "${RED}📋 Error log saved to: $log_file${NC}" >&2
+}
+
+validate_prerequisites() {
+    echo -e "${BLUE}🔍 Validating prerequisites...${NC}"
+
+    if [ ! -f "${PROJECT_ROOT}/package.json" ]; then
+        echo -e "${RED}❌ Error: package.json not found in project root${NC}"
+        echo -e "${YELLOW}💡 Make sure you're running this script from the correct directory${NC}"
+        exit 1
+    fi
+
+    if ! command -v docker &> /dev/null; then
+        echo -e "${RED}❌ Error: Docker is not installed or not in PATH${NC}"
+        exit 1
+    fi
+    if ! command -v aws &> /dev/null; then
+        echo -e "${RED}❌ Error: AWS CLI is not installed or not in PATH${NC}"
+        exit 1
+    fi
+
+    if ! aws configure list-profiles --profile "$AWS_PROFILE" 2>/dev/null | grep -q "^${AWS_PROFILE}$"; then
+        echo -e "${RED}❌ Error: AWS profile '${AWS_PROFILE}' not found${NC}"
+        echo -e "${YELLOW}💡 Configure your AWS profile or set AWS_PROFILE environment variable${NC}"
+        exit 1
+    fi
+
+    if ! aws sts get-caller-identity --profile "$AWS_PROFILE" >/dev/null 2>&1; then
+        echo -e "${RED}❌ Error: Cannot connect to AWS with profile '${AWS_PROFILE}'${NC}"
+        echo -e "${YELLOW}💡 Check your AWS credentials and permissions${NC}"
+        exit 1
+    fi
+
+    local env_file="${ENV_DIR}/${ENVIRONMENT}.env"
+    if [ ! -f "$env_file" ]; then
+        echo -e "${RED}❌ Error: Environment file not found: $env_file${NC}"
+        exit 1
+    fi
+
+    local available_space
+    available_space=$(df . | tail -1 | awk '{print $4}')
+    if [ "$available_space" -lt 1000000 ]; then
+        echo -e "${RED}❌ Error: Insufficient disk space. At least 1GB required.${NC}"
+        exit 1
+    fi
+
+    echo -e "${GREEN}✅ Prerequisites validation completed${NC}"
+}
+
 AWS_PROFILE=${AWS_PROFILE:-orfanato-aws}
 
-# Diretório do script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-
-# Parâmetros
 ENVIRONMENT=${1:-staging}
 EXTRA_TAG=${2:-}
 SKIP_BUILD=false
 SKIP_DEPLOY=false
 
-# Caminho dos envs locais
 ENV_DIR="$PROJECT_ROOT/env"
 
-# Normalizar environment
 if [ "$ENVIRONMENT" = "prod" ]; then
     ENVIRONMENT="production"
 fi
 
-# Validar ambiente
 if [ "$ENVIRONMENT" != "staging" ] && [ "$ENVIRONMENT" != "production" ]; then
     echo -e "${RED}❌ Erro: Ambiente inválido. Use 'staging' ou 'production' (ou 'prod')${NC}"
     exit 1
@@ -63,6 +248,9 @@ done
 STACK_NAME="orfanato-nib-ec2"
 ECR_STACK_NAME="orfanato-nib-ecr"
 
+# Executar validação de pré-requisitos
+validate_prerequisites
+
 # Banner
 echo -e "${MAGENTA}╔════════════════════════════════════════════════════════╗${NC}"
 echo -e "${MAGENTA}║   🚀 Deploy Completo - Orfanato NIB API              ║${NC}"
@@ -74,6 +262,7 @@ if [ -n "${EXTRA_TAG}" ] && [ "${EXTRA_TAG}" != "latest" ]; then
     echo -e "${CYAN}🏷️  Tag extra (push): ${EXTRA_TAG}${NC}"
 fi
 echo -e "${CYAN}🔐 AWS Profile: ${AWS_PROFILE}${NC}"
+echo -e "${CYAN}🆔 Deployment ID: ${DEPLOYMENT_ID}${NC}"
 echo ""
 
 # Função para obter repositório ECR
@@ -361,6 +550,17 @@ if [ "$SKIP_DEPLOY" = false ]; then
         echo ""
         if [ "$DEPLOY_OK" = true ]; then
             echo -e "${GREEN}✅ Deploy concluído!${NC}"
+
+            # Executar verificações de saúde
+            if perform_health_checks; then
+                DEPLOY_EXECUTED=true
+                echo -e "${GREEN}🎉 Deployment completed successfully!${NC}"
+                echo -e "${GREEN}🌐 Application is available at: http://${PUBLIC_IP}${NC}"
+            else
+                echo -e "${RED}❌ Health checks failed! Initiating rollback...${NC}"
+                perform_rollback
+                exit 1
+            fi
         else
             echo -e "${RED}❌ Deploy falhou (SSM Status: ${SSM_STATUS}).${NC}"
             exit 1
