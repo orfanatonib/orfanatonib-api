@@ -37,34 +37,63 @@ export class IntegrationService {
             integrationYear: dto.integrationYear,
         });
 
-        let media: MediaItemEntity | undefined;
-        if (dto.media || file) {
-            let mediaUrl = dto.media?.url?.trim() || '';
-            let originalName: string | undefined;
-            let size: number | undefined;
+        let media: MediaItemEntity[] = [];
 
-            if (file) {
-                mediaUrl = await this.s3Service.upload(file);
-                originalName = file.originalname;
-                size = file.size;
+        // Handle multiple images from dto.images
+        if (dto.images && dto.images.length > 0) {
+            for (const imageDto of dto.images) {
+                let mediaUrl = imageDto.url?.trim() || '';
+                let originalName: string | undefined;
+                let size: number | undefined;
+
+                // If we have a file, use it for all images (backward compatibility)
+                if (file && !mediaUrl) {
+                    mediaUrl = await this.s3Service.upload(file);
+                    originalName = file.originalname;
+                    size = file.size;
+                }
+
+                if (mediaUrl || file) {
+                    const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
+                        {
+                            title: imageDto.title || dto.name || 'Integration image',
+                            description: imageDto.description || '',
+                            mediaType: MediaType.IMAGE,
+                            uploadType: file && !imageDto.url ? UploadType.UPLOAD : UploadType.LINK,
+                            url: mediaUrl,
+                            isLocalFile: !!file || imageDto.isLocalFile,
+                            originalName,
+                            size,
+                        },
+                        integration.id,
+                        MediaTargetType.Integration,
+                    );
+
+                    const savedMedia = await this.mediaProcessor.saveMediaItem(mediaEntity);
+                    media.push(savedMedia);
+                }
             }
-
+        }
+        // Backward compatibility: handle single file upload without dto.images
+        else if (file) {
+            const mediaUrl = await this.s3Service.upload(file);
             const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
                 {
-                    title: dto.media?.title || dto.name || 'Integration image',
-                    description: dto.media?.description || '',
+                    title: dto.name || 'Integration image',
+                    description: '',
                     mediaType: MediaType.IMAGE,
-                    uploadType: file ? UploadType.UPLOAD : UploadType.LINK,
+                    uploadType: UploadType.UPLOAD,
                     url: mediaUrl,
-                    isLocalFile: !!file,
-                    originalName,
-                    size,
+                    isLocalFile: true,
+                    originalName: file.originalname,
+                    size: file.size,
                 },
                 integration.id,
                 MediaTargetType.Integration,
             );
 
-            media = await this.mediaProcessor.saveMediaItem(mediaEntity);
+            const savedMedia = await this.mediaProcessor.saveMediaItem(mediaEntity);
+            media.push(savedMedia);
         }
 
         return IntegrationResponseDto.fromEntity(integration, media);
@@ -79,13 +108,16 @@ export class IntegrationService {
             MediaTargetType.Integration,
         );
 
-        const mediaMap = new Map();
+        const mediaMap = new Map<string, MediaItemEntity[]>();
         mediaItems.forEach((item) => {
-            mediaMap.set(item.targetId, item);
+            if (!mediaMap.has(item.targetId)) {
+                mediaMap.set(item.targetId, []);
+            }
+            mediaMap.get(item.targetId)!.push(item);
         });
 
         return integrations.map((integration) => {
-            const media = mediaMap.get(integration.id) || null;
+            const media = mediaMap.get(integration.id) || [];
             return IntegrationResponseDto.fromEntity(integration, media);
         });
     }
@@ -101,13 +133,16 @@ export class IntegrationService {
             MediaTargetType.Integration,
         );
 
-        const mediaMap = new Map();
+        const mediaMap = new Map<string, MediaItemEntity[]>();
         mediaItems.forEach((item) => {
-            mediaMap.set(item.targetId, item);
+            if (!mediaMap.has(item.targetId)) {
+                mediaMap.set(item.targetId, []);
+            }
+            mediaMap.get(item.targetId)!.push(item);
         });
 
         const responseData = integrations.map((integration) => {
-            const media = mediaMap.get(integration.id) || null;
+            const media = mediaMap.get(integration.id) || [];
             return IntegrationResponseDto.fromEntity(integration, media);
         });
 
@@ -125,12 +160,12 @@ export class IntegrationService {
             throw new Error(`Integration with ID ${id} not found`);
         }
 
-        const media = await this.mediaProcessor.findMediaItemByTarget(
+        const mediaItems = await this.mediaProcessor.findMediaItemsByTarget(
             id,
             MediaTargetType.Integration,
         );
 
-        return IntegrationResponseDto.fromEntity(integration, media);
+        return IntegrationResponseDto.fromEntity(integration, mediaItems);
     }
 
     async update(
