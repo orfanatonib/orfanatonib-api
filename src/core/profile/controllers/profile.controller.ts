@@ -10,6 +10,7 @@ import {
   Request,
   ForbiddenException,
   Query,
+  Logger,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { AdminRoleGuard } from '../../auth/guards/role-guard';
@@ -29,6 +30,8 @@ import { UserRole } from '../../auth/auth.types';
 @Controller('profiles')
 @UseGuards(JwtAuthGuard)
 export class ProfileController {
+  private readonly logger = new Logger(ProfileController.name);
+
   constructor(
     private readonly authContextService: AuthContextService,
     private readonly createProfileService: CreateProfileService,
@@ -36,7 +39,7 @@ export class ProfileController {
     private readonly getOneProfileService: GetOneProfileService,
     private readonly updateProfileService: UpdateProfileService,
     private readonly deleteProfileService: DeleteProfileService,
-  ) {}
+  ) { }
 
   @Post()
   async createProfile(
@@ -45,7 +48,10 @@ export class ProfileController {
   ): Promise<CompleteProfileResponseDto> {
     const userId = await this.authContextService.getUserId(req);
     if (!userId) throw new ForbiddenException('User not authenticated');
-    return this.createProfileService.execute(userId, createProfileDto);
+    this.logger.log(`Creating profile for user: ${userId}`);
+    const result = await this.createProfileService.execute(userId, createProfileDto);
+    this.logger.log(`Profile created successfully for user: ${userId}`);
+    return result;
   }
 
   @Get()
@@ -92,11 +98,17 @@ export class ProfileController {
     const userRole = await this.authContextService.getRole(req);
 
     if (userRole === UserRole.MEMBER || userRole === UserRole.LEADER) {
-      return this.updateProfileService.execute(userId, updateProfileDto);
+      this.logger.log(`Updating own profile for user: ${userId}`);
+      const result = await this.updateProfileService.execute(userId, updateProfileDto);
+      this.logger.log(`Own profile updated successfully for user: ${userId}`);
+      return result;
     }
 
     if (userRole === UserRole.ADMIN) {
-      return this.updateProfileService.execute(userId, updateProfileDto);
+      this.logger.log(`Admin updating profile for user: ${userId}`);
+      const result = await this.updateProfileService.execute(userId, updateProfileDto);
+      this.logger.log(`Profile updated successfully for user: ${userId}`);
+      return result;
     }
 
     throw new ForbiddenException('Insufficient permissions');
@@ -108,12 +120,17 @@ export class ProfileController {
     @Param('id') id: string,
     @Body() updateProfileDto: UpdateCompleteProfileDto,
   ): Promise<CompleteProfileResponseDto> {
-    return this.updateProfileService.execute(id, updateProfileDto);
+    this.logger.log(`Updating profile by ID: ${id}`);
+    const result = await this.updateProfileService.execute(id, updateProfileDto);
+    this.logger.log(`Profile updated successfully: ${id}`);
+    return result;
   }
 
   @Delete(':id')
   @UseGuards(AdminRoleGuard)
   async deleteProfile(@Param('id') id: string): Promise<void> {
-    return this.deleteProfileService.execute(id);
+    this.logger.log(`Deleting profile: ${id}`);
+    await this.deleteProfileService.execute(id);
+    this.logger.log(`Profile deleted successfully: ${id}`);
   }
 }

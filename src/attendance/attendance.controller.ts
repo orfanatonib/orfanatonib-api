@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, UseGuards, Get, Query, Req, ForbiddenException } from '@nestjs/common';
+import { Controller, Post, Body, Param, UseGuards, Get, Query, Req, ForbiddenException, Logger } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
 import { AdminOrLeaderRoleGuard } from 'src/core/auth/guards/role-guard';
 
@@ -15,6 +15,8 @@ import { AttendanceWriterService } from './services/attendance-writer.service';
 @Controller('attendance')
 @UseGuards(JwtAuthGuard)
 export class AttendanceController {
+  private readonly logger = new Logger(AttendanceController.name);
+
   constructor(
     private readonly attendanceReader: AttendanceReaderService,
     private readonly attendanceWriter: AttendanceWriterService,
@@ -28,13 +30,16 @@ export class AttendanceController {
   ): Promise<AttendanceResponseDto> {
     const userId = req.user?.id ?? (await this.authContext.getUserId(req));
     if (!userId) throw new ForbiddenException('User not identified');
-    return this.attendanceWriter.registerAttendance(
+    this.logger.log(`Registering attendance for user ${userId}, schedule ${dto.scheduleId}`);
+    const result = await this.attendanceWriter.registerAttendance(
       userId,
       dto.scheduleId,
       dto.type,
       dto.comment,
       dto.category || AttendanceCategory.VISIT
     );
+    this.logger.log(`Attendance registered successfully for user ${userId}`);
+    return result;
   }
 
   @UseGuards(AdminOrLeaderRoleGuard)
@@ -45,20 +50,23 @@ export class AttendanceController {
   ): Promise<AttendanceResponseDto[]> {
     const userId = req.user?.id ?? (await this.authContext.getUserId(req));
     if (!userId) throw new ForbiddenException('User not identified');
-
-    return this.attendanceWriter.registerTeamAttendance(
+    this.logger.log(`Registering team attendance for team ${dto.teamId}, schedule ${dto.scheduleId}`);
+    const result = await this.attendanceWriter.registerTeamAttendance(
       userId,
       dto.teamId,
       dto.scheduleId,
       dto.attendances,
       dto.category || AttendanceCategory.VISIT
     );
+    this.logger.log(`Team attendance registered successfully for team ${dto.teamId}`);
+    return result;
   }
 
   @Get('pending/all')
   async getAllPendings(@Req() req: AuthRequest) {
     const userId = req.user?.id ?? (await this.authContext.getUserId(req));
     if (!userId) throw new ForbiddenException('User not identified');
+    this.logger.log(`Fetching all pending attendances for user ${userId}`);
     return this.attendanceReader.findAllPendings(userId, new Date());
   }
 
@@ -67,6 +75,7 @@ export class AttendanceController {
   async listTeamMembers(@Req() req: AuthRequest, @Param('teamId') teamId: string) {
     const userId = req.user?.id ?? (await this.authContext.getUserId(req));
     if (!userId) throw new ForbiddenException('User not identified');
+    this.logger.log(`Listing team members for team ${teamId}`);
     return this.attendanceReader.listTeamMembers(userId, teamId);
   }
 
@@ -77,6 +86,7 @@ export class AttendanceController {
   ): Promise<TeamScheduleDto[]> {
     const userId = req.user?.id ?? (await this.authContext.getUserId(req));
     if (!userId) throw new ForbiddenException('User not identified');
+    this.logger.log(`Listing schedules for team ${teamId}`);
     return this.attendanceReader.listTeamSchedulesFull(userId, teamId, {} as AttendanceFiltersDto);
   }
 
@@ -85,6 +95,7 @@ export class AttendanceController {
   async listLeaderTeams(@Req() req: AuthRequest) {
     const userId = req.user?.id ?? (await this.authContext.getUserId(req));
     if (!userId) throw new ForbiddenException('User not identified');
+    this.logger.log(`Listing leader teams for user ${userId}`);
     return this.attendanceReader.listLeaderTeams(userId);
   }
 
@@ -93,6 +104,7 @@ export class AttendanceController {
   async listLeaderTeamsWithMembers(@Req() req: AuthRequest) {
     const userId = req.user?.id ?? (await this.authContext.getUserId(req));
     if (!userId) throw new ForbiddenException('User not identified');
+    this.logger.log(`Listing leader teams with members for user ${userId}`);
     return this.attendanceReader.listLeaderTeamsWithMembers(userId);
   }
 
@@ -105,6 +117,7 @@ export class AttendanceController {
   ) {
     const userId = req.user?.id ?? (await this.authContext.getUserId(req));
     if (!userId) throw new ForbiddenException('User not identified');
+    this.logger.log(`Listing hierarchical attendance sheets for user ${userId}`);
     return this.attendanceReader.listAttendanceSheetsHierarchical(userId, { startDate, endDate });
   }
 
@@ -113,6 +126,7 @@ export class AttendanceController {
   async listLeaderSheltersTeamsMembers(@Req() req: AuthRequest) {
     const userId = req.user?.id ?? (await this.authContext.getUserId(req));
     if (!userId) throw new ForbiddenException('User not identified');
+    this.logger.log(`Listing leader shelters teams members for user ${userId}`);
     return this.attendanceReader.listLeaderTeamsWithMembers(userId);
   }
 
@@ -123,6 +137,7 @@ export class AttendanceController {
   ): Promise<PaginatedResponseDto<any>> {
     const userId = req.user?.id ?? (await this.authContext.getUserId(req));
     if (!userId) throw new ForbiddenException('User not identified');
+    this.logger.log(`Listing attendance records for user ${userId}`);
     return this.attendanceReader.listAttendanceRecords(userId, filters);
   }
 
@@ -135,6 +150,7 @@ export class AttendanceController {
   ) {
     const userId = req.user?.id ?? (await this.authContext.getUserId(req));
     if (!userId) throw new ForbiddenException('User not identified');
+    this.logger.log(`Getting attendance stats for user ${userId}`);
     return this.attendanceReader.getAttendanceStats(userId, teamId, startDate, endDate);
   }
 
@@ -148,6 +164,7 @@ export class AttendanceController {
   ) {
     const userId = req.user?.id ?? (await this.authContext.getUserId(req));
     if (!userId) throw new ForbiddenException('User not identified');
+    this.logger.log(`Getting team attendance stats for team ${teamId}`);
     return this.attendanceReader.getTeamAttendanceStats(userId, teamId, startDate, endDate);
   }
 }

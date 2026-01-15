@@ -8,6 +8,7 @@ const automations = [
   { name: 'Shelters', script: 'automations/shelters/shelters-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Member Profiles', script: 'automations/member-profiles/member-profiles-complete-automation.js', timeoutMs: 5 * 60_000 },
   { name: 'Leader Profiles', script: 'automations/leader-profiles/leader-profiles-complete-automation.js', timeoutMs: 5 * 60_000 },
+  { name: 'Integrations ✨', script: 'automations/integrations/integrations-complete-automation.js', timeoutMs: 7 * 60_000 },
 
   { name: 'Fix: vincular leaders/members aos shelters', script: 'automations/fixes/fix-shelter-staff-links.js', timeoutMs: 10 * 60_000 },
 

@@ -21,7 +21,7 @@ export class GetEventService {
     private readonly eventRepo: EventRepository,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly authCtx: AuthContextService,
-  ) {}
+  ) { }
 
   private async getCtx(req: Request) {
     const p = await this.authCtx.tryGetPayload(req);
@@ -46,11 +46,6 @@ export class GetEventService {
 
     return events.map((event) => {
       const media = mediaMap.get(event.id)?.[0] ?? null;
-
-      if (!media) {
-        this.logger.warn(`Event without media: "${event.title}"`);
-      }
-
       return EventResponseDto.fromEntity(event, media);
     });
   }
@@ -113,11 +108,6 @@ export class GetEventService {
 
     return futureEvents.map((event) => {
       const media = mediaMap.get(event.id)?.[0] ?? null;
-
-      if (!media) {
-        this.logger.warn(`Event without media: "${event.title}"`);
-      }
-
       return EventResponseDto.fromEntity(event, media);
     });
   }
