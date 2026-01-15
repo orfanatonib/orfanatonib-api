@@ -35,7 +35,7 @@ export class ImageSectionController {
     private readonly updateService: ImageSectionUpdateService,
     private readonly getService: ImageSectionGetService,
     private readonly deleteService: ImageSectionDeleteService,
-  ) {}
+  ) { }
 
   @Post()
   @UseInterceptors(AnyFilesInterceptor())
@@ -48,7 +48,9 @@ export class ImageSectionController {
     await this.validateDto(dto);
 
     const filesDict = this.mapFiles(files);
+    this.logger.log('Creating new image section');
     const result = await this.createService.createSection(dto, filesDict);
+    this.logger.log(`Image section created successfully: ${result.id}`);
 
     return result;
   }
@@ -65,7 +67,9 @@ export class ImageSectionController {
     await this.validateDto(dto);
 
     const filesDict = this.mapFiles(files);
+    this.logger.log(`Updating image section: ${id}`);
     const result = await this.updateService.updateSection(id, dto, filesDict);
+    this.logger.log(`Image section updated successfully: ${id}`);
 
     return result;
   }
@@ -73,7 +77,9 @@ export class ImageSectionController {
   @Delete(':id')
   async delete(@Param('id') id: string) {
 
+    this.logger.log(`Deleting image section: ${id}`);
     await this.deleteService.deleteSection(id);
+    this.logger.log(`Image section deleted successfully: ${id}`);
 
     return { message: 'Section removida com sucesso.' };
   }

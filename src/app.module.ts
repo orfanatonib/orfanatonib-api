@@ -30,6 +30,7 @@ import { ShelterScheduleModule } from './shelter/schedule/shelter-schedule.modul
 import { AttendanceModule } from './attendance/attendance.module';
 import { ProfileModule } from './core/profile/profile.module';
 import { FeatureFlagsModule } from './core/feature-flags/feature-flags.module';
+import { IntegrationModule } from './shelter/integration/integration.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import * as path from 'path';
@@ -81,6 +82,7 @@ function getEnvFilePath(): string {
     AttendanceModule,
     ProfileModule,
     FeatureFlagsModule,
+    IntegrationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
