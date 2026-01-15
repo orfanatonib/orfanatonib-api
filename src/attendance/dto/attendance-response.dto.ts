@@ -420,3 +420,21 @@ export class ShelterWithTeamsDto {
 
   teams: TeamWithSchedulesDto[];
 }
+
+export class TeamPendingsDto {
+  @IsUUID()
+  teamId: string;
+
+  @IsString()
+  teamName: string;
+
+  @IsString()
+  shelterName: string;
+
+  pendings: PendingForLeaderDto[];
+}
+
+export class AllPendingsResponseDto {
+  leaderPendings: TeamPendingsDto[];
+  memberPendings: PendingForMemberDto[];
+}

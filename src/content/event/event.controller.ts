@@ -13,6 +13,7 @@ import {
   BadRequestException,
   UseGuards,
   Req,
+  HttpException,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -39,7 +40,7 @@ export class EventController {
     private readonly updateService: UpdateEventService,
     private readonly deleteService: DeleteEventService,
     private readonly getService: GetEventService,
-  ) {}
+  ) { }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
@@ -59,6 +60,9 @@ export class EventController {
       this.logger.log(`Event created successfully: ${result.id}`);
       return result;
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       this.logger.error('Error creating event', error.stack);
       const message =
         Array.isArray(error)

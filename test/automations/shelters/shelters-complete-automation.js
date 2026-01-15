@@ -21,7 +21,7 @@ async function login() {
   try {
     console.log('🔐 Fazendo login como admin...');
     const response = await axios.post(`${BASE_URL}/auth/login`, ADMIN_CREDENTIALS);
-    
+
     if (response.status === 201) {
       authToken = response.data.accessToken;
       console.log('✅ Login realizado com sucesso!');
@@ -43,11 +43,11 @@ async function makeRequest(method, url, data = null) {
         'Content-Type': 'application/json'
       }
     };
-    
+
     if (data) {
       config.data = data;
     }
-    
+
     const response = await axios(config);
     return response;
   } catch (error) {
@@ -79,7 +79,7 @@ async function makeMultipartRequest(method, url, form) {
 
 async function getTestData() {
   console.log('📊 Obtendo dados necessários para os testes...');
-  
+
   try {
     // Obter users (endpoint paginado; não existe /users/simple)
     const usersResponse = await makeRequest('GET', '/users?page=1&limit=50');
@@ -191,7 +191,7 @@ function buildShelterFormData(shelterDto, files = []) {
 
 async function testSheltersCRUD() {
   console.log('\n📋 Testando CRUD de Shelters...');
-  
+
   // 1. Criar Shelter
   console.log('  🔸 Teste 1: Criar Shelter com descrição');
   const imageUrl = await pickValidShelterImageUrl();
@@ -215,14 +215,14 @@ async function testSheltersCRUD() {
       url: imageUrl,
     },
   };
-  
+
   const createForm = buildShelterFormData(createData);
   const createResponse = await makeMultipartRequest('POST', '/shelters', createForm);
   if (createResponse && createResponse.status === 201) {
     console.log(`    ✅ Shelter criado: ${createResponse.data.name}`);
     console.log(`    📝 Descrição: ${createResponse.data.description || 'N/A'}`);
     const createdShelter = createResponse.data;
-    
+
     // 2. Buscar Shelter por ID
     console.log('  🔸 Teste 2: Buscar Shelter por ID');
     const getResponse = await makeRequest('GET', `/shelters/${createdShelter.id}`);
@@ -236,7 +236,7 @@ async function testSheltersCRUD() {
       ...createData,
       name: `${createData.name} - Atualizado`,
     };
-    
+
     const updateForm = buildShelterFormData(updateData);
     const updateResponse = await makeMultipartRequest('PUT', `/shelters/${createdShelter.id}`, updateForm);
     if (updateResponse && updateResponse.status === 200) {
@@ -256,7 +256,7 @@ async function testSheltersCRUD() {
 
 async function testSheltersFilters() {
   console.log('\n📋 Testando Filtros de Shelters...');
-  
+
   // 1. Filtro por nome
   console.log('  🔸 Teste 1: Filtro por nome (shelterName=Central)');
   const nameResponse = await makeRequest('GET', '/shelters?shelterName=Central&limit=5');
@@ -294,7 +294,7 @@ async function testSheltersFilters() {
 
 async function testSheltersListings() {
   console.log('\n📋 Testando Listagens de Shelters...');
-  
+
   // 1. Listagem paginada
   console.log('  🔸 Teste 1: Listagem paginada');
   const paginatedResponse = await makeRequest('GET', '/shelters?page=1&limit=10');
@@ -325,7 +325,7 @@ async function testSheltersListings() {
 
 async function testSheltersValidation() {
   console.log('\n📋 Testando Validações de Shelters...');
-  
+
   // 1. Nome muito curto
   console.log('  🔸 Teste 1: Nome muito curto');
   const shortNameForm = buildShelterFormData({
@@ -390,7 +390,7 @@ async function testSheltersValidation() {
 
 async function testSheltersRelationships() {
   console.log('\n📋 Testando Relacionamentos de Shelters...');
-  
+
   if (testData.users.length === 0) {
     console.log('  ⚠️ Nenhum user encontrado para testar relacionamentos');
     return;
@@ -440,7 +440,7 @@ async function testSheltersRelationships() {
 
 async function testSheltersStatistics() {
   console.log('\n📋 Testando Estatísticas de Shelters...');
-  
+
   // 1. Contar shelters por cidade
   console.log('  🔸 Teste 1: Contar shelters por cidade');
   const cityResponse = await makeRequest('GET', '/shelters?addressFilter=São Paulo&limit=1000');
@@ -489,7 +489,7 @@ async function createSheltersInBulk(count = 30) {
     const shelterData = {
       name: `${namePrefix} ${city} ${timestamp}`,
       description: getRandomElement(SHELTER_DESCRIPTIONS),
-      teamsQuantity: 1,
+      teamsQuantity: 2, // ✅ 2 equipes por abrigo
       address: {
         street: street,
         number: String(Math.floor(Math.random() * 9999) + 1),
@@ -564,7 +564,7 @@ async function runSheltersAutomation() {
 
   // Criar dados em massa
   await createSheltersInBulk(30);
-  
+
   // Executar testes
   await testSheltersCRUD();
   await testSheltersFilters();

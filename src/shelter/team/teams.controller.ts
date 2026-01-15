@@ -8,8 +8,8 @@ import {
   Delete,
   UseGuards,
   ParseUUIDPipe,
-  Logger,
   Req,
+  Logger,
 } from '@nestjs/common';
 import { Request } from 'express';
 import { TeamsService } from './services/teams.service';
@@ -27,11 +27,11 @@ export class TeamsController {
   constructor(
     private readonly service: TeamsService,
     private readonly authContext: AuthContextService,
-  ) {}
+  ) { }
 
   @Post()
   async create(@Body() dto: CreateTeamDto): Promise<TeamResponseDto> {
-    this.logger.log('Creating new team');
+    this.logger.log(`Creating team: ${dto.numberTeam}`);
     const result = await this.service.create(dto);
     this.logger.log(`Team created successfully: ${result.id}`);
     return result;
@@ -39,34 +39,29 @@ export class TeamsController {
 
   @Get()
   async findAll(): Promise<TeamResponseDto[]> {
+    this.logger.log('Fetching all teams');
     return this.service.findAll();
   }
 
   @Get('my-teams')
   async findMyTeams(@Req() req: Request): Promise<TeamResponseDto[]> {
-    this.logger.log('=== GET /teams/my-teams endpoint called ===');
-    
     const userId = await this.authContext.getUserId(req);
-    this.logger.log(`✓ Extracted userId: ${userId}`);
-    
     const role = await this.authContext.getRole(req);
-    this.logger.log(`✓ Extracted role: ${role}`);
 
     if (!userId || !role) {
-      this.logger.warn(`⚠ Missing userId or role - userId: ${userId}, role: ${role}`);
+      this.logger.log('User not identified for my-teams request');
       return [];
     }
 
-    this.logger.log(`→ Calling findByUserContext with userId=${userId}, role=${role}`);
-    const result = await this.service.findByUserContext(userId, role);
-    this.logger.log(`✓ Got ${result.length} teams from service`);
-    return result;
+    this.logger.log(`Fetching teams for user ${userId} with role ${role}`);
+    return this.service.findByUserContext(userId, role);
   }
 
   @Get('by-shelter/:shelterId')
   async findByShelter(
     @Param('shelterId', new ParseUUIDPipe()) shelterId: string,
   ): Promise<TeamResponseDto[]> {
+    this.logger.log(`Fetching teams for shelter ${shelterId}`);
     return this.service.findByShelter(shelterId);
   }
 
@@ -74,6 +69,7 @@ export class TeamsController {
   async findOne(
     @Param('id', new ParseUUIDPipe()) id: string,
   ): Promise<TeamResponseDto> {
+    this.logger.log(`Fetching team ${id}`);
     return this.service.findOne(id);
   }
 
@@ -82,7 +78,7 @@ export class TeamsController {
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateTeamDto,
   ): Promise<TeamResponseDto> {
-    this.logger.log(`Updating team: ${id}`);
+    this.logger.log(`Updating team ${id}`);
     const result = await this.service.update(id, dto);
     this.logger.log(`Team updated successfully: ${id}`);
     return result;
@@ -90,7 +86,7 @@ export class TeamsController {
 
   @Delete(':id')
   async remove(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
-    this.logger.log(`Deleting team: ${id}`);
+    this.logger.log(`Deleting team ${id}`);
     await this.service.remove(id);
     this.logger.log(`Team deleted successfully: ${id}`);
   }

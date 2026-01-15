@@ -12,6 +12,9 @@ import { UserModule } from 'src/core/user/user.module';
 import { MediaModule } from 'src/shared/media/media.module';
 import { AwsModule } from 'src/infrastructure/aws/aws.module';
 
+import { PasswordResetTokenRepository } from './repositories/password-reset-token.repository';
+import { PasswordRecoveryService } from './services/password-recovery.service';
+
 @Module({
   imports: [
     ConfigModule,
@@ -32,13 +35,14 @@ import { AwsModule } from 'src/infrastructure/aws/aws.module';
     AwsModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, AuthContextService, AuthRepository, JwtStrategy],
+  providers: [AuthService, AuthContextService, AuthRepository, JwtStrategy, PasswordResetTokenRepository, PasswordRecoveryService],
   exports: [
     AuthService,
     AuthContextService,
     JwtModule,
     PassportModule,
     JwtStrategy,
+    PasswordRecoveryService
   ],
 })
-export class AuthModule {}
+export class AuthModule { }

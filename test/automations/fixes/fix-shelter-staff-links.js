@@ -133,10 +133,14 @@ async function main() {
   log(`👨‍💼 Leader profiles: ${leaderIds.length}`, leaderIds.length ? colors.green : colors.yellow);
   log(`👩‍🏫 Member profiles: ${memberIds.length}`, memberIds.length ? colors.green : colors.yellow);
 
-  // Garantir members suficientes (member profile é 1:1 com team)
-  if (memberIds.length < shelters.length) {
-    const deficit = shelters.length - memberIds.length;
-    log(`⚠️ Members insuficientes para 1 por shelter. Criando ${deficit} users member extras...`, colors.yellow);
+  // Garantir members suficientes (20 members por team)
+  // Calcular total de teams considerando teamsQuantity de cada shelter
+  const totalTeams = shelters.reduce((sum, s) => sum + (s.teamsQuantity || 1), 0);
+  const membersNeeded = totalTeams * 20; // 20 members por team
+
+  if (memberIds.length < membersNeeded) {
+    const deficit = membersNeeded - memberIds.length;
+    log(`⚠️ Members insuficientes para ${totalTeams} teams (20 por team). Criando ${deficit} users member extras...`, colors.yellow);
     for (let i = 1; i <= deficit; i++) {
       // eslint-disable-next-line no-await-in-loop
       await postJson('/users', genExtraMemberUser(i));
@@ -166,17 +170,22 @@ async function main() {
     // eslint-disable-next-line no-await-in-loop
     await Promise.all(batch.map(async (s) => {
       try {
-        // Fix padronizado: 1 team por shelter (simplifica e garante member único)
-        const teamsQuantity = 1;
-
+        // Fix: cada team deve ter 20 members e 2 leaders
+        const teamsQuantity = s.teamsQuantity || 1;
         const teams = [];
         for (let t = 1; t <= teamsQuantity; t++) {
-          const memberId = memberPool.length ? memberPool.shift() : memberIds[(updated + failed) % memberIds.length];
+          // Distribuir 20 members para esta team (pegamos 20 do pool)
+          const teamMemberIds = [];
+          for (let m = 0; m < 20; m++) {
+            const memberId = memberPool.length ? memberPool.shift() : null;
+            if (memberId) teamMemberIds.push(memberId);
+          }
+
           teams.push({
             numberTeam: t,
             description: `Equipe ${t}`,
-            leaderProfileIds: pickSomeIds(leaderIds, 2),
-            memberProfileIds: memberId ? [memberId] : [],
+            leaderProfileIds: pickSomeIds(leaderIds, 2), // 2 leaders por team
+            memberProfileIds: teamMemberIds, // 20 members por team
           });
         }
 

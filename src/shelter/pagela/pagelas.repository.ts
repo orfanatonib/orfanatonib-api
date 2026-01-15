@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { PagelaEntity } from './entities/pagela.entity';
@@ -127,7 +127,7 @@ export class PagelasRepository {
         where: { sheltered: { id: data.shelteredId }, year: data.year, visit: data.visit },
       });
       if (existing) {
-        throw new BadRequestException('Pagela already exists for this sheltered in this visit/year');
+        throw new ConflictException('Pagela already exists for this sheltered in this visit/year');
       }
 
       const entity = txPagela.create({
@@ -144,7 +144,7 @@ export class PagelasRepository {
         return await txPagela.save(entity);
       } catch (e: any) {
         if (e?.code === 'ER_DUP_ENTRY') {
-          throw new BadRequestException('Já existe Pagela para este abrigado nesta visita/ano');
+          throw new ConflictException('Já existe Pagela para este abrigado nesta visita/ano');
         }
         throw e;
       }
@@ -168,7 +168,7 @@ export class PagelasRepository {
         return await txPagela.save(entity);
       } catch (e: any) {
         if (e?.code === 'ER_DUP_ENTRY') {
-          throw new BadRequestException('Pagela already exists for this sheltered in this visit/year');
+          throw new ConflictException('Pagela already exists for this sheltered in this visit/year');
         }
         throw e;
       }

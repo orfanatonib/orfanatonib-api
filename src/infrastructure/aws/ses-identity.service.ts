@@ -11,7 +11,7 @@ export interface SesVerificationResult {
 export class SesIdentityService {
   private readonly logger = new Logger(SesIdentityService.name);
 
-  constructor(private readonly awsSesService: AwsSESService) {}
+  constructor(private readonly awsSesService: AwsSESService) { }
 
   async checkAndResendSesVerification(email: string): Promise<SesVerificationResult> {
 
@@ -29,11 +29,24 @@ export class SesIdentityService {
       const attrs = result.VerificationAttributes?.[email];
       const verificationStatus = attrs?.VerificationStatus;
 
-      if (!attrs) {
-      } else {
+      if (verificationStatus === 'Success') {
+        return {
+          verificationEmailSent: false,
+          alreadyVerified: true,
+          verificationStatus: 'Success',
+        };
       }
 
-      if (!attrs || verificationStatus !== 'Success') {
+      if (verificationStatus === 'Pending') {
+        this.logger.log(`Verificação SES já está pendente para: ${email}. Não reenviaremos email.`);
+        return {
+          verificationEmailSent: true,
+          alreadyVerified: false,
+          verificationStatus: 'Pending',
+        };
+      }
+
+      {
         const verifyCommand = new VerifyEmailIdentityCommand({ EmailAddress: email });
         await this.awsSesService['sesClient'].send(verifyCommand);
         this.logger.log(`Email de verificação SES enviado com sucesso para: ${email}`);
@@ -42,12 +55,6 @@ export class SesIdentityService {
           verificationEmailSent: true,
           alreadyVerified: false,
           verificationStatus: verificationStatus || 'NotStarted',
-        };
-      } else {
-        return {
-          verificationEmailSent: false,
-          alreadyVerified: true,
-          verificationStatus: 'Success',
         };
       }
     } catch (err) {
@@ -60,7 +67,6 @@ export class SesIdentityService {
   }
 
   async verifyEmailIdentitySES(email: string): Promise<SesVerificationResult> {
-
     try {
       if (!this.awsSesService['sesClient'] || typeof this.awsSesService['sesClient'].send !== 'function') {
         this.logger.warn('Cliente SES não disponível. Pulando cadastro/verificação de email.');

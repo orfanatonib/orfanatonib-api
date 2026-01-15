@@ -12,6 +12,7 @@ import {
   BadRequestException,
   Logger,
   UseGuards,
+  HttpException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { plainToInstance } from 'class-transformer';
@@ -58,6 +59,9 @@ export class MeditationController {
       this.logger.log(`Meditation created successfully: ${result.id}`);
       return result;
     } catch (error) {
+      if (error instanceof HttpException || error instanceof BadRequestException) {
+        throw error;
+      }
       this.logger.error('Error creating meditation', error.stack);
       const message =
         Array.isArray(error)

@@ -3,6 +3,7 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
@@ -22,7 +23,7 @@ export class UpdateMeditationService {
     private readonly dataSource: DataSource,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly s3Service: AwsS3Service,
-  ) {}
+  ) { }
 
   async update(
     id: string,
@@ -57,7 +58,7 @@ export class UpdateMeditationService {
     });
 
     if (hasConflict) {
-      throw new BadRequestException('Conflict with another existing meditation.');
+      throw new ConflictException('Conflict with another existing meditation.');
     }
 
     return await this.dataSource.transaction(async (manager) => {

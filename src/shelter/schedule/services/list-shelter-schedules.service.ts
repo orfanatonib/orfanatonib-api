@@ -11,7 +11,7 @@ export class ListShelterSchedulesService {
   constructor(
     private readonly scheduleRepo: ShelterScheduleRepository,
     private readonly authCtx: AuthContextService,
-  ) {}
+  ) { }
 
   async execute(req: Request): Promise<ShelterScheduleEntity[]> {
     this.logger.log('Listing shelter schedules');
@@ -19,6 +19,13 @@ export class ListShelterSchedulesService {
     const payload = await this.authCtx.tryGetPayload(req);
     const role = payload?.role?.toLowerCase();
     const userId = payload?.sub;
+
+    const teamId = (req.query?.teamId as string) || null;
+
+    if (teamId) {
+      this.logger.log(`Filtering schedules by teamId: ${teamId}`);
+      return this.scheduleRepo.findByTeamId(teamId);
+    }
 
     if (role === 'admin') {
       return this.scheduleRepo.findAll();

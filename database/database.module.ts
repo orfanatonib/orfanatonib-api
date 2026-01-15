@@ -34,6 +34,8 @@ import { AttendanceEntity } from 'src/attendance/entities/attendance.entity';
 import { PersonalData } from 'src/core/profile/entities/personal-data.entity';
 import { UserPreferences } from 'src/core/profile/entities/user-preferences.entity';
 import { FeatureFlagEntity } from 'src/core/feature-flags/entities/feature-flag.entity';
+import { PasswordResetTokenEntity } from 'src/core/auth/entities/password-reset-token.entity';
+import { IntegrationEntity } from 'src/shelter/integration/entities/integration.entity';
 
 @Module({
   imports: [
@@ -81,7 +83,10 @@ import { FeatureFlagEntity } from 'src/core/feature-flags/entities/feature-flag.
             AttendanceEntity,
             PersonalData,
             UserPreferences,
-            FeatureFlagEntity
+
+            FeatureFlagEntity,
+            PasswordResetTokenEntity,
+            IntegrationEntity
           ],
           synchronize,
         };

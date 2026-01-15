@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { ShelterScheduleRepository } from '../shelter-schedule.repository';
 import { UpdateShelterScheduleDto } from '../dto/update-shelter-schedule.dto';
 import { ShelterScheduleEntity } from '../entities/shelter-schedule.entity';
@@ -16,7 +16,7 @@ export class UpdateShelterScheduleService {
     private readonly teamsService: TeamsService,
     private readonly eventRepo: EventRepository,
     private readonly deleteEventService: DeleteEventService,
-  ) {}
+  ) { }
 
   async execute(id: string, dto: UpdateShelterScheduleDto): Promise<ShelterScheduleEntity> {
     this.logger.log(`Updating shelter schedule ${id}`);
@@ -39,7 +39,7 @@ export class UpdateShelterScheduleService {
     if (dto.visitNumber !== undefined || dto.teamId !== undefined) {
       const existingSchedule = await this.scheduleRepo.findByTeamIdAndVisitNumber(newTeamId, newVisitNumber);
       if (existingSchedule && existingSchedule.id !== id) {
-        throw new BadRequestException(
+        throw new ConflictException(
           `A schedule for this team with visit number ${newVisitNumber} already exists. Cannot create duplicate visit.`
         );
       }
@@ -62,7 +62,7 @@ export class UpdateShelterScheduleService {
     await this.deleteExistingEvents(id);
 
     const team = await this.teamsService.findOneEntity(newTeamId);
-    
+
     if (this.isValidDate(newVisitDate)) {
       await this.createVisitEvent(
         {
@@ -105,7 +105,7 @@ export class UpdateShelterScheduleService {
     if (!date || typeof date !== 'string' || date.trim() === '') {
       return false;
     }
-    
+
     const parsedDate = new Date(date);
     return !isNaN(parsedDate.getTime());
   }
