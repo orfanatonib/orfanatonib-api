@@ -76,7 +76,7 @@ Authorization: Bearer <token>
 
 **`POST /integrations`**
 
-Cria uma nova integração com upload opcional de uma ou mais imagens.
+Cria uma nova integração com upload opcional de imagem.
 
 #### Request
 
@@ -87,9 +87,7 @@ Cria uma nova integração com upload opcional de uma ou mais imagens.
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
 | `integrationData` | JSON string | ✅ | Dados da integração (ver estrutura abaixo) |
-| `files` | File[] | ❌ | Array de arquivos de imagem (JPEG, PNG, etc.) - envie como `files[0]`, `files[1]`, etc. |
-
-> **Nota sobre arquivos:** Os arquivos devem ser enviados com nomes no formato `files[0]`, `files[1]`, `files[2]`, etc. Eles serão mapeados sequencialmente para as imagens definidas no array `images`.
+| `file` | File | ❌ | Arquivo de imagem (JPEG, PNG, etc.) |
 
 **Estrutura do `integrationData` (JSON):**
 
@@ -102,18 +100,10 @@ Cria uma nova integração com upload opcional de uma ou mais imagens.
   "churchYears": 5,
   "previousMinistry": "Louvor",
   "integrationYear": 2024,
-  "images": [
-    {
-      "title": "Foto do João",
-      "description": "Foto de perfil",
-      "url": "https://example.com/photo.jpg"
-    },
-    {
-      "title": "Documento João",
-      "description": "Documento de identidade",
-      "url": "https://example.com/document.jpg"
-    }
-  ]
+  "media": {
+    "title": "Foto do João",
+    "description": "Foto de perfil"
+  }
 }
 ```
 
@@ -128,11 +118,9 @@ Cria uma nova integração com upload opcional de uma ou mais imagens.
 | `churchYears` | `number` | ❌ | `@IsInt()` | Anos de igreja (inteiro) |
 | `previousMinistry` | `string` | ❌ | - | Ministério anterior |
 | `integrationYear` | `number` | ❌ | `@IsInt()` | Ano da integração (inteiro) |
-| `images` | `MediaItemDto[]` | ❌ | - | Array de metadados das imagens (opcional) |
-| `images[].title` | `string` | ❌ | - | Título da imagem |
-| `images[].description` | `string` | ❌ | - | Descrição da imagem |
-| `images[].url` | `string` | ❌ | - | URL da imagem (opcional, será usado upload se file presente) |
-| `images[].isLocalFile` | `boolean` | ❌ | - | Se é arquivo local (opcional) |
+| `media` | `object` | ❌ | - | Metadados da imagem (opcional) |
+| `media.title` | `string` | ❌ | - | Título da imagem |
+| `media.description` | `string` | ❌ | - | Descrição da imagem |
 
 > **Nota:** Todos os campos são opcionais, permitindo flexibilidade no cadastro.
 
@@ -152,7 +140,7 @@ Cria uma nova integração com upload opcional de uma ou mais imagens.
   "churchYears": 5,
   "previousMinistry": "Louvor",
   "integrationYear": 2024,
-  "images": [{
+  "image": {
     "id": "uuid-v4",
     "title": "Foto do João",
     "description": "Foto de perfil",
@@ -162,7 +150,7 @@ Cria uma nova integração com upload opcional de uma ou mais imagens.
     "isLocalFile": true,
     "originalName": "joao.jpg",
     "size": 245678
-  }],
+  },
   "createdAt": "2024-01-14T22:00:00.000Z",
   "updatedAt": "2024-01-14T22:00:00.000Z"
 }
@@ -175,7 +163,7 @@ Cria uma nova integração com upload opcional de uma ou mais imagens.
 | `400` | Dados inválidos ou campo `integrationData` ausente |
 | `401` | Token inválido ou ausente |
 | `403` | Usuário não tem permissão (não é Admin nem Leader) |
-| `500` | Erro ao fazer upload das imagens no S3 |
+| `500` | Erro ao fazer upload da imagem no S3 |
 
 ---
 
@@ -222,7 +210,7 @@ GET /integrations?page=1&limit=20&search=João&integrationYear=2024
       "churchYears": 5,
       "previousMinistry": "Louvor",
       "integrationYear": 2024,
-      "images": [{
+      "image": {
         "id": "uuid-v4",
         "title": "Foto do João",
         "description": "Foto de perfil",
@@ -232,7 +220,7 @@ GET /integrations?page=1&limit=20&search=João&integrationYear=2024
         "isLocalFile": true,
         "originalName": "joao.jpg",
         "size": 245678
-      }],
+      },
       "createdAt": "2024-01-14T22:00:00.000Z",
       "updatedAt": "2024-01-14T22:00:00.000Z"
     }
@@ -283,7 +271,7 @@ Sem parâmetros.
     "churchYears": 5,
     "previousMinistry": "Louvor",
     "integrationYear": 2024,
-    "images": [{
+    "image": {
       "id": "uuid-v4",
       "title": "Foto do João",
       "description": "Foto de perfil",
@@ -291,7 +279,7 @@ Sem parâmetros.
       "uploadType": "upload",
       "mediaType": "image",
       "isLocalFile": true
-    }],
+    },
     "createdAt": "2024-01-14T22:00:00.000Z",
     "updatedAt": "2024-01-14T22:00:00.000Z"
   }
@@ -338,7 +326,7 @@ GET /integrations/550e8400-e29b-41d4-a716-446655440000
   "churchYears": 5,
   "previousMinistry": "Louvor",
   "integrationYear": 2024,
-  "images": [{
+  "image": {
     "id": "uuid-v4",
     "title": "Foto do João",
     "description": "Foto de perfil",
@@ -348,7 +336,7 @@ GET /integrations/550e8400-e29b-41d4-a716-446655440000
     "isLocalFile": true,
     "originalName": "joao.jpg",
     "size": 245678
-  }],
+  },
   "createdAt": "2024-01-14T22:00:00.000Z",
   "updatedAt": "2024-01-14T22:00:00.000Z"
 }
@@ -367,7 +355,7 @@ GET /integrations/550e8400-e29b-41d4-a716-446655440000
 
 **`PUT /integrations/:id`**
 
-Atualiza uma integração existente. Permite atualizar dados e gerenciar múltiplas imagens com regras inteligentes de edição.
+Atualiza uma integração existente. Permite atualizar dados e/ou substituir a imagem.
 
 #### Request
 
@@ -384,7 +372,7 @@ Atualiza uma integração existente. Permite atualizar dados e gerenciar múltip
 | Campo | Tipo | Obrigatório | Descrição |
 |-------|------|-------------|-----------|
 | `integrationData` | JSON string | ✅ | Dados da integração (ver estrutura abaixo) |
-| `files` | File[] | ❌ | Array de novos arquivos de imagem - `files[0]`, `files[1]`, etc. |
+| `file` | File | ❌ | Novo arquivo de imagem (substitui o anterior) |
 
 **Estrutura do `integrationData` (JSON):**
 
@@ -396,13 +384,10 @@ Atualiza uma integração existente. Permite atualizar dados e gerenciar múltip
   "churchYears": 6,
   "previousMinistry": "Intercessão",
   "integrationYear": 2023,
-  "images": [
-    {
-      "title": "Nova foto João",
-      "description": "Foto atualizada",
-      "url": "https://example.com/new-photo.jpg"
-    }
-  ]
+  "media": {
+    "title": "Nova foto",
+    "description": "Foto atualizada"
+  }
 }
 ```
 
@@ -417,24 +402,14 @@ Atualiza uma integração existente. Permite atualizar dados e gerenciar múltip
 | `churchYears` | `number` | ❌ | `@IsInt()` | Anos de igreja (inteiro) |
 | `previousMinistry` | `string` | ❌ | - | Ministério anterior |
 | `integrationYear` | `number` | ❌ | `@IsInt()` | Ano da integração (inteiro) |
-| `images` | `MediaItemDto[]` | ❌ | - | Array de metadados das imagens (opcional) |
-| `images[].id` | `string` | ❌ | - | ID da imagem existente (se presente, será atualizada) |
-| `images[].title` | `string` | ❌ | - | Título da imagem |
-| `images[].description` | `string` | ❌ | - | Descrição da imagem |
-| `images[].url` | `string` | ❌ | - | URL da imagem externa (opcional) |
-| `images[].fieldKey` | `string` | ❌ | - | Chave para mapear arquivo enviado (ex: "files[0]") |
-| `images[].isLocalFile` | `boolean` | ❌ | - | Se será arquivo local (true) ou link externo (false) |
+| `media` | `object` | ❌ | - | Metadados da imagem (opcional) |
+| `media.id` | `string` | ❌ | - | ID da imagem existente |
+| `media.title` | `string` | ❌ | - | Título da imagem |
+| `media.description` | `string` | ❌ | - | Descrição da imagem |
 
 > **Nota:** Apenas os campos enviados serão atualizados (partial update).
 
-> **Regras de Gerenciamento de Imagens:**
->
-> 1. **Manter imagem existente**: Se `images[i].id` existe E não há arquivo correspondente → mantém imagem atual
-> 2. **Substituir com arquivo**: Se `images[i].id` existe E há `files[i]` → substitui imagem por novo arquivo
-> 3. **Criar nova imagem**: Se `images[i].id` NÃO existe E há `files[i]` → cria nova imagem
-> 4. **Excluir imagens**: Imagens existentes não incluídas no array `images` são automaticamente excluídas
->
-> **Sobre arquivos:** Os arquivos devem ser enviados como `files[0]`, `files[1]`, etc. e mapeados via `fieldKey` no objeto da imagem.
+> **Importante:** Se um novo arquivo for enviado, a imagem anterior será **deletada do S3** e substituída.
 
 #### Response
 
@@ -452,7 +427,7 @@ Atualiza uma integração existente. Permite atualizar dados e gerenciar múltip
   "churchYears": 6,
   "previousMinistry": "Intercessão",
   "integrationYear": 2023,
-  "images": [{
+  "image": {
     "id": "uuid-v4",
     "title": "Nova foto",
     "description": "Foto atualizada",
@@ -462,7 +437,7 @@ Atualiza uma integração existente. Permite atualizar dados e gerenciar múltip
     "isLocalFile": true,
     "originalName": "nova-foto.jpg",
     "size": 312456
-  }],
+  },
   "createdAt": "2024-01-14T22:00:00.000Z",
   "updatedAt": "2024-01-14T22:30:00.000Z"
 }
@@ -474,7 +449,7 @@ Atualiza uma integração existente. Permite atualizar dados e gerenciar múltip
 |--------|-----------|
 | `400` | Dados inválidos ou campo `integrationData` ausente |
 | `404` | Integração não encontrada |
-| `500` | Erro ao fazer upload/delete das imagens no S3 |
+| `500` | Erro ao fazer upload/delete da imagem no S3 |
 
 ---
 
@@ -482,7 +457,7 @@ Atualiza uma integração existente. Permite atualizar dados e gerenciar múltip
 
 **`DELETE /integrations/:id`**
 
-Deleta uma integração e todas as imagens associadas.
+Deleta uma integração e sua imagem associada (se existir).
 
 #### Request
 
@@ -504,7 +479,7 @@ DELETE /integrations/550e8400-e29b-41d4-a716-446655440000
 
 **Body:** Vazio
 
-> **Importante:** Todas as imagens associadas serão **deletadas permanentemente do S3**.
+> **Importante:** A imagem associada será **deletada permanentemente do S3**.
 
 **Possíveis Erros:**
 
@@ -512,7 +487,7 @@ DELETE /integrations/550e8400-e29b-41d4-a716-446655440000
 |--------|-----------|
 | `400` | ID inválido (não é UUID) |
 | `404` | Integração não encontrada |
-| `500` | Erro ao deletar imagens do S3 |
+| `500` | Erro ao deletar imagem do S3 |
 
 ---
 
@@ -532,7 +507,7 @@ Estrutura de resposta padrão para uma integração.
   churchYears?: number;          // Anos de igreja
   previousMinistry?: string;     // Ministério anterior
   integrationYear?: number;      // Ano da integração
-  images?: {                     // Array de imagens (vazio se não houver)
+  image?: {                      // Imagem (null se não houver)
     id: string;
     title: string;
     description: string;
@@ -543,7 +518,7 @@ Estrutura de resposta padrão para uma integração.
     platformType?: string;
     originalName?: string;
     size?: number;               // Tamanho em bytes
-  }[];
+  } | null;
   createdAt: Date;               // Data de criação
   updatedAt: Date;               // Data de atualização
 }
@@ -553,7 +528,7 @@ Estrutura de resposta padrão para uma integração.
 
 ## Exemplos de Uso
 
-### Exemplo 1: Criar integração com múltiplas imagens
+### Exemplo 1: Criar integração com imagem
 
 ```bash
 curl -X POST http://localhost:3000/integrations \
@@ -566,57 +541,13 @@ curl -X POST http://localhost:3000/integrations \
     "churchYears": 2,
     "previousMinistry": "Dança",
     "integrationYear": 2024,
-    "images": [
-      {
-        "title": "Foto Maria",
-        "description": "Foto de perfil",
-        "url": "https://example.com/profile-photo.jpg"
-      },
-      {
-        "title": "Documento Maria",
-        "description": "RG e CPF",
-        "url": "https://example.com/documents.jpg"
-      }
-    ]
-  }'
-```
-
-### Exemplo 1.1: Criar integração com múltiplos arquivos
-
-```bash
-curl -X POST http://localhost:3000/integrations \
-  -H "Authorization: Bearer <token>" \
-  -F 'integrationData={
-    "name": "João Santos",
-    "phone": "(11) 98765-4321",
-    "gaLeader": "Ana Silva",
-    "baptized": true,
-    "churchYears": 5,
-    "previousMinistry": "Louvor",
-    "integrationYear": 2024,
-    "images": [
-      {
-        "title": "Foto João",
-        "description": "Foto de perfil"
-      },
-      {
-        "title": "Documento João",
-        "description": "RG e CPF"
-      },
-      {
-        "title": "Certificado João",
-        "description": "Certificado de participação"
-      }
-    ]
+    "media": {
+      "title": "Foto Maria",
+      "description": "Foto de perfil"
+    }
   }' \
-  -F 'files[0]=@/path/to/photo.jpg' \
-  -F 'files[1]=@/path/to/document.pdf' \
-  -F 'files[2]=@/path/to/certificate.jpg'
+  -F 'file=@/path/to/photo.jpg'
 ```
-
-> **Nota:** Cada campo `files` adiciona um arquivo ao array. Os arquivos são mapeados sequencialmente para as imagens no array `images`.
-
-> **Nota:** Quando múltiplas imagens são enviadas sem URLs específicas, o arquivo enviado será usado apenas uma vez no S3 e todas as imagens apontarão para a mesma URL.
 
 ### Exemplo 2: Listar com filtros
 
@@ -635,78 +566,6 @@ curl -X PUT http://localhost:3000/integrations/550e8400-e29b-41d4-a716-446655440
     "churchYears": 3
   }'
 ```
-
-### Exemplo 3.1: Atualizar múltiplas imagens (manter + criar)
-
-```bash
-curl -X PUT http://localhost:3000/integrations/550e8400-e29b-41d4-a716-446655440000 \
-  -H "Authorization: Bearer <token>" \
-  -F 'integrationData={
-    "name": "João Santos Atualizado",
-    "images": [
-      {
-        "id": "existing-image-uuid-1",
-        "title": "Foto atualizada",
-        "description": "Nova descrição da foto existente"
-      },
-      {
-        "title": "Nova imagem externa",
-        "description": "Imagem adicional via URL",
-        "url": "https://example.com/new-image.jpg",
-        "isLocalFile": false
-      }
-    ]
-  }'
-```
-
-> **Resultado:** A primeira imagem (com ID) será atualizada, a segunda imagem será criada como link externo.
-
-### Exemplo 3.2: Substituir imagens existentes com arquivos
-
-```bash
-curl -X PUT http://localhost:3000/integrations/550e8400-e29b-41d4-a716-446655440000 \
-  -H "Authorization: Bearer <token>" \
-  -F 'integrationData={
-    "images": [
-      {
-        "id": "existing-image-uuid-1",
-        "title": "Foto principal atualizada",
-        "fieldKey": "files[0]"
-      },
-      {
-        "id": "existing-image-uuid-2",
-        "title": "Documento atualizado",
-        "fieldKey": "files[1]"
-      },
-      {
-        "title": "Nova imagem adicional",
-        "fieldKey": "files[2]"
-      }
-    ]
-  }' \
-  -F 'files[0]=@/path/to/new-photo.jpg' \
-  -F 'files[1]=@/path/to/new-document.pdf' \
-  -F 'files[2]=@/path/to/additional-image.png'
-```
-
-> **Resultado:** As duas primeiras imagens serão substituídas pelos novos arquivos, a terceira será uma nova imagem. Qualquer imagem existente não incluída será excluída.
-
-### Exemplo 3.3: Excluir imagens existentes
-
-```bash
-curl -X PUT http://localhost:3000/integrations/550e8400-e29b-41d4-a716-446655440000 \
-  -H "Authorization: Bearer <token>" \
-  -F 'integrationData={
-    "images": [
-      {
-        "id": "existing-image-uuid-1",
-        "title": "Apenas esta imagem será mantida"
-      }
-    ]
-  }'
-```
-
-> **Resultado:** Todas as imagens exceto a especificada serão excluídas automaticamente.
 
 ### Exemplo 4: Buscar listagem simples
 
@@ -752,76 +611,15 @@ Armazena as imagens associadas às integrações com `targetType = 'Integration'
 
 ---
 
-## Gerenciamento Inteligente de Imagens
-
-O endpoint de atualização (`PUT`) implementa regras inteligentes para gerenciar imagens:
-
-### Regras de Processamento
-
-1. **Se `images[i].id` existe E não há arquivo correspondente:**
-   - ✅ **Mantém** a imagem existente inalterada
-
-2. **Se `images[i].id` existe E há `files[i]` (arquivo):**
-   - 🔄 **Substitui** a imagem existente pelo novo arquivo
-   - 🗑️ Deleta automaticamente o arquivo antigo do S3
-
-3. **Se `images[i].id` NÃO existe E há `files[i]` (arquivo):**
-   - ➕ **Cria** uma nova imagem com o arquivo enviado
-
-4. **Se `images[i].id` NÃO existe E não há arquivo:**
-   - ❌ **Ignora** (não cria imagem vazia)
-
-5. **Imagens existentes não incluídas no `images[]`:**
-   - 🗑️ **Exclui** automaticamente (com remoção do S3 se for arquivo local)
-
-### Mapeamento de Arquivos
-
-- Arquivos devem ser enviados como: `files[0]`, `files[1]`, `files[2]`, etc.
-- Cada imagem no array `images[]` pode referenciar um arquivo via `fieldKey`
-- Exemplo: `"fieldKey": "files[0]"` mapeia para o arquivo enviado como `files[0]`
-
-### Exemplo Prático
-
-```javascript
-// Antes da atualização: 3 imagens existentes
-existingImages = [
-  { id: "img-1", title: "Foto antiga" },
-  { id: "img-2", title: "Documento antigo" },
-  { id: "img-3", title: "Certificado antigo" }
-]
-
-// Payload de atualização
-{
-  images: [
-    { id: "img-1", title: "Foto mantida" },           // ✅ Mantém
-    { id: "img-2", title: "Documento novo", fieldKey: "files[0]" }, // 🔄 Substitui
-    { title: "Nova imagem", fieldKey: "files[1]" }   // ➕ Cria nova
-  ]
-}
-
-// Resultado: 3 imagens
-// - img-1: mantida (atualizado apenas título)
-// - img-2: substituída pelo novo arquivo files[0]
-// - img-3: excluída automaticamente
-// - nova imagem: criada com files[1]
-```
-
----
-
 ## Notas Importantes
 
 1. **Todos os campos são opcionais** - Permite flexibilidade no cadastro
-2. **Múltiplas imagens por integração** - Suporte a uma ou mais imagens por registro
-3. **Upload inteligente de arquivos** - Cada arquivo é enviado apenas uma vez para o S3
-4. **Mapeamento sequencial** - Arquivos `files` são mapeados sequencialmente para imagens no array `images`
-5. **Upload de imagens via S3** - Armazenamento seguro e escalável
-6. **Gerenciamento inteligente de imagens** - Regras automáticas: manter (sem arquivo), substituir (com arquivo), criar (nova), excluir (não incluída)
-7. **Deleção em cascata** - Ao deletar uma integração, todas as imagens são removidas do S3
-8. **Busca case-insensitive** - O parâmetro `search` busca por nome sem diferenciar maiúsculas/minúsculas
-9. **Paginação eficiente** - Use `limit` adequado para evitar sobrecarga
-10. **Validação automática** - DTOs validados com `class-validator`
-11. **Logging completo** - Todas as operações são logadas para auditoria
-12. **Compatibilidade backward** - Suporte a upload único de arquivo (converte para array internamente)
+2. **Upload de imagem via S3** - Armazenamento seguro e escalável
+3. **Deleção em cascata** - Ao deletar uma integração, a imagem é removida do S3
+4. **Busca case-insensitive** - O parâmetro `search` busca por nome sem diferenciar maiúsculas/minúsculas
+5. **Paginação eficiente** - Use `limit` adequado para evitar sobrecarga
+6. **Validação automática** - DTOs validados com `class-validator`
+7. **Logging completo** - Todas as operações são logadas para auditoria
 
 ---
 
@@ -838,4 +636,3 @@ existingImages = [
 ## Suporte
 
 Para dúvidas ou problemas, consulte os logs da aplicação ou entre em contato com a equipe de desenvolvimento.
-

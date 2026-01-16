@@ -10,7 +10,7 @@ export class IntegrationResponseDto {
     churchYears?: number;
     previousMinistry?: string;
     integrationYear?: number;
-    images?: {
+    image?: {
         id: string;
         title: string;
         description: string;
@@ -21,13 +21,13 @@ export class IntegrationResponseDto {
         platformType?: string;
         originalName?: string;
         size?: number;
-    }[];
+    } | null;
     createdAt: Date;
     updatedAt: Date;
 
     static fromEntity(
         entity: IntegrationEntity,
-        media?: MediaItemEntity[],
+        media?: MediaItemEntity | null,
     ): IntegrationResponseDto {
         const dto = new IntegrationResponseDto();
         dto.id = entity.id;
@@ -41,21 +41,21 @@ export class IntegrationResponseDto {
         dto.createdAt = entity.createdAt;
         dto.updatedAt = entity.updatedAt;
 
-        if (media && media.length > 0) {
-            dto.images = media.map((item) => ({
-                id: item.id,
-                title: item.title,
-                description: item.description,
-                url: item.url,
-                uploadType: item.uploadType,
-                mediaType: item.mediaType,
-                isLocalFile: item.isLocalFile,
-                platformType: item.platformType,
-                originalName: item.originalName,
-                size: item.size,
-            }));
+        if (media) {
+            dto.image = {
+                id: media.id,
+                title: media.title,
+                description: media.description,
+                url: media.url,
+                uploadType: media.uploadType,
+                mediaType: media.mediaType,
+                isLocalFile: media.isLocalFile,
+                platformType: media.platformType,
+                originalName: media.originalName,
+                size: media.size,
+            };
         } else {
-            dto.images = [];
+            dto.image = null;
         }
 
         return dto;

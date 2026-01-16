@@ -25,7 +25,7 @@ export class IntegrationService {
 
     async create(
         dto: CreateIntegrationDto,
-        files?: Express.Multer.File[],
+        file?: Express.Multer.File,
     ): Promise<IntegrationResponseDto> {
         const integration = await this.repository.create({
             name: dto.name,
@@ -37,79 +37,34 @@ export class IntegrationService {
             integrationYear: dto.integrationYear,
         });
 
-        let media: MediaItemEntity[] = [];
+        let media: MediaItemEntity | undefined;
+        if (dto.media || file) {
+            let mediaUrl = dto.media?.url?.trim() || '';
+            let originalName: string | undefined;
+            let size: number | undefined;
 
-        if (dto.images && dto.images.length > 0) {
-            const uploadedFiles: { [key: string]: string } = {};
-
-            for (let i = 0; i < dto.images.length; i++) {
-                const imageDto = dto.images[i];
-                let mediaUrl = imageDto.url?.trim() || '';
-                let uploadType = UploadType.LINK;
-                let isLocalFile = imageDto.isLocalFile || false;
-                let originalName: string | undefined;
-                let size: number | undefined;
-
-                // Se temos arquivos e esta imagem não tem URL, usar o arquivo correspondente
-                if (files && files.length > 0 && !mediaUrl) {
-                    const fileIndex = Math.min(i, files.length - 1); // Usar arquivo correspondente ou último
-                    const file = files[fileIndex];
-
-                    // Upload apenas uma vez por arquivo
-                    if (!uploadedFiles[file.originalname]) {
-                        uploadedFiles[file.originalname] = await this.s3Service.upload(file);
-                    }
-
-                    mediaUrl = uploadedFiles[file.originalname];
-                    uploadType = UploadType.UPLOAD;
-                    isLocalFile = true;
-                    originalName = file.originalname;
-                    size = file.size;
-                }
-
-                if (mediaUrl) {
-                    const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
-                        {
-                            title: imageDto.title || dto.name || 'Integration image',
-                            description: imageDto.description || '',
-                            mediaType: MediaType.IMAGE,
-                            uploadType,
-                            url: mediaUrl,
-                            isLocalFile,
-                            originalName,
-                            size,
-                        },
-                        integration.id,
-                        MediaTargetType.Integration,
-                    );
-
-                    const savedMedia = await this.mediaProcessor.saveMediaItem(mediaEntity);
-                    media.push(savedMedia);
-                }
+            if (file) {
+                mediaUrl = await this.s3Service.upload(file);
+                originalName = file.originalname;
+                size = file.size;
             }
-        }
-        // Backward compatibility: handle single/multiple files upload without dto.images
-        else if (files && files.length > 0) {
-            for (const file of files) {
-                const mediaUrl = await this.s3Service.upload(file);
-                const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
-                    {
-                        title: dto.name || 'Integration image',
-                        description: '',
-                        mediaType: MediaType.IMAGE,
-                        uploadType: UploadType.UPLOAD,
-                        url: mediaUrl,
-                        isLocalFile: true,
-                        originalName: file.originalname,
-                        size: file.size,
-                    },
-                    integration.id,
-                    MediaTargetType.Integration,
-                );
 
-                const savedMedia = await this.mediaProcessor.saveMediaItem(mediaEntity);
-                media.push(savedMedia);
-            }
+            const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
+                {
+                    title: dto.media?.title || dto.name || 'Integration image',
+                    description: dto.media?.description || '',
+                    mediaType: MediaType.IMAGE,
+                    uploadType: file ? UploadType.UPLOAD : UploadType.LINK,
+                    url: mediaUrl,
+                    isLocalFile: !!file,
+                    originalName,
+                    size,
+                },
+                integration.id,
+                MediaTargetType.Integration,
+            );
+
+            media = await this.mediaProcessor.saveMediaItem(mediaEntity);
         }
 
         return IntegrationResponseDto.fromEntity(integration, media);
@@ -124,16 +79,13 @@ export class IntegrationService {
             MediaTargetType.Integration,
         );
 
-        const mediaMap = new Map<string, MediaItemEntity[]>();
+        const mediaMap = new Map();
         mediaItems.forEach((item) => {
-            if (!mediaMap.has(item.targetId)) {
-                mediaMap.set(item.targetId, []);
-            }
-            mediaMap.get(item.targetId)!.push(item);
+            mediaMap.set(item.targetId, item);
         });
 
         return integrations.map((integration) => {
-            const media = mediaMap.get(integration.id) || [];
+            const media = mediaMap.get(integration.id) || null;
             return IntegrationResponseDto.fromEntity(integration, media);
         });
     }
@@ -149,16 +101,13 @@ export class IntegrationService {
             MediaTargetType.Integration,
         );
 
-        const mediaMap = new Map<string, MediaItemEntity[]>();
+        const mediaMap = new Map();
         mediaItems.forEach((item) => {
-            if (!mediaMap.has(item.targetId)) {
-                mediaMap.set(item.targetId, []);
-            }
-            mediaMap.get(item.targetId)!.push(item);
+            mediaMap.set(item.targetId, item);
         });
 
         const responseData = integrations.map((integration) => {
-            const media = mediaMap.get(integration.id) || [];
+            const media = mediaMap.get(integration.id) || null;
             return IntegrationResponseDto.fromEntity(integration, media);
         });
 
@@ -176,20 +125,20 @@ export class IntegrationService {
             throw new Error(`Integration with ID ${id} not found`);
         }
 
-        const mediaItems = await this.mediaProcessor.findMediaItemsByTarget(
+        const media = await this.mediaProcessor.findMediaItemByTarget(
             id,
             MediaTargetType.Integration,
         );
 
-        return IntegrationResponseDto.fromEntity(integration, mediaItems);
+        return IntegrationResponseDto.fromEntity(integration, media);
     }
 
     async update(
         id: string,
         dto: UpdateIntegrationDto,
-        files?: Express.Multer.File[],
+        file?: Express.Multer.File,
     ): Promise<IntegrationResponseDto> {
-        return this.updateService.execute(id, dto, files);
+        return this.updateService.execute(id, dto, file);
     }
 
     async remove(id: string): Promise<void> {

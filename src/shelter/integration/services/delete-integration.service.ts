@@ -21,6 +21,7 @@ export class DeleteIntegrationService {
         }
 
         try {
+            // Buscar e deletar mídias associadas
             const mediaItems = await this.mediaProcessor.findMediaItemsByTarget(
                 id,
                 MediaTargetType.Integration,
@@ -34,6 +35,7 @@ export class DeleteIntegrationService {
                 this.logger.log(`Deleted ${mediaItems.length} media items for integration ${id}`);
             }
 
+            // Deletar a integração
             await this.repository.remove(id);
             this.logger.log(`Integration ${id} deleted successfully`);
         } catch (error) {

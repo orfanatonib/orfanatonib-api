@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, FindOptionsWhere } from 'typeorm';
+import { Repository, Like } from 'typeorm';
 import { IntegrationEntity } from './entities/integration.entity';
 import { QueryIntegrationDto } from './dto/query-integration.dto';
 
@@ -26,7 +26,7 @@ export class IntegrationRepository {
         const { page = 1, limit = 10, search, integrationYear } = query;
         const skip = (page - 1) * limit;
 
-        const where: FindOptionsWhere<IntegrationEntity> = {};
+        const where: any = {};
 
         if (search) {
             where.name = Like(`%${search}%`);
