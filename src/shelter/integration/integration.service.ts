@@ -25,7 +25,7 @@ export class IntegrationService {
 
     async create(
         dto: CreateIntegrationDto,
-        file?: Express.Multer.File,
+        files?: Express.Multer.File[],
     ): Promise<IntegrationResponseDto> {
         const integration = await this.repository.create({
             name: dto.name,
@@ -39,29 +39,43 @@ export class IntegrationService {
 
         let media: MediaItemEntity[] = [];
 
-        // Handle multiple images from dto.images
         if (dto.images && dto.images.length > 0) {
-            for (const imageDto of dto.images) {
+            const uploadedFiles: { [key: string]: string } = {};
+
+            for (let i = 0; i < dto.images.length; i++) {
+                const imageDto = dto.images[i];
                 let mediaUrl = imageDto.url?.trim() || '';
+                let uploadType = UploadType.LINK;
+                let isLocalFile = imageDto.isLocalFile || false;
                 let originalName: string | undefined;
                 let size: number | undefined;
 
-                // If we have a file, use it for all images (backward compatibility)
-                if (file && !mediaUrl) {
-                    mediaUrl = await this.s3Service.upload(file);
+                // Se temos arquivos e esta imagem não tem URL, usar o arquivo correspondente
+                if (files && files.length > 0 && !mediaUrl) {
+                    const fileIndex = Math.min(i, files.length - 1); // Usar arquivo correspondente ou último
+                    const file = files[fileIndex];
+
+                    // Upload apenas uma vez por arquivo
+                    if (!uploadedFiles[file.originalname]) {
+                        uploadedFiles[file.originalname] = await this.s3Service.upload(file);
+                    }
+
+                    mediaUrl = uploadedFiles[file.originalname];
+                    uploadType = UploadType.UPLOAD;
+                    isLocalFile = true;
                     originalName = file.originalname;
                     size = file.size;
                 }
 
-                if (mediaUrl || file) {
+                if (mediaUrl) {
                     const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
                         {
                             title: imageDto.title || dto.name || 'Integration image',
                             description: imageDto.description || '',
                             mediaType: MediaType.IMAGE,
-                            uploadType: file && !imageDto.url ? UploadType.UPLOAD : UploadType.LINK,
+                            uploadType,
                             url: mediaUrl,
-                            isLocalFile: !!file || imageDto.isLocalFile,
+                            isLocalFile,
                             originalName,
                             size,
                         },
@@ -74,26 +88,28 @@ export class IntegrationService {
                 }
             }
         }
-        // Backward compatibility: handle single file upload without dto.images
-        else if (file) {
-            const mediaUrl = await this.s3Service.upload(file);
-            const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
-                {
-                    title: dto.name || 'Integration image',
-                    description: '',
-                    mediaType: MediaType.IMAGE,
-                    uploadType: UploadType.UPLOAD,
-                    url: mediaUrl,
-                    isLocalFile: true,
-                    originalName: file.originalname,
-                    size: file.size,
-                },
-                integration.id,
-                MediaTargetType.Integration,
-            );
+        // Backward compatibility: handle single/multiple files upload without dto.images
+        else if (files && files.length > 0) {
+            for (const file of files) {
+                const mediaUrl = await this.s3Service.upload(file);
+                const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
+                    {
+                        title: dto.name || 'Integration image',
+                        description: '',
+                        mediaType: MediaType.IMAGE,
+                        uploadType: UploadType.UPLOAD,
+                        url: mediaUrl,
+                        isLocalFile: true,
+                        originalName: file.originalname,
+                        size: file.size,
+                    },
+                    integration.id,
+                    MediaTargetType.Integration,
+                );
 
-            const savedMedia = await this.mediaProcessor.saveMediaItem(mediaEntity);
-            media.push(savedMedia);
+                const savedMedia = await this.mediaProcessor.saveMediaItem(mediaEntity);
+                media.push(savedMedia);
+            }
         }
 
         return IntegrationResponseDto.fromEntity(integration, media);
@@ -171,9 +187,9 @@ export class IntegrationService {
     async update(
         id: string,
         dto: UpdateIntegrationDto,
-        file?: Express.Multer.File,
+        files?: Express.Multer.File[],
     ): Promise<IntegrationResponseDto> {
-        return this.updateService.execute(id, dto, file);
+        return this.updateService.execute(id, dto, files);
     }
 
     async remove(id: string): Promise<void> {
