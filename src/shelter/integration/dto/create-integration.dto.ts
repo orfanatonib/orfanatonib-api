@@ -1,4 +1,4 @@
-import { IsString, IsBoolean, IsInt, IsOptional, ValidateNested } from 'class-validator';
+import { IsString, IsBoolean, IsInt, IsOptional, ValidateNested, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class MediaItemDto {
@@ -52,7 +52,8 @@ export class CreateIntegrationDto {
     integrationYear?: number;
 
     @IsOptional()
-    @ValidateNested()
+    @IsArray()
+    @ValidateNested({ each: true })
     @Type(() => MediaItemDto)
-    media?: MediaItemDto;
+    images?: MediaItemDto[];
 }

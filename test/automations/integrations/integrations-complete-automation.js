@@ -9,6 +9,8 @@ class IntegrationsAutomation extends AutomationBase {
       baseUrl: process.env.API_URL || 'http://localhost:3000'
     });
 
+    this.results = [];
+
     // Dados mockados específicos para integrações (expandidos)
     this.integrationNames = [
       // Nomes comuns brasileiros
@@ -174,22 +176,26 @@ class IntegrationsAutomation extends AutomationBase {
       integrationYear: new Date().getFullYear() - this.mockData.getRandomInt(0, 15), // Últimos 15 anos
     };
 
-    // Adicionar mídia opcionalmente (60% das vezes para mais dados)
+    // Adicionar múltiplas imagens opcionalmente (60% das vezes para mais dados)
     if (Math.random() > 0.4) {
-      const mediaTypes = ['profile', 'document', 'certificate'];
-      const selectedType = mediaTypes[Math.floor(Math.random() * mediaTypes.length)];
+      const numImages = Math.floor(Math.random() * 3) + 1; // 1-3 imagens
+      integrationData.images = [];
 
-      integrationData.media = {
-        title: selectedType === 'profile' ? `Foto de ${name}` :
-               selectedType === 'document' ? `Documento de ${name}` :
-               `Certificado de ${name}`,
-        description: selectedType === 'profile' ? `Foto de perfil de ${name}` :
-                     selectedType === 'document' ? `Documento pessoal de ${name}` :
-                     `Certificado de participação de ${name}`,
-        url: this.mockData.getRandomElement(this.imageUrls),
-        fieldKey: selectedType,
-        isLocalFile: false
-      };
+      for (let i = 0; i < numImages; i++) {
+        const mediaTypes = ['profile', 'document', 'certificate'];
+        const selectedType = mediaTypes[Math.floor(Math.random() * mediaTypes.length)];
+
+        integrationData.images.push({
+          title: selectedType === 'profile' ? `Foto de ${name} ${i + 1}` :
+                 selectedType === 'document' ? `Documento de ${name} ${i + 1}` :
+                 `Certificado de ${name} ${i + 1}`,
+          description: selectedType === 'profile' ? `Foto de perfil de ${name}` :
+                       selectedType === 'document' ? `Documento pessoal de ${name}` :
+                       `Certificado de participação de ${name}`,
+          url: this.mockData.getRandomElement(this.imageUrls),
+          isLocalFile: false
+        });
+      }
     }
 
     return integrationData;
@@ -206,7 +212,7 @@ class IntegrationsAutomation extends AutomationBase {
       const form = new FormData();
       form.append('integrationData', JSON.stringify(integrationData));
 
-      const response = await this.client.makeMultipartRequest.bind(this.client, 'POST')('/integrations', form);
+      const response = await this.client.makeMultipartRequest('POST', '/integrations', form);
 
       if (response && response.status === 201) {
         Logger.success(`Integração criada: ${integrationData.name}`);
@@ -228,7 +234,11 @@ class IntegrationsAutomation extends AutomationBase {
     Logger.section(`📝 Criando ${count} integrações em massa...`);
 
     await this.createMultiple(count, async (index) => {
-      return await this.createIntegration(index);
+      const result = await this.createIntegration(index);
+      if (result) {
+        this.results.push(result);
+      }
+      return result;
     }, 'integração');
   }
 
@@ -355,20 +365,8 @@ class IntegrationsAutomation extends AutomationBase {
       // Listagem paginada
       const paginatedResponse = await this.client.get('/integrations?page=1&limit=10');
       if (paginatedResponse && paginatedResponse.status === 200) {
-        const { items, meta } = paginatedResponse.data;
-        Logger.success(`✅ Listagem paginada: ${items?.length || 0} itens, total: ${meta?.totalItems || 0}`);
-      }
-
-      // Busca por filtros (se houver)
-      if (this.results.length > 0) {
-        const sampleIntegration = this.results.find(r => r.success)?.data;
-        if (sampleIntegration) {
-          // Tentar busca por nome
-          const searchResponse = await this.client.get(`/integrations?name=${encodeURIComponent(sampleIntegration.name)}`);
-          if (searchResponse && searchResponse.status === 200) {
-            Logger.success(`✅ Busca por nome funcionando`);
-          }
-        }
+        const { data, total } = paginatedResponse.data;
+        Logger.success(`✅ Listagem paginada: ${data?.length || 0} itens, total: ${total || 0}`);
       }
 
     } catch (error) {

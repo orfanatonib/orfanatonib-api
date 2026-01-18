@@ -1,10 +1,10 @@
-import { Injectable, Logger, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, InternalServerErrorException, BadRequestException } from '@nestjs/common';
 import { IntegrationRepository } from '../integration.repository';
-import { UpdateIntegrationDto } from '../dto/update-integration.dto';
+import { UpdateIntegrationDto, MediaItemDto } from '../dto/update-integration.dto';
 import { IntegrationResponseDto } from '../dto/integration-response.dto';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { MediaTargetType } from 'src/shared/media/media-target-type.enum';
-import { MediaType, UploadType } from 'src/shared/media/media-item/media-item.entity';
+import { MediaType, UploadType, MediaItemEntity } from 'src/shared/media/media-item/media-item.entity';
 import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
 
 @Injectable()
@@ -20,7 +20,7 @@ export class UpdateIntegrationService {
     async execute(
         id: string,
         dto: UpdateIntegrationDto,
-        file?: Express.Multer.File,
+        files?: Express.Multer.File[],
     ): Promise<IntegrationResponseDto> {
         const integration = await this.repository.findById(id);
         if (!integration) {
@@ -28,7 +28,6 @@ export class UpdateIntegrationService {
         }
 
         try {
-            // Atualizar dados da integração
             const updateData: Partial<typeof integration> = {};
             if (dto.name !== undefined) updateData.name = dto.name;
             if (dto.phone !== undefined) updateData.phone = dto.phone;
@@ -40,97 +39,157 @@ export class UpdateIntegrationService {
 
             const updated = await this.repository.update(id, updateData);
 
-            // Atualizar mídia se necessário
-            if (dto.media || file) {
-                await this.updateIntegrationMedia(id, dto.media, file);
+            if (dto.images || (files && files.length > 0)) {
+                await this.processImages(id, dto.images, files);
             }
 
-            // Buscar mídia atualizada
-            const media = await this.mediaProcessor.findMediaItemByTarget(
+            const mediaItems = await this.mediaProcessor.findMediaItemsByTarget(
                 id,
                 MediaTargetType.Integration,
             );
 
-            return IntegrationResponseDto.fromEntity(updated!, media);
+            return IntegrationResponseDto.fromEntity(updated!, mediaItems);
         } catch (error) {
-            if (error instanceof NotFoundException) {
+            if (error instanceof NotFoundException || error instanceof BadRequestException) {
                 throw error;
             }
-            this.logger.error(`Error updating integration ${id}`, error.stack);
             throw new InternalServerErrorException('Error updating integration');
         }
     }
 
-    private async updateIntegrationMedia(
+    private async processImages(
         integrationId: string,
-        mediaInput: any,
-        file?: Express.Multer.File,
+        imagesInput?: MediaItemDto[],
+        files?: Express.Multer.File[],
     ): Promise<void> {
-        try {
-            const existingMedia = await this.mediaProcessor.findMediaItemByTarget(
-                integrationId,
-                MediaTargetType.Integration,
-            );
+        const existingImages = await this.mediaProcessor.findMediaItemsByTarget(
+            integrationId,
+            MediaTargetType.Integration,
+        );
 
-            // Se há um arquivo para upload
-            if (file) {
-                // Deletar arquivo antigo do S3 se existir
-                if (existingMedia?.isLocalFile && existingMedia.url) {
-                    try {
-                        await this.s3Service.delete(existingMedia.url);
-                        this.logger.log(`Deleted old file from S3: ${existingMedia.url}`);
-                    } catch (error) {
-                        this.logger.warn(`Could not delete old file: ${existingMedia.url}`, error);
-                    }
-                }
-
-                // Upload do novo arquivo
-                const fileUrl = await this.s3Service.upload(file);
-                const media = this.mediaProcessor.buildBaseMediaItem(
-                    {
-                        title: mediaInput?.title || 'Integration image',
-                        description: mediaInput?.description || '',
-                        mediaType: MediaType.IMAGE,
-                        uploadType: UploadType.UPLOAD,
-                        url: fileUrl,
-                        isLocalFile: true,
-                        originalName: file.originalname,
-                        size: file.size,
-                    },
-                    integrationId,
-                    MediaTargetType.Integration,
-                );
-
-                if (existingMedia) {
-                    await this.mediaProcessor.upsertMediaItem(existingMedia.id, media);
-                } else {
-                    await this.mediaProcessor.saveMediaItem(media);
-                }
-            }
-            // Se há uma URL de link (não é upload)
-            else if (mediaInput?.url && !mediaInput.isLocalFile) {
-                const media = this.mediaProcessor.buildBaseMediaItem(
-                    {
-                        title: mediaInput.title || 'Integration image',
-                        description: mediaInput.description || '',
-                        mediaType: MediaType.IMAGE,
-                        uploadType: UploadType.LINK,
-                        url: mediaInput.url,
-                        isLocalFile: false,
-                    },
-                    integrationId,
-                    MediaTargetType.Integration,
-                );
-
-                if (existingMedia) {
-                    await this.mediaProcessor.upsertMediaItem(existingMedia.id, media);
-                } else {
-                    await this.mediaProcessor.saveMediaItem(media);
-                }
-            }
-        } catch (error) {
-            this.logger.error(`Error updating integration media`, error.stack);
-            throw new InternalServerErrorException('Error updating integration media');
+        if (!imagesInput || imagesInput.length === 0) {
+            return;
         }
+
+        const filesDict: Record<string, Express.Multer.File> = {};
+        if (files) {
+            files.forEach((file, index) => {
+                filesDict[file.fieldname] = file;
+                filesDict[`files[${index}]`] = file;
+            });
+        }
+
+        const imagesToUpdate = imagesInput.filter(img => img.id);
+        const imagesToCreate = imagesInput.filter(img => !img.id);
+        const processedIds: string[] = [];
+
+        for (const imageInput of imagesToUpdate) {
+            const result = await this.updateExistingImage(imageInput, existingImages, filesDict);
+            processedIds.push(result.id);
+        }
+
+        for (const imageInput of imagesToCreate) {
+            const result = await this.createNewImage(imageInput, integrationId, filesDict);
+            processedIds.push(result.id);
+        }
+
+        const idsToKeep = new Set(processedIds);
+        const imagesToDelete = existingImages.filter(img => !idsToKeep.has(img.id));
+
+        for (const imageToDelete of imagesToDelete) {
+            await this.deleteImage(imageToDelete);
+        }
+    }
+
+    private async updateExistingImage(
+        imageInput: MediaItemDto,
+        existingImages: MediaItemEntity[],
+        filesDict: Record<string, Express.Multer.File>,
+    ): Promise<MediaItemEntity> {
+        const existingImage = existingImages.find(img => img.id === imageInput.id);
+        if (!existingImage) {
+            throw new NotFoundException(`Integration image with id=${imageInput.id} not found`);
+        }
+
+        const fieldKey = imageInput.fieldKey;
+        const hasNewFile = fieldKey && filesDict[fieldKey];
+
+        const updatedData: Partial<MediaItemEntity> = {
+            title: imageInput.title ?? existingImage.title,
+            description: imageInput.description ?? existingImage.description,
+        };
+
+        if (hasNewFile) {
+            const file = filesDict[fieldKey];
+
+            if (existingImage.isLocalFile && existingImage.url) {
+                try {
+                    await this.s3Service.delete(existingImage.url);
+                } catch (error) {
+                    this.logger.warn(`Failed to delete old S3 file: ${existingImage.url}`, error);
+                }
+            }
+
+            updatedData.url = await this.s3Service.upload(file);
+            updatedData.originalName = file.originalname;
+            updatedData.size = file.size;
+            updatedData.isLocalFile = true;
+            updatedData.uploadType = UploadType.UPLOAD;
+            updatedData.mediaType = MediaType.IMAGE;
+        }
+
+        return await this.mediaProcessor.upsertMediaItem(existingImage.id, {
+            ...existingImage,
+            ...updatedData,
+        });
+    }
+
+    private async createNewImage(
+        imageInput: MediaItemDto,
+        integrationId: string,
+        filesDict: Record<string, Express.Multer.File>,
+    ): Promise<MediaItemEntity> {
+        const fieldKey = imageInput.fieldKey;
+
+        if (!fieldKey) {
+            throw new BadRequestException(`New image must have a fieldKey`);
+        }
+
+        const file = filesDict[fieldKey];
+        if (!file) {
+            throw new BadRequestException(`File not found for fieldKey: ${fieldKey}`);
+        }
+
+        const url = await this.s3Service.upload(file);
+
+        const media = this.mediaProcessor.buildBaseMediaItem(
+            {
+                title: imageInput.title,
+                description: imageInput.description,
+                mediaType: MediaType.IMAGE,
+                uploadType: UploadType.UPLOAD,
+            },
+            integrationId,
+            MediaTargetType.Integration,
+        );
+
+        media.url = url;
+        media.originalName = file.originalname;
+        media.size = file.size;
+        media.isLocalFile = true;
+
+        return await this.mediaProcessor.saveMediaItem(media);
+    }
+
+    private async deleteImage(image: MediaItemEntity): Promise<void> {
+        if (image.isLocalFile && image.url) {
+            try {
+                await this.s3Service.delete(image.url);
+            } catch (error) {
+                this.logger.warn(`Failed to delete S3 file: ${image.url}`, error);
+            }
+        }
+
+        await this.mediaProcessor.removeMediaItem(image);
     }
 }
