@@ -1,19 +1,19 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { UserEntity } from './entities/user.entity';
-import { ShelterEntity } from 'src/shelter/shelter/entities/shelter.entity/shelter.entity';
-import { MediaItemEntity } from 'src/shared/media/media-item/media-item.entity';
+import { ShelterEntity } from '../../shelter/shelter/entities/shelter.entity/shelter.entity';
+import { MediaItemEntity } from '../../shared/media/media-item/media-item.entity';
 
 import { UserRepository } from './user.repository';
 import { CreateUserService } from './services/create-user.service';
 import { GetUsersService } from './services/get-user.service';
 import { UserController } from './user.controller';
 
-import { MemberProfilesModule } from 'src/shelter/member-profile/member-profiles.module';
-import { LeaderProfilesModule } from 'src/shelter/leader-profile/leader-profiles.module';
-import { MediaModule } from 'src/shared/media/media.module';
-import { AuthModule } from 'src/core/auth/auth.module';
+import { MemberProfilesModule } from '../../shelter/member-profile/member-profiles.module';
+import { LeaderProfilesModule } from '../../shelter/leader-profile/leader-profiles.module';
+import { MediaModule } from '../../shared/media/media.module';
+import { AuthModule } from '../auth/auth.module';
 import { UpdateUserService } from './services/update-user.service';
 import { DeleteUserService } from './services/delete-user.service';
 import { UpdateUserImageService } from './services/update-user-image.service';
@@ -27,7 +27,7 @@ import { ProfileController } from './profile.controller';
     MemberProfilesModule,
     LeaderProfilesModule,
     MediaModule,
-    AuthModule,
+    forwardRef(() => AuthModule),
   ],
   providers: [
     UserRepository,
@@ -49,4 +49,4 @@ import { ProfileController } from './profile.controller';
     TypeOrmModule,
   ],
 })
-export class UserModule {}
+export class UserModule { }

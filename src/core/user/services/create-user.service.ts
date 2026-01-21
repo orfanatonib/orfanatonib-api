@@ -8,9 +8,10 @@ import { UserRepository } from '../user.repository';
 import { CreateUserDto } from '../dto/create-user.dto';
 import { UserEntity } from '../entities/user.entity';
 
+import { UserRole } from 'src/core/auth/auth.types';
 import { MemberProfilesService } from 'src/shelter/member-profile/services/member-profiles.service';
 import { LeaderProfilesService } from 'src/shelter/leader-profile/services/leader-profiles.service';
-import { UserRole } from 'src/core/auth/auth.types';
+import { UserLogs } from '../constants/user.constants';
 
 @Injectable()
 export class CreateUserService {
@@ -40,6 +41,8 @@ export class CreateUserService {
     } else if (user.role === UserRole.MEMBER) {
       await this.memberService.createForUser(user.id);
     }
+
+    this.logger.log(UserLogs.CREATED(user.id));
     return user;
   }
 }

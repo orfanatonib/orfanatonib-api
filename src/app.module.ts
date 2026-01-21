@@ -4,12 +4,14 @@ import { RouteModule } from './infrastructure/route/route.module';
 import { UserModule } from './core/user/user.module';
 import { AuthModule } from './core/auth/auth.module';
 import { AwsModule } from './infrastructure/aws/aws.module';
+import { TwilioModule } from './infrastructure/twilio/twilio.module';
 import { DatabaseModule } from '../database/database.module';
 import { MeditationModule } from './content/meditation/meditation.module';
 import { ImageModule } from './content/page/image-page/image-page.module';
 import { VideosPageModule } from './content/page/video-page/video-page.module';
 import { VisitMaterialsPageModule } from './content/page/visit-material-page/visit-material-page.module';
 import { ContactModule } from './communication/contact/contact.module';
+import { NotificationModule } from './communication/notification/notification.module';
 import { EventModule } from './content/event/event.module';
 import { CommentModule } from './communication/comment/comment.module';
 import { DocumentModule } from './content/document/documents.module';
@@ -54,6 +56,8 @@ function getEnvFilePath(): string {
     }),
     DatabaseModule,
     AwsModule,
+    TwilioModule,
+    NotificationModule,
     ImageModule,
     RouteModule,
     UserModule,

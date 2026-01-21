@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'SSL/TLS Certificate for Orfanato NIB API using AWS Certificate Manager'
+Description: 'SSL/TLS Certificate for Orfanatos NIB API using AWS Certificate Manager'
 
 Parameters:
   DomainName:

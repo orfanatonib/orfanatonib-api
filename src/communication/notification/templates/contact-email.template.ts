@@ -1,7 +1,8 @@
-import { ContactEntity } from '../contact.entity';
+import { ContactEntity } from '../../contact/contact.entity';
+import { EmailConstants } from '../constants/email.constants';
 
-export class EmailTemplate {
-  static generateContactEmailTemplate(contact: ContactEntity): string {
+export class ContactEmailTemplate {
+  static generate(contact: ContactEntity): string {
     const logoUrl =
       process.env.CONTACT_EMAIL_LOGO_URL ||
       process.env.EMAIL_LOGO_URL ||
@@ -23,7 +24,7 @@ export class EmailTemplate {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Novo Contato - Orfanatos NIB</title>
+        <title>Novo Contato - ${EmailConstants.APP_NAME}</title>
       </head>
       <body style="margin: 0; padding: 0; background-color: ${COLOR_BG}; font-family: Arial, sans-serif;">
         <table width="100%" cellpadding="0" cellspacing="0" style="background-color: ${COLOR_BG}; padding: 24px;">
@@ -31,22 +32,10 @@ export class EmailTemplate {
             <td align="center">
               <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: ${COLOR_WHITE}; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.35);">
                 <tr>
-                  <td style="background-color: ${COLOR_WHITE}; padding: 20px 24px; text-align: center;">
-                    ${logoUrl
-        ? `
-                          <img
-                            src="${this.escapeHtml(logoUrl)}"
-                            alt=""
-                            width="160"
-                            style="max-width: 220px; width: 220px; height: auto; display: block; margin: 0 auto; border: 0; outline: none; text-decoration: none;"
-                          />
-                        `
-        : `
-                          <div style="height: 72px; line-height: 72px; font-size: 18px; font-weight: 700; color: ${COLOR_WHITE};">
-                            Orfanatos NIB
-                          </div>
-                        `
-      }
+                  <td style="background-color: ${COLOR_YELLOW}; padding: 30px 24px; text-align: center; border-bottom: 4px solid ${COLOR_BLACK};">
+                    <h1 style="margin: 0; color: ${COLOR_BLACK}; font-size: 28px; font-weight: 900; text-transform: uppercase; letter-spacing: 2.5px;">
+                      ${EmailConstants.APP_NAME}
+                    </h1>
                   </td>
                 </tr>
                 <tr>
@@ -61,18 +50,10 @@ export class EmailTemplate {
                   </td>
                 </tr>
                 <tr>
-                  <td style="background-color: ${COLOR_YELLOW}; padding: 26px 24px; text-align: center; border-bottom: 4px solid ${COLOR_BLACK};">
-                    ${hasLogo
-        ? ''
-        : `
-                          <h1 style="margin: 0; color: ${COLOR_BLACK}; font-size: 30px; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">
-                            💚 Orfanatos NIB
-                          </h1>
-                        `
-      }
-                    <p style="margin: ${hasLogo ? '0' : '10px'} 0 0; color: ${COLOR_BLACK}; font-size: 18px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;">
+                  <td style="background-color: ${COLOR_WHITE}; padding: 26px 24px; text-align: center;">
+                    <h2 style="margin: 0; color: ${COLOR_BLACK}; font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;">
                       Nova Mensagem de Contato
-                    </p>
+                    </h2>
                   </td>
                 </tr>
 
@@ -143,12 +124,15 @@ export class EmailTemplate {
                 </tr>
 
                 <tr>
-                  <td style="background-color: ${COLOR_WHITE}; padding: 18px 24px; text-align: center;">
-                    <p style="margin: 0; color: ${COLOR_BLACK}; font-size: 14px; font-weight: 700;">
-                      Obrigado por usar o <strong style="color: ${COLOR_BLACK};">Orfanatos NIB</strong>
+                  <td style="background-color: ${COLOR_WHITE}; padding: 24px; text-align: center;">
+                    <p style="margin: 0; color: ${COLOR_BLACK}; font-size: 15px; font-weight: 700;">
+                      ${EmailConstants.SLOGAN}
                     </p>
-                    <p style="margin: 10px 0 0; color: ${COLOR_TEXT_MUTED}; font-size: 12px;">
-                      Este é um email automático, por favor não responda.
+                    <p style="margin: 12px 0 0; color: ${COLOR_TEXT_MUTED}; font-size: 12px;">
+                      ${EmailConstants.AUTO_REPLY_NOTICE}
+                    </p>
+                    <p style="margin: 5px 0 0; color: ${COLOR_TEXT_MUTED}; font-size: 12px;">
+                      ${EmailConstants.COPYRIGHT(new Date().getFullYear())}
                     </p>
                   </td>
                 </tr>

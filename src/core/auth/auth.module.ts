@@ -8,9 +8,10 @@ import { AuthRepository } from './auth.repository';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AuthService } from './services/auth.service';
 import { AuthContextService } from './services/auth-context.service';
-import { UserModule } from 'src/core/user/user.module';
-import { MediaModule } from 'src/shared/media/media.module';
-import { AwsModule } from 'src/infrastructure/aws/aws.module';
+import { UserModule } from '../user/user.module';
+import { MediaModule } from '../../shared/media/media.module';
+import { AwsModule } from '../../infrastructure/aws/aws.module';
+import { NotificationModule } from '../../communication/notification/notification.module';
 
 import { PasswordResetTokenRepository } from './repositories/password-reset-token.repository';
 import { PasswordRecoveryService } from './services/password-recovery.service';
@@ -33,6 +34,7 @@ import { PasswordRecoveryService } from './services/password-recovery.service';
     MediaModule,
     forwardRef(() => require('../profile/profile.module').ProfileModule),
     AwsModule,
+    NotificationModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthContextService, AuthRepository, JwtStrategy, PasswordResetTokenRepository, PasswordRecoveryService],

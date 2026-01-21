@@ -12,6 +12,7 @@ import { UserEntity } from '../entities/user.entity';
 import { MemberProfilesService } from 'src/shelter/member-profile/services/member-profiles.service';
 import { LeaderProfilesService } from 'src/shelter/leader-profile/services/leader-profiles.service';
 import { UserRole } from 'src/core/auth/auth.types';
+import { UserErrorMessages, UserLogs } from '../constants/user.constants';
 
 @Injectable()
 export class UpdateUserService {
@@ -25,7 +26,7 @@ export class UpdateUserService {
 
   async update(id: string, dto: Partial<UpdateUserDto>): Promise<UserEntity> {
     const current = await this.userRepo.findById(id);
-    if (!current) throw new NotFoundException('UserEntity not found');
+    if (!current) throw new NotFoundException(UserErrorMessages.NOT_FOUND);
 
     if (dto.password) {
       dto.password = await bcrypt.hash(dto.password, 10);
@@ -87,6 +88,7 @@ export class UpdateUserService {
       }
     }
     const user = await this.userRepo.update(id, dto);
+    this.logger.log(UserLogs.UPDATED(id));
     return user;
   }
 }

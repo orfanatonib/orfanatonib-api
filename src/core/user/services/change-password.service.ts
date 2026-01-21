@@ -8,34 +8,35 @@ import {
 import * as bcrypt from 'bcryptjs';
 import { UserRepository } from '../user.repository';
 import { ChangePasswordDto } from '../dto/change-password.dto';
+import { UserErrorMessages, UserSuccessMessages, UserLogs } from '../constants/user.constants';
 
 @Injectable()
 export class ChangePasswordService {
   private readonly logger = new Logger(ChangePasswordService.name);
 
-  constructor(private readonly userRepo: UserRepository) {}
+  constructor(private readonly userRepo: UserRepository) { }
 
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<{ message: string }> {
     const user = await this.userRepo.findById(userId);
     if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
+      throw new NotFoundException(UserErrorMessages.USER_NOT_FOUND);
     }
 
     if (user.commonUser) {
       if (!dto.currentPassword) {
-        throw new BadRequestException('A senha atual é obrigatória para usuários comuns');
+        throw new BadRequestException(UserErrorMessages.CURRENT_PASSWORD_REQUIRED);
       }
 
       const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
       if (!isPasswordValid) {
-        throw new UnauthorizedException('Senha atual incorreta');
+        throw new UnauthorizedException(UserErrorMessages.CURRENT_PASSWORD_INCORRECT);
       }
     }
 
     if (user.password) {
       const isSamePassword = await bcrypt.compare(dto.newPassword, user.password);
       if (isSamePassword) {
-        throw new BadRequestException('A nova senha deve ser diferente da senha atual');
+        throw new BadRequestException(UserErrorMessages.NEW_PASSWORD_SAME);
       }
     }
 
@@ -43,9 +44,9 @@ export class ChangePasswordService {
 
     await this.userRepo.update(userId, { password: hashedNewPassword });
 
-    this.logger.log(`Senha alterada para o usuário: ${userId} (commonUser: ${user.commonUser})`);
+    this.logger.log(UserLogs.PASSWORD_CHANGED(userId));
 
-    return { message: 'Senha alterada com sucesso' };
+    return { message: UserSuccessMessages.PASSWORD_CHANGED };
   }
 }
 
