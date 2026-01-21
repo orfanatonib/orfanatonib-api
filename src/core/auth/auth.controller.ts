@@ -7,8 +7,8 @@ import { AuthService } from './services/auth.service';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Query } from '@nestjs/common';
-
 import { PasswordRecoveryService } from './services/password-recovery.service';
+import { AuthLogs } from './constants/auth.constants';
 
 @Controller('auth')
 export class AuthController {
@@ -21,34 +21,34 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() dto: LoginDto) {
-    this.logger.log('User login attempt');
+    this.logger.log(AuthLogs.LOGIN_ATTEMPT);
     const result = await this.authService.login(dto);
-    this.logger.log('User logged in successfully');
+    this.logger.log(AuthLogs.LOGIN_SUCCESS);
     return result;
   }
 
   @Post('google')
   async googleLogin(@Body() body: { token: string }) {
-    this.logger.log('Google login attempt');
+    this.logger.log(AuthLogs.GOOGLE_LOGIN_ATTEMPT);
     const result = await this.authService.googleLogin(body.token);
-    this.logger.log('Google login successful');
+    this.logger.log(AuthLogs.GOOGLE_LOGIN_SUCCESS);
     return result;
   }
 
   @Post('refresh')
   async refresh(@Body() body: { refreshToken: string }) {
-    this.logger.log('Token refresh attempt');
+    this.logger.log(AuthLogs.TOKEN_REFRESH_ATTEMPT);
     const result = await this.authService.refreshToken(body.refreshToken);
-    this.logger.log('Token refreshed successfully');
+    this.logger.log(AuthLogs.TOKEN_REFRESH_SUCCESS);
     return result;
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(@Request() req) {
-    this.logger.log(`User logging out: ${req.user.userId}`);
+    this.logger.log(AuthLogs.LOGOUT(req.user.userId));
     const result = await this.authService.logout(req.user.userId);
-    this.logger.log(`User logged out successfully: ${req.user.userId}`);
+    this.logger.log(AuthLogs.LOGOUT_SUCCESS(req.user.userId));
     return result;
   }
 
@@ -60,17 +60,17 @@ export class AuthController {
 
   @Post('complete-register')
   async completeRegister(@Body() data: CompleteUserDto) {
-    this.logger.log('Completing user registration');
+    this.logger.log(AuthLogs.COMPLETE_REGISTRATION_ATTEMPT);
     const result = await this.authService.completeRegister(data);
-    this.logger.log('User registration completed successfully');
+    this.logger.log(AuthLogs.COMPLETE_REGISTRATION_SUCCESS);
     return result;
   }
 
   @Post('register')
   async register(@Body() data: RegisterUserDto) {
-    this.logger.log('Creating new user registration');
+    this.logger.log(AuthLogs.REGISTRATION_ATTEMPT);
     const result = await this.authService.register(data);
-    this.logger.log('User registered successfully');
+    this.logger.log(AuthLogs.REGISTRATION_SUCCESS);
     return result;
   }
 

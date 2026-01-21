@@ -3,13 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UserEntity } from './entities/user.entity';
 import { GetUsersQueryDto } from './dto/get-users-query.dto';
+import { UserRole } from '../auth/auth.types';
 
 @Injectable()
 export class UserRepository {
   constructor(
     @InjectRepository(UserEntity)
     private readonly repo: Repository<UserEntity>,
-  ) {}
+  ) { }
 
   async create(user: Partial<UserEntity>): Promise<UserEntity> {
     const newUser = this.repo.create(user);
@@ -18,6 +19,10 @@ export class UserRepository {
 
   async findAll(): Promise<UserEntity[]> {
     return this.repo.find();
+  }
+
+  async findAllAdmins(): Promise<UserEntity[]> {
+    return this.repo.find({ where: { role: UserRole.ADMIN, active: true } });
   }
 
   async findById(id: string): Promise<UserEntity | null> {
