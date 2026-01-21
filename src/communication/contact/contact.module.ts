@@ -5,7 +5,7 @@ import { ContactRepository } from './contact.repository';
 import { ContactService } from './contact.service';
 import { ContactController } from './contact.controller';
 import { NotificationModule } from '../notification/notification.module';
-import { UserModule } from 'src/core/user/user.module';
+import { UserModule } from '../../core/user/user.module';
 
 @Module({
   imports: [

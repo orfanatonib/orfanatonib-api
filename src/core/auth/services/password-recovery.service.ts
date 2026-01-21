@@ -1,9 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
-import { GetUsersService } from 'src/core/user/services/get-user.service';
-import { UpdateUserService } from 'src/core/user/services/update-user.service';
-import { NotificationService } from 'src/communication/notification/notification.service';
-import { SesIdentityService } from 'src/infrastructure/aws/ses-identity.service';
+import { GetUsersService } from '../../user/services/get-user.service';
+import { UpdateUserService } from '../../user/services/update-user.service';
+import { NotificationService } from '../../../communication/notification/notification.service';
+import { SesIdentityService } from '../../../infrastructure/aws/ses-identity.service';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { PasswordResetTokenRepository } from '../repositories/password-reset-token.repository';
@@ -24,7 +24,6 @@ export class PasswordRecoveryService {
     ) { }
 
     async forgotPassword(data: ForgotPasswordDto): Promise<PasswordRecoveryResponse> {
-        // Step 1: Verify user exists in database
         const user = await this.getUsersService.findByEmail(data.email);
         if (!user) {
             throw new BadRequestException({
@@ -33,11 +32,9 @@ export class PasswordRecoveryService {
             });
         }
 
-        // Step 2: Verify SES identity is created and validated
         const sesCheck = await this.sesIdentityService.checkAndResendSesVerification(user.email);
 
         if (!sesCheck.alreadyVerified) {
-            // SES identity not verified yet
             return {
                 status: PasswordRecoveryStatus.SES_NOT_VERIFIED,
                 message: PasswordRecoveryMessages.SES_NOT_VERIFIED,
@@ -45,7 +42,6 @@ export class PasswordRecoveryService {
             };
         }
 
-        // Step 3: Both checks passed - send password reset email
         const resetToken = crypto.randomBytes(32).toString('hex');
         const expiresAt = new Date();
         expiresAt.setMinutes(expiresAt.getMinutes() + 30);

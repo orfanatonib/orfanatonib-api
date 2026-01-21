@@ -8,7 +8,7 @@ import { ContactRepository } from './contact.repository';
 import { NotificationService } from '../notification/notification.service';
 import { ContactEntity } from './contact.entity';
 import { ContactMessages, ContactNotificationLogs } from './constants/contact.constants';
-import { UserRepository } from 'src/core/user/user.repository';
+import { UserRepository } from '../../core/user/user.repository';
 
 @Injectable()
 export class ContactService {
