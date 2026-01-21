@@ -1,4 +1,4 @@
-# Infraestrutura API - Orfanato NIB
+# Infraestrutura API - Orfanatos NIB
 
 Infraestrutura completa: Certificado SSL (ACM), EC2, Application Load Balancer e DNS.
 

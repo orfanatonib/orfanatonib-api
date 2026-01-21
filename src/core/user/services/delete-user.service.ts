@@ -4,6 +4,7 @@ import { MemberProfilesService } from 'src/shelter/member-profile/services/membe
 import { LeaderProfilesService } from 'src/shelter/leader-profile/services/leader-profiles.service';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
+import { UserLogs, UserSuccessMessages } from '../constants/user.constants';
 
 @Injectable()
 export class DeleteUserService {
@@ -15,7 +16,7 @@ export class DeleteUserService {
     private readonly leaderService: LeaderProfilesService,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly s3Service: AwsS3Service,
-  ) {}
+  ) { }
 
   async remove(id: string): Promise<{ message: string }> {
     const userImage = await this.mediaItemProcessor.findMediaItemByTarget(
@@ -34,6 +35,8 @@ export class DeleteUserService {
     await this.memberService.removeByUserId(id);
     await this.leaderService.removeByUserId(id);
     await this.userRepo.delete(id);
-    return { message: 'UserEntity deleted' };
+
+    this.logger.log(UserLogs.DELETED(id));
+    return { message: UserSuccessMessages.DELETED };
   }
 }

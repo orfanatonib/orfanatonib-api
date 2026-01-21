@@ -17,6 +17,7 @@ import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { PersonalDataRepository } from 'src/core/profile/repositories/personal-data.repository';
 import { UserPreferencesRepository } from 'src/core/profile/repositories/user-preferences.repository';
 import { SesIdentityService } from 'src/infrastructure/aws/ses-identity.service';
+import { AuthErrorMessages, AuthSuccessMessages, AuthLogs } from '../constants/auth.constants';
 
 @Injectable()
 export class AuthService {
@@ -58,21 +59,21 @@ export class AuthService {
   async login({ email, password }: LoginDto) {
     const user = await this.authRepo.validateUser(email, password);
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(AuthErrorMessages.INVALID_CREDENTIALS);
     }
 
     const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
 
     if (!user.active) {
       return {
-        message: 'User is inactive. Please verify your email to activate your account.',
+        message: AuthSuccessMessages.USER_INACTIVE,
         user: this.buildUserResponse(user),
         emailVerification: {
           verificationEmailSent: sesVerification.verificationEmailSent,
           message: sesVerification.verificationEmailSent
-            ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+            ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
             : sesVerification.alreadyVerified
-              ? 'Email já verificado.'
+              ? AuthSuccessMessages.EMAIL_ALREADY_VERIFIED
               : undefined,
         },
       };
@@ -82,15 +83,15 @@ export class AuthService {
     await this.updateRefreshToken(user.id, tokens.refreshToken);
 
     return {
-      message: 'Login successful',
+      message: AuthSuccessMessages.LOGIN_SUCCESS,
       user: this.buildUserResponse(user),
       ...tokens,
       emailVerification: {
         verificationEmailSent: sesVerification.verificationEmailSent,
         message: sesVerification.verificationEmailSent
-          ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+          ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
           : sesVerification.alreadyVerified
-            ? 'Email já verificado.'
+            ? AuthSuccessMessages.EMAIL_ALREADY_VERIFIED
             : undefined,
       },
     };
@@ -105,7 +106,7 @@ export class AuthService {
 
       const payload = ticket.getPayload();
       if (!payload?.email || !payload?.name) {
-        throw new UnauthorizedException('Invalid Google token payload');
+        throw new UnauthorizedException(AuthErrorMessages.INVALID_GOOGLE_TOKEN);
       }
 
       const { email, name } = payload;
@@ -134,7 +135,7 @@ export class AuthService {
           emailVerification: {
             verificationEmailSent: sesVerification.verificationEmailSent,
             message: sesVerification.verificationEmailSent
-              ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+              ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
               : undefined,
           },
         };
@@ -151,7 +152,7 @@ export class AuthService {
           emailVerification: {
             verificationEmailSent: sesVerification.verificationEmailSent,
             message: sesVerification.verificationEmailSent
-              ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+              ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
               : undefined,
           },
         };
@@ -160,7 +161,7 @@ export class AuthService {
       if (!(user as any).active) {
         const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
         return {
-          message: 'User is inactive',
+          message: AuthErrorMessages.USER_INACTIVE,
           active: false,
           completed: user.completed,
           commonUser: user.commonUser,
@@ -168,7 +169,7 @@ export class AuthService {
           emailVerification: {
             verificationEmailSent: sesVerification.verificationEmailSent,
             message: sesVerification.verificationEmailSent
-              ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+              ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
               : undefined,
           },
         };
@@ -180,16 +181,16 @@ export class AuthService {
       await this.updateRefreshToken(user.id, tokens.refreshToken);
 
       return {
-        message: 'Login successful',
+        message: AuthSuccessMessages.LOGIN_SUCCESS,
         isNewUser: false,
         user: this.buildUserResponse(user),
         ...tokens,
         emailVerification: {
           verificationEmailSent: sesVerification.verificationEmailSent,
           message: sesVerification.verificationEmailSent
-            ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+            ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
             : sesVerification.alreadyVerified
-              ? 'Email já verificado.'
+              ? AuthSuccessMessages.EMAIL_ALREADY_VERIFIED
               : undefined,
         },
       };
@@ -197,20 +198,20 @@ export class AuthService {
       this.logger.error(`Error during Google login: ${error.message}`, error.stack);
 
       if (error.message?.includes('Token used too late') || error.message?.includes('expired')) {
-        throw new UnauthorizedException('Google authentication token has expired. Please try signing in again.');
+        throw new UnauthorizedException(AuthErrorMessages.GOOGLE_TOKEN_EXPIRED);
       }
 
       if (error.message?.includes('Invalid token')) {
-        throw new UnauthorizedException('Invalid Google authentication token. Please try signing in again.');
+        throw new UnauthorizedException(AuthErrorMessages.GOOGLE_TOKEN_INVALID);
       }
 
-      throw new UnauthorizedException('Google authentication failed. Please try signing in with Google again.');
+      throw new UnauthorizedException(AuthErrorMessages.GOOGLE_AUTH_FAILED);
     }
   }
 
   async refreshToken(token: string) {
     if (!token) {
-      throw new UnauthorizedException('Refresh token is required');
+      throw new UnauthorizedException(AuthErrorMessages.REFRESH_TOKEN_REQUIRED);
     }
 
     try {
@@ -220,7 +221,7 @@ export class AuthService {
 
       const user = await this.getUsersService.findOne(payload.sub);
       if (!user || user.refreshToken !== token) {
-        throw new UnauthorizedException('Invalid refresh token');
+        throw new UnauthorizedException(AuthErrorMessages.INVALID_REFRESH_TOKEN);
       }
 
       const tokens = this.generateTokens(user);
@@ -228,13 +229,13 @@ export class AuthService {
 
       return tokens;
     } catch (error) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException(AuthErrorMessages.INVALID_REFRESH_TOKEN);
     }
   }
 
   async logout(userId: string) {
     await this.updateRefreshToken(userId, null);
-    return { message: 'User logged out' };
+    return { message: AuthSuccessMessages.LOGOUT_SUCCESS };
   }
 
   private buildMeResponse(user: UserEntity, imageMedia?: any) {
@@ -349,7 +350,7 @@ export class AuthService {
   async getMe(userId: string) {
     const user = await this.userRepo.findByIdWithProfiles(userId);
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException(AuthErrorMessages.USER_NOT_FOUND);
     }
 
     const imageMedia = await this.mediaItemProcessor.findMediaItemByTarget(
@@ -406,11 +407,11 @@ export class AuthService {
   async completeRegister(data: CompleteUserDto) {
     const user = await this.getUsersService.findByEmail(data.email);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(AuthErrorMessages.USER_NOT_FOUND);
     }
 
     if (user.completed) {
-      throw new NotFoundException('User already completed registration');
+      throw new NotFoundException(AuthErrorMessages.USER_ALREADY_COMPLETED);
     }
 
     await this.updateUserService.update(user.id, {
@@ -424,11 +425,11 @@ export class AuthService {
     const sesVerification = await this.sesIdentityService.verifyEmailIdentitySES(data.email);
 
     return {
-      message: 'Registration completed successfully',
+      message: AuthSuccessMessages.REGISTRATION_COMPLETED,
       emailVerification: {
         verificationEmailSent: sesVerification.verificationEmailSent,
         message: sesVerification.verificationEmailSent
-          ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.'
+          ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
           : undefined,
       },
     };
@@ -437,7 +438,7 @@ export class AuthService {
   async register(data: RegisterUserDto) {
     const existingUser = await this.getUsersService.findByEmail(data.email);
     if (existingUser) {
-      throw new UnauthorizedException('User already exists');
+      throw new UnauthorizedException(AuthErrorMessages.USER_ALREADY_EXISTS);
     }
 
     const user = await this.createUserService.create({
@@ -454,12 +455,12 @@ export class AuthService {
     const sesVerification = await this.sesIdentityService.verifyEmailIdentitySES(data.email);
 
     return {
-      message: 'Registration successful',
+      message: AuthSuccessMessages.REGISTRATION_SUCCESS,
       user: this.buildUserResponse(user),
       emailVerification: {
         verificationEmailSent: sesVerification.verificationEmailSent,
         message: sesVerification.verificationEmailSent
-          ? 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada para completar o cadastro.'
+          ? AuthSuccessMessages.EMAIL_VERIFICATION_COMPLETE
           : undefined,
       },
     };

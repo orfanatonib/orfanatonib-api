@@ -253,7 +253,7 @@ validate_prerequisites
 
 # Banner
 echo -e "${MAGENTA}╔════════════════════════════════════════════════════════╗${NC}"
-echo -e "${MAGENTA}║   🚀 Deploy Completo - Orfanato NIB API              ║${NC}"
+echo -e "${MAGENTA}║   🚀 Deploy Completo - Orfanatos NIB API              ║${NC}"
 echo -e "${MAGENTA}╚════════════════════════════════════════════════════════╝${NC}"
 echo ""
 echo -e "${CYAN}📋 Ambiente: ${ENVIRONMENT}${NC}"

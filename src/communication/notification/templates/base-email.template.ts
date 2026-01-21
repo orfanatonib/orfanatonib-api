@@ -1,6 +1,6 @@
-import { EmailConstants } from '../communication/notification/constants/email.constants';
+import { EmailConstants } from '../constants/email.constants';
 
-export class EmailTemplateGenerator {
+export class BaseEmailTemplate {
   static generate(title: string, userName: string, bodyContent: string): string {
     const logoUrl = process.env.APP_LOGO_URL || '';
 

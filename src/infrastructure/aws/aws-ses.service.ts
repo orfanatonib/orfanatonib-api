@@ -27,7 +27,7 @@ export class AwsSESService {
   }
 
   async sendEmail(
-    to: string,
+    to: string | string[],
     subject: string,
     textBody: string,
     htmlBody?: string,
@@ -35,10 +35,7 @@ export class AwsSESService {
     const from =
       this.configService.get<string>('SES_DEFAULT_FROM') || 'no-reply@orfanatonib.com';
 
-    const toAddresses = to
-      .split(',')
-      .map((email) => email.trim())
-      .filter((email) => email.length > 0);
+    const toAddresses = Array.isArray(to) ? to : [to];
 
     if (toAddresses.length === 0) {
       this.logger.warn('No valid email addresses provided');
