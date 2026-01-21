@@ -1,6 +1,3 @@
-/**
- * Auth Status Codes
- */
 export enum AuthStatus {
     LOGIN_SUCCESS = 'LOGIN_SUCCESS',
     LOGOUT_SUCCESS = 'LOGOUT_SUCCESS',
@@ -9,9 +6,6 @@ export enum AuthStatus {
     EMAIL_VERIFICATION_SENT = 'EMAIL_VERIFICATION_SENT',
 }
 
-/**
- * Auth Error Messages
- */
 export const AuthErrorMessages = {
     INVALID_CREDENTIALS: 'Invalid credentials',
     USER_NOT_FOUND: 'User not found',
@@ -26,9 +20,6 @@ export const AuthErrorMessages = {
     GOOGLE_AUTH_FAILED: 'Google authentication failed. Please try signing in with Google again.',
 } as const;
 
-/**
- * Auth Success Messages
- */
 export const AuthSuccessMessages = {
     LOGIN_SUCCESS: 'Login successful',
     LOGOUT_SUCCESS: 'User logged out',
@@ -40,9 +31,6 @@ export const AuthSuccessMessages = {
     EMAIL_ALREADY_VERIFIED: 'Email já verificado.',
 } as const;
 
-/**
- * Auth Log Messages
- */
 export const AuthLogs = {
     LOGIN_ATTEMPT: 'User login attempt',
     LOGIN_SUCCESS: 'User logged in successfully',

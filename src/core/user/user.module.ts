@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { UserEntity } from './entities/user.entity';
@@ -27,7 +27,7 @@ import { ProfileController } from './profile.controller';
     MemberProfilesModule,
     LeaderProfilesModule,
     MediaModule,
-    AuthModule,
+    forwardRef(() => AuthModule),
   ],
   providers: [
     UserRepository,
@@ -49,4 +49,4 @@ import { ProfileController } from './profile.controller';
     TypeOrmModule,
   ],
 })
-export class UserModule {}
+export class UserModule { }

@@ -29,10 +29,17 @@ export class ContactService {
       throw new InternalServerErrorException(ContactMessages.SAVE_ERROR);
     }
 
-    // Send notifications to all Admins
+    this.handleNotifications(contact).catch((error) => {
+      this.logger.error(ContactNotificationLogs.NOTIFICATION_ERROR(error.message));
+    });
+
+    return contact;
+  }
+
+  private async handleNotifications(contact: ContactEntity): Promise<void> {
     try {
       const admins = await this.userRepo.findAllAdmins();
-      const adminEmails = admins.map(admin => admin.email).filter(email => !!email);
+      const adminEmails = admins.map((admin) => admin.email).filter((email) => !!email);
 
       if (adminEmails.length > 0) {
         await this.notificationService.sendContactNotification(contact, adminEmails);
@@ -42,8 +49,6 @@ export class ContactService {
     } catch (error) {
       this.logger.error(ContactNotificationLogs.NOTIFICATION_ERROR(error.message));
     }
-
-    return contact;
   }
 
 

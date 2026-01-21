@@ -11,6 +11,7 @@ import { ImageModule } from './content/page/image-page/image-page.module';
 import { VideosPageModule } from './content/page/video-page/video-page.module';
 import { VisitMaterialsPageModule } from './content/page/visit-material-page/visit-material-page.module';
 import { ContactModule } from './communication/contact/contact.module';
+import { NotificationModule } from './communication/notification/notification.module';
 import { EventModule } from './content/event/event.module';
 import { CommentModule } from './communication/comment/comment.module';
 import { DocumentModule } from './content/document/documents.module';
@@ -63,6 +64,7 @@ function getEnvFilePath(): string {
     VideosPageModule,
     VisitMaterialsPageModule,
     MeditationModule,
+    NotificationModule,
     ContactModule,
     EventModule,
     CommentModule,

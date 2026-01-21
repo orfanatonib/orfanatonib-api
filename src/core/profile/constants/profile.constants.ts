@@ -1,6 +1,3 @@
-/**
- * Profile Error Messages
- */
 export const ProfileErrorMessages = {
     NOT_FOUND: 'Perfil não encontrado',
     PROFILE_ALREADY_EXISTS: 'Este perfil já existe',
@@ -9,18 +6,12 @@ export const ProfileErrorMessages = {
     DELETE_FAILED: 'Falha ao deletar perfil',
 } as const;
 
-/**
- * Profile Success Messages
- */
 export const ProfileSuccessMessages = {
     CREATED: 'Perfil criado com sucesso',
     UPDATED: 'Perfil atualizado com sucesso',
     DELETED: 'Perfil deletado com sucesso',
 } as const;
 
-/**
- * Profile Log Messages
- */
 export const ProfileLogs = {
     CREATED: (id: string, name: string) => `Perfil criado: ${id} - ${name}`,
     UPDATED: (id: string) => `Perfil atualizado: ${id}`,
