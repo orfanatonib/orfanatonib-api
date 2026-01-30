@@ -1,5 +1,5 @@
 import { IsDateString, IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min, Max, IsIn } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import { AttendanceType, AttendanceCategory } from '../entities/attendance.entity';
 
 export class AttendanceResponseDto {

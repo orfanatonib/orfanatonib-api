@@ -15,6 +15,16 @@ export class UserPreferencesResponseDto {
   skillsAndTalents?: string;
 }
 
+export class ProfileImageDto {
+  id: string;
+  url: string;
+  title: string;
+  description: string;
+  uploadType: string;
+  mediaType: string;
+  isLocalFile: boolean;
+}
+
 export class CompleteProfileResponseDto {
   id: number | string;
   email: string;
@@ -23,4 +33,5 @@ export class CompleteProfileResponseDto {
   role: string;
   personalData?: PersonalDataResponseDto;
   preferences?: UserPreferencesResponseDto;
+  image?: ProfileImageDto | null;
 }
