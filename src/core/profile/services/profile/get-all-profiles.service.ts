@@ -6,6 +6,7 @@ import { UserPreferencesRepository } from '../../repositories/user-preferences.r
 import { UserRole } from '../../../auth/auth.types';
 import { QueryProfilesDto } from '../../dto/query-profiles.dto';
 import { PaginatedProfilesResponseDto } from '../../dto/paginated-profiles-response.dto';
+import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 
 @Injectable()
 export class GetAllProfilesService {
@@ -14,7 +15,8 @@ export class GetAllProfilesService {
     private readonly userRepository: UserRepository,
     private readonly personalDataRepository: PersonalDataRepository,
     private readonly userPreferencesRepository: UserPreferencesRepository,
-  ) {}
+    private readonly mediaItemProcessor: MediaItemProcessor,
+  ) { }
 
   async execute(
     requestingUserId: string,
@@ -33,10 +35,21 @@ export class GetAllProfilesService {
       offset,
     );
 
+    const userIds = users.map((u) => u.id);
+    const mediaItems = await this.mediaItemProcessor.findManyMediaItemsByTargets(
+      userIds,
+      'UserEntity',
+    );
+    const mediaMap = new Map();
+    mediaItems.forEach((item) => {
+      mediaMap.set(item.targetId, item);
+    });
+
     const profiles = await Promise.all(
       users.map(async (user) => {
         const personalData = await this.personalDataRepository.findByUserId(user.id);
         const preferences = await this.userPreferencesRepository.findByUserId(user.id);
+        const imageMedia = mediaMap.get(user.id);
 
         return {
           id: user.id,
@@ -47,8 +60,8 @@ export class GetAllProfilesService {
           personalData: personalData ? {
             birthDate: personalData.birthDate
               ? (personalData.birthDate instanceof Date
-                  ? personalData.birthDate.toISOString().split('T')[0]
-                  : String(personalData.birthDate).split('T')[0])
+                ? personalData.birthDate.toISOString().split('T')[0]
+                : String(personalData.birthDate).split('T')[0])
               : undefined,
             gender: personalData.gender,
             gaLeaderName: personalData.gaLeaderName,
@@ -63,6 +76,17 @@ export class GetAllProfilesService {
             whatMakesYouSmile: preferences.whatMakesYouSmile,
             skillsAndTalents: preferences.skillsAndTalents,
           } : undefined,
+          image: imageMedia
+            ? {
+              id: imageMedia.id,
+              title: imageMedia.title,
+              description: imageMedia.description,
+              url: imageMedia.url,
+              uploadType: imageMedia.uploadType,
+              mediaType: imageMedia.mediaType,
+              isLocalFile: imageMedia.isLocalFile,
+            }
+            : null,
         };
       }),
     );

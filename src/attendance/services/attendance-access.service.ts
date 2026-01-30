@@ -15,7 +15,7 @@ export class AttendanceAccessService {
         private readonly teamRepo: Repository<TeamEntity>,
     ) { }
 
-    async getUserTeamIds(user: UserEntity): Promise<string[]> {
+    getUserTeamIds(user: UserEntity): string[] {
         const teamIds: string[] = [];
 
         if (user.memberProfile?.team) {
@@ -23,7 +23,7 @@ export class AttendanceAccessService {
         }
 
         if (user.leaderProfile?.teams) {
-            teamIds.push(...user.leaderProfile.teams.map((t: any) => t.id));
+            teamIds.push(...user.leaderProfile.teams.map((t: TeamEntity) => t.id));
         }
 
         return teamIds;
@@ -59,9 +59,9 @@ export class AttendanceAccessService {
             .leftJoin('leaderProfile.user', 'leaderUser')
             .where('leaderUser.id = :userId', { userId })
             .select('team.id', 'teamId')
-            .getRawMany();
+            .getRawMany<{ teamId: string }>();
 
-        return rows.map(r => r.teamId);
+        return rows.map((r: { teamId: string }) => r.teamId);
     }
 
     async getMemberTeamIds(userId: string): Promise<string[]> {
@@ -70,9 +70,9 @@ export class AttendanceAccessService {
             .leftJoin('memberProfile.user', 'memberUser')
             .where('memberUser.id = :userId', { userId })
             .select('team.id', 'teamId')
-            .getRawMany();
+            .getRawMany<{ teamId: string }>();
 
-        return rows.map(r => r.teamId);
+        return rows.map((r: { teamId: string }) => r.teamId);
     }
 
     async assertLeaderAccess(user: UserEntity, teamId: string) {

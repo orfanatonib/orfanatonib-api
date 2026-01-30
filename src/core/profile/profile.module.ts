@@ -12,12 +12,14 @@ import { UserPreferencesRepository } from './repositories/user-preferences.repos
 import { UserEntity } from '../user/entities/user.entity';
 import { PersonalData } from './entities/personal-data.entity';
 import { UserPreferences } from './entities/user-preferences.entity';
+import { MediaModule } from '../../shared/media/media.module';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserEntity, PersonalData, UserPreferences]),
     AuthModule,
+    MediaModule,
   ],
   controllers: [ProfileController],
   providers: [
@@ -40,4 +42,4 @@ import { AuthModule } from '../auth/auth.module';
     UserPreferencesRepository,
   ],
 })
-export class ProfileModule {}
+export class ProfileModule { }
