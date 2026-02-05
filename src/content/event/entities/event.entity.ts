@@ -8,6 +8,12 @@ export enum EventAudience {
   LEADERS = 'leaders',
 }
 
+export enum EventType {
+  VISIT = 'visit',
+  MEETING = 'meeting',
+  CUSTOM = 'custom',
+}
+
 @Entity('events')
 export class EventEntity extends BaseEntity {
   @Column()
@@ -24,6 +30,9 @@ export class EventEntity extends BaseEntity {
 
   @Column({ type: 'enum', enum: EventAudience, default: EventAudience.ALL })
   audience!: EventAudience;
+
+  @Column({ type: 'enum', enum: EventType, nullable: true, default: EventType.CUSTOM })
+  eventType?: EventType;
 
   @ManyToOne(() => ShelterScheduleEntity, (schedule) => schedule.events, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'shelter_schedule_id' })

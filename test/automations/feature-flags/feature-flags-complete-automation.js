@@ -36,6 +36,13 @@ class FeatureFlagsAutomation extends AutomationBase {
                 enabled: true,
                 environment: 'staging'
             },
+            {
+                key: 'event-email-notifications',
+                name: 'Event Email Notifications',
+                description: 'Enable/disable email notifications for events',
+                enabled: false,
+                environment: 'staging'
+            },
 
             {
                 key: 'pages-video',

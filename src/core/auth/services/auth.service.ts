@@ -401,6 +401,86 @@ export class AuthService {
         whatMakesYouSmile: preferences.whatMakesYouSmile,
         skillsAndTalents: preferences.skillsAndTalents,
       } : undefined,
+      memberProfile: user.memberProfile
+        ? {
+          id: user.memberProfile.id,
+          active: user.memberProfile.active,
+          createdAt: user.memberProfile.createdAt,
+          updatedAt: user.memberProfile.updatedAt,
+          team: user.memberProfile.team
+            ? {
+              id: user.memberProfile.team.id,
+              numberTeam: user.memberProfile.team.numberTeam,
+              description: user.memberProfile.team.description,
+              createdAt: user.memberProfile.team.createdAt,
+              updatedAt: user.memberProfile.team.updatedAt,
+              shelter: user.memberProfile.team.shelter
+                ? {
+                  id: user.memberProfile.team.shelter.id,
+                  name: user.memberProfile.team.shelter.name,
+                  description: user.memberProfile.team.shelter.description,
+                  teamsQuantity: user.memberProfile.team.shelter.teamsQuantity,
+                  createdAt: user.memberProfile.team.shelter.createdAt,
+                  updatedAt: user.memberProfile.team.shelter.updatedAt,
+                  address: user.memberProfile.team.shelter.address
+                    ? {
+                      id: user.memberProfile.team.shelter.address.id,
+                      street: user.memberProfile.team.shelter.address.street,
+                      number: user.memberProfile.team.shelter.address.number,
+                      district: user.memberProfile.team.shelter.address.district,
+                      city: user.memberProfile.team.shelter.address.city,
+                      state: user.memberProfile.team.shelter.address.state,
+                      postalCode: user.memberProfile.team.shelter.address.postalCode,
+                      createdAt: user.memberProfile.team.shelter.address.createdAt,
+                      updatedAt: user.memberProfile.team.shelter.address.updatedAt,
+                    }
+                    : null,
+                }
+                : null,
+            }
+            : null,
+        }
+        : null,
+      leaderProfile: user.leaderProfile
+        ? {
+          id: user.leaderProfile.id,
+          active: user.leaderProfile.active,
+          createdAt: user.leaderProfile.createdAt,
+          updatedAt: user.leaderProfile.updatedAt,
+          teams: user.leaderProfile.teams && user.leaderProfile.teams.length > 0
+            ? user.leaderProfile.teams.map(team => ({
+              id: team.id,
+              numberTeam: team.numberTeam,
+              description: team.description,
+              createdAt: team.createdAt,
+              updatedAt: team.updatedAt,
+              shelter: team.shelter
+                ? {
+                  id: team.shelter.id,
+                  name: team.shelter.name,
+                  description: team.shelter.description,
+                  teamsQuantity: team.shelter.teamsQuantity,
+                  createdAt: team.shelter.createdAt,
+                  updatedAt: team.shelter.updatedAt,
+                  address: team.shelter.address
+                    ? {
+                      id: team.shelter.address.id,
+                      street: team.shelter.address.street,
+                      number: team.shelter.address.number,
+                      district: team.shelter.address.district,
+                      city: team.shelter.address.city,
+                      state: team.shelter.address.state,
+                      postalCode: team.shelter.address.postalCode,
+                      createdAt: team.shelter.address.createdAt,
+                      updatedAt: team.shelter.address.updatedAt,
+                    }
+                    : null,
+                }
+                : null,
+            }))
+            : [],
+        }
+        : null,
     };
   }
 

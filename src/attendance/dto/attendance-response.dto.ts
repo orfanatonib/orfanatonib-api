@@ -434,7 +434,61 @@ export class TeamPendingsDto {
   pendings: PendingForLeaderDto[];
 }
 
+export class VisitReportPendingDto {
+  @IsUUID()
+  scheduleId: string;
+
+  @IsNumber()
+  visitNumber: number;
+
+  @IsDateString()
+  visitDate: string;
+
+  @IsString()
+  visitDateFormatted: string;
+
+  @IsString()
+  summary: string;
+
+  @IsString()
+  lessonContent: string;
+
+  @IsString()
+  @IsOptional()
+  observation?: string;
+
+  @IsUUID()
+  teamId: string;
+
+  @IsNumber()
+  teamNumber: number;
+
+  @IsString()
+  teamName: string;
+
+  @IsString()
+  shelterName: string;
+
+  @IsString()
+  @IsOptional()
+  shelterAddress?: string;
+}
+
+export class TeamVisitReportPendingsDto {
+  @IsUUID()
+  teamId: string;
+
+  @IsString()
+  teamName: string;
+
+  @IsString()
+  shelterName: string;
+
+  pendings: VisitReportPendingDto[];
+}
+
 export class AllPendingsResponseDto {
   leaderPendings: TeamPendingsDto[];
   memberPendings: PendingForMemberDto[];
+  visitReportPendings: TeamVisitReportPendingsDto[];
 }

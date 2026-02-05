@@ -3,8 +3,9 @@ import { ShelterScheduleRepository } from '../shelter-schedule.repository';
 import { CreateShelterScheduleDto } from '../dto/create-shelter-schedule.dto';
 import { ShelterScheduleEntity } from '../entities/shelter-schedule.entity';
 import { EventRepository } from 'src/content/event/event.repository';
-import { EventAudience } from 'src/content/event/entities/event.entity';
+import { EventAudience, EventType } from 'src/content/event/entities/event.entity';
 import { TeamsService } from 'src/shelter/team/services/teams.service';
+import { CreateEventService } from 'src/content/event/services/create-event-service';
 
 @Injectable()
 export class CreateShelterScheduleService {
@@ -14,6 +15,7 @@ export class CreateShelterScheduleService {
     private readonly scheduleRepo: ShelterScheduleRepository,
     private readonly eventRepo: EventRepository,
     private readonly teamsService: TeamsService,
+    private readonly createEventService: CreateEventService,
   ) { }
 
   async execute(dto: CreateShelterScheduleDto): Promise<ShelterScheduleEntity> {
@@ -89,12 +91,13 @@ export class CreateShelterScheduleService {
     const visitTitle = `Visita - ${teamInfo}`;
 
     try {
-      await this.eventRepo.create({
+      await this.createEventService.create({
         title: visitTitle,
         description: `${dto.lessonContent}\n\n${teamInfo}`,
         date: dto.visitDate!,
         location: visitLocation,
         audience: EventAudience.MEMBERS,
+        eventType: EventType.VISIT,
         shelterSchedule: { id: schedule.id },
       });
     } catch (error) {
@@ -113,12 +116,13 @@ export class CreateShelterScheduleService {
     const meetingTitle = `Reunião - ${teamInfo}`;
 
     try {
-      await this.eventRepo.create({
+      await this.createEventService.create({
         title: meetingTitle,
         description: `${dto.observation || 'Reunião de planejamento'}\n\n${teamInfo}`,
         date: dto.meetingDate!,
         location: dto.meetingRoom || 'NIB - Nova Igreja Batista',
         audience: EventAudience.MEMBERS,
+        eventType: EventType.MEETING,
         shelterSchedule: { id: schedule.id },
       });
     } catch (error) {

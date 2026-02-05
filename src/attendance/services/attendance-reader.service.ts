@@ -4,6 +4,7 @@ import { Repository, In } from 'typeorm';
 import { AttendanceEntity, AttendanceCategory, AttendanceType } from '../entities/attendance.entity';
 import { ShelterScheduleEntity } from 'src/shelter/schedule/entities/shelter-schedule.entity';
 import { TeamEntity } from 'src/shelter/team/entities/team.entity';
+import { VisitReportEntity } from 'src/shelter/visit-report/entities/visit-report.entity';
 import { UserRole } from 'src/core/auth/auth.types';
 import { AttendanceAccessService } from './attendance-access.service';
 import {
@@ -19,7 +20,9 @@ import {
     ScheduleWithAttendanceDto,
     AttendanceRecordDto,
     AllPendingsResponseDto,
-    TeamPendingsDto
+    TeamPendingsDto,
+    VisitReportPendingDto,
+    TeamVisitReportPendingsDto
 } from '../dto/attendance-response.dto';
 
 @Injectable()
@@ -32,6 +35,8 @@ export class AttendanceReaderService {
         private readonly scheduleRepo: Repository<ShelterScheduleEntity>,
         @InjectRepository(TeamEntity)
         private readonly teamRepo: Repository<TeamEntity>,
+        @InjectRepository(VisitReportEntity)
+        private readonly visitReportRepo: Repository<VisitReportEntity>,
         private readonly accessService: AttendanceAccessService,
     ) { }
 
@@ -244,7 +249,74 @@ export class AttendanceReaderService {
             }
         }
 
-        return { leaderPendings, memberPendings };
+        // === VISIT REPORT PENDINGS (visitas passadas sem relatório) ===
+        const visitReportPendings: TeamVisitReportPendingsDto[] = [];
+
+        // Reutiliza os mesmos times já carregados para leader
+        for (const team of leaderTeams) {
+            const schedulesWithPastVisits = await this.scheduleRepo.createQueryBuilder('schedule')
+                .leftJoinAndSelect('schedule.team', 'scheduleTeam')
+                .leftJoinAndSelect('scheduleTeam.shelter', 'shelter')
+                .leftJoinAndSelect('shelter.address', 'address')
+                .where('schedule.team.id = :teamId', { teamId: team.id })
+                .andWhere('schedule.visitDate IS NOT NULL')
+                .andWhere('schedule.visitDate < :today', { today: today.toISOString().slice(0, 10) })
+                .orderBy('schedule.visitDate', 'DESC')
+                .getMany();
+
+            const pendingReports: VisitReportPendingDto[] = [];
+
+            for (const schedule of schedulesWithPastVisits) {
+                // Verifica se já existe relatório para este agendamento
+                const existingReport = await this.visitReportRepo.findOne({
+                    where: { schedule: { id: schedule.id } }
+                });
+
+                if (!existingReport) {
+                    const shelterAddress = schedule.team?.shelter?.address;
+                    const addressStr = shelterAddress
+                        ? `${shelterAddress.street || ''}, ${shelterAddress.number || ''} - ${shelterAddress.district || ''}, ${shelterAddress.city || ''}`
+                        : undefined;
+
+                    // Formata a data para exibição (DD/MM/YYYY)
+                    const dateObj = new Date(schedule.visitDate!);
+                    const visitDateFormatted = dateObj.toLocaleDateString('pt-BR', {
+                        day: '2-digit',
+                        month: '2-digit',
+                        year: 'numeric'
+                    });
+
+                    // Cria um resumo amigável
+                    const summary = `Rodada ${schedule.visitNumber} • ${visitDateFormatted} • ${schedule.lessonContent || 'Sem lição definida'}`;
+
+                    pendingReports.push({
+                        scheduleId: schedule.id,
+                        visitNumber: schedule.visitNumber,
+                        visitDate: schedule.visitDate!,
+                        visitDateFormatted,
+                        summary,
+                        lessonContent: schedule.lessonContent,
+                        observation: schedule.observation,
+                        teamId: team.id,
+                        teamNumber: team.numberTeam,
+                        teamName: team.description || `Equipe ${team.numberTeam}`,
+                        shelterName: team.shelter.name,
+                        shelterAddress: addressStr
+                    });
+                }
+            }
+
+            if (pendingReports.length > 0) {
+                visitReportPendings.push({
+                    teamId: team.id,
+                    teamName: team.description || `Equipe ${team.numberTeam}`,
+                    shelterName: team.shelter.name,
+                    pendings: pendingReports
+                });
+            }
+        }
+
+        return { leaderPendings, memberPendings, visitReportPendings };
     }
 
     async listTeamMembers(userId: string, teamId: string) {

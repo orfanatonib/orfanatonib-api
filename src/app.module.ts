@@ -29,6 +29,7 @@ import { PagelasModule } from './shelter/pagela/pagelas.module';
 import { AcceptedChristsModule } from './shelter/accepted-christ/accepted-christs.module';
 import { TeamsModule } from './shelter/team/teams.module';
 import { ShelterScheduleModule } from './shelter/schedule/shelter-schedule.module';
+import { VisitReportModule } from './shelter/visit-report/visit-report.module';
 import { AttendanceModule } from './attendance/attendance.module';
 import { ProfileModule } from './core/profile/profile.module';
 import { FeatureFlagsModule } from './core/feature-flags/feature-flags.module';
@@ -83,6 +84,7 @@ function getEnvFilePath(): string {
     AcceptedChristsModule,
     TeamsModule,
     ShelterScheduleModule,
+    VisitReportModule,
     AttendanceModule,
     ProfileModule,
     FeatureFlagsModule,

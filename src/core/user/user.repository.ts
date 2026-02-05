@@ -25,6 +25,12 @@ export class UserRepository {
     return this.repo.find({ where: { role: UserRole.ADMIN, active: true } });
   }
 
+  async findByRoles(roles: UserRole[]): Promise<UserEntity[]> {
+    return this.repo.find({
+      where: roles.map((role) => ({ role, active: true })),
+    });
+  }
+
   async findById(id: string): Promise<UserEntity | null> {
     return this.repo.findOne({ where: { id } });
   }
@@ -37,8 +43,8 @@ export class UserRepository {
     return this.repo.findOne({
       where: { id },
       relations: {
-        memberProfile: { team: { shelter: true } },
-        leaderProfile: { teams: { shelter: true } },
+        memberProfile: { team: { shelter: { address: true } } },
+        leaderProfile: { teams: { shelter: { address: true } } },
       },
     });
   }

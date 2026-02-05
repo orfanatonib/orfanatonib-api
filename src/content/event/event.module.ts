@@ -10,12 +10,29 @@ import { EventEntity } from './entities/event.entity';
 import { CreateEventService } from './services/create-event-service';
 import { UpdateEventService } from './services/update-event-service';
 import { DeleteEventService } from './services/delete-event-service';
+import { EventNotificationHelper } from './services/event-notification.helper';
 import { AuthModule } from 'src/core/auth/auth.module';
+import { UserModule } from 'src/core/user/user.module';
+import { FeatureFlagsModule } from 'src/core/feature-flags/feature-flags.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([EventEntity]), RouteModule, MediaModule, AuthModule],
-  providers: [EventRepository, CreateEventService, UpdateEventService, DeleteEventService, GetEventService],
+  imports: [
+    TypeOrmModule.forFeature([EventEntity]),
+    RouteModule,
+    MediaModule,
+    AuthModule,
+    UserModule,
+    FeatureFlagsModule,
+  ],
+  providers: [
+    EventRepository,
+    CreateEventService,
+    UpdateEventService,
+    DeleteEventService,
+    GetEventService,
+    EventNotificationHelper,
+  ],
   controllers: [EventController],
-  exports: [EventRepository, DeleteEventService],
+  exports: [EventRepository, CreateEventService, UpdateEventService, DeleteEventService],
 })
-export class EventModule { }
+export class EventModule {}

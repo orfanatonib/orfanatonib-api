@@ -6,6 +6,7 @@ import { AttendanceController } from './attendance.controller';
 import { ShelterScheduleEntity } from 'src/shelter/schedule/entities/shelter-schedule.entity';
 import { TeamEntity } from 'src/shelter/team/entities/team.entity';
 import { UserEntity } from 'src/core/user/entities/user.entity';
+import { VisitReportEntity } from 'src/shelter/visit-report/entities/visit-report.entity';
 import { AuthModule } from 'src/core/auth/auth.module';
 
 import { AttendanceAccessService } from './services/attendance-access.service';
@@ -19,7 +20,8 @@ import { AttendanceWriterService } from './services/attendance-writer.service';
       AttendanceEntity,
       ShelterScheduleEntity,
       TeamEntity,
-      UserEntity
+      UserEntity,
+      VisitReportEntity
     ])
   ],
   providers: [

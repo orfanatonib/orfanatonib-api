@@ -1,9 +1,10 @@
-import { Injectable, Logger, NotFoundException, InternalServerErrorException, BadRequestException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { EventRepository } from '../event.repository';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
 import { MediaType, UploadType } from 'src/shared/media/media-item/media-item.entity';
 import { EventEntity } from '../entities/event.entity';
+import { EventNotificationHelper } from './event-notification.helper';
 
 @Injectable()
 export class UpdateEventService {
@@ -13,11 +14,14 @@ export class UpdateEventService {
     private readonly eventRepo: EventRepository,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly s3Service: AwsS3Service,
+    private readonly eventNotificationHelper: EventNotificationHelper,
   ) {}
 
   async update(id: string, dto: any, file?: Express.Multer.File): Promise<EventEntity> {
-    const event = await this.eventRepo.findById(id);
-    if (!event) throw new NotFoundException('Event not found');
+    const originalEvent = await this.eventRepo.findById(id);
+    if (!originalEvent) throw new NotFoundException('Event not found');
+
+    const originalEventSnapshot = { ...originalEvent } as EventEntity;
 
     const { media, isLocalFile, ...eventData } = dto;
 
@@ -29,6 +33,13 @@ export class UpdateEventService {
 
     const updated = await this.eventRepo.findById(id);
     if (!updated) throw new NotFoundException('Event not found');
+
+    this.eventNotificationHelper
+      .notifyEventUpdated(originalEventSnapshot, updated)
+      .catch((error) => {
+        this.logger.error(`Failed to send event update notification: ${error.message}`);
+      });
+
     return updated;
   }
 

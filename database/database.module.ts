@@ -36,6 +36,7 @@ import { UserPreferences } from 'src/core/profile/entities/user-preferences.enti
 import { FeatureFlagEntity } from 'src/core/feature-flags/entities/feature-flag.entity';
 import { PasswordResetTokenEntity } from 'src/core/auth/entities/password-reset-token.entity';
 import { IntegrationEntity } from 'src/shelter/integration/entities/integration.entity';
+import { VisitReportEntity } from 'src/shelter/visit-report/entities/visit-report.entity';
 
 @Module({
   imports: [
@@ -86,7 +87,8 @@ import { IntegrationEntity } from 'src/shelter/integration/entities/integration.
 
             FeatureFlagEntity,
             PasswordResetTokenEntity,
-            IntegrationEntity
+            IntegrationEntity,
+            VisitReportEntity
           ],
           synchronize,
         };

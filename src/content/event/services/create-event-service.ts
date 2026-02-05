@@ -1,9 +1,10 @@
-import { Injectable, Logger, BadRequestException, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
 import { EventRepository } from '../event.repository';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
 import { MediaType, UploadType } from 'src/shared/media/media-item/media-item.entity';
 import { EventEntity } from '../entities/event.entity';
+import { EventNotificationHelper } from './event-notification.helper';
 
 @Injectable()
 export class CreateEventService {
@@ -13,6 +14,7 @@ export class CreateEventService {
     private readonly eventRepo: EventRepository,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly s3Service: AwsS3Service,
+    private readonly eventNotificationHelper: EventNotificationHelper,
   ) {}
 
   async create(dto: any, file?: Express.Multer.File): Promise<EventEntity> {
@@ -44,6 +46,10 @@ export class CreateEventService {
         throw new InternalServerErrorException('Error processing event media');
       }
     }
+
+    this.eventNotificationHelper.notifyEventCreated(event).catch((error) => {
+      this.logger.error(`Failed to send event creation notification: ${error.message}`);
+    });
 
     return event;
   }

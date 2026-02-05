@@ -7,6 +7,15 @@ import { ContactEntity } from '../contact/contact.entity';
 import { ContactEmailTemplate } from './templates/contact-email.template';
 import { BaseEmailTemplate } from './templates/base-email.template';
 import { NotificationLogs } from './constants/notification.constants';
+import {
+    EventEmailTemplate,
+    EventEmailData,
+} from './templates/event-email.template';
+import {
+    EventAction,
+    EventNotificationMessages,
+    EventNotificationLogs,
+} from '../../content/event/constants/event-notification.constants';
 
 @Injectable()
 export class NotificationService {
@@ -90,6 +99,59 @@ export class NotificationService {
             this.logger.error(NotificationLogs.PASSWORD_CHANGED_ERROR(error.message));
             throw error;
         }
+    }
+
+    async sendEventNotification(
+        event: EventEmailData,
+        action: EventAction,
+        recipientEmails: string[],
+    ): Promise<void> {
+        if (recipientEmails.length === 0) {
+            this.logger.warn(EventNotificationLogs.NO_RECIPIENTS('unknown'));
+            return;
+        }
+
+        const messages =
+            EventNotificationMessages[
+                action.toUpperCase() as keyof typeof EventNotificationMessages
+            ];
+        const htmlBody = EventEmailTemplate.generate(event, action);
+        const textBody = `O evento "${event.title}" ${messages.action}.\n\nData: ${event.date}${event.location ? `\nLocal: ${event.location}` : ''}${event.description ? `\nDescricao: ${event.description}` : ''}`;
+
+        // Throttling: delay entre envios para evitar rate limit do SES
+        // SES sandbox: 1 email/segundo, SES production: 14 emails/segundo
+        const delayMs = 200; // 200ms = ~5 emails/segundo (seguro para ambos ambientes)
+
+        for (let i = 0; i < recipientEmails.length; i++) {
+            const email = recipientEmails[i];
+            try {
+                await this.awsSESService.sendEmail(email, messages.subject, textBody, htmlBody);
+                this.logger.log(EventNotificationLogs.EMAIL_SENT(email, action));
+
+                // Aplica delay apenas se não for o último email
+                if (i < recipientEmails.length - 1) {
+                    await this.delay(delayMs);
+                }
+            } catch (error) {
+                this.logger.error(EventNotificationLogs.EMAIL_ERROR(email, error.message));
+
+                // Se atingir quota diária, para de enviar
+                if (error.message?.includes('Daily message quota exceeded')) {
+                    this.logger.error('Daily SES quota exceeded. Stopping email notifications.');
+                    break;
+                }
+
+                // Se atingir rate limit, espera mais tempo e tenta continuar
+                if (error.message?.includes('Maximum sending rate exceeded')) {
+                    this.logger.warn('SES rate limit hit. Waiting before continuing...');
+                    await this.delay(2000); // Espera 2 segundos antes de continuar
+                }
+            }
+        }
+    }
+
+    private delay(ms: number): Promise<void> {
+        return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
     private async sendContactEmails(contact: ContactEntity, recipientEmails?: string[]): Promise<void> {
