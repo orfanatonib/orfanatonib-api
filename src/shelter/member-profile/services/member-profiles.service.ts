@@ -6,11 +6,13 @@ import {
   MemberResponseDto,
   toMemberDto,
 } from '../dto/member-profile.response.dto';
-import { MemberSimpleListDto } from '../dto/member-simple-list.dto';
+import { MemberSimpleListDto, toMemberSimple } from '../dto/member-simple-list.dto';
 import { AuthContextService } from 'src/core/auth/services/auth-context.service';
 import { PageDto, MemberProfilesQueryDto } from '../dto/member-profiles.query.dto';
 import { TeamsService } from 'src/shelter/team/services/teams.service';
 import { ManageMemberTeamDto } from '../dto/assign-team.dto';
+import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
+import { MemberProfileEntity } from '../entities/member-profile.entity/member-profile.entity';
 
 type AccessCtx = { role?: string; userId?: string | null };
 
@@ -21,6 +23,7 @@ export class MemberProfilesService {
     private readonly authCtx: AuthContextService,
     @Inject(forwardRef(() => TeamsService))
     private readonly teamsService: TeamsService,
+    private readonly mediaItemProcessor: MediaItemProcessor,
   ) { }
 
   private async getCtx(req: Request): Promise<AccessCtx> {
@@ -38,6 +41,9 @@ export class MemberProfilesService {
     this.assertAllowed(ctx);
 
     const { items, total, page, limit } = await this.repo.findPageWithFilters(query, ctx);
+
+    await this.populateUserImages(items);
+
     return {
       items: items.map(toMemberDto),
       total,
@@ -54,7 +60,10 @@ export class MemberProfilesService {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    return await this.repo.list(ctx);
+    const items = await this.repo.listEntities(ctx);
+    await this.populateUserImages(items);
+
+    return items.map(toMemberSimple);
   }
 
   async findOne(id: string, req: Request): Promise<MemberResponseDto> {
@@ -62,6 +71,7 @@ export class MemberProfilesService {
     this.assertAllowed(ctx);
 
     const member = await this.repo.findOneWithShelterAndLeaderOrFail(id, ctx);
+    await this.populateUserImages([member]);
     return toMemberDto(member);
   }
 
@@ -110,5 +120,41 @@ export class MemberProfilesService {
     }
 
     return this.findOne(memberId, req);
+  }
+
+  private async populateUserImages(members: MemberProfileEntity[]): Promise<void> {
+    if (!members.length) return;
+
+    const userIds = members
+      .filter(m => m.user?.id)
+      .map(m => m.user.id);
+
+    if (!userIds.length) return;
+
+    const mediaItems = await this.mediaItemProcessor.findManyMediaItemsByTargets(
+      userIds,
+      'UserEntity'
+    );
+
+    const mediaMap = new Map<string, any>();
+    mediaItems.forEach(item => {
+      if (!mediaMap.has(item.targetId)) {
+        mediaMap.set(item.targetId, {
+          id: item.id,
+          url: item.url,
+          title: item.title,
+          description: item.description,
+          uploadType: item.uploadType,
+          mediaType: item.mediaType,
+          isLocalFile: item.isLocalFile,
+        });
+      }
+    });
+
+    members.forEach(member => {
+      if (member.user?.id) {
+        (member.user as any).imageProfile = mediaMap.get(member.user.id) || null;
+      }
+    });
   }
 }

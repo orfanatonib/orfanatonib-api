@@ -106,13 +106,13 @@ export class GetSheltersService {
       leaders.forEach((leader: any) => {
         const userId = leader?.user?.id;
         if (!leader?.user || typeof userId !== 'string') return;
-        leader.user.mediaItem = mediaMap.get(userId) || null;
+        leader.user.imageProfile = mediaMap.get(userId) || null;
       });
 
       members.forEach((member: any) => {
         const userId = member?.user?.id;
         if (!member?.user || typeof userId !== 'string') return;
-        member.user.mediaItem = mediaMap.get(userId) || null;
+        member.user.imageProfile = mediaMap.get(userId) || null;
       });
     });
   }
@@ -135,6 +135,10 @@ export class GetSheltersService {
     const shelters = await this.sheltersRepository.findAllSimple(ctx);
 
     const sheltersWithMedia = await this.populateMediaItems(shelters);
+
+    for (const shelter of sheltersWithMedia) {
+      await this.populateUserMediaItemsForShelter(shelter);
+    }
 
     const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
     return sheltersWithMedia.map(s => toShelterSimpleDto(s, showAddress));

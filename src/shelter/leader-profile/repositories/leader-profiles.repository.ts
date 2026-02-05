@@ -298,12 +298,15 @@ export class LeaderProfilesRepository {
   }
 
   async list(): Promise<LeaderSimpleListDto[]> {
-    const items = await this.buildLeaderBaseQB()
+    const items = await this.listEntities();
+    return items.map(toLeaderSimple);
+  }
+
+  async listEntities(): Promise<LeaderProfileEntity[]> {
+    return this.buildLeaderBaseQB()
       .orderBy('leader.createdAt', 'ASC')
       .addOrderBy('shelter.name', 'ASC')
       .getMany();
-
-    return items.map(toLeaderSimple);
   }
 
   async findByUserId(userId: string): Promise<LeaderProfileEntity | null> {

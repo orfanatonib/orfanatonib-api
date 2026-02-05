@@ -2,6 +2,17 @@ import { Exclude, Expose, Type, Transform, plainToInstance } from 'class-transfo
 import { MemberProfileEntity } from '../entities/member-profile.entity/member-profile.entity';
 
 @Exclude()
+class ProfileImageMiniDto {
+  @Expose() id!: string;
+  @Expose() url!: string;
+  @Expose() title!: string;
+  @Expose() description!: string;
+  @Expose() uploadType!: string;
+  @Expose() mediaType!: string;
+  @Expose() isLocalFile!: boolean;
+}
+
+@Exclude()
 class UserMiniDto {
   @Expose() id!: string;
   @Expose() name!: string;
@@ -10,6 +21,10 @@ class UserMiniDto {
   @Expose() active!: boolean;
   @Expose() completed!: boolean;
   @Expose() commonUser!: boolean;
+
+  @Expose()
+  @Type(() => ProfileImageMiniDto)
+  imageProfile?: ProfileImageMiniDto | null;
 }
 
 @Exclude()

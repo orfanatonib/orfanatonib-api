@@ -5,7 +5,8 @@ import {
   LeaderResponseDto,
   toLeaderDto,
 } from '../dto/leader-profile.response.dto';
-import { LeaderSimpleListDto } from '../dto/leader-simple-list.dto';
+import { LeaderSimpleListDto, toLeaderSimple } from '../dto/leader-simple-list.dto';
+import { LeaderProfileEntity } from '../entities/leader-profile.entity/leader-profile.entity';
 import { LeaderProfilesQueryDto, PageDto } from '../dto/leader-profiles.query.dto';
 import { AuthContextService } from 'src/core/auth/services/auth-context.service';
 import { TeamsService } from 'src/shelter/team/services/teams.service';
@@ -49,6 +50,9 @@ export class LeaderProfilesService {
     this.assertAllowed(ctx);
 
     const { items, total, page, limit } = await this.repo.findPageWithFilters(query);
+
+    await this.populateUserImages(items);
+
     return {
       items: items.map(toLeaderDto),
       total,
@@ -66,7 +70,10 @@ export class LeaderProfilesService {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    return await this.repo.list();
+    const items = await this.repo.listEntities();
+    await this.populateUserImages(items);
+
+    return items.map(toLeaderSimple);
   }
 
   async findOne(id: string, req: Request): Promise<LeaderResponseDto> {
@@ -74,6 +81,7 @@ export class LeaderProfilesService {
     this.assertAllowed(ctx);
 
     const leader = await this.repo.findOneWithSheltersAndMembersOrFail(id);
+    await this.populateUserImages([leader]);
     return toLeaderDto(leader);
   }
 
@@ -173,6 +181,42 @@ export class LeaderProfilesService {
     const sheltersWithMedia = await this.populateMediaItems(shelters);
     
     return sheltersWithMedia.map(shelter => toShelterWithLeaderStatusDto(shelter, leader.id));
+  }
+
+  private async populateUserImages(leaders: LeaderProfileEntity[]): Promise<void> {
+    if (!leaders.length) return;
+
+    const userIds = leaders
+      .filter(l => l.user?.id)
+      .map(l => l.user.id);
+
+    if (!userIds.length) return;
+
+    const mediaItems = await this.mediaItemProcessor.findManyMediaItemsByTargets(
+      userIds,
+      'UserEntity'
+    );
+
+    const mediaMap = new Map<string, any>();
+    mediaItems.forEach(item => {
+      if (!mediaMap.has(item.targetId)) {
+        mediaMap.set(item.targetId, {
+          id: item.id,
+          url: item.url,
+          title: item.title,
+          description: item.description,
+          uploadType: item.uploadType,
+          mediaType: item.mediaType,
+          isLocalFile: item.isLocalFile,
+        });
+      }
+    });
+
+    leaders.forEach(leader => {
+      if (leader.user?.id) {
+        (leader.user as any).imageProfile = mediaMap.get(leader.user.id) || null;
+      }
+    });
   }
 
   private async populateMediaItems(shelters: ShelterEntity[]): Promise<ShelterEntity[]> {

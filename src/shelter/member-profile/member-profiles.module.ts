@@ -11,6 +11,7 @@ import { SheltersModule } from '../shelter/shelters.module';
 import { UserModule } from 'src/core/user/user.module';
 import { AuthModule } from 'src/core/auth/auth.module';
 import { TeamsModule } from '../team/teams.module';
+import { MediaModule } from 'src/shared/media/media.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { TeamsModule } from '../team/teams.module';
     forwardRef(() => UserModule),
     forwardRef(() => AuthModule),
     forwardRef(() => TeamsModule),
+    MediaModule,
   ],
   controllers: [MemberProfilesController],
   providers: [MemberProfilesRepository, MemberProfilesService],

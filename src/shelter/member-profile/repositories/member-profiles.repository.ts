@@ -234,6 +234,11 @@ export class MemberProfilesRepository {
   }
 
   async list(ctx?: RoleCtx): Promise<MemberSimpleListDto[]> {
+    const items = await this.listEntities(ctx);
+    return items.map(toMemberSimple);
+  }
+
+  async listEntities(ctx?: RoleCtx): Promise<MemberProfileEntity[]> {
     const qb = this.memberRepo
       .createQueryBuilder('member')
       .leftJoin('member.user', 'user')
@@ -246,8 +251,7 @@ export class MemberProfilesRepository {
       qb.andWhere('1 = 0');
     }
 
-    const items = await qb.getMany();
-    return items.map(toMemberSimple);
+    return qb.getMany();
   }
 
 
