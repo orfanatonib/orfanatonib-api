@@ -51,7 +51,7 @@ export class VisitMaterialsPageUpdateService {
       const filesDict = Object.fromEntries(files.map((f) => [f.fieldname, f]));
 
       const result = await this.updateVisitMaterialsPage(id, dto, filesDict);
-      
+
       const mediaItems = await this.mediaItemProcessor.findMediaItemsByTarget(
         result.id,
         MediaTargetType.VisitMaterialsPage,
@@ -432,6 +432,16 @@ export class VisitMaterialsPageUpdateService {
       media.originalName = file.originalname;
       media.size = file.size;
     } else {
+      const existing = await queryRunner.manager.findOne(MediaItemEntity, {
+        where: { id: videoInput.id },
+      });
+      if (existing && existing.isLocalFile && existing.url && !videoInput.isLocalFile) {
+        try {
+          await this.s3.delete(existing.url);
+        } catch (error) {
+          this.logger.warn(`Could not delete old file when switching to link: ${existing.url}`);
+        }
+      }
       media.title = videoInput.title || media.title;
       media.description = videoInput.description || media.description;
       media.uploadType = videoInput.uploadType || media.uploadType;
@@ -439,7 +449,7 @@ export class VisitMaterialsPageUpdateService {
       media.mediaType = videoInput.mediaType || media.mediaType;
       media.url = videoInput.url?.trim() || media.url;
       media.originalName = videoInput.originalName || media.originalName;
-      media.isLocalFile = videoInput.isLocalFile || media.isLocalFile;
+      media.isLocalFile = videoInput.isLocalFile ?? false;
       media.size = videoInput.size || media.size;
     }
     return this.mediaItemProcessor.upsertMediaItem(videoInput.id, media);
@@ -472,6 +482,16 @@ export class VisitMaterialsPageUpdateService {
       media.originalName = file.originalname;
       media.size = file.size;
     } else {
+      const existing = await queryRunner.manager.findOne(MediaItemEntity, {
+        where: { id: documentInput.id },
+      });
+      if (existing && existing.isLocalFile && existing.url && !documentInput.isLocalFile) {
+        try {
+          await this.s3.delete(existing.url);
+        } catch (error) {
+          this.logger.warn(`Could not delete old file when switching to link: ${existing.url}`);
+        }
+      }
       media.title = documentInput.title || media.title;
       media.description = documentInput.description || media.description;
       media.uploadType = documentInput.uploadType || media.uploadType;
@@ -479,7 +499,7 @@ export class VisitMaterialsPageUpdateService {
       media.mediaType = documentInput.mediaType || media.mediaType;
       media.url = documentInput.url?.trim() || media.url;
       media.originalName = documentInput.originalName || media.originalName;
-      media.isLocalFile = documentInput.isLocalFile || media.isLocalFile;
+      media.isLocalFile = documentInput.isLocalFile ?? false;
       media.size = documentInput.size || media.size;
     }
     return this.mediaItemProcessor.upsertMediaItem(documentInput.id, media);
@@ -512,6 +532,16 @@ export class VisitMaterialsPageUpdateService {
       media.originalName = file.originalname;
       media.size = file.size;
     } else {
+      const existing = await queryRunner.manager.findOne(MediaItemEntity, {
+        where: { id: imageInput.id },
+      });
+      if (existing && existing.isLocalFile && existing.url && !imageInput.isLocalFile) {
+        try {
+          await this.s3.delete(existing.url);
+        } catch (error) {
+          this.logger.warn(`Could not delete old file when switching to link: ${existing.url}`);
+        }
+      }
       media.title = imageInput.title || media.title;
       media.description = imageInput.description || media.description;
       media.uploadType = imageInput.uploadType || media.uploadType;
@@ -519,7 +549,7 @@ export class VisitMaterialsPageUpdateService {
       media.mediaType = imageInput.mediaType || media.mediaType;
       media.url = imageInput.url?.trim() || media.url;
       media.originalName = imageInput.originalName || media.originalName;
-      media.isLocalFile = imageInput.isLocalFile || media.isLocalFile;
+      media.isLocalFile = imageInput.isLocalFile ?? false;
       media.size = imageInput.size || media.size;
     }
     return this.mediaItemProcessor.upsertMediaItem(imageInput.id, media);
@@ -552,6 +582,16 @@ export class VisitMaterialsPageUpdateService {
       media.originalName = file.originalname;
       media.size = file.size;
     } else {
+      const existing = await queryRunner.manager.findOne(MediaItemEntity, {
+        where: { id: audioInput.id },
+      });
+      if (existing && existing.isLocalFile && existing.url && !audioInput.isLocalFile) {
+        try {
+          await this.s3.delete(existing.url);
+        } catch (error) {
+          this.logger.warn(`Could not delete old file when switching to link: ${existing.url}`);
+        }
+      }
       media.title = audioInput.title || media.title;
       media.description = audioInput.description || media.description;
       media.uploadType = audioInput.uploadType || media.uploadType;
@@ -559,7 +599,7 @@ export class VisitMaterialsPageUpdateService {
       media.mediaType = audioInput.mediaType || media.mediaType;
       media.url = audioInput.url?.trim() || media.url;
       media.originalName = audioInput.originalName || media.originalName;
-      media.isLocalFile = audioInput.isLocalFile || media.isLocalFile;
+      media.isLocalFile = audioInput.isLocalFile ?? false;
       media.size = audioInput.size || media.size;
     }
 

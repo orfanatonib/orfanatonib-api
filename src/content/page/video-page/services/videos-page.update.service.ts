@@ -94,12 +94,12 @@ export class UpdateVideosPageService {
       title: pageData.title,
       subtitle: 'Videos page',
       idToFetch: videoPageId,
-      entityType:MediaTargetType.VideosPage,
+      entityType: MediaTargetType.VideosPage,
       entityId: videoPageId,
       type: RouteType.PAGE,
       description: pageData.description,
       path: 'galeria_videos_',
-      image: 'https://orfanatos-nib-storage.s3.us-east-1.amazonaws.com/aux/card_videos.png',      
+      image: 'https://orfanatos-nib-storage.s3.us-east-1.amazonaws.com/aux/card_videos.png',
       public: pageData.public,
     };
     return this.routeService.upsertRoute(routeId, routeData);
@@ -231,6 +231,13 @@ export class UpdateVideosPageService {
       const file = filesDict[key];
 
       if (file) {
+        if (existingMedia.isLocalFile && existingMedia.url) {
+          try {
+            await this.awsS3Service.delete(existingMedia.url);
+          } catch (error) {
+            this.logger.warn(`Could not delete old file: ${existingMedia.url}`);
+          }
+        }
         media.url = await this.awsS3Service.upload(file);
         media.isLocalFile = true;
         media.originalName = file.originalname;
@@ -242,6 +249,13 @@ export class UpdateVideosPageService {
         media.size = existingMedia.size;
       }
     } else if (mediaInput.uploadType === UploadType.LINK) {
+      if (existingMedia.isLocalFile && existingMedia.url) {
+        try {
+          await this.awsS3Service.delete(existingMedia.url);
+        } catch (error) {
+          this.logger.warn(`Could not delete old file when switching to link: ${existingMedia.url}`);
+        }
+      }
       if (!mediaInput.url) {
         throw new BadRequestException('URL is required for link type videos.');
       }

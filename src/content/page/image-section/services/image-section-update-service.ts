@@ -160,6 +160,13 @@ export class ImageSectionUpdateService {
     if (mediaInput.uploadType === UploadType.UPLOAD && mediaInput.isLocalFile) {
       const file = filesDict[mediaInput.fieldKey ?? ''];
       if (file) {
+        if (existingMedia.isLocalFile && existingMedia.url) {
+          try {
+            await this.awsS3Service.delete(existingMedia.url);
+          } catch (error) {
+            this.logger.warn(`Could not delete old file: ${existingMedia.url}`);
+          }
+        }
         updatedMedia.url = await this.awsS3Service.upload(file);
         updatedMedia.isLocalFile = true;
         updatedMedia.originalName = file.originalname;
@@ -171,6 +178,13 @@ export class ImageSectionUpdateService {
         updatedMedia.size = existingMedia.size;
       }
     } else {
+      if (existingMedia.isLocalFile && existingMedia.url) {
+        try {
+          await this.awsS3Service.delete(existingMedia.url);
+        } catch (error) {
+          this.logger.warn(`Could not delete old file when switching to link: ${existingMedia.url}`);
+        }
+      }
       updatedMedia.url = mediaInput.url?.trim() || existingMedia.url;
       updatedMedia.isLocalFile = false;
     }

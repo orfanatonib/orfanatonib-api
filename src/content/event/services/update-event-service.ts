@@ -15,7 +15,7 @@ export class UpdateEventService {
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly s3Service: AwsS3Service,
     private readonly eventNotificationHelper: EventNotificationHelper,
-  ) {}
+  ) { }
 
   async update(id: string, dto: any, file?: Express.Multer.File): Promise<EventEntity> {
     const originalEvent = await this.eventRepo.findById(id);
@@ -97,6 +97,15 @@ export class UpdateEventService {
         }
       } else if (mediaInput && mediaInput.url && !mediaInput.isLocalFile) {
         if (existingMedia) {
+          if (existingMedia.isLocalFile && existingMedia.url) {
+            try {
+              await this.s3Service.delete(existingMedia.url);
+              this.logger.log(`Deleted old file when switching to link: ${existingMedia.url}`);
+            } catch (error) {
+              this.logger.warn(`Could not delete old file when switching to link: ${existingMedia.url}`);
+            }
+          }
+
           const media = this.mediaItemProcessor.buildBaseMediaItem(
             {
               title: mediaInput.title || 'Event image',

@@ -25,7 +25,16 @@ export class TeamsRepository {
   }
 
   async findAll(): Promise<TeamEntity[]> {
-    return this.teamRepo.find();
+    return this.teamRepo.find({
+      relations: [
+        'shelter',
+        'shelter.address',
+        'leaders',
+        'leaders.user',
+        'members',
+        'members.user',
+      ],
+    });
   }
 
   async findOne(id: string): Promise<TeamEntity | null> {

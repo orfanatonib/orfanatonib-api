@@ -7,7 +7,7 @@ export class ShelterSelectOptionDto {
   id!: string;
 
   @Expose()
-  detalhe!: string;
+  name!: string;
 
   @Expose()
   leader!: boolean;
@@ -18,7 +18,7 @@ export function toShelterSelectOption(entity: ShelterEntity, showAddress = true)
   const hasLeaders = entity.teams?.some(team => team.leaders && team.leaders.length > 0) || false;
   return {
     id: entity.id,
-    detalhe: `${entity.name}${showAddress ? ` : ${bairro || '—'}` : ''}`,
+    name: `${entity.name}${showAddress ? ` : ${bairro || '—'}` : ''}`,
     leader: hasLeaders,
   };
 }

@@ -242,22 +242,42 @@ export class ImagePageUpdateService {
         filesDict: Record<string, Express.Multer.File>,
         queryRunner: QueryRunner
     ): Promise<MediaItemEntity> {
+        let existingMedia: MediaItemEntity | null = null;
+        if (mediaInput.id) {
+            existingMedia = await queryRunner.manager.findOne(MediaItemEntity, {
+                where: { id: mediaInput.id },
+            });
+        }
         const media = this.mediaItemProcessor.buildBaseMediaItem(mediaInput, targetId, 'ImagesPage');
+        const isUpload = mediaInput.uploadType === UploadType.UPLOAD && mediaInput.isLocalFile;
+        const key = mediaInput.fieldKey ?? mediaInput.url;
+        const file = key ? filesDict[key] : undefined;
 
-        if (mediaInput.isLocalFile && !mediaInput.id && mediaInput.uploadType === UploadType.UPLOAD) {
-            const key = mediaInput.fieldKey ?? mediaInput.url;
-            if (!key) {
-                throw new Error(`File missing for upload: no fieldKey or url provided`);
+        if (isUpload && file) {
+            if (existingMedia?.isLocalFile && existingMedia.url) {
+                try {
+                    await this.awsS3Service.delete(existingMedia.url);
+                } catch (error) {
+                    this.logger.warn(`Could not delete old file: ${existingMedia.url}`);
+                }
             }
-            const file = filesDict[key];
-            if (!file) {
-                throw new Error(`File not found for upload: ${key}`);
-            }
-
             media.url = await this.awsS3Service.upload(file);
             media.originalName = file.originalname;
+            media.isLocalFile = true;
             media.size = file.size;
+        } else if (isUpload && !file && existingMedia) {
+            media.url = existingMedia.url;
+            media.originalName = existingMedia.originalName;
+            media.isLocalFile = existingMedia.isLocalFile;
+            media.size = existingMedia.size;
         } else {
+            if (existingMedia?.isLocalFile && existingMedia.url && !mediaInput.isLocalFile) {
+                try {
+                    await this.awsS3Service.delete(existingMedia.url);
+                } catch (error) {
+                    this.logger.warn(`Could not delete old file when switching to link: ${existingMedia.url}`);
+                }
+            }
             media.title = mediaInput.title || media.title;
             media.description = mediaInput.description || media.description;
             media.uploadType = mediaInput.uploadType || media.uploadType;
@@ -265,7 +285,7 @@ export class ImagePageUpdateService {
             media.mediaType = mediaInput.mediaType || media.mediaType;
             media.url = mediaInput.url?.trim() || media.url;
             media.originalName = mediaInput.originalName || media.originalName;
-            media.isLocalFile = mediaInput.isLocalFile || media.isLocalFile;
+            media.isLocalFile = mediaInput.isLocalFile ?? false;
             media.size = mediaInput.size || media.size;
         }
 
