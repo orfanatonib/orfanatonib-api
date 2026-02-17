@@ -37,6 +37,7 @@ import { FeatureFlagEntity } from 'src/core/feature-flags/entities/feature-flag.
 import { PasswordResetTokenEntity } from 'src/core/auth/entities/password-reset-token.entity';
 import { IntegrationEntity } from 'src/shelter/integration/entities/integration.entity';
 import { VisitReportEntity } from 'src/shelter/visit-report/entities/visit-report.entity';
+import { AtendenteEntity } from 'src/atendente/entities/atendente.entity';
 
 @Module({
   imports: [
@@ -88,7 +89,8 @@ import { VisitReportEntity } from 'src/shelter/visit-report/entities/visit-repor
             FeatureFlagEntity,
             PasswordResetTokenEntity,
             IntegrationEntity,
-            VisitReportEntity
+            VisitReportEntity,
+            AtendenteEntity,
           ],
           synchronize,
         };

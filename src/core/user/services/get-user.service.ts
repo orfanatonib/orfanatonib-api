@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { UserEntity } from '../entities/user.entity';
 import { GetUsersQueryDto } from '../dto/get-users-query.dto';
+import { UserSimpleDto } from '../dto/user-simple.dto';
 import { UserRepository } from '../user.repository';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { UserErrorMessages } from '../constants/user.constants';
@@ -20,6 +21,15 @@ export class GetUsersService {
 
   async findAlll(): Promise<UserEntity[]> {
     return this.userRepo.findAll();
+  }
+
+  async findAllSimple(): Promise<UserSimpleDto[]> {
+    const users = await this.userRepo.findAll();
+    return users.map((u) => ({
+      id: u.id,
+      name: u.name,
+      email: u.email,
+    }));
   }
 
   async findOne(id: string): Promise<UserEntity> {

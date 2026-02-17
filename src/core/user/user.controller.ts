@@ -60,6 +60,14 @@ export class UserController {
   }
 
   /**
+   * Listar usuários em formato simples (id, name, email) para dropdowns (apenas admin)
+   */
+  @Get('simple')
+  findAllSimple() {
+    return this.getUsersService.findAllSimple();
+  }
+
+  /**
    * Buscar usuário por ID (apenas admin)
    */
   @Get(':id')

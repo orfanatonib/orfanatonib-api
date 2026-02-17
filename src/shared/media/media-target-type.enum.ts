@@ -9,5 +9,6 @@ export enum MediaTargetType {
   Document = 'Document',
   Event = 'Event',
   Informative = 'Informative',
-  Integration = 'Integration'
+  Integration = 'Integration',
+  Atendente = 'Atendente'
 }

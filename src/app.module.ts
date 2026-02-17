@@ -34,6 +34,7 @@ import { AttendanceModule } from './attendance/attendance.module';
 import { ProfileModule } from './core/profile/profile.module';
 import { FeatureFlagsModule } from './core/feature-flags/feature-flags.module';
 import { IntegrationModule } from './shelter/integration/integration.module';
+import { AtendenteModule } from './atendente/atendente.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import * as path from 'path';
@@ -89,6 +90,7 @@ function getEnvFilePath(): string {
     ProfileModule,
     FeatureFlagsModule,
     IntegrationModule,
+    AtendenteModule,
   ],
   controllers: [AppController],
   providers: [AppService],
