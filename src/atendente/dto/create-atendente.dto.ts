@@ -16,7 +16,13 @@ export class CreateAtendenteDto {
   @IsString()
   attendableId?: string | null;
 
+  @IsOptional()
   @ValidateNested()
   @Type(() => MediaItemDto)
-  pdf: MediaItemDto;
+  pdfEstadual?: MediaItemDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => MediaItemDto)
+  pdfFederal?: MediaItemDto;
 }

@@ -10,5 +10,9 @@ export enum MediaTargetType {
   Event = 'Event',
   Informative = 'Informative',
   Integration = 'Integration',
-  Atendente = 'Atendente'
+  Atendente = 'Atendente',
+  /** PDF Estadual de um Antecedente Criminal (um por atendente). */
+  AtendenteEstadual = 'AtendenteEstadual',
+  /** PDF Federal de um Antecedente Criminal (um por atendente). */
+  AtendenteFederal = 'AtendenteFederal',
 }

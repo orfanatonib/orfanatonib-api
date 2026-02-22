@@ -15,11 +15,11 @@ import {
   BadRequestException,
   HttpException,
 } from '@nestjs/common';
-import { AnyFilesInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
-import { AdminRoleGuard } from 'src/core/auth/guards/role-guard';
+import { AdminOrLeaderRoleGuard } from 'src/core/auth/guards/role-guard';
 import { CreateAtendenteService } from './services/create-atendente.service';
 import { UpdateAtendenteService } from './services/update-atendente.service';
 import { DeleteAtendenteService } from './services/delete-atendente.service';
@@ -32,8 +32,22 @@ import {
   PaginatedAtendenteResponseDto,
 } from './dto/atendente-response.dto';
 
+const PDF_FIELDS = [
+  { name: 'estadual', maxCount: 1 },
+  { name: 'federal', maxCount: 1 },
+] as const;
+
+function toAtendenteFiles(
+  files: { estadual?: Express.Multer.File[]; federal?: Express.Multer.File[] },
+): { estadual?: Express.Multer.File; federal?: Express.Multer.File } {
+  return {
+    estadual: files?.estadual?.[0],
+    federal: files?.federal?.[0],
+  };
+}
+
 @Controller('antecedentes-criminais')
-@UseGuards(JwtAuthGuard, AdminRoleGuard)
+@UseGuards(JwtAuthGuard, AdminOrLeaderRoleGuard)
 export class AtendenteController {
   private readonly logger = new Logger(AtendenteController.name);
 
@@ -45,9 +59,9 @@ export class AtendenteController {
   ) {}
 
   @Post()
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(FileFieldsInterceptor([...PDF_FIELDS]))
   async create(
-    @UploadedFiles() uploadedFiles: Express.Multer.File[],
+    @UploadedFiles() uploadedFiles: { estadual?: Express.Multer.File[]; federal?: Express.Multer.File[] },
     @Body('atendenteData') atendenteDataRaw?: string,
   ): Promise<AtendenteResponseDto> {
     try {
@@ -61,9 +75,9 @@ export class AtendenteController {
         this.logger.error('Validation errors:', JSON.stringify(errors, null, 2));
         throw new BadRequestException('Invalid data in request');
       }
-      const file = uploadedFiles?.length ? uploadedFiles[0] : undefined;
+      const files = toAtendenteFiles(uploadedFiles ?? {});
       this.logger.log('Creating new antecedente criminal');
-      const result = await this.createService.execute(dto, file);
+      const result = await this.createService.execute(dto, files);
       this.logger.log(`Antecedente criminal created successfully: ${result.id}`);
       return result;
     } catch (error) {
@@ -88,10 +102,10 @@ export class AtendenteController {
   }
 
   @Put(':id')
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(FileFieldsInterceptor([...PDF_FIELDS]))
   async update(
     @Param('id', ParseUUIDPipe) id: string,
-    @UploadedFiles() uploadedFiles: Express.Multer.File[],
+    @UploadedFiles() uploadedFiles: { estadual?: Express.Multer.File[]; federal?: Express.Multer.File[] },
     @Body('atendenteData') atendenteDataRaw?: string,
   ): Promise<AtendenteResponseDto> {
     try {
@@ -105,15 +119,15 @@ export class AtendenteController {
         this.logger.error('Validation errors:', JSON.stringify(errors, null, 2));
         throw new BadRequestException('Invalid data in request');
       }
-      const file = uploadedFiles?.length ? uploadedFiles[0] : undefined;
+      const files = toAtendenteFiles(uploadedFiles ?? {});
       this.logger.log(`Updating antecedente criminal: ${id}`);
-      const result = await this.updateService.execute(id, dto, file);
+      const result = await this.updateService.execute(id, dto, files);
       this.logger.log(`Antecedente criminal updated successfully: ${id}`);
       return result;
     } catch (error) {
       if (error instanceof HttpException) throw error;
-this.logger.error('Error updating antecedente criminal', error);
-throw new BadRequestException('Error updating antecedente criminal.');
+      this.logger.error('Error updating antecedente criminal', error);
+      throw new BadRequestException('Error updating antecedente criminal.');
     }
   }
 

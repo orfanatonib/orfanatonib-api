@@ -26,16 +26,18 @@ export class DeleteAtendenteService {
     }
 
     try {
-      const mediaItems = await this.mediaProcessor.findMediaItemsByTarget(
-        id,
-        MediaTargetType.Atendente,
-      );
-      if (mediaItems.length > 0) {
+      const [estadualItems, federalItems, legacyItems] = await Promise.all([
+        this.mediaProcessor.findMediaItemsByTarget(id, MediaTargetType.AtendenteEstadual),
+        this.mediaProcessor.findMediaItemsByTarget(id, MediaTargetType.AtendenteFederal),
+        this.mediaProcessor.findMediaItemsByTarget(id, MediaTargetType.Atendente),
+      ]);
+      const allMedia = [...estadualItems, ...federalItems, ...legacyItems];
+      if (allMedia.length > 0) {
         await this.mediaProcessor.deleteMediaItems(
-          mediaItems,
+          allMedia,
           this.s3Service.delete.bind(this.s3Service),
         );
-        this.logger.log(`Deleted ${mediaItems.length} media item(s) and S3 file(s) for antecedente criminal ${id}`);
+        this.logger.log(`Deleted ${allMedia.length} media item(s) and S3 file(s) for antecedente criminal ${id}`);
       }
       await this.atendenteRepo.remove(id);
       this.logger.log(`Antecedente criminal ${id} deleted successfully`);

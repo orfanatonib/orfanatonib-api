@@ -18,6 +18,11 @@ import { AtendenteResponseDto } from '../dto/atendente-response.dto';
 import { AtendenteEntity } from '../entities/atendente.entity';
 import { AttendableType } from '../entities/attendable-type.enum';
 
+export type AtendenteFiles = {
+  estadual?: Express.Multer.File;
+  federal?: Express.Multer.File;
+};
+
 @Injectable()
 export class CreateAtendenteService {
   private readonly logger = new Logger(CreateAtendenteService.name);
@@ -34,7 +39,7 @@ export class CreateAtendenteService {
 
   async execute(
     dto: CreateAtendenteDto,
-    file?: Express.Multer.File,
+    files?: AtendenteFiles,
   ): Promise<AtendenteResponseDto> {
     const hasNoLink = !dto.attendableType && !dto.attendableId;
     if (hasNoLink && !dto.name?.trim()) {
@@ -51,9 +56,17 @@ export class CreateAtendenteService {
       );
       if (existing) {
         throw new BadRequestException(
-          'Já existe um antecedente criminal vinculado a este usuário ou integração. Não é permitido criar mais de um por vínculo.',
+          'Já existe um antecedente criminal para este vínculo. Edite o existente para adicionar ou trocar PDFs.',
         );
       }
+    }
+
+    const hasEstadual = files?.estadual;
+    const hasFederal = files?.federal;
+    if (!hasEstadual && !hasFederal) {
+      throw new BadRequestException(
+        'Envie pelo menos um PDF (estadual ou federal) no campo "estadual" ou "federal".',
+      );
     }
 
     const atendente = await this.atendenteRepo.create({
@@ -62,22 +75,54 @@ export class CreateAtendenteService {
       attendableId: dto.attendableId ?? null,
     });
 
-    if (!dto.pdf?.isLocalFile || !file) {
-      throw new BadRequestException('PDF file is required for antecedente criminal.');
+    if (hasEstadual) {
+      await this.uploadAndSavePdf(
+        files!.estadual!,
+        atendente.id,
+        MediaTargetType.AtendenteEstadual,
+        dto.pdfEstadual?.title,
+        dto.pdfEstadual?.description,
+      );
+    }
+    if (hasFederal) {
+      await this.uploadAndSavePdf(
+        files!.federal!,
+        atendente.id,
+        MediaTargetType.AtendenteFederal,
+        dto.pdfFederal?.title,
+        dto.pdfFederal?.description,
+      );
     }
 
+    const [pdfEstadual, pdfFederal] = await Promise.all([
+      this.mediaProcessor.findMediaItemByTarget(atendente.id, MediaTargetType.AtendenteEstadual),
+      this.mediaProcessor.findMediaItemByTarget(atendente.id, MediaTargetType.AtendenteFederal),
+    ]);
+    const displayName = await this.resolveAttendableDisplayName(
+      atendente.attendableType,
+      atendente.attendableId,
+    );
+    return AtendenteResponseDto.fromEntity(atendente, pdfEstadual, pdfFederal, displayName);
+  }
+
+  private async uploadAndSavePdf(
+    file: Express.Multer.File,
+    atendenteId: string,
+    targetType: MediaTargetType,
+    title?: string,
+    description?: string,
+  ): Promise<void> {
     let mediaUrl: string;
     try {
       mediaUrl = await this.s3Service.upload(file);
     } catch (error) {
       this.logger.error(`Error uploading PDF: ${file.originalname}`, (error as Error).stack);
-      throw new BadRequestException('File upload failed.');
+      throw new BadRequestException('Falha no upload do arquivo.');
     }
-
     const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
       {
-        title: dto.pdf.title || file.originalname,
-        description: dto.pdf.description || '',
+        title: title || file.originalname,
+        description: description || '',
         mediaType: MediaType.DOCUMENT,
         uploadType: UploadType.UPLOAD,
         url: mediaUrl,
@@ -85,16 +130,15 @@ export class CreateAtendenteService {
         originalName: file.originalname,
         size: file.size,
       },
-      atendente.id,
-      MediaTargetType.Atendente,
+      atendenteId,
+      targetType,
     );
-    const savedMedia = await this.mediaProcessor.saveMediaItem(mediaEntity);
-
-    const displayName = await this.resolveAttendableDisplayName(
-      atendente.attendableType,
-      atendente.attendableId,
-    );
-    return AtendenteResponseDto.fromEntity(atendente, savedMedia, displayName);
+    try {
+      await this.mediaProcessor.saveMediaItem(mediaEntity);
+    } catch (error) {
+      await this.s3Service.delete(mediaUrl);
+      throw error;
+    }
   }
 
   private async validateAttendable(

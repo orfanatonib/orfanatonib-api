@@ -16,6 +16,7 @@ import { UserEntity } from 'src/core/user/entities/user.entity';
 import { AtendenteRepository } from '../atendente.repository';
 import { UpdateAtendenteDto } from '../dto/update-atendente.dto';
 import { AtendenteResponseDto } from '../dto/atendente-response.dto';
+import type { AtendenteFiles } from './create-atendente.service';
 import { AttendableType } from '../entities/attendable-type.enum';
 
 @Injectable()
@@ -35,7 +36,7 @@ export class UpdateAtendenteService {
   async execute(
     id: string,
     dto: UpdateAtendenteDto,
-    file?: Express.Multer.File,
+    files?: AtendenteFiles,
   ): Promise<AtendenteResponseDto> {
     const atendente = await this.atendenteRepo.findById(id);
     if (!atendente) {
@@ -43,17 +44,6 @@ export class UpdateAtendenteService {
     }
 
     await this.validateAttendable(dto.attendableType, dto.attendableId);
-
-    const newType = dto.attendableType !== undefined ? dto.attendableType : atendente.attendableType;
-    const newId = dto.attendableId !== undefined ? dto.attendableId : atendente.attendableId;
-    if (newType && newId) {
-      const existing = await this.atendenteRepo.findByAttendable(newType, newId);
-      if (existing && existing.id !== id) {
-        throw new BadRequestException(
-          'Já existe um antecedente criminal vinculado a este usuário ou integração. Não é permitido criar mais de um por vínculo.',
-        );
-      }
-    }
 
     const updateData: Partial<typeof atendente> = {};
     if (dto.name !== undefined) updateData.name = dto.name;
@@ -63,51 +53,116 @@ export class UpdateAtendenteService {
     const updated = await this.atendenteRepo.update(id, updateData);
     if (!updated) throw new InternalServerErrorException('Failed to update antecedente criminal.');
 
-    const existingPdf = await this.mediaProcessor.findMediaItemByTarget(
-      id,
-      MediaTargetType.Atendente,
-    );
+    const [hadEstadual, hadFederal] = await Promise.all([
+      this.mediaProcessor.findMediaItemByTarget(id, MediaTargetType.AtendenteEstadual),
+      this.mediaProcessor.findMediaItemByTarget(id, MediaTargetType.AtendenteFederal),
+    ]);
 
-    if (dto.pdf && file) {
-      if (existingPdf) {
-        await this.mediaProcessor.deleteMediaItems(
-          [existingPdf],
-          this.s3Service.delete.bind(this.s3Service),
-        );
-      }
-      let mediaUrl: string;
-      try {
-        mediaUrl = await this.s3Service.upload(file);
-      } catch (error) {
-        this.logger.error(`Error uploading PDF: ${file.originalname}`, (error as Error).stack);
-        throw new BadRequestException('File upload failed.');
-      }
-      const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
-        {
-          title: dto.pdf.title || file.originalname,
-          description: dto.pdf.description || '',
-          mediaType: MediaType.DOCUMENT,
-          uploadType: UploadType.UPLOAD,
-          url: mediaUrl,
-          isLocalFile: true,
-          originalName: file.originalname,
-          size: file.size,
-        },
-        id,
-        MediaTargetType.Atendente,
+    const estadualRemains =
+      (!!hadEstadual && !dto.removePdfEstadual) || !!files?.estadual;
+    const federalRemains =
+      (!!hadFederal && !dto.removePdfFederal) || !!files?.federal;
+    if (!estadualRemains && !federalRemains) {
+      throw new BadRequestException(
+        'É obrigatório manter pelo menos um PDF (Estadual ou Federal). Remova apenas um para trocar por outro.',
       );
-      await this.mediaProcessor.saveMediaItem(mediaEntity);
     }
 
-    const pdfMedia = await this.mediaProcessor.findMediaItemByTarget(
-      id,
-      MediaTargetType.Atendente,
-    );
+    if (dto.removePdfEstadual && hadEstadual) {
+      await this.removePdf(id, MediaTargetType.AtendenteEstadual, hadEstadual);
+    }
+    if (dto.removePdfFederal && hadFederal) {
+      await this.removePdf(id, MediaTargetType.AtendenteFederal, hadFederal);
+    }
+
+    if (files?.estadual) {
+      await this.replacePdf(
+        id,
+        MediaTargetType.AtendenteEstadual,
+        files.estadual,
+        dto.pdfEstadual?.title,
+        dto.pdfEstadual?.description,
+      );
+    }
+    if (files?.federal) {
+      await this.replacePdf(
+        id,
+        MediaTargetType.AtendenteFederal,
+        files.federal,
+        dto.pdfFederal?.title,
+        dto.pdfFederal?.description,
+      );
+    }
+
+    const [pdfEstadual, pdfFederal] = await Promise.all([
+      this.mediaProcessor.findMediaItemByTarget(id, MediaTargetType.AtendenteEstadual),
+      this.mediaProcessor.findMediaItemByTarget(id, MediaTargetType.AtendenteFederal),
+    ]);
     const displayName = await this.resolveAttendableDisplayName(
       updated!.attendableType,
       updated!.attendableId,
     );
-    return AtendenteResponseDto.fromEntity(updated!, pdfMedia, displayName);
+    return AtendenteResponseDto.fromEntity(updated!, pdfEstadual, pdfFederal, displayName);
+  }
+
+  private async removePdf(
+    atendenteId: string,
+    targetType: MediaTargetType,
+    existing: Awaited<ReturnType<MediaItemProcessor['findMediaItemByTarget']>>,
+  ): Promise<void> {
+    if (!existing) return;
+    await this.mediaProcessor.deleteMediaItems(
+      [existing],
+      this.s3Service.delete.bind(this.s3Service),
+    );
+  }
+  private async replacePdf(
+    atendenteId: string,
+    targetType: MediaTargetType,
+    file: Express.Multer.File,
+    title?: string,
+    description?: string,
+  ): Promise<void> {
+    const existing = await this.mediaProcessor.findMediaItemByTarget(atendenteId, targetType);
+
+    let mediaUrl: string;
+    try {
+      mediaUrl = await this.s3Service.upload(file);
+    } catch (error) {
+      this.logger.error(`Error uploading PDF: ${file.originalname}`, (error as Error).stack);
+      throw new BadRequestException('Falha no upload do arquivo.');
+    }
+
+    const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
+      {
+        title: title || file.originalname,
+        description: description || '',
+        mediaType: MediaType.DOCUMENT,
+        uploadType: UploadType.UPLOAD,
+        url: mediaUrl,
+        isLocalFile: true,
+        originalName: file.originalname,
+        size: file.size,
+      },
+      atendenteId,
+      targetType,
+    );
+    try {
+      await this.mediaProcessor.saveMediaItem(mediaEntity);
+    } catch (error) {
+      await this.s3Service.delete(mediaUrl);
+      throw error;
+    }
+
+    if (existing) {
+      await this.mediaProcessor.deleteMediaItems(
+        [existing],
+        this.s3Service.delete.bind(this.s3Service),
+      );
+      this.logger.log(
+        `Removed old PDF from S3 for antecedente ${atendenteId} (${targetType}) to avoid orphan file`,
+      );
+    }
   }
 
   private async validateAttendable(

@@ -31,17 +31,19 @@ export class GetAtendenteService {
     if (!atendente) {
       throw new NotFoundException(`Antecedente criminal with id ${id} not found.`);
     }
-    const pdfMedia = await this.mediaProcessor.findMediaItemByTarget(
-      id,
-      MediaTargetType.Atendente,
-    );
+    const [pdfEstadual, pdfFederal, pdfLegacy] = await Promise.all([
+      this.mediaProcessor.findMediaItemByTarget(id, MediaTargetType.AtendenteEstadual),
+      this.mediaProcessor.findMediaItemByTarget(id, MediaTargetType.AtendenteFederal),
+      this.mediaProcessor.findMediaItemByTarget(id, MediaTargetType.Atendente),
+    ]);
     const displayName = await this.resolveAttendableDisplayName(
       atendente.attendableType,
       atendente.attendableId,
     );
     return AtendenteResponseDto.fromEntity(
       atendente,
-      pdfMedia ?? undefined,
+      pdfEstadual ?? pdfLegacy,
+      pdfFederal,
       displayName,
     );
   }
@@ -54,17 +56,21 @@ export class GetAtendenteService {
     const normalizedQuery = { ...query, page, limit };
     const { data, total } = await this.atendenteRepo.findAllPaginated(normalizedQuery);
     const ids = data.map((a) => a.id);
-    const mediaList =
-      ids.length > 0
-        ? await this.mediaProcessor.findManyMediaItemsByTargets(
-            ids,
-            MediaTargetType.Atendente,
-          )
-        : [];
-    const mediaByTargetId = new Map<string, (typeof mediaList)[0]>();
-    mediaList.forEach((m) => {
-      if (!mediaByTargetId.has(m.targetId)) mediaByTargetId.set(m.targetId, m);
-    });
+
+    let estadualList: Awaited<ReturnType<MediaItemProcessor['findManyMediaItemsByTargets']>> = [];
+    let federalList: Awaited<ReturnType<MediaItemProcessor['findManyMediaItemsByTargets']>> = [];
+    let legacyList: Awaited<ReturnType<MediaItemProcessor['findManyMediaItemsByTargets']>> = [];
+    if (ids.length > 0) {
+      [estadualList, federalList, legacyList] = await Promise.all([
+        this.mediaProcessor.findManyMediaItemsByTargets(ids, MediaTargetType.AtendenteEstadual),
+        this.mediaProcessor.findManyMediaItemsByTargets(ids, MediaTargetType.AtendenteFederal),
+        this.mediaProcessor.findManyMediaItemsByTargets(ids, MediaTargetType.Atendente),
+      ]);
+    }
+
+    const mediaEstadualByTargetId = new Map(estadualList.map((m) => [m.targetId, m]));
+    const mediaFederalByTargetId = new Map(federalList.map((m) => [m.targetId, m]));
+    const mediaLegacyByTargetId = new Map(legacyList.map((m) => [m.targetId, m]));
 
     const integrationIds = data
       .filter((a) => a.attendableType === AttendableType.INTEGRATION && a.attendableId)
@@ -87,7 +93,8 @@ export class GetAtendenteService {
     const userMap = new Map(users.map((u) => [u.id, u.name]));
 
     const dtos = data.map((entity) => {
-      const pdfMedia = mediaByTargetId.get(entity.id);
+      const pdfEstadual = mediaEstadualByTargetId.get(entity.id) ?? mediaLegacyByTargetId.get(entity.id);
+      const pdfFederal = mediaFederalByTargetId.get(entity.id);
       let displayName: string | undefined;
       if (entity.attendableType === AttendableType.INTEGRATION && entity.attendableId) {
         displayName = integrationMap.get(entity.attendableId);
@@ -96,7 +103,8 @@ export class GetAtendenteService {
       }
       return AtendenteResponseDto.fromEntity(
         entity,
-        pdfMedia ?? undefined,
+        pdfEstadual ?? undefined,
+        pdfFederal ?? undefined,
         displayName,
       );
     });

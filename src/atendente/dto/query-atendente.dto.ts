@@ -25,4 +25,8 @@ export class QueryAtendenteDto {
   @IsOptional()
   @IsEnum(AttendableType)
   attendableType?: AttendableType;
+
+  @IsOptional()
+  @IsString()
+  attendableId?: string;
 }

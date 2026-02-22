@@ -21,6 +21,7 @@ export class AtendenteRepository {
     return this.repo.findOne({ where: { id } });
   }
 
+  /** Um único antecedente por vínculo (pessoa). Os 2 PDFs ficam nesse registro. */
   async findByAttendable(
     attendableType: AttendableType,
     attendableId: string,
@@ -45,6 +46,10 @@ export class AtendenteRepository {
 
     if (query.attendableType !== undefined) {
       where.attendableType = query.attendableType;
+    }
+
+    if (query.attendableId?.trim()) {
+      where.attendableId = query.attendableId.trim();
     }
 
     const [data, total] = await this.repo.findAndCount({
