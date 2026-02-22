@@ -18,7 +18,7 @@ import { AnyFilesInterceptor } from '@nestjs/platform-express';
 import { CreateUserService } from './services/create-user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
-import { AdminRoleGuard } from 'src/core/auth/guards/role-guard';
+import { AdminRoleGuard, AdminOrLeaderRoleGuard } from 'src/core/auth/guards/role-guard';
 import { GetUsersQueryDto } from './dto/get-users-query.dto';
 import { GetUsersService } from './services/get-user.service';
 import { DeleteUserService } from './services/delete-user.service';
@@ -27,8 +27,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserImageService } from './services/update-user-image.service';
 import { UserEntity } from './entities/user.entity';
 
-@UseGuards(JwtAuthGuard, AdminRoleGuard)
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 export class UserController {
   private readonly logger = new Logger(UserController.name);
 
@@ -40,10 +40,9 @@ export class UserController {
     private readonly updateUserImageService: UpdateUserImageService,
   ) { }
 
-  /**
-   * Criar novo usuário (apenas admin)
-   */
+
   @Post()
+  @UseGuards(AdminRoleGuard)
   async create(@Body() dto: CreateUserDto) {
     this.logger.log('Creating new user');
     const result = await this.createUserService.create(dto);
@@ -51,36 +50,37 @@ export class UserController {
     return result;
   }
 
-  /**
-   * Listar todos os usuários com paginação (apenas admin)
-   */
+ 
   @Get()
+  @UseGuards(AdminRoleGuard)
   findAll(@Query() query: GetUsersQueryDto) {
     return this.getUsersService.findAllPaginated(query);
   }
 
-  /**
-   * Listar usuários em formato simples (id, name, email) para dropdowns (apenas admin)
-   */
+
   @Get('simple')
+  @UseGuards(AdminRoleGuard)
   findAllSimple() {
     return this.getUsersService.findAllSimple();
   }
 
-  /**
-   * Buscar usuário por ID (apenas admin)
-   */
+ 
+  @Get('simple-for-select')
+  @UseGuards(AdminOrLeaderRoleGuard)
+  findAllSimpleForSelect() {
+    return this.getUsersService.findAllSimple();
+  }
+
+  
   @Get(':id')
+  @UseGuards(AdminRoleGuard)
   async findOne(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.getUsersService.findOne(id);
   }
 
-  /**
-   * Atualizar usuário (apenas admin)
-   * Admin pode alterar TUDO: name, email, phone, password, role, active, completed, commonUser
-   * Para alterar senha, admin apenas envia a nova senha no campo "password" (não precisa da senha atual)
-   */
+  
   @Put(':id')
+  @UseGuards(AdminRoleGuard)
   async update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateUserDto,
@@ -91,10 +91,9 @@ export class UserController {
     return result;
   }
 
-  /**
-   * Deletar usuário (apenas admin)
-   */
+
   @Delete(':id')
+  @UseGuards(AdminRoleGuard)
   async remove(@Param('id', new ParseUUIDPipe()) id: string) {
     this.logger.log(`Deleting user: ${id}`);
     await this.deleteUserService.remove(id);
@@ -102,10 +101,8 @@ export class UserController {
     return { message: 'User removed successfully' };
   }
 
-  /**
-   * Atualizar imagem de perfil de qualquer usuário (apenas admin)
-   */
   @Patch(':id/image')
+  @UseGuards(AdminRoleGuard)
   @UseInterceptors(AnyFilesInterceptor())
   async updateImage(
     @Param('id', new ParseUUIDPipe()) id: string,
