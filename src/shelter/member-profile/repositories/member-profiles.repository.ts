@@ -24,11 +24,13 @@ export class MemberProfilesRepository {
     @InjectRepository(MemberProfileEntity)
     private readonly memberRepo: Repository<MemberProfileEntity>,
 
-  @InjectRepository(ShelterEntity)
-  private readonly shelterRepo: Repository<ShelterEntity>,
+    @InjectRepository(ShelterEntity)
+    private readonly shelterRepo: Repository<ShelterEntity>,
 
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
+    @InjectRepository(TeamEntity)
+    private readonly teamRepo: Repository<TeamEntity>,
   ) { }
 
   private baseQB(): SelectQueryBuilder<MemberProfileEntity> {
@@ -278,6 +280,39 @@ export class MemberProfilesRepository {
       const profile = await txMember.findOne({ where: { user: { id: userId } } });
       if (!profile) return;
       await txMember.delete(profile.id);
+    });
+  }
+
+  async assignTeamByIdForUser(userId: string, teamId: string): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const txMember = manager.withRepository(this.memberRepo);
+      const txUser = manager.withRepository(this.userRepo);
+      const txTeam = manager.withRepository(this.teamRepo);
+
+      const user = await txUser.findOne({ where: { id: userId } });
+      if (!user) throw new NotFoundException('User not found');
+
+      const team = await txTeam.findOne({
+        where: { id: teamId },
+        relations: ['shelter'],
+      });
+      if (!team) throw new NotFoundException('Team not found');
+
+      let profile = await txMember.findOne({
+        where: { user: { id: userId } as any },
+        relations: ['team'],
+      });
+
+      if (!profile) {
+        profile = txMember.create({
+          user: user as any,
+          active: true,
+          team: null as any,
+        });
+      }
+
+      (profile as any).team = team as any;
+      await txMember.save(profile);
     });
   }
 

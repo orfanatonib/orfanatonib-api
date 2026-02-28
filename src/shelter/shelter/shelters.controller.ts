@@ -28,12 +28,12 @@ import { Paginated } from 'src/shelter/pagela/dto/paginated.dto';
 import { ShelterResponseDto, ShelterSimpleResponseDto, toShelterDto } from './dto/shelter.response.dto';
 import { ShelterSelectOptionDto } from './dto/shelter-select-option.dto';
 import { ShelterTeamsQuantityResponseDto } from './dto/shelter-teams-quantity-response.dto';
+import { ShelterTeamSelectOptionDto } from './dto/shelter-team-select-option.dto';
 import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
 import { FeatureFlagsService } from 'src/core/feature-flags/feature-flags.service';
 import { FeatureFlagKeys } from 'src/core/feature-flags/enums/feature-flag-keys.enum';
 
 @Controller('shelters')
-@UseGuards(JwtAuthGuard)
 export class SheltersController {
   private readonly logger = new Logger(SheltersController.name);
 
@@ -45,6 +45,7 @@ export class SheltersController {
     private readonly featureFlagsService: FeatureFlagsService,
   ) { }
 
+  @UseGuards(JwtAuthGuard)
   @Get()
   findAllPaginated(
     @Query() q: QuerySheltersDto,
@@ -53,16 +54,24 @@ export class SheltersController {
     return this.getService.findAllPaginated(q, req);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('simple')
   async findAllSimple(@Req() req: Request): Promise<ShelterSimpleResponseDto[]> {
     return this.getService.findAllSimple(req);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('list')
   async list(@Req() req: Request): Promise<ShelterSelectOptionDto[]> {
     return this.getService.list(req);
   }
 
+  @Get('list-teams')
+  async listTeamsForPublic(): Promise<ShelterTeamSelectOptionDto[]> {
+    return this.getService.listTeamsForPublic();
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   async findOne(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -71,6 +80,7 @@ export class SheltersController {
     return this.getService.findOne(id, req);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id/teams-quantity')
   async getTeamsQuantity(
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -79,6 +89,7 @@ export class SheltersController {
     return this.getService.getTeamsQuantity(id, req);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Post()
   @UseInterceptors(AnyFilesInterceptor())
   async create(
@@ -99,6 +110,7 @@ export class SheltersController {
   }
 
 
+  @UseGuards(JwtAuthGuard)
   @Put(':id')
   @UseInterceptors(AnyFilesInterceptor())
   async update(
@@ -116,6 +128,7 @@ export class SheltersController {
     return toShelterDto(entity, showAddress);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id/media')
   @UseInterceptors(AnyFilesInterceptor())
   async updateMedia(
@@ -133,6 +146,7 @@ export class SheltersController {
     return toShelterDto(entity, showAddress);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   async remove(
     @Param('id', new ParseUUIDPipe()) id: string,

@@ -28,6 +28,7 @@ import { ShelterSelectOptionDto, toShelterSelectOption } from '../dto/shelter-se
 import { RouteEntity } from 'src/infrastructure/route/route-page.entity';
 import { MediaItemEntity } from 'src/shared/media/media-item/media-item.entity';
 import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
+import { ShelterTeamSelectOptionDto, toShelterTeamSelectOption } from '../dto/shelter-team-select-option.dto';
 
 type RoleCtx = { role?: string; userId?: string | null };
 
@@ -369,6 +370,22 @@ export class SheltersRepository {
     this.applyRoleFilter(qb, ctx);
     const items = await qb.getMany();
     return items.map(s => toShelterSelectOption(s, showAddress));
+  }
+
+  async listTeamsForPublic(): Promise<ShelterTeamSelectOptionDto[]> {
+    const teams = await this.teamRepo.find({
+      relations: ['shelter'],
+      order: {
+        shelter: {
+          name: 'ASC',
+        } as any,
+        numberTeam: 'ASC',
+      } as any,
+    });
+
+    return teams
+      .filter(team => !!team.shelter)
+      .map(team => toShelterTeamSelectOption(team));
   }
 
   async createShelter(dto: CreateShelterDto): Promise<ShelterEntity> {

@@ -78,6 +78,12 @@ export class UserController {
     return this.getUsersService.findOne(id);
   }
 
+  @Get(':id/profile')
+  @UseGuards(AdminRoleGuard)
+  async findOneProfile(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.getUsersService.findOneForProfile(id);
+  }
+
   
   @Put(':id')
   @UseGuards(AdminRoleGuard)
@@ -90,7 +96,6 @@ export class UserController {
     this.logger.log(`User updated successfully: ${id}`);
     return result;
   }
-
 
   @Delete(':id')
   @UseGuards(AdminRoleGuard)

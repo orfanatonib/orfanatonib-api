@@ -14,6 +14,7 @@ import { AuthContextService } from 'src/core/auth/services/auth-context.service'
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { ShelterEntity } from '../entities/shelter.entity/shelter.entity';
 import { ShelterTeamsQuantityResponseDto } from '../dto/shelter-teams-quantity-response.dto';
+import { ShelterTeamSelectOptionDto } from '../dto/shelter-team-select-option.dto';
 import { FeatureFlagsService } from 'src/core/feature-flags/feature-flags.service';
 import { FeatureFlagKeys } from 'src/core/feature-flags/enums/feature-flag-keys.enum';
 
@@ -163,6 +164,10 @@ export class GetSheltersService {
     const ctx = await this.getCtx(req);
     const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
     return await this.sheltersRepository.list(ctx, showAddress);
+  }
+
+  async listTeamsForPublic(): Promise<ShelterTeamSelectOptionDto[]> {
+    return this.sheltersRepository.listTeamsForPublic();
   }
 
   async getTeamsQuantity(id: string, req: Request): Promise<ShelterTeamsQuantityResponseDto> {

@@ -15,6 +15,7 @@ import { NotificationModule } from '../../communication/notification/notificatio
 
 import { PasswordResetTokenRepository } from './repositories/password-reset-token.repository';
 import { PasswordRecoveryService } from './services/password-recovery.service';
+import { MemberProfilesModule } from 'src/shelter/member-profile/member-profiles.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { PasswordRecoveryService } from './services/password-recovery.service';
     forwardRef(() => require('../profile/profile.module').ProfileModule),
     AwsModule,
     NotificationModule,
+    forwardRef(() => MemberProfilesModule),
   ],
   controllers: [AuthController],
   providers: [AuthService, AuthContextService, AuthRepository, JwtStrategy, PasswordResetTokenRepository, PasswordRecoveryService],

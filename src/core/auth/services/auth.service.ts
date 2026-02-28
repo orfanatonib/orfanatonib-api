@@ -18,6 +18,7 @@ import { PersonalDataRepository } from 'src/core/profile/repositories/personal-d
 import { UserPreferencesRepository } from 'src/core/profile/repositories/user-preferences.repository';
 import { SesIdentityService } from 'src/infrastructure/aws/ses-identity.service';
 import { AuthErrorMessages, AuthSuccessMessages, AuthLogs } from '../constants/auth.constants';
+import { MemberProfilesRepository } from 'src/shelter/member-profile/repositories/member-profiles.repository';
 
 @Injectable()
 export class AuthService {
@@ -36,8 +37,9 @@ export class AuthService {
     @Inject(forwardRef(() => PersonalDataRepository))
     private readonly personalDataRepository: PersonalDataRepository,
     @Inject(forwardRef(() => UserPreferencesRepository))
-    private readonly userPreferencesRepository: UserPreferencesRepository,
-    private readonly sesIdentityService: SesIdentityService,
+      private readonly userPreferencesRepository: UserPreferencesRepository,
+      private readonly sesIdentityService: SesIdentityService,
+      private readonly memberProfilesRepository: MemberProfilesRepository,
   ) {
     this.googleClient = new OAuth2Client(
       configService.getOrThrow<string>('GOOGLE_CLIENT_ID'),
@@ -494,6 +496,8 @@ export class AuthService {
       throw new NotFoundException(AuthErrorMessages.USER_ALREADY_COMPLETED);
     }
 
+    const finalRole = (data.role ?? user.role) as UserRole;
+
     await this.updateUserService.update(user.id, {
       name: data.name,
       phone: data.phone,
@@ -501,6 +505,14 @@ export class AuthService {
       completed: true,
       role: data.role,
     });
+
+    if (finalRole === UserRole.MEMBER && (data as any).teamId) {
+      try {
+        await this.memberProfilesRepository.assignTeamByIdForUser(user.id, (data as any).teamId);
+      } catch (error: any) {
+        this.logger.warn(`Failed to assign team for user (complete-register) ${user.id}: ${error?.message || String(error)}`);
+      }
+    }
 
     const sesVerification = await this.sesIdentityService.verifyEmailIdentitySES(data.email);
 
@@ -531,6 +543,14 @@ export class AuthService {
       commonUser: true,
       role: data.role,
     });
+
+    if (user.role === UserRole.MEMBER && (data as any).teamId) {
+      try {
+        await this.memberProfilesRepository.assignTeamByIdForUser(user.id, (data as any).teamId);
+      } catch (error: any) {
+        this.logger.warn(`Failed to assign team for user ${user.id}: ${error?.message || String(error)}`);
+      }
+    }
 
     const sesVerification = await this.sesIdentityService.verifyEmailIdentitySES(data.email);
 

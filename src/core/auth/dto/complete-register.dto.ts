@@ -23,4 +23,8 @@ export class CompleteUserDto {
   @IsOptional()
   @IsEnum(UserRole)
   role?: UserRole;
+
+  @IsOptional()
+  @IsString()
+  teamId?: string;
 }
