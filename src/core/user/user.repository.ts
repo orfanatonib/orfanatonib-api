@@ -117,12 +117,16 @@ export class UserRepository {
       qb.andWhere('u.role = :role', { role });
     }
 
-    if (typeof active === 'string') {
-      qb.andWhere('u.active = :active', { active: active === 'true' });
+    if (active === 'active') {
+      qb.andWhere('u.active = :active', { active: true });
+    } else if (active === 'inactive') {
+      qb.andWhere('u.active = :active', { active: false });
     }
 
-    if (typeof completed === 'string') {
-      qb.andWhere('u.completed = :completed', { completed: completed === 'true' });
+    if (completed === 'completed') {
+      qb.andWhere('u.completed = :completed', { completed: true });
+    } else if (completed === 'incomplete') {
+      qb.andWhere('u.completed = :completed', { completed: false });
     }
 
     qb.orderBy(sortCol, sortDir).skip(skip).take(limit);

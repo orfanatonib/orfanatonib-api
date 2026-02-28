@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, IsBooleanString, IsIn, Min } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsIn, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class GetUsersQueryDto {
@@ -23,12 +23,12 @@ export class GetUsersQueryDto {
   role?: 'user' | 'admin' | 'leader' | 'member';
 
   @IsOptional()
-  @IsBooleanString()
-  active?: string;
+  @IsIn(['all', 'active', 'inactive'])
+  active?: 'all' | 'active' | 'inactive';
 
   @IsOptional()
-  @IsBooleanString()
-  completed?: string;
+  @IsIn(['all', 'completed', 'incomplete'])
+  completed?: 'all' | 'completed' | 'incomplete';
 
   @IsOptional()
   @IsIn(['name', 'email', 'phone', 'role', 'createdAt', 'updatedAt'])
