@@ -109,6 +109,7 @@ docs/
 ## 📖 Guias Gerais
 
 A pasta [`guides/`](./guides/) contém:
+- ✅ Configuração de envio de e-mail pelo Gmail SMTP
 - ✅ Resumos de automações
 - ✅ Guias de refatoração
 - ✅ Exemplos de uso

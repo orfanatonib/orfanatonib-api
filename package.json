@@ -12,6 +12,7 @@
     "start:staging": "dotenv -e env/staging.env -- nest start --watch",
     "start:prod": "dotenv -e env/prod.env -- nest start --watch",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "diagrams:generate": "node scripts/generate-diagrams.js",
     "test": "dotenv -e env/local.env -- jest",
     "test:watch": "dotenv -e env/local.env -- jest --watch",
     "test:cov": "dotenv -e env/local.env -- jest --coverage",
@@ -27,7 +28,6 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.758.0",
-    "@aws-sdk/client-ses": "^3.782.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.1",
     "@nestjs/core": "^11.0.1",
@@ -44,6 +44,7 @@
     "google-auth-library": "^10.2.0",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.12.0",
+    "nodemailer": "^10.0.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
@@ -65,6 +66,7 @@
     "@types/jest": "^29.5.14",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.10.7",
+    "@types/nodemailer": "^8.0.1",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
     "dotenv-cli": "^11.0.0",
@@ -99,6 +101,16 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "\\.fixtures\\.ts$"
+    ],
+    "moduleDirectories": [
+      "node_modules",
+      "<rootDir>/.."
+    ],
+    "setupFiles": [
+      "reflect-metadata"
+    ]
   }
 }

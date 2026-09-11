@@ -160,6 +160,15 @@ export class GetSheltersService {
     return toShelterDto(shelter, showAddress);
   }
 
+  /**
+   * Request-free contract for other modules: answers whether the shelter exists
+   * AND is visible to the given actor, without exposing the shelter payload.
+   */
+  async existsForActor(id: string, ctx: Ctx): Promise<boolean> {
+    const shelter = await this.sheltersRepository.findOneOrFailForResponse(id, ctx);
+    return shelter !== null;
+  }
+
   async list(req: Request): Promise<ShelterSelectOptionDto[]> {
     const ctx = await this.getCtx(req);
     const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);

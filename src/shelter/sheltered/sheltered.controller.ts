@@ -5,94 +5,120 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
-  Patch,
   Query,
   Req,
   UseGuards,
-  Logger,
-} from '@nestjs/common';
-import { Request } from 'express';
+} from "@nestjs/common";
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { AuthenticatedRequest } from "src/core/auth/auth.types";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
 
-import { ShelteredService } from './sheltered.service';
-import { CreateShelteredDto } from './dto/create-sheltered.dto';
-import { UpdateShelteredDto } from './dto/update-sheltered.dto';
-import { UpdateShelteredStatusDto } from './dto/update-sheltered-status.dto';
-import { QueryShelteredDto, QueryShelteredSimpleDto } from './dto/query-sheltered.dto';
-import { PaginatedResponseDto, ShelteredResponseDto, ShelteredListItemDto } from './dto/sheltered-response.dto';
-import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
+import { CreateShelteredDto } from "./dto/create-sheltered.dto";
+import { UpdateShelteredDto } from "./dto/update-sheltered.dto";
+import { UpdateShelteredStatusDto } from "./dto/update-sheltered-status.dto";
+import { QueryShelteredDto } from "./dto/query-sheltered.dto";
+import { QueryShelteredSimpleDto } from "./dto/query-sheltered-simple.dto";
+import {
+  ShelteredListItemDto,
+  ShelteredResponseDto,
+} from "./dto/sheltered-response.dto";
+import { CreateShelteredService } from "./services/create-sheltered.service";
+import { GetShelteredService } from "./services/get-sheltered.service";
+import { UpdateShelteredService } from "./services/update-sheltered.service";
+import { DeleteShelteredService } from "./services/delete-sheltered.service";
+import { toShelteredAccessContext } from "./utils/sheltered-access.util";
 
-@Controller('sheltered')
+@Controller("sheltered")
 @UseGuards(JwtAuthGuard)
 export class ShelteredController {
-  private readonly logger = new Logger(ShelteredController.name);
-
-  constructor(private readonly service: ShelteredService) { }
+  constructor(
+    private readonly createShelteredService: CreateShelteredService,
+    private readonly getShelteredService: GetShelteredService,
+    private readonly updateShelteredService: UpdateShelteredService,
+    private readonly deleteShelteredService: DeleteShelteredService,
+  ) {}
 
   @Get()
   async findAll(
     @Query() query: QueryShelteredDto,
-    @Req() req: Request,
+    @Req() request: AuthenticatedRequest,
   ): Promise<PaginatedResponseDto<ShelteredResponseDto>> {
-    return this.service.findAll(query, req);
+    return this.getShelteredService.findAll(
+      query,
+      toShelteredAccessContext(request),
+    );
   }
 
-  @Get('simple')
-  async findAllSimples(
+  @Get("simple")
+  async findAllSimple(
     @Query() query: QueryShelteredSimpleDto,
-    @Req() req: Request,
+    @Req() request: AuthenticatedRequest,
   ): Promise<PaginatedResponseDto<ShelteredListItemDto>> {
-    return this.service.findAllSimples(query, req);
+    return this.getShelteredService.findAllSimple(
+      query,
+      toShelteredAccessContext(request),
+    );
   }
 
-  @Get(':id')
+  @Get(":id")
   async findOne(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: Request,
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<ShelteredResponseDto> {
-    return this.service.findOne(id, req);
+    return this.getShelteredService.findOne(
+      id,
+      toShelteredAccessContext(request),
+    );
   }
 
   @Post()
   async create(
     @Body() dto: CreateShelteredDto,
-    @Req() req: Request,
+    @Req() request: AuthenticatedRequest,
   ): Promise<ShelteredResponseDto> {
-    this.logger.log(`Creating new sheltered child`);
-    const result = await this.service.create(dto, req);
-    this.logger.log(`Sheltered child created successfully: ${result.id}`);
-    return result;
+    return this.createShelteredService.execute(
+      dto,
+      toShelteredAccessContext(request),
+    );
   }
 
-  @Put(':id')
+  @Put(":id")
   async update(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param("id", new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateShelteredDto,
-    @Req() req: Request,
+    @Req() request: AuthenticatedRequest,
   ): Promise<ShelteredResponseDto> {
-    this.logger.log(`Updating sheltered child: ${id}`);
-    const result = await this.service.update(id, dto, req);
-    this.logger.log(`Sheltered child updated successfully: ${id}`);
-    return result;
+    return this.updateShelteredService.execute(
+      id,
+      dto,
+      toShelteredAccessContext(request),
+    );
   }
 
-  @Patch(':id/status')
+  @Patch(":id/status")
   async updateStatus(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param("id", new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateShelteredStatusDto,
-    @Req() req: Request,
+    @Req() request: AuthenticatedRequest,
   ): Promise<ShelteredResponseDto> {
-    return this.service.updateStatus(id, dto.active, req);
+    return this.updateShelteredService.updateStatus(
+      id,
+      dto.active,
+      toShelteredAccessContext(request),
+    );
   }
 
-  @Delete(':id')
+  @Delete(":id")
   async remove(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: Request,
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<void> {
-    this.logger.log(`Deleting sheltered child: ${id}`);
-    await this.service.remove(id, req);
-    this.logger.log(`Sheltered child deleted successfully: ${id}`);
+    await this.deleteShelteredService.execute(
+      id,
+      toShelteredAccessContext(request),
+    );
   }
 }

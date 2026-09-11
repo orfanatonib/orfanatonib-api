@@ -66,12 +66,14 @@ export const EventNotificationMessages = {
 } as const;
 
 export const EventNotificationLogs = {
-  EMAIL_SENT: (email: string, action: EventAction) =>
-    `Event ${action} notification sent to: ${email}`,
-  EMAIL_ERROR: (email: string, error: string) =>
-    `Error sending event notification to ${email}: ${error}`,
-  NO_RECIPIENTS: (audience: string) =>
-    `No recipients found for event notification with audience: ${audience}`,
+  EMAIL_SENT: (action: EventAction) =>
+    `Event ${action} notification sent`,
+  EMAIL_ERROR: (action: EventAction) =>
+    `Error sending event ${action} notification`,
+  NO_RECIPIENTS: (audience?: string) =>
+    audience
+      ? `No recipients found for event notification with audience: ${audience}`
+      : 'No recipients found for event notification',
   NOTIFICATION_STARTED: (eventId: string, action: EventAction) =>
     `Starting event ${action} notification for event: ${eventId}`,
   NOTIFICATION_COMPLETED: (eventId: string, recipientCount: number) =>

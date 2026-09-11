@@ -16,8 +16,7 @@ import { UserRole } from '../auth.types';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { PersonalDataRepository } from 'src/core/profile/repositories/personal-data.repository';
 import { UserPreferencesRepository } from 'src/core/profile/repositories/user-preferences.repository';
-import { SesIdentityService } from 'src/infrastructure/aws/ses-identity.service';
-import { AuthErrorMessages, AuthSuccessMessages, AuthLogs } from '../constants/auth.constants';
+import { AuthErrorMessages, AuthSuccessMessages } from '../constants/auth.constants';
 import { MemberProfilesRepository } from 'src/shelter/member-profile/repositories/member-profiles.repository';
 
 @Injectable()
@@ -37,9 +36,8 @@ export class AuthService {
     @Inject(forwardRef(() => PersonalDataRepository))
     private readonly personalDataRepository: PersonalDataRepository,
     @Inject(forwardRef(() => UserPreferencesRepository))
-      private readonly userPreferencesRepository: UserPreferencesRepository,
-      private readonly sesIdentityService: SesIdentityService,
-      private readonly memberProfilesRepository: MemberProfilesRepository,
+    private readonly userPreferencesRepository: UserPreferencesRepository,
+    private readonly memberProfilesRepository: MemberProfilesRepository,
   ) {
     this.googleClient = new OAuth2Client(
       configService.getOrThrow<string>('GOOGLE_CLIENT_ID'),
@@ -64,20 +62,10 @@ export class AuthService {
       throw new UnauthorizedException(AuthErrorMessages.INVALID_CREDENTIALS);
     }
 
-    const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
-
     if (!user.active) {
       return {
         message: AuthSuccessMessages.USER_INACTIVE,
         user: this.buildUserResponse(user),
-        emailVerification: {
-          verificationEmailSent: sesVerification.verificationEmailSent,
-          message: sesVerification.verificationEmailSent
-            ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
-            : sesVerification.alreadyVerified
-              ? AuthSuccessMessages.EMAIL_ALREADY_VERIFIED
-              : undefined,
-        },
       };
     }
 
@@ -88,14 +76,6 @@ export class AuthService {
       message: AuthSuccessMessages.LOGIN_SUCCESS,
       user: this.buildUserResponse(user),
       ...tokens,
-      emailVerification: {
-        verificationEmailSent: sesVerification.verificationEmailSent,
-        message: sesVerification.verificationEmailSent
-          ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
-          : sesVerification.alreadyVerified
-            ? AuthSuccessMessages.EMAIL_ALREADY_VERIFIED
-            : undefined,
-      },
     };
   }
 
@@ -126,58 +106,34 @@ export class AuthService {
           role: UserRole.MEMBER,
         });
 
-        const sesVerification = await this.sesIdentityService.verifyEmailIdentitySES(email);
-
         return {
           email,
           name,
           completed: user.completed,
           commonUser: user.commonUser,
           newUser: true,
-          emailVerification: {
-            verificationEmailSent: sesVerification.verificationEmailSent,
-            message: sesVerification.verificationEmailSent
-              ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
-              : undefined,
-          },
         };
       }
 
       if (!user.completed) {
-        const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
         return {
           email,
           name,
           completed: false,
           commonUser: user.commonUser,
           newUser: true,
-          emailVerification: {
-            verificationEmailSent: sesVerification.verificationEmailSent,
-            message: sesVerification.verificationEmailSent
-              ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
-              : undefined,
-          },
         };
       }
 
       if (!(user as any).active) {
-        const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
         return {
           message: AuthErrorMessages.USER_INACTIVE,
           active: false,
           completed: user.completed,
           commonUser: user.commonUser,
           newUser: false,
-          emailVerification: {
-            verificationEmailSent: sesVerification.verificationEmailSent,
-            message: sesVerification.verificationEmailSent
-              ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
-              : undefined,
-          },
         };
       }
-
-      const sesVerification = await this.sesIdentityService.checkAndResendSesVerification(email);
 
       const tokens = this.generateTokens(user);
       await this.updateRefreshToken(user.id, tokens.refreshToken);
@@ -187,14 +143,6 @@ export class AuthService {
         isNewUser: false,
         user: this.buildUserResponse(user),
         ...tokens,
-        emailVerification: {
-          verificationEmailSent: sesVerification.verificationEmailSent,
-          message: sesVerification.verificationEmailSent
-            ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
-            : sesVerification.alreadyVerified
-              ? AuthSuccessMessages.EMAIL_ALREADY_VERIFIED
-              : undefined,
-        },
       };
     } catch (error) {
       this.logger.error(`Error during Google login: ${error.message}`, error.stack);
@@ -514,16 +462,8 @@ export class AuthService {
       }
     }
 
-    const sesVerification = await this.sesIdentityService.verifyEmailIdentitySES(data.email);
-
     return {
       message: AuthSuccessMessages.REGISTRATION_COMPLETED,
-      emailVerification: {
-        verificationEmailSent: sesVerification.verificationEmailSent,
-        message: sesVerification.verificationEmailSent
-          ? AuthSuccessMessages.EMAIL_VERIFICATION_SENT
-          : undefined,
-      },
     };
   }
 
@@ -552,17 +492,9 @@ export class AuthService {
       }
     }
 
-    const sesVerification = await this.sesIdentityService.verifyEmailIdentitySES(data.email);
-
     return {
       message: AuthSuccessMessages.REGISTRATION_SUCCESS,
       user: this.buildUserResponse(user),
-      emailVerification: {
-        verificationEmailSent: sesVerification.verificationEmailSent,
-        message: sesVerification.verificationEmailSent
-          ? AuthSuccessMessages.EMAIL_VERIFICATION_COMPLETE
-          : undefined,
-      },
     };
   }
 

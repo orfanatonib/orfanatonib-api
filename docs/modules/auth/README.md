@@ -12,6 +12,7 @@ O módulo Auth gerencia a autenticação e autorização do sistema de orfanato,
 - **Refresh Tokens** - Renovação de tokens
 - **Autorização** - Controle de acesso por roles
 - **Validação** - Verificação de dados
+- **Recuperação de senha** - Envio do link diretamente por Gmail SMTP
 
 ### Roles do Sistema
 - `admin` - Acesso total ao sistema
@@ -26,6 +27,19 @@ O módulo Auth gerencia a autenticação e autorização do sistema de orfanato,
 - `POST /auth/refresh` - Renovar token
 - `POST /auth/logout` - Fazer logout
 - `POST /auth/complete-register` - Completar registro
+- `POST /auth/forgot-password` - Solicitar link de recuperação por e-mail
+- `GET /auth/reset-password/validate` - Validar token de recuperação
+- `POST /auth/reset-password` - Redefinir a senha
+
+### Entrega de e-mail
+
+O backend envia e-mails pelo SMTP do Gmail. Não há mais cadastro ou verificação
+de destinatários no SES. Por isso, login e registro não retornam mais o campo
+legado `emailVerification`, e a recuperação de senha tenta enviar o link
+diretamente ao endereço cadastrado.
+
+Veja [`../../guides/GMAIL_SMTP_CONFIGURATION.md`](../../guides/GMAIL_SMTP_CONFIGURATION.md)
+para configurar as credenciais do remetente.
 
 ### 👤 Perfil do Usuário
 - `GET /auth/profile` - Obter perfil do usuário logado

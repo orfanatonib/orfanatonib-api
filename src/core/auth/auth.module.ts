@@ -10,7 +10,6 @@ import { AuthService } from './services/auth.service';
 import { AuthContextService } from './services/auth-context.service';
 import { UserModule } from '../user/user.module';
 import { MediaModule } from '../../shared/media/media.module';
-import { AwsModule } from '../../infrastructure/aws/aws.module';
 import { NotificationModule } from '../../communication/notification/notification.module';
 
 import { PasswordResetTokenRepository } from './repositories/password-reset-token.repository';
@@ -34,7 +33,6 @@ import { MemberProfilesModule } from 'src/shelter/member-profile/member-profiles
     forwardRef(() => UserModule),
     MediaModule,
     forwardRef(() => require('../profile/profile.module').ProfileModule),
-    AwsModule,
     NotificationModule,
     forwardRef(() => MemberProfilesModule),
   ],

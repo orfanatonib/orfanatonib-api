@@ -4,3 +4,4 @@ export * from './business.exception';
 export * from './rule.exception';
 export * from './process.exception';
 export * from './too-many-requests.exception';
+export * from './resource-not-found.exception';

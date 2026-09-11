@@ -1,17 +1,7 @@
 import { AcceptedChristShortDto } from "src/shelter/accepted-christ/dtos/accepted-christ-short.dto";
+import { ShelteredGender } from "../enums/sheltered-gender.enum";
 
-export class ShelteredListItemDto {
-  id: string;
-  name: string;
-  guardianName?: string | null;
-  gender: string;
-  guardianPhone?: string | null;
-  shelterId?: string | null;
-  active: boolean;
-  acceptedChrists?: AcceptedChristShortDto[];
-}
-
-export class AddressResponseDto {
+export class ShelteredAddressResponseDto {
   id: string;
   street?: string | null;
   number?: string;
@@ -22,39 +12,33 @@ export class AddressResponseDto {
   complement?: string;
 }
 
-export class PagelaMiniDto {
+export class ShelteredShelterResponseDto {
   id: string;
-  year: number;
-  visit: number;
-  referenceDate: string;
-  present: boolean;
-  notes?: string | null;
+  name: string;
+}
+
+export class ShelteredListItemDto {
+  id: string;
+  name: string;
+  guardianName?: string | null;
+  gender: ShelteredGender;
+  guardianPhone?: string | null;
+  shelterId: string | null;
+  active: boolean;
+  acceptedChrists: AcceptedChristShortDto[];
 }
 
 export class ShelteredResponseDto {
   id: string;
   name: string;
-  birthDate?: string | null;
+  gender: ShelteredGender;
+  birthDate: string | null;
   guardianName?: string | null;
-  gender: string;
   guardianPhone?: string | null;
-  joinedAt?: string | null;
+  joinedAt: string | null;
   active: boolean;
-  shelter?: { id: string; name: string } | null;
-  address?: AddressResponseDto | null;
-  pagelas?: PagelaMiniDto[];
+  shelter: ShelteredShelterResponseDto | null;
+  address: ShelteredAddressResponseDto | null;
   createdAt: string;
   updatedAt: string;
-}
-
-export class PaginatedResponseDto<T> {
-  data: T[];
-  meta: {
-    page: number;
-    limit: number;
-    totalItems: number;
-    totalPages: number;
-    orderBy?: string;
-    order?: 'ASC' | 'DESC';
-  };
 }

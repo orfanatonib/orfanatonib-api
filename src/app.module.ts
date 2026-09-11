@@ -4,6 +4,7 @@ import { RouteModule } from './infrastructure/route/route.module';
 import { UserModule } from './core/user/user.module';
 import { AuthModule } from './core/auth/auth.module';
 import { AwsModule } from './infrastructure/aws/aws.module';
+import { EmailModule } from './infrastructure/email/email.module';
 import { TwilioModule } from './infrastructure/twilio/twilio.module';
 import { DatabaseModule } from '../database/database.module';
 import { MeditationModule } from './content/meditation/meditation.module';
@@ -58,6 +59,7 @@ function getEnvFilePath(): string {
     }),
     DatabaseModule,
     AwsModule,
+    EmailModule,
     TwilioModule,
     NotificationModule,
     ImageModule,

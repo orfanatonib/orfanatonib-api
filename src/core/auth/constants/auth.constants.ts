@@ -3,7 +3,6 @@ export enum AuthStatus {
     LOGOUT_SUCCESS = 'LOGOUT_SUCCESS',
     REGISTRATION_SUCCESS = 'REGISTRATION_SUCCESS',
     USER_INACTIVE = 'USER_INACTIVE',
-    EMAIL_VERIFICATION_SENT = 'EMAIL_VERIFICATION_SENT',
 }
 
 export const AuthErrorMessages = {
@@ -25,10 +24,7 @@ export const AuthSuccessMessages = {
     LOGOUT_SUCCESS: 'User logged out',
     REGISTRATION_SUCCESS: 'Registration successful',
     REGISTRATION_COMPLETED: 'Registration completed successfully',
-    USER_INACTIVE: 'User is inactive. Please verify your email to activate your account.',
-    EMAIL_VERIFICATION_SENT: 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada.',
-    EMAIL_VERIFICATION_COMPLETE: 'Um email de verificação foi enviado para o seu endereço. Por favor, verifique sua caixa de entrada para completar o cadastro.',
-    EMAIL_ALREADY_VERIFIED: 'Email já verificado.',
+    USER_INACTIVE: 'User is inactive.',
 } as const;
 
 export const AuthLogs = {

@@ -1,24 +1,39 @@
-import { Module, forwardRef } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { ShelteredController } from './sheltered.controller';
-import { ShelteredService } from './sheltered.service';
-import { ShelterEntity } from '../shelter/entities/shelter.entity/shelter.entity';
-import { AddressEntity } from '../address/entities/address.entity/address.entity';
-import { ShelteredEntity } from './entities/sheltered.entity';
-import { ShelteredRepository } from './repositories/sheltered.repository';
-import { AddressesModule } from '../address/addresses.module';
-import { SheltersModule } from '../shelter/shelters.module';
-import { AuthModule } from 'src/core/auth/auth.module';
+import { Module, forwardRef } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { AuthModule } from "src/core/auth/auth.module";
+import { AddressesModule } from "../address/addresses.module";
+import { SheltersModule } from "../shelter/shelters.module";
+import { ShelteredController } from "./sheltered.controller";
+import { ShelteredEntity } from "./entities/sheltered.entity";
+import { ShelteredRepository } from "./repositories/sheltered.repository";
+import { CreateShelteredService } from "./services/create-sheltered.service";
+import { GetShelteredService } from "./services/get-sheltered.service";
+import { UpdateShelteredService } from "./services/update-sheltered.service";
+import { DeleteShelteredService } from "./services/delete-sheltered.service";
+import { ShelteredShelterAccessService } from "./services/sheltered-shelter-access.service";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ShelteredEntity, ShelterEntity, AddressEntity]),
+    TypeOrmModule.forFeature([ShelteredEntity]),
     AddressesModule,
     forwardRef(() => SheltersModule),
     forwardRef(() => AuthModule),
   ],
   controllers: [ShelteredController],
-  providers: [ShelteredService, ShelteredRepository],
-  exports: [ShelteredService, ShelteredRepository],
+  providers: [
+    ShelteredRepository,
+    ShelteredShelterAccessService,
+    CreateShelteredService,
+    GetShelteredService,
+    UpdateShelteredService,
+    DeleteShelteredService,
+  ],
+  exports: [
+    ShelteredRepository,
+    CreateShelteredService,
+    GetShelteredService,
+    UpdateShelteredService,
+    DeleteShelteredService,
+  ],
 })
-export class ShelteredModule { }
+export class ShelteredModule {}

@@ -134,7 +134,7 @@ Repositories MUST NOT own HTTP concerns, user-facing messages, role policy, noti
 
 ### 4.5 External Providers
 
-AWS S3/SES, Twilio, Google authentication, and every other third-party integration MUST be isolated behind injectable providers in `src/shared/providers/` or the owning feature's `providers/` directory.
+AWS S3, Gmail SMTP, Twilio, Google authentication, and every other third-party integration MUST be isolated behind injectable providers in `src/shared/providers/` or the owning feature's `providers/` directory.
 
 Providers own client configuration, timeouts, retries, vendor payloads, and error translation. Services consume typed, vendor-neutral methods. Tests MUST mock providers and MUST NOT call live services.
 

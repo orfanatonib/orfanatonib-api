@@ -1,75 +1,54 @@
 import {
+  IsBoolean,
   IsDateString,
+  IsEnum,
   IsOptional,
   IsString,
-  Length,
   IsUUID,
-  ValidateNested,
-  IsIn,
+  Length,
   ValidateIf,
-  IsBoolean,
-} from 'class-validator';
-import { Type } from 'class-transformer';
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { UpdateShelteredAddressDto } from "./sheltered-address.dto";
+import { ShelteredGender } from "../enums/sheltered-gender.enum";
+import {
+  GUARDIAN_NAME_MAX_LENGTH,
+  GUARDIAN_NAME_MIN_LENGTH,
+  GUARDIAN_PHONE_MAX_LENGTH,
+  GUARDIAN_PHONE_MIN_LENGTH,
+  SHELTERED_NAME_MAX_LENGTH,
+  SHELTERED_NAME_MIN_LENGTH,
+} from "../constants";
 
-class AddressUpdateDto {
-  @IsOptional()
-  @IsUUID()
-  id?: string;
-
-  @IsOptional()
-  @IsString()
-  street?: string;
-
-  @IsOptional()
-  @IsString()
-  number?: string;
-
-  @IsOptional()
-  @IsString()
-  district?: string;
-
-  @IsOptional()
-  @IsString()
-  city?: string;
-
-  @IsOptional()
-  @IsString()
-  state?: string;
-
-  @IsOptional()
-  @IsString()
-  postalCode?: string;
-
-  @IsOptional()
-  @IsString()
-  complement?: string;
-
-}
-
+/**
+ * Every field is optional: an omitted key leaves the column untouched, while an
+ * explicit `null` on `shelterId`/`address` detaches the relation.
+ */
 export class UpdateShelteredDto {
   @IsOptional()
   @IsString()
-  @Length(2, 255)
+  @Length(SHELTERED_NAME_MIN_LENGTH, SHELTERED_NAME_MAX_LENGTH)
   name?: string;
+
+  @IsOptional()
+  @IsEnum(ShelteredGender)
+  gender?: ShelteredGender;
 
   @IsOptional()
   @IsDateString()
   birthDate?: string;
 
   @IsOptional()
-  @ValidateIf((o) => o.guardianName && o.guardianName.trim().length > 0)
+  @ValidateIf((dto: UpdateShelteredDto) => Boolean(dto.guardianName?.trim()))
   @IsString()
-  @Length(2, 255)
+  @Length(GUARDIAN_NAME_MIN_LENGTH, GUARDIAN_NAME_MAX_LENGTH)
   guardianName?: string;
 
   @IsOptional()
-  @IsIn(['M', 'F'])
-  gender?: string;
-
-  @IsOptional()
-  @ValidateIf((o) => o.guardianPhone && o.guardianPhone.trim().length > 0)
+  @ValidateIf((dto: UpdateShelteredDto) => Boolean(dto.guardianPhone?.trim()))
   @IsString()
-  @Length(5, 32)
+  @Length(GUARDIAN_PHONE_MIN_LENGTH, GUARDIAN_PHONE_MAX_LENGTH)
   guardianPhone?: string;
 
   @IsOptional()
@@ -81,11 +60,13 @@ export class UpdateShelteredDto {
   active?: boolean;
 
   @IsOptional()
+  @ValidateIf((_dto: UpdateShelteredDto, value: unknown) => value !== null)
   @IsUUID()
   shelterId?: string | null;
 
   @IsOptional()
+  @ValidateIf((_dto: UpdateShelteredDto, value: unknown) => value !== null)
   @ValidateNested()
-  @Type(() => AddressUpdateDto)
-  address?: AddressUpdateDto | null;
+  @Type(() => UpdateShelteredAddressDto)
+  address?: UpdateShelteredAddressDto | null;
 }

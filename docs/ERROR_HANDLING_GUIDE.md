@@ -252,6 +252,22 @@ Todos os erros da API seguem este formato JSON:
 }
 ```
 
+### Falha no envio por Gmail SMTP
+
+Quando um envio obrigatório continua falhando depois das tentativas para erros
+transitórios, o provider lança uma exceção de processo. A resposta HTTP mantém o
+envelope global e não expõe credenciais, destinatários nem a resposta bruta do
+servidor SMTP:
+
+```json
+{
+  "statusCode": 500,
+  "message": "Não foi possível enviar o e-mail. Tente novamente mais tarde.",
+  "error": "PROCESS",
+  "category": "PROCESS"
+}
+```
+
 ## Rate Limiting (Limitação de Taxa)
 
 **⚠️ ATUALMENTE DESABILITADO:** Os middlewares de rate limiting estão temporariamente desabilitados para estabilidade. Quando reabilitados, implementarão:

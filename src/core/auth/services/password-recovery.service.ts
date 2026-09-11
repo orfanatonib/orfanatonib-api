@@ -3,24 +3,26 @@ import * as crypto from 'crypto';
 import { GetUsersService } from '../../user/services/get-user.service';
 import { UpdateUserService } from '../../user/services/update-user.service';
 import { NotificationService } from '../../../communication/notification/notification.service';
-import { SesIdentityService } from '../../../infrastructure/aws/ses-identity.service';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { PasswordResetTokenRepository } from '../repositories/password-reset-token.repository';
 import {
     PasswordRecoveryStatus,
     PasswordRecoveryMessages,
-    PasswordRecoveryResponse
 } from '../constants/password-recovery.constants';
+import {
+    PasswordRecoveryResponse,
+    ResetPasswordResponse,
+    ValidateResetTokenResponse,
+} from '../types/password-recovery.types';
 
 @Injectable()
 export class PasswordRecoveryService {
     constructor(
-        private getUsersService: GetUsersService,
-        private updateUserService: UpdateUserService,
-        private notificationService: NotificationService,
-        private passwordResetTokenRepo: PasswordResetTokenRepository,
-        private sesIdentityService: SesIdentityService,
+        private readonly getUsersService: GetUsersService,
+        private readonly updateUserService: UpdateUserService,
+        private readonly notificationService: NotificationService,
+        private readonly passwordResetTokenRepo: PasswordResetTokenRepository,
     ) { }
 
     async forgotPassword(data: ForgotPasswordDto): Promise<PasswordRecoveryResponse> {
@@ -30,16 +32,6 @@ export class PasswordRecoveryService {
                 status: PasswordRecoveryStatus.USER_NOT_FOUND,
                 message: PasswordRecoveryMessages.USER_NOT_FOUND,
             });
-        }
-
-        const sesCheck = await this.sesIdentityService.checkAndResendSesVerification(user.email);
-
-        if (!sesCheck.alreadyVerified) {
-            return {
-                status: PasswordRecoveryStatus.SES_NOT_VERIFIED,
-                message: PasswordRecoveryMessages.SES_NOT_VERIFIED,
-                verificationEmailSent: sesCheck.verificationEmailSent,
-            };
         }
 
         const resetToken = crypto.randomBytes(32).toString('hex');
@@ -61,7 +53,7 @@ export class PasswordRecoveryService {
         };
     }
 
-    async validateResetToken(token: string) {
+    async validateResetToken(token: string): Promise<ValidateResetTokenResponse> {
         const validToken = await this.passwordResetTokenRepo.findValidToken(token);
         if (!validToken) {
             throw new BadRequestException(PasswordRecoveryMessages.TOKEN_INVALID);
@@ -69,7 +61,7 @@ export class PasswordRecoveryService {
         return { valid: true, email: validToken.user.email };
     }
 
-    async resetPassword(dto: ResetPasswordDto) {
+    async resetPassword(dto: ResetPasswordDto): Promise<ResetPasswordResponse> {
         const validToken = await this.passwordResetTokenRepo.findValidToken(dto.token);
         if (!validToken) {
             throw new BadRequestException(PasswordRecoveryMessages.TOKEN_INVALID);

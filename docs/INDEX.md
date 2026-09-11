@@ -222,6 +222,7 @@ docs/
 Documentação transversal e guias de automação.
 
 ### Arquivos
+- [`guides/GMAIL_SMTP_CONFIGURATION.md`](./guides/GMAIL_SMTP_CONFIGURATION.md) - Configuração de envio pelo Gmail SMTP
 - [`guides/COLLECTIONS_README.md`](./guides/COLLECTIONS_README.md)
 - [`guides/DOCUMENTATION_README.md`](./guides/DOCUMENTATION_README.md)
 - [`guides/RESUMO_ATUALIZACAO_COLLECTIONS.md`](./guides/RESUMO_ATUALIZACAO_COLLECTIONS.md)

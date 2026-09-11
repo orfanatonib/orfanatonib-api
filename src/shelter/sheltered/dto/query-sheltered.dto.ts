@@ -1,46 +1,83 @@
-import { IsIn, IsInt, IsOptional, IsString, IsUUID, Min, IsNumber } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import { Type } from "class-transformer";
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from "class-validator";
+import { SortOrder } from "src/shared/enums/sort-order.enum";
+import { ShelteredGender } from "../enums/sheltered-gender.enum";
+import { ShelteredOrderBy } from "../enums/sheltered-order-by.enum";
+import {
+  SHELTERED_LIMIT_DEFAULT,
+  SHELTERED_LIMIT_MAX,
+  SHELTERED_ORDER_BY_DEFAULT,
+  SHELTERED_ORDER_DEFAULT,
+  SHELTERED_PAGE_DEFAULT,
+} from "../constants";
 
-/**
- * 📋 DTO para query de sheltered com filtros agrupados logicamente
- */
 export class QueryShelteredDto {
-  @Transform(({ value }) => Number(value))
-  @IsOptional() @IsInt() @Min(1)
-  page?: number = 1;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page: number = SHELTERED_PAGE_DEFAULT;
 
-  @Transform(({ value }) => Number(value))
-  @IsOptional() @IsInt() @Min(1)
-  limit?: number = 20;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(SHELTERED_LIMIT_MAX)
+  limit: number = SHELTERED_LIMIT_DEFAULT;
 
-  @IsOptional() @IsIn(['name', 'birthDate', 'joinedAt', 'createdAt', 'updatedAt'])
-  orderBy?: 'name' | 'birthDate' | 'joinedAt' | 'createdAt' | 'updatedAt' = 'name';
+  @IsOptional()
+  @IsEnum(ShelteredOrderBy)
+  orderBy: ShelteredOrderBy = SHELTERED_ORDER_BY_DEFAULT;
 
-  @IsOptional() @IsIn(['ASC', 'DESC', 'asc', 'desc'])
-  order?: 'ASC' | 'DESC' | 'asc' | 'desc' = 'ASC';
+  @IsOptional()
+  @IsEnum(SortOrder)
+  order: SortOrder = SHELTERED_ORDER_DEFAULT;
 
-  @IsOptional() @IsString()
+  /** Matches the acolhido name, guardian name or guardian phone. */
+  @IsOptional()
+  @IsString()
   searchString?: string;
 
-  @IsOptional() @IsUUID()
+  /** Matches the shelter name, city or state. */
+  @IsOptional()
+  @IsString()
+  shelterSearchingString?: string;
+
+  /** Matches the acolhido address street, district, city or state. */
+  @IsOptional()
+  @IsString()
+  addressFilter?: string;
+
+  @IsOptional()
+  @IsUUID()
   shelterId?: string;
-}
 
-export class QueryShelteredSimpleDto {
-  @Transform(({ value }) => Number(value))
-  @IsOptional() @IsInt() @Min(1)
-  page?: number = 1;
+  @IsOptional()
+  @IsEnum(ShelteredGender)
+  gender?: ShelteredGender;
 
-  @Transform(({ value }) => Number(value))
-  @IsOptional() @IsInt() @Min(1)
-  limit?: number = 20;
+  @IsOptional()
+  @IsDateString()
+  birthDateFrom?: string;
 
-  @IsOptional() @IsString()
-  searchString?: string;
+  @IsOptional()
+  @IsDateString()
+  birthDateTo?: string;
 
-  @IsOptional() @IsIn(['accepted', 'not_accepted', 'all'])
-  acceptedJesus?: 'accepted' | 'not_accepted' | 'all' = 'all';
+  @IsOptional()
+  @IsDateString()
+  joinedFrom?: string;
 
-  @IsOptional() @IsIn(['active', 'inactive', 'all'])
-  active?: 'active' | 'inactive' | 'all' = 'all';
+  @IsOptional()
+  @IsDateString()
+  joinedTo?: string;
 }

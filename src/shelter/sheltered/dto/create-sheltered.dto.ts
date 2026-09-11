@@ -1,49 +1,59 @@
 import {
   IsDateString,
+  IsEnum,
   IsOptional,
   IsString,
-  Length,
   IsUUID,
-  ValidateNested,
-  IsIn,
+  Length,
   ValidateIf,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-
-class AddressDto {
-  @IsOptional() @IsString() street?: string;
-  @IsOptional() @IsString() number?: string;
-  @IsOptional() @IsString() district?: string;
-  @IsString() city: string;
-  @IsString() state: string;
-  @IsOptional() @IsString() postalCode?: string;
-  @IsOptional() @IsString() complement?: string;
-}
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { CreateShelteredAddressDto } from "./sheltered-address.dto";
+import { ShelteredGender } from "../enums/sheltered-gender.enum";
+import {
+  GUARDIAN_NAME_MAX_LENGTH,
+  GUARDIAN_NAME_MIN_LENGTH,
+  GUARDIAN_PHONE_MAX_LENGTH,
+  GUARDIAN_PHONE_MIN_LENGTH,
+  SHELTERED_NAME_MAX_LENGTH,
+  SHELTERED_NAME_MIN_LENGTH,
+} from "../constants";
 
 export class CreateShelteredDto {
-  @IsString() @Length(2, 255) name: string;
-  @IsOptional() @IsDateString() birthDate?: string;
+  @IsString()
+  @Length(SHELTERED_NAME_MIN_LENGTH, SHELTERED_NAME_MAX_LENGTH)
+  name: string;
 
-  @IsOptional() 
-  @ValidateIf((o) => o.guardianName && o.guardianName.trim().length > 0)
-  @IsString() 
-  @Length(2, 255) 
+  @IsEnum(ShelteredGender)
+  gender: ShelteredGender;
+
+  @IsOptional()
+  @IsDateString()
+  birthDate?: string;
+
+  @IsOptional()
+  @ValidateIf((dto: CreateShelteredDto) => Boolean(dto.guardianName?.trim()))
+  @IsString()
+  @Length(GUARDIAN_NAME_MIN_LENGTH, GUARDIAN_NAME_MAX_LENGTH)
   guardianName?: string;
-  
-  @IsIn(['M', 'F']) gender: string;
-  
-  @IsOptional() 
-  @ValidateIf((o) => o.guardianPhone && o.guardianPhone.trim().length > 0)
-  @IsString() 
-  @Length(5, 32) 
+
+  @IsOptional()
+  @ValidateIf((dto: CreateShelteredDto) => Boolean(dto.guardianPhone?.trim()))
+  @IsString()
+  @Length(GUARDIAN_PHONE_MIN_LENGTH, GUARDIAN_PHONE_MAX_LENGTH)
   guardianPhone?: string;
 
-  @IsOptional() @IsDateString() joinedAt?: string;
+  @IsOptional()
+  @IsDateString()
+  joinedAt?: string;
 
-  @IsOptional() @IsUUID() shelterId?: string;
+  @IsOptional()
+  @IsUUID()
+  shelterId?: string;
 
   @IsOptional()
   @ValidateNested()
-  @Type(() => AddressDto)
-  address?: AddressDto;
+  @Type(() => CreateShelteredAddressDto)
+  address?: CreateShelteredAddressDto;
 }

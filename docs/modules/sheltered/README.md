@@ -1,192 +1,190 @@
-# 👶 Sheltered Module
+# 👶 Módulo Sheltered (Acolhidos)
 
-> **Para documentação completa, consulte**: [📖 GUIA COMPLETO DO SHELTERED](../documentation/SHELTERED_COMPLETE_GUIDE.md)
+Módulo responsável pelo cadastro dos acolhidos, seu vínculo com um abrigo e seu
+endereço. Segue o layout padrão descrito em
+[`docs/ORFANATO_BACKEND_BEST_PRACTICES.md`](../../ORFANATO_BACKEND_BEST_PRACTICES.md).
 
----
-
-## 📚 Documentação Consolidada
-
-Toda a documentação do módulo **Sheltered** foi consolidada em um único guia abrangente:
-
-### 🎯 [GUIA COMPLETO - Sheltered](../documentation/SHELTERED_COMPLETE_GUIDE.md)
-
-Este guia único contém:
-
-- ✅ **Visão Geral Completa**: Conceitos, estrutura, características
-- ✅ **Todos os 6 Endpoints**: Documentação detalhada com exemplos
-- ✅ **Autenticação e Autorização**: JWT, roles, permissões
-- ✅ **Filtros Avançados**: Paginação, busca, ordenação
-- ✅ **DTOs e Validações**: Todas as interfaces e regras
-- ✅ **Relacionamentos**: Shelters, Addresses, Pagelas, AcceptedChrists
-- ✅ **Guia Backend**: Exemplos NestJS/TypeORM
-- ✅ **Guia Frontend**: Exemplos React/TypeScript
-- ✅ **Collection Postman**: Como importar e usar
-- ✅ **Automações e Testes**: Scripts e execução
-- ✅ **Troubleshooting**: Solução de problemas comuns
-- ✅ **Histórico de Mudanças**: Todas as versões
-
-### 📑 [ÍNDICE RÁPIDO](../documentation/SHELTERED_INDEX.md)
-
-Consulte o índice para navegação rápida e links diretos para seções específicas.
+**Diagrama de fluxo**: [`docs/diagrams/flow/sheltered/sheltered-flow.puml`](../../diagrams/flow/sheltered/sheltered-flow.puml)
 
 ---
 
-## 🚀 Início Rápido
+## 📁 Estrutura
 
-### Endpoints Principais
-
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| **GET** | `/sheltered` | Lista com paginação e filtros |
-| **GET** | `/sheltered/simple` | Lista simplificada |
-| **GET** | `/sheltered/:id` | Busca por ID |
-| **POST** | `/sheltered` | Criar novo sheltered |
-| **PUT** | `/sheltered/:id` | Atualizar sheltered |
-| **DELETE** | `/sheltered/:id` | Deletar sheltered |
-
-**📘 [Ver Documentação Completa dos Endpoints](../documentation/SHELTERED_COMPLETE_GUIDE.md#endpoints-da-api)**
-
----
-
-### Campos Principais
-
-#### Obrigatórios
-- `name` - Nome completo
-- `birthDate` - Data de nascimento (YYYY-MM-DD)
-- `gender` - Gênero
-
-#### Opcionais (desde v2.1.0)
-- `guardianName` - Nome do responsável
-- `guardianPhone` - Telefone do responsável
-- `joinedAt` - Data de ingresso
-- `shelterId` - ID do shelter
-- `address` - Endereço completo
-
-**📘 [Ver Estrutura Completa de Dados](../documentation/SHELTERED_COMPLETE_GUIDE.md#estrutura-de-dados)**
+```text
+src/shelter/sheltered/
+├── sheltered.module.ts
+├── sheltered.controller.ts
+├── constants.ts                  # defaults de paginação, allowlist de ordenação, mensagens
+├── types.ts                      # ShelteredAccessContext, PaginatedRows, filtros
+├── enums/                        # gênero, ordenação, filtros de status e decisão
+├── dto/                          # entradas (create/update/query) e contratos de resposta
+├── entities/sheltered.entity.ts
+├── mappers/sheltered.mapper.ts
+├── repositories/sheltered.repository.ts
+├── services/
+│   ├── create-sheltered.service.ts
+│   ├── get-sheltered.service.ts
+│   ├── update-sheltered.service.ts
+│   ├── delete-sheltered.service.ts
+│   └── sheltered-shelter-access.service.ts   # autoriza o vínculo com o abrigo
+└── utils/                        # datas, contexto de acesso, referência de relação
+```
 
 ---
 
-### Exemplo Básico
+## 🔐 Autenticação e escopo
 
-```http
-# Listar sheltered
-GET /sheltered?page=1&limit=10
-Authorization: Bearer {{access_token}}
+Todas as rotas exigem `JwtAuthGuard`. O ator é lido de `request.user` (populado
+pelo guard) e convertido em `ShelteredAccessContext` (`{ userId, role }`) pelo
+controller — os serviços nunca recebem o objeto `Request`.
 
-# Criar sheltered (com responsável)
-POST /sheltered
-Authorization: Bearer {{access_token}}
-Content-Type: application/json
+| Papel | Visibilidade |
+|-------|--------------|
+| `admin` | todos os acolhidos |
+| `leader` | acolhidos dos abrigos cujas equipes ele lidera |
+| `member` | acolhidos dos abrigos cujas equipes ele integra |
 
+Um papel ausente ou desconhecido no token é degradado para `null` e não recebe
+escopo privilegiado.
+
+> **Registro fora do escopo retorna `404`, não `403`.** Um acolhido ou abrigo que
+> o ator não enxerga é indistinguível de um inexistente, conforme
+> `ORFANATO_BACKEND_BEST_PRACTICES.md` §11.2.
+
+---
+
+## 📡 Endpoints
+
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| `GET` | `/sheltered` | Lista paginada com filtros e ordenação |
+| `GET` | `/sheltered/simple` | Lista enxuta para seletores (usada pelas pagelas) |
+| `GET` | `/sheltered/:id` | Detalhe |
+| `POST` | `/sheltered` | Cria |
+| `PUT` | `/sheltered/:id` | Atualiza (apenas campos enviados) |
+| `PATCH` | `/sheltered/:id/status` | Ativa/inativa |
+| `DELETE` | `/sheltered/:id` | Remove |
+
+### `GET /sheltered` — query
+
+| Parâmetro | Tipo | Default | Observação |
+|-----------|------|---------|------------|
+| `page` | inteiro ≥ 1 | `1` | |
+| `limit` | inteiro 1–100 | `20` | limite máximo obrigatório |
+| `orderBy` | `name` \| `birthDate` \| `joinedAt` \| `createdAt` \| `updatedAt` | `name` | allowlist; qualquer outro valor → 400 |
+| `order` | `ASC` \| `DESC` | `ASC` | maiúsculas |
+| `searchString` | texto | — | nome do acolhido, nome ou telefone do responsável |
+| `shelterSearchingString` | texto | — | nome, cidade ou estado do abrigo |
+| `addressFilter` | texto | — | rua, bairro, cidade ou estado do acolhido |
+| `shelterId` | uuid | — | |
+| `gender` | `M` \| `F` | — | |
+| `birthDateFrom` / `birthDateTo` | `AAAA-MM-DD` | — | intervalo inclusivo |
+| `joinedFrom` / `joinedTo` | `AAAA-MM-DD` | — | intervalo inclusivo |
+
+A resposta usa o envelope paginado compartilhado
+(`src/shared/dto/paginated-response.dto.ts`):
+
+```json
 {
-  "name": "João Silva",
-  "birthDate": "2010-05-15",
-  "gender": "Masculino",
-  "guardianName": "Maria Silva",
-  "guardianPhone": "+5511999999999"
-}
-
-# Criar sheltered (sem responsável)
-POST /sheltered
-Authorization: Bearer {{access_token}}
-Content-Type: application/json
-
-{
-  "name": "João Sem Responsável",
-  "birthDate": "2012-03-20",
-  "gender": "Masculino"
+  "data": [ { "...": "ShelteredResponseDto" } ],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "totalItems": 41,
+    "totalPages": 3,
+    "orderBy": "name",
+    "order": "ASC"
+  }
 }
 ```
 
-**📘 [Ver Mais Exemplos](../documentation/SHELTERED_COMPLETE_GUIDE.md#endpoints-da-api)**
+### `GET /sheltered/simple` — query
+
+| Parâmetro | Tipo | Default |
+|-----------|------|---------|
+| `page` | inteiro ≥ 1 | `1` |
+| `limit` | inteiro 1–100 | `20` |
+| `searchString` | texto | — |
+| `acceptedJesus` | `accepted` \| `not_accepted` \| `all` | `all` |
+| `active` | `active` \| `inactive` \| `all` | `all` |
+
+Retorna `ShelteredListItemDto` (`id`, `name`, `guardianName`, `gender`,
+`guardianPhone`, `shelterId`, `active`, `acceptedChrists`), ordenado com os
+ativos primeiro.
 
 ---
 
-## 🧪 Automações e Testes
+## 📦 Contratos
 
-### Criar Dados de Teste
+### `ShelteredResponseDto`
+
+```ts
+{
+  id: string;
+  name: string;
+  gender: 'M' | 'F';
+  birthDate: string | null;   // AAAA-MM-DD
+  guardianName?: string | null;
+  guardianPhone?: string | null;
+  joinedAt: string | null;    // AAAA-MM-DD
+  active: boolean;
+  shelter: { id: string; name: string } | null;
+  address: ShelteredAddressResponseDto | null;
+  createdAt: string;          // ISO-8601
+  updatedAt: string;          // ISO-8601
+}
+```
+
+Relações internas (`pagelas`, `acceptedChrists`) **não** são expostas neste
+contrato — a lista simples é a fonte das decisões.
+
+### Entrada
+
+- **`POST`**: `name` e `gender` são obrigatórios. `birthDate`, `joinedAt`,
+  `guardianName`, `guardianPhone`, `shelterId` e `address` são opcionais.
+  `guardianName`/`guardianPhone` em branco são tratados como ausentes.
+  Em `address`, `city` e `state` são obrigatórios.
+- **`PUT`**: todos os campos são opcionais. Uma chave omitida não altera a
+  coluna; `shelterId: null` e `address: null` desvinculam a relação.
+- Datas de entrada aceitam `AAAA-MM-DD` ou ISO completo e são normalizadas para
+  `AAAA-MM-DD` antes de persistir.
+
+---
+
+## ⚠️ Erros
+
+Seguem o envelope global descrito em
+[`docs/ERROR_HANDLING_GUIDE.md`](../../ERROR_HANDLING_GUIDE.md).
+
+| Situação | Status | Categoria |
+|----------|--------|-----------|
+| Payload/query inválidos | `400` | `RULE` |
+| Sem token ou token inválido | `401` | `BUSINESS` |
+| Acolhido inexistente ou fora do escopo | `404` | `BUSINESS` |
+| Abrigo informado inexistente ou fora do escopo | `404` | `BUSINESS` |
+
+---
+
+## 🧪 Testes
 
 ```bash
-# Criar 20 sheltered automaticamente
-node automations/sheltered/sheltered-complete-automation.js
+NODE_OPTIONS='--max-old-space-size=2048' npx jest src/shelter/sheltered --runInBand
 ```
 
-### Testar Endpoints
+Cobertura do escopo do módulo: **92% de statements, 91% de branches** (101 testes). Repositórios,
+serviços, mappers e utils estão em ~100%; o restante são declarações de
+classe/módulo sem código executável.
+
+Automação ponta a ponta (requer API e banco locais):
 
 ```bash
-# Testar todos os endpoints (12 testes)
-node tests/sheltered/test-sheltered-crud.js
+npm run test:auto:sheltered
 ```
 
-**📘 [Ver Guia Completo de Automações](../documentation/SHELTERED_COMPLETE_GUIDE.md#automações-e-testes)**
-
 ---
 
-## 📦 Collection Postman
+## 📮 Collection Postman
 
-A collection completa está disponível em:
-- `docs/collections/Sheltered_API_Collection.postman_collection.json`
+`docs/modules/sheltered/Sheltered_API_Collection.postman_collection.json`
 
-**Variáveis necessárias**:
-- `base_url` - URL da API
-- `access_token` - Token JWT
-- `sheltered_id` - ID para testes
-- `shelter_id` - ID de shelter
-
-**📘 [Ver Guia da Collection Postman](../documentation/SHELTERED_COMPLETE_GUIDE.md#collection-postman)**
-
----
-
-## 🔗 Links Úteis
-
-### Documentação
-- 📖 [Guia Completo](../documentation/SHELTERED_COMPLETE_GUIDE.md)
-- 📑 [Índice Rápido](../documentation/SHELTERED_INDEX.md)
-
-### Código Fonte
-- 📁 `src/modules/sheltered/` - Módulo completo
-
-### Automações
-- 🤖 `automations/sheltered/sheltered-complete-automation.js`
-- 🧪 `tests/sheltered/test-sheltered-crud.js`
-
-### Collection
-- 📦 `docs/collections/Sheltered_API_Collection.postman_collection.json`
-
----
-
-## ⚠️ Mudanças Importantes
-
-### v2.1.0 - Campos Opcionais
-
-Os campos `guardianName` e `guardianPhone` são **opcionais** desde outubro/2025.
-
-**Importante no Frontend**:
-```typescript
-// Sempre verificar null
-const guardianDisplay = sheltered.guardianName ?? 'Não informado';
-
-// Ou renderização condicional
-{sheltered.guardianName && (
-  <span>Responsável: {sheltered.guardianName}</span>
-)}
-```
-
-**📘 [Ver Histórico Completo de Mudanças](../documentation/SHELTERED_COMPLETE_GUIDE.md#histórico-de-mudanças)**
-
----
-
-## 📞 Suporte
-
-Para dúvidas ou problemas:
-
-1. **Consulte o [Guia Completo](../documentation/SHELTERED_COMPLETE_GUIDE.md)**
-2. **Veja o [Troubleshooting](../documentation/SHELTERED_COMPLETE_GUIDE.md#troubleshooting)**
-3. **Verifique os exemplos no [Índice](../documentation/SHELTERED_INDEX.md)**
-
----
-
-**Versão da API**: 2.1.0  
-**Última Atualização**: Outubro 2025
-
-👉 **[Ir para o Guia Completo](../documentation/SHELTERED_COMPLETE_GUIDE.md)**
+Variáveis: `base_url`, `access_token`, `sheltered_id`, `shelter_id`.

@@ -197,7 +197,7 @@ Use o arquivo `docs/Orfanatonib_API_Environment.postman_environment.json` para c
 - **Auth:** JWT, Passport
 - **Validation:** class-validator, class-transformer
 - **File Storage:** AWS S3
-- **Email:** AWS SES
+- **Email:** Gmail SMTP (Nodemailer)
 - **Messaging:** Twilio (WhatsApp)
 - **Testing:** Jest, Supertest
 - **Documentation:** Postman Collections, Markdown

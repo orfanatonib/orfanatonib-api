@@ -21,3 +21,17 @@ export type AuthRequest = Request & {
     email?: string;
   };
 };
+
+/**
+ * Shape produced by `JwtStrategy.validate` and attached to `request.user`
+ * by `JwtAuthGuard`. Prefer it over re-decoding the token in a controller.
+ */
+export type AuthenticatedUser = {
+  userId: string;
+  email?: string;
+  role?: UserRole | string;
+};
+
+export type AuthenticatedRequest = Request & {
+  user?: AuthenticatedUser;
+};

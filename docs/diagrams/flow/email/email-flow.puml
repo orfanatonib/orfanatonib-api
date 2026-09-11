@@ -1,0 +1,47 @@
+@startuml
+title Orfanato NIB - Fluxo de envio de e-mail
+
+skinparam monochrome true
+skinparam shadowing false
+
+actor "Caso de uso" as UseCase
+participant "NotificationService" as Notification
+participant "EmailService" as Email
+participant "GmailSmtpProvider" as Provider
+participant "Nodemailer" as Nodemailer
+cloud "smtp.gmail.com:465\nTLS" as Gmail
+actor Destinatario as Recipient
+
+UseCase -> Notification : solicita notificacao
+Notification -> Email : dispatch(message)
+Email -> Provider : send(message)
+Provider -> Nodemailer : sendMail(from, to, subject, body)
+Nodemailer -> Gmail : SMTP autenticado
+
+alt entrega aceita
+  Gmail -> Recipient : entrega e-mail
+  Gmail --> Nodemailer : resposta 2xx
+  Nodemailer --> Provider : concluido
+  Provider --> Email : void
+  Email --> Notification : void
+else falha SMTP transitória
+  Gmail --> Nodemailer : 4xx / timeout
+  Nodemailer --> Provider : erro tipado
+  loop ate 3 tentativas
+    Provider -> Nodemailer : repete sendMail
+  end
+else falha definitiva
+  Gmail --> Nodemailer : 5xx / autenticacao invalida
+  Nodemailer --> Provider : erro tipado
+  Provider --> Email : ProcessException
+  Email --> Notification : ProcessException
+end
+
+note right of Provider
+  Configuracao obrigatoria:
+  GMAIL_SMTP_USER
+  GMAIL_SMTP_APP_PASSWORD
+  EMAIL_FROM_NAME (opcional)
+end note
+
+@enduml

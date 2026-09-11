@@ -1,12 +1,12 @@
 import { Module, Global } from '@nestjs/common';
 import { NotificationService } from './notification.service';
-import { AwsModule } from '../../infrastructure/aws/aws.module';
+import { EmailModule } from '../../infrastructure/email/email.module';
 import { TwilioModule } from '../../infrastructure/twilio/twilio.module';
 
 @Global()
 @Module({
-    imports: [AwsModule, TwilioModule],
-    providers: [NotificationService],
-    exports: [NotificationService],
+  imports: [EmailModule, TwilioModule],
+  providers: [NotificationService],
+  exports: [NotificationService],
 })
-export class NotificationModule { }
+export class NotificationModule {}
