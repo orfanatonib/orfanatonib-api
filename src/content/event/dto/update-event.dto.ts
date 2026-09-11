@@ -1,5 +1,5 @@
-import { EventAudience } from '../entities/event.entity';
-import { IsEnum, IsOptional } from 'class-validator';
+import { EventAudience } from "../entities/event.entity";
+import { IsEnum, IsOptional } from "class-validator";
 
 export class UpdateEventDto {
   @IsOptional()

@@ -1,9 +1,9 @@
-import { Request } from 'express';
+import { Request } from "express";
 
 export enum UserRole {
-  ADMIN = 'admin',
-  MEMBER = 'member',
-  LEADER = 'leader',
+  ADMIN = "admin",
+  MEMBER = "member",
+  LEADER = "leader",
 }
 
 export type JwtPayload = {

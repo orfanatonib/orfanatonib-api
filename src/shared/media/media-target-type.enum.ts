@@ -15,4 +15,8 @@ export enum MediaTargetType {
   AtendenteEstadual = 'AtendenteEstadual',
   /** PDF Federal de um Antecedente Criminal (um por atendente). */
   AtendenteFederal = 'AtendenteFederal',
+  /** Foto principal de um abrigo. */
+  Shelter = 'ShelterEntity',
+  /** Foto de perfil de um usuário. */
+  User = 'UserEntity',
 }

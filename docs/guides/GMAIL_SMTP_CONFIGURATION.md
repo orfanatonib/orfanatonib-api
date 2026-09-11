@@ -1,8 +1,8 @@
 # Gmail SMTP Configuration
 
 O backend envia e-mails exclusivamente pelo SMTP do Gmail, usando Nodemailer.
-A integração com AWS SES foi removida; a AWS permanece apenas para os recursos
-que utilizam S3.
+A integração anterior de e-mail da AWS foi removida. O armazenamento continua
+usando S3, e a infraestrutura de deploy existente foi preservada.
 
 ## Credenciais obrigatórias
 
@@ -41,3 +41,10 @@ Este repositório contém somente os nomes e exemplos das variáveis. A alteraç
 das credenciais em ambientes locais, staging ou produção deve ser feita de modo
 separado e autorizado. Depois de configurar o ambiente, reinicie a API para que
 o transporter seja criado com as novas credenciais.
+
+Os workflows esperam os seguintes GitHub Actions secrets:
+
+- Produção: `GMAIL_SMTP_USER`, `GMAIL_SMTP_APP_PASSWORD` e, opcionalmente,
+  `EMAIL_FROM_NAME`.
+- Staging: `STAGING_GMAIL_SMTP_USER`, `STAGING_GMAIL_SMTP_APP_PASSWORD` e,
+  opcionalmente, `STAGING_EMAIL_FROM_NAME`.

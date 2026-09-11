@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Repository, DataSource, In } from 'typeorm';
-import { EventEntity } from './entities/event.entity';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { Repository, DataSource, In } from "typeorm";
+import { EventEntity } from "./entities/event.entity";
 
 @Injectable()
 export class EventRepository {
@@ -11,8 +11,9 @@ export class EventRepository {
   }
 
   async findAll(audiences?: string[]): Promise<EventEntity[]> {
-    const where = audiences && audiences.length > 0 ? { audience: In(audiences) } : {};
-    return this.repo.find({ where, order: { date: 'ASC' } as any });
+    const where =
+      audiences && audiences.length > 0 ? { audience: In(audiences) } : {};
+    return this.repo.find({ where, order: { date: "ASC" } as any });
   }
 
   async findById(id: string): Promise<EventEntity | null> {
@@ -35,7 +36,7 @@ export class EventRepository {
 
   async remove(id: string): Promise<void> {
     const entity = await this.repo.findOne({ where: { id } });
-    if (!entity) throw new NotFoundException('Event not found');
+    if (!entity) throw new NotFoundException("Event not found");
     await this.repo.remove(entity);
   }
 }

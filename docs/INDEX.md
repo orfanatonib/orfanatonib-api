@@ -34,6 +34,7 @@ docs/
 │   ├── leader-profiles/
 │   ├── member-profiles/
 │   ├── sheltered/
+│   ├── feature-flags/
 │   └── pagelas/
 └── guides/                                # Guias gerais
 ```
@@ -218,6 +219,10 @@ docs/
 ---
 
 ## 📖 8. Guias Gerais
+
+Antes dos guias, consulte também o módulo de
+[`feature-flags`](./modules/feature-flags/README.md), que documenta o painel,
+os públicos e o mapa consumido pelo frontend.
 
 Documentação transversal e guias de automação.
 

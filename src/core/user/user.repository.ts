@@ -1,16 +1,16 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { UserEntity } from './entities/user.entity';
-import { GetUsersQueryDto } from './dto/get-users-query.dto';
-import { UserRole } from '../auth/auth.types';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { UserEntity } from "./entities/user.entity";
+import { GetUsersQueryDto } from "./dto/get-users-query.dto";
+import { UserRole } from "../auth/auth.types";
 
 @Injectable()
 export class UserRepository {
   constructor(
     @InjectRepository(UserEntity)
     private readonly repo: Repository<UserEntity>,
-  ) { }
+  ) {}
 
   async create(user: Partial<UserEntity>): Promise<UserEntity> {
     const newUser = this.repo.create(user);
@@ -52,7 +52,7 @@ export class UserRepository {
   async update(id: string, data: Partial<UserEntity>): Promise<UserEntity> {
     await this.repo.update(id, data);
     const updated = await this.findById(id);
-    if (!updated) throw new Error('UserEntity not found after update');
+    if (!updated) throw new Error("UserEntity not found after update");
     return updated;
   }
 
@@ -60,7 +60,10 @@ export class UserRepository {
     await this.repo.delete(id);
   }
 
-  async updateRefreshToken(id: string, refreshToken: string | null): Promise<void> {
+  async updateRefreshToken(
+    id: string,
+    refreshToken: string | null,
+  ): Promise<void> {
     await this.repo.update(id, { refreshToken });
   }
 
@@ -72,61 +75,63 @@ export class UserRepository {
       role,
       active,
       completed,
-      sort = 'updatedAt',
-      order = 'DESC',
+      sort = "updatedAt",
+      order = "DESC",
     } = q;
 
     const limit = Math.min(Math.max(rawLimit, 1), 100);
     const skip = (page - 1) * limit;
 
     const sortable: Record<string, string> = {
-      name: 'u.name',
-      email: 'u.email',
-      phone: 'u.phone',
-      role: 'u.role',
-      createdAt: 'u.createdAt',
-      updatedAt: 'u.updatedAt',
+      name: "u.name",
+      email: "u.email",
+      phone: "u.phone",
+      role: "u.role",
+      createdAt: "u.createdAt",
+      updatedAt: "u.updatedAt",
     };
-    const sortCol = sortable[sort] ?? 'u.updatedAt';
-    const sortDir = (order || 'DESC').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+    const sortCol = sortable[sort] ?? "u.updatedAt";
+    const sortDir = (order || "DESC").toUpperCase() === "ASC" ? "ASC" : "DESC";
 
-    const qb = this.repo.createQueryBuilder('u').select([
-      'u.id',
-      'u.createdAt',
-      'u.updatedAt',
-      'u.email',
-      'u.phone',
-      'u.name',
-      'u.active',
-      'u.completed',
-      'u.commonUser',
-      'u.role',
-    ]);
+    const qb = this.repo
+      .createQueryBuilder("u")
+      .select([
+        "u.id",
+        "u.createdAt",
+        "u.updatedAt",
+        "u.email",
+        "u.phone",
+        "u.name",
+        "u.active",
+        "u.completed",
+        "u.commonUser",
+        "u.role",
+      ]);
 
-    qb.andWhere('LOWER(u.role) <> :adminRole', { adminRole: 'admin' });
+    qb.andWhere("LOWER(u.role) <> :adminRole", { adminRole: "admin" });
 
     if (term?.trim()) {
       const like = `%${term.trim()}%`;
       qb.andWhere(
-        '(LOWER(u.name) LIKE LOWER(:like) OR LOWER(u.email) LIKE LOWER(:like) OR LOWER(u.phone) LIKE LOWER(:like) OR LOWER(u.role) LIKE LOWER(:like))',
+        "(LOWER(u.name) LIKE LOWER(:like) OR LOWER(u.email) LIKE LOWER(:like) OR LOWER(u.phone) LIKE LOWER(:like) OR LOWER(u.role) LIKE LOWER(:like))",
         { like },
       );
     }
 
     if (role) {
-      qb.andWhere('u.role = :role', { role });
+      qb.andWhere("u.role = :role", { role });
     }
 
-    if (active === 'active') {
-      qb.andWhere('u.active = :active', { active: true });
-    } else if (active === 'inactive') {
-      qb.andWhere('u.active = :active', { active: false });
+    if (active === "active") {
+      qb.andWhere("u.active = :active", { active: true });
+    } else if (active === "inactive") {
+      qb.andWhere("u.active = :active", { active: false });
     }
 
-    if (completed === 'completed') {
-      qb.andWhere('u.completed = :completed', { completed: true });
-    } else if (completed === 'incomplete') {
-      qb.andWhere('u.completed = :completed', { completed: false });
+    if (completed === "completed") {
+      qb.andWhere("u.completed = :completed", { completed: true });
+    } else if (completed === "incomplete") {
+      qb.andWhere("u.completed = :completed", { completed: false });
     }
 
     qb.orderBy(sortCol, sortDir).skip(skip).take(limit);

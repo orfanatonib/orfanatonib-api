@@ -1,225 +1,65 @@
-import { ForbiddenException, Injectable, BadRequestException, Inject, forwardRef, NotFoundException, Logger } from '@nestjs/common';
-import { Request } from 'express';
-import { DataSource } from 'typeorm';
-import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
-import { SheltersRepository } from '../repositories/shelters.repository';
-import { CreateShelterDto } from '../dto/create-shelter.dto';
-import { CreateShelterRequestDto } from '../dto/create-shelter-request.dto';
-import { AuthContextService } from 'src/core/auth/services/auth-context.service';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
-import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
-import { MediaType, UploadType } from 'src/shared/media/media-item/media-item.entity';
-import { RouteService } from 'src/infrastructure/route/route.service';
-import { RouteType } from 'src/infrastructure/route/route-page.entity';
-import { ShelterEntity } from '../entities/shelter.entity/shelter.entity';
-import { TeamsService } from 'src/shelter/team/services/teams.service';
-import { CreateTeamDto } from 'src/shelter/team/dto/create-team.dto';
-
-type Ctx = { role?: string; userId?: string | null };
+import { Injectable, Logger } from "@nestjs/common";
+import { SheltersRepository } from "../repositories/shelters.repository";
+import { CreateShelterDto } from "../dto/create-shelter.dto";
+import { ShelterEntity } from "../entities/shelter.entity/shelter.entity";
+import { assertCanManageShelters } from "../utils/shelter-access.util";
+import { ShelterAccessContext, UploadedFilesDict } from "../types";
+import { GetSheltersService } from "./get-shelters.service";
+import { ShelterMediaService } from "./shelter-media.service";
+import { ShelterRouteService } from "./shelter-route.service";
+import { ShelterTeamsService } from "./shelter-teams.service";
 
 @Injectable()
 export class CreateSheltersService {
   private readonly logger = new Logger(CreateSheltersService.name);
 
   constructor(
-    private readonly dataSource: DataSource,
     private readonly sheltersRepository: SheltersRepository,
-    private readonly authCtx: AuthContextService,
-    private readonly mediaItemProcessor: MediaItemProcessor,
-    private readonly s3Service: AwsS3Service,
-    private readonly routeService: RouteService,
-    @Inject(forwardRef(() => TeamsService))
-    private readonly teamsService: TeamsService,
-  ) { }
+    private readonly getService: GetSheltersService,
+    private readonly teamsService: ShelterTeamsService,
+    private readonly mediaService: ShelterMediaService,
+    private readonly routeService: ShelterRouteService,
+  ) {}
 
-  private async getCtx(req: Request): Promise<Ctx> {
-    const p = await this.authCtx.tryGetPayload(req);
-    return { role: p?.role?.toLowerCase(), userId: p?.sub ?? null };
-  }
+  async execute(
+    dto: CreateShelterDto,
+    actor: ShelterAccessContext,
+    files: UploadedFilesDict = {},
+  ): Promise<ShelterEntity> {
+    assertCanManageShelters(actor);
 
-  parseAndValidateBody(body: any): CreateShelterDto {
-    let dto: CreateShelterDto;
-    
-    if (body.shelterData) {
-      const parsed = typeof body.shelterData === 'string' 
-        ? JSON.parse(body.shelterData) 
-        : body.shelterData;
-      dto = plainToInstance(CreateShelterDto, parsed);
-    } else if (body.name) {
-      dto = plainToInstance(CreateShelterDto, body);
-    } else {
-      throw new BadRequestException('Shelter data not provided. Use "shelterData" in form-data or send JSON directly.');
-    }
+    // O abrigo e seu endereço são gravados juntos pelo repositório.
+    const shelter = await this.sheltersRepository.createShelter(dto);
 
-    return dto;
-  }
-
-  async validateDto(dto: CreateShelterDto): Promise<void> {
-    const errors = await validate(dto);
-    if (errors.length > 0) {
-      throw new BadRequestException(errors);
-    }
-  }
-
-  mapFiles(files: Express.Multer.File[]): Record<string, Express.Multer.File> {
-    const filesDict: Record<string, Express.Multer.File> = {};
-    files.forEach((file) => {
-      filesDict[file.fieldname] = file;
-    });
-    return filesDict;
-  }
-
-  async createFromRaw(body: any, files: Express.Multer.File[], req: Request): Promise<ShelterEntity> {
-    const dto = this.parseAndValidateBody(body);
-    await this.validateDto(dto);
-    const filesDict = this.mapFiles(files);
-    return this.create(dto, req, filesDict);
-  }
-
-  async create(dto: CreateShelterDto, req: Request, filesDict?: Record<string, Express.Multer.File>) {
-    const ctx = await this.getCtx(req);
-    if (!ctx.role || ctx.role === 'member') {
-      throw new ForbiddenException('Acesso negado');
-    }
-
-
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      const shelter = await this.sheltersRepository.createShelter(dto);
-      await this.createTeams(shelter.id, dto);
-
-      let imageUrl = '';
-      if (dto.mediaItem && filesDict) {
-        imageUrl = await this.createMediaItem(shelter.id, dto.mediaItem, filesDict);
-      }
-
-      await this.createRoute(queryRunner, shelter, dto, imageUrl);
-      await queryRunner.commitTransaction();
-
-      const completeShelter = await this.sheltersRepository.findOneOrFailForResponse(shelter.id);
-      if (!completeShelter) {
-        throw new NotFoundException('Shelter not found after creation');
-      }
-      return completeShelter;
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
-  }
-
-  private async createTeams(shelterId: string, dto: CreateShelterDto): Promise<void> {
-    type TeamInput = NonNullable<CreateShelterDto['teams']>[0];
-    const teamsMap = new Map<number, TeamInput>();
-    const memberIdsUsed = new Set<string>();
-    
-    if (dto.teams && dto.teams.length > 0) {
-      for (const team of dto.teams) {
-        if (team.numberTeam < 1 || team.numberTeam > dto.teamsQuantity) {
-          throw new BadRequestException(
-            `numberTeam ${team.numberTeam} must be between 1 and ${dto.teamsQuantity}`
-          );
-        }
-        if (teamsMap.has(team.numberTeam)) {
-          throw new BadRequestException(`Duplicate: team ${team.numberTeam} already defined`);
-        }
-        
-        if (team.memberProfileIds && team.memberProfileIds.length > 0) {
-          for (const memberId of team.memberProfileIds) {
-            if (memberIdsUsed.has(memberId)) {
-              throw new BadRequestException(
-                `Member with ID ${memberId} cannot be in multiple teams. A member can only belong to one team.`
-              );
-        }
-            memberIdsUsed.add(memberId);
-          }
-        }
-        
-        teamsMap.set(team.numberTeam, team);
-      }
-    }
-
-    for (let i = 1; i <= dto.teamsQuantity; i++) {
-      const teamData = teamsMap.get(i);
-      
-      const createTeamDto: CreateTeamDto = {
-        numberTeam: i,
-        description: teamData?.description,
-        shelterId: shelterId,
-        leaderProfileIds: teamData?.leaderProfileIds,
-        memberProfileIds: teamData?.memberProfileIds,
-      };
-
-      await this.teamsService.create(createTeamDto);
-    }
-  }
-
-  private async createRoute(queryRunner: any, shelter: ShelterEntity, dto: CreateShelterDto, imageUrl: string = '') {
-    const path = await this.routeService.generateAvailablePath(shelter.name, 'abrigo_');
-    
-    const address = shelter.address;
-    const subtitle = address 
-      ? `${address.city} - ${address.state}, ${address.district} ${address.number || ''}`
-      : 'Shelter';
-    
-    const route = await this.routeService.createRouteWithManager(queryRunner.manager, {
-      title: shelter.name,
-      subtitle: subtitle.trim(),
-      description: dto.description || 'Shelter dedicated to caring for children and adolescents',
-      path,
-      type: RouteType.PAGE,
-      entityId: shelter.id,
-      idToFetch: shelter.id,
-      entityType: 'shelterPage',
-      image: imageUrl,
-      public: true,
-    });
-
-    shelter.route = route;
-    await queryRunner.manager.save(ShelterEntity, shelter);
-  }
-
-  private async createMediaItem(
-    shelterId: string,
-    mediaInput: { 
-      uploadType?: UploadType; 
-      isLocalFile?: boolean; 
-      fieldKey?: string; 
-      url?: string;
-      title?: string;
-      description?: string;
-    },
-    filesDict: Record<string, Express.Multer.File>,
-  ): Promise<string> {
-    const media = this.mediaItemProcessor.buildBaseMediaItem(
-      { ...mediaInput, mediaType: MediaType.IMAGE },
-      shelterId,
-      'ShelterEntity',
+    await this.teamsService.createForShelter(
+      shelter.id,
+      dto.teamsQuantity,
+      dto.teams,
     );
 
-    if (mediaInput.uploadType === UploadType.UPLOAD && mediaInput.isLocalFile) {
-      const file = filesDict[mediaInput.fieldKey || ''];
-      if (!file) {
-        throw new BadRequestException('File not found for upload');
-      }
+    const imageUrl = dto.mediaItem
+      ? await this.mediaService.upsertMainPhoto(
+          shelter.id,
+          dto.mediaItem,
+          files,
+        )
+      : "";
 
-      media.url = await this.s3Service.upload(file);
-      media.isLocalFile = true;
-      media.originalName = file.originalname;
-      media.size = file.size;
-    } else if (mediaInput.url) {
-      media.url = mediaInput.url;
-      media.isLocalFile = false;
-    } else {
-      throw new BadRequestException('URL or file is required for media item');
-    }
+    // A rota nasce na mesma transação do vínculo com o abrigo.
+    await this.sheltersRepository.runInTransaction(async (manager) => {
+      shelter.route = await this.routeService.createForShelter(
+        manager,
+        shelter,
+        dto.description,
+        imageUrl,
+      );
+      await this.sheltersRepository.save(shelter, manager);
+    });
 
-    const savedMedia = await this.mediaItemProcessor.saveMediaItem(media);
-    return savedMedia.url;
+    this.logger.log(`Shelter created: ${shelter.id}`);
+
+    const fresh = await this.getService.findEntityOrFail(shelter.id, actor);
+    await this.mediaService.attachAll([fresh]);
+    return fresh;
   }
 }

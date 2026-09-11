@@ -1,8 +1,8 @@
-import { RETRYABLE_SMTP_ERROR_CODES } from '../email.constants';
-import { SmtpErrorMetadata } from '../email.types';
+import { RETRYABLE_SMTP_ERROR_CODES } from "../email.constants";
+import { SmtpErrorMetadata } from "../email.types";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+  return typeof value === "object" && value !== null;
 }
 
 function readString(
@@ -10,7 +10,7 @@ function readString(
   key: string,
 ): string | undefined {
   const value = record[key];
-  return typeof value === 'string' ? value : undefined;
+  return typeof value === "string" ? value : undefined;
 }
 
 function readNumber(
@@ -18,19 +18,19 @@ function readNumber(
   key: string,
 ): number | undefined {
   const value = record[key];
-  return typeof value === 'number' ? value : undefined;
+  return typeof value === "number" ? value : undefined;
 }
 
 export function getSmtpErrorMetadata(error: unknown): SmtpErrorMetadata {
   if (!isRecord(error)) {
-    return { name: 'UnknownSmtpError' };
+    return { name: "UnknownSmtpError" };
   }
 
   return {
-    name: readString(error, 'name') ?? 'SmtpError',
-    code: readString(error, 'code'),
-    responseCode: readNumber(error, 'responseCode'),
-    command: readString(error, 'command'),
+    name: readString(error, "name") ?? "SmtpError",
+    code: readString(error, "code"),
+    responseCode: readNumber(error, "responseCode"),
+    command: readString(error, "command"),
   };
 }
 

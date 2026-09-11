@@ -1,20 +1,20 @@
-import { BaseEntity } from 'src/shared/entity/base.entity';
-import { Entity, Column } from 'typeorm';
+import { BaseEntity } from "src/shared/entity/base.entity";
+import { Entity, Column } from "typeorm";
 
-@Entity('comments')
+@Entity("comments")
 export class CommentEntity extends BaseEntity {
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: "varchar", length: 100 })
   name: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: "text" })
   comment: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: "varchar", length: 100 })
   shelter: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: "varchar", length: 100 })
   neighborhood: string;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: "boolean", default: false })
   published?: boolean;
 }

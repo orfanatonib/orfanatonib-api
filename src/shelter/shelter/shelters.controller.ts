@@ -5,88 +5,114 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  Patch,
   Post,
   Put,
   Query,
   Req,
-  UseGuards,
-  Patch,
-  UseInterceptors,
   UploadedFiles,
-  Logger,
-} from '@nestjs/common';
-import { Request } from 'express';
-import { AnyFilesInterceptor } from '@nestjs/platform-express';
+  UseGuards,
+  UseInterceptors,
+} from "@nestjs/common";
+import { AnyFilesInterceptor } from "@nestjs/platform-express";
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { AuthenticatedRequest } from "src/core/auth/auth.types";
+import { GetFeatureFlagsService } from 'src/core/feature-flags/services/get-feature-flags.service';
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
-import { DeleteSheltersService } from './services/delete-shelters.service';
-import { UpdateSheltersService } from './services/update-shelters.service';
-import { GetSheltersService } from './services/get-shelters.service';
-import { CreateSheltersService } from './services/create-shelters.service';
+import { CreateSheltersService } from "./services/create-shelters.service";
+import { GetSheltersService } from "./services/get-shelters.service";
+import { UpdateSheltersService } from "./services/update-shelters.service";
+import { DeleteSheltersService } from "./services/delete-shelters.service";
 
-import { QuerySheltersDto } from './dto/query-shelters.dto';
-import { Paginated } from 'src/shelter/pagela/dto/paginated.dto';
-import { ShelterResponseDto, ShelterSimpleResponseDto, toShelterDto } from './dto/shelter.response.dto';
-import { ShelterSelectOptionDto } from './dto/shelter-select-option.dto';
-import { ShelterTeamsQuantityResponseDto } from './dto/shelter-teams-quantity-response.dto';
-import { ShelterTeamSelectOptionDto } from './dto/shelter-team-select-option.dto';
-import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
-import { FeatureFlagsService } from 'src/core/feature-flags/feature-flags.service';
-import { FeatureFlagKeys } from 'src/core/feature-flags/enums/feature-flag-keys.enum';
+import { CreateShelterDto } from "./dto/create-shelter.dto";
+import { UpdateShelterDto } from "./dto/update-shelter.dto";
+import { QuerySheltersDto } from "./dto/query-shelters.dto";
+import {
+  ShelterResponseDto,
+  ShelterSimpleResponseDto,
+} from "./dto/shelter.response.dto";
+import { ShelterPaginatedResponseDto } from "./dto/shelter-paginated-response.dto";
+import { ShelterSelectOptionDto } from "./dto/shelter-select-option.dto";
+import { ShelterTeamSelectOptionDto } from "./dto/shelter-team-select-option.dto";
+import { ShelterTeamsQuantityResponseDto } from "./dto/shelter-teams-quantity-response.dto";
+import { toShelterDto } from "./mappers/shelter.mapper";
+import { toShelterAccessContext } from "./utils/shelter-access.util";
+import {
+  parseShelterMediaPayload,
+  parseShelterPayload,
+  toFilesDict,
+  type ShelterMediaRawBody,
+  type ShelterRawBody,
+} from "./utils/shelter-payload.util";
 
-@Controller('shelters')
+@Controller("shelters")
 export class SheltersController {
-  private readonly logger = new Logger(SheltersController.name);
-
   constructor(
-    private readonly deleteService: DeleteSheltersService,
-    private readonly updateService: UpdateSheltersService,
-    private readonly getService: GetSheltersService,
     private readonly createService: CreateSheltersService,
-    private readonly featureFlagsService: FeatureFlagsService,
-  ) { }
+    private readonly getService: GetSheltersService,
+    private readonly updateService: UpdateSheltersService,
+    private readonly deleteService: DeleteSheltersService,
+    private readonly featureFlagsService: GetFeatureFlagsService,
+  ) {}
+
+  /** O endereço é exposto conforme a feature flag do abrigo. */
+  private showAddress(): Promise<boolean> {
+    return this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get()
   findAllPaginated(
-    @Query() q: QuerySheltersDto,
-    @Req() req: Request,
-  ): Promise<Paginated<ShelterResponseDto>> {
-    return this.getService.findAllPaginated(q, req);
+    @Query() query: QuerySheltersDto,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<ShelterPaginatedResponseDto<ShelterResponseDto>> {
+    return this.getService.findAllPaginated(
+      query,
+      toShelterAccessContext(request),
+    );
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('simple')
-  async findAllSimple(@Req() req: Request): Promise<ShelterSimpleResponseDto[]> {
-    return this.getService.findAllSimple(req);
+  @Get("simple")
+  findAllSimple(
+    @Req() request: AuthenticatedRequest,
+  ): Promise<ShelterSimpleResponseDto[]> {
+    return this.getService.findAllSimple(toShelterAccessContext(request));
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('list')
-  async list(@Req() req: Request): Promise<ShelterSelectOptionDto[]> {
-    return this.getService.list(req);
+  @Get("list")
+  list(
+    @Req() request: AuthenticatedRequest,
+  ): Promise<ShelterSelectOptionDto[]> {
+    return this.getService.list(toShelterAccessContext(request));
   }
 
-  @Get('list-teams')
-  async listTeamsForPublic(): Promise<ShelterTeamSelectOptionDto[]> {
+  @Get("list-teams")
+  listTeamsForPublic(): Promise<ShelterTeamSelectOptionDto[]> {
     return this.getService.listTeamsForPublic();
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(':id')
-  async findOne(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: Request,
+  @Get(":id")
+  findOne(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<ShelterResponseDto> {
-    return this.getService.findOne(id, req);
+    return this.getService.findOne(id, toShelterAccessContext(request));
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get(':id/teams-quantity')
-  async getTeamsQuantity(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: Request,
+  @Get(":id/teams-quantity")
+  getTeamsQuantity(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<ShelterTeamsQuantityResponseDto> {
-    return this.getService.getTeamsQuantity(id, req);
+    return this.getService.getTeamsQuantity(
+      id,
+      toShelterAccessContext(request),
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -94,68 +120,66 @@ export class SheltersController {
   @UseInterceptors(AnyFilesInterceptor())
   async create(
     @UploadedFiles() files: Express.Multer.File[] = [],
-    @Req() req: Request,
-    @Body('shelterData') shelterDataRaw?: string,
-    @Body() body?: any,
+    @Req() request: AuthenticatedRequest,
+    @Body() body: ShelterRawBody,
   ): Promise<ShelterResponseDto> {
-    this.logger.log('Creating new shelter');
+    // O JSON vem num campo multipart que o ValidationPipe global não alcança.
+    const dto = parseShelterPayload(body, CreateShelterDto);
+    const shelter = await this.createService.execute(
+      dto,
+      toShelterAccessContext(request),
+      toFilesDict(files),
+    );
 
-    const bodyToProcess =
-      shelterDataRaw ? { shelterData: shelterDataRaw } : (body || {}); // ✅ aqui
-
-    const entity = await this.createService.createFromRaw(bodyToProcess, files, req);
-    this.logger.log(`Shelter created successfully: ${entity.id}`);
-    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
-    return toShelterDto(entity, showAddress);
+    return toShelterDto(shelter, await this.showAddress());
   }
 
-
   @UseGuards(JwtAuthGuard)
-  @Put(':id')
+  @Put(":id")
   @UseInterceptors(AnyFilesInterceptor())
   async update(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param("id", new ParseUUIDPipe()) id: string,
     @UploadedFiles() files: Express.Multer.File[] = [],
-    @Req() req: Request,
-    @Body('shelterData') shelterDataRaw?: string,
-    @Body() body?: any,
+    @Req() request: AuthenticatedRequest,
+    @Body() body: ShelterRawBody,
   ): Promise<ShelterResponseDto> {
-    this.logger.log(`Updating shelter: ${id}`);
-    const bodyToProcess = shelterDataRaw ? { shelterData: shelterDataRaw } : (body || {});
-    const entity = await this.updateService.updateFromRaw(id, bodyToProcess, files, req);
-    this.logger.log(`Shelter updated successfully: ${id}`);
-    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
-    return toShelterDto(entity, showAddress);
+    const dto = parseShelterPayload(body, UpdateShelterDto);
+    const shelter = await this.updateService.execute(
+      id,
+      dto,
+      toShelterAccessContext(request),
+      toFilesDict(files),
+    );
+
+    return toShelterDto(shelter, await this.showAddress());
   }
 
   @UseGuards(JwtAuthGuard)
-  @Patch(':id/media')
+  @Patch(":id/media")
   @UseInterceptors(AnyFilesInterceptor())
   async updateMedia(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param("id", new ParseUUIDPipe()) id: string,
     @UploadedFiles() files: Express.Multer.File[] = [],
-    @Req() req: Request,
-    @Body('mediaData') mediaDataRaw?: string,
-    @Body() body?: any,
+    @Req() request: AuthenticatedRequest,
+    @Body() body: ShelterMediaRawBody,
   ): Promise<ShelterResponseDto> {
-    this.logger.log(`Updating shelter media: ${id}`);
-    const bodyToProcess = mediaDataRaw ? { mediaData: mediaDataRaw } : (body || {});
-    const entity = await this.updateService.updateMediaFromRaw(id, bodyToProcess, files, req);
-    this.logger.log(`Shelter media updated successfully: ${id}`);
-    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
-    return toShelterDto(entity, showAddress);
+    const media = parseShelterMediaPayload(body);
+    const shelter = await this.updateService.updateMedia(
+      id,
+      media,
+      toShelterAccessContext(request),
+      toFilesDict(files),
+    );
+
+    return toShelterDto(shelter, await this.showAddress());
   }
 
   @UseGuards(JwtAuthGuard)
-  @Delete(':id')
-  async remove(
-    @Param('id', new ParseUUIDPipe()) id: string,
-    @Req() req: Request,
+  @Delete(":id")
+  remove(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<{ message: string }> {
-    this.logger.log(`Deleting shelter: ${id}`);
-    const result = await this.deleteService.remove(id, req);
-    this.logger.log(`Shelter deleted successfully: ${id}`);
-    return result;
+    return this.deleteService.execute(id, toShelterAccessContext(request));
   }
-
 }

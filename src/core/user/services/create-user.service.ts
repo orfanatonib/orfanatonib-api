@@ -1,17 +1,14 @@
-import {
-  Injectable,
-  Logger,
-} from '@nestjs/common';
-import * as bcrypt from 'bcryptjs';
+import { Injectable, Logger } from "@nestjs/common";
+import * as bcrypt from "bcryptjs";
 
-import { UserRepository } from '../user.repository';
-import { CreateUserDto } from '../dto/create-user.dto';
-import { UserEntity } from '../entities/user.entity';
+import { UserRepository } from "../user.repository";
+import { CreateUserDto } from "../dto/create-user.dto";
+import { UserEntity } from "../entities/user.entity";
 
-import { UserRole } from 'src/core/auth/auth.types';
-import { MemberProfilesService } from 'src/shelter/member-profile/services/member-profiles.service';
-import { LeaderProfilesService } from 'src/shelter/leader-profile/services/leader-profiles.service';
-import { UserLogs } from '../constants/user.constants';
+import { UserRole } from "src/core/auth/auth.types";
+import { MemberProfilesService } from "src/shelter/member-profile/services/member-profiles.service";
+import { LeaderProfilesService } from "src/shelter/leader-profile/services/leader-profiles.service";
+import { UserLogs } from "../constants/user.constants";
 
 @Injectable()
 export class CreateUserService {
@@ -21,7 +18,7 @@ export class CreateUserService {
     private readonly userRepo: UserRepository,
     private readonly memberService: MemberProfilesService,
     private readonly leaderService: LeaderProfilesService,
-  ) { }
+  ) {}
 
   async create(dto: CreateUserDto): Promise<UserEntity> {
     const hashedPassword = await bcrypt.hash(dto.password, 10);

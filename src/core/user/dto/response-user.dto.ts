@@ -1,5 +1,5 @@
-import { Exclude, Expose } from 'class-transformer';
-import { UserRole } from 'src/core/auth/auth.types';
+import { Exclude, Expose } from "class-transformer";
+import { UserRole } from "src/core/auth/auth.types";
 
 @Exclude()
 export class UserPublicDto {

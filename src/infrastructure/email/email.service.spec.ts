@@ -1,12 +1,10 @@
-import { Test } from '@nestjs/testing';
-import { EmailMessage } from './email.types';
-import { EmailService } from './email.service';
-import { GmailSmtpProvider } from './gmail-smtp.provider';
+import { Test } from "@nestjs/testing";
+import { EmailMessage } from "./email.types";
+import { EmailService } from "./email.service";
+import { GmailSmtpProvider } from "./gmail-smtp.provider";
 
-describe('EmailService', () => {
-  const send = jest.fn(
-    async (_message: EmailMessage): Promise<void> => undefined,
-  );
+describe("EmailService", () => {
+  const send = jest.fn<Promise<void>, [EmailMessage]>();
   let service: EmailService;
 
   beforeEach(async () => {
@@ -22,11 +20,11 @@ describe('EmailService', () => {
     service = moduleRef.get(EmailService);
   });
 
-  it('dispatches one vendor-neutral email message', async () => {
+  it("dispatches one vendor-neutral email message", async () => {
     const message: EmailMessage = {
-      to: 'recipient@example.com',
-      subject: 'Assunto',
-      text: 'Conteúdo',
+      to: "recipient@example.com",
+      subject: "Assunto",
+      text: "Conteúdo",
     };
 
     await service.dispatch(message);
@@ -34,10 +32,10 @@ describe('EmailService', () => {
     expect(send).toHaveBeenCalledWith(message);
   });
 
-  it('dispatches bulk messages sequentially', async () => {
+  it("dispatches bulk messages sequentially", async () => {
     const messages: readonly EmailMessage[] = [
-      { to: 'first@example.com', subject: 'Primeiro', text: 'Um' },
-      { to: 'second@example.com', subject: 'Segundo', text: 'Dois' },
+      { to: "first@example.com", subject: "Primeiro", text: "Um" },
+      { to: "second@example.com", subject: "Segundo", text: "Dois" },
     ];
 
     await service.dispatchBulk(messages);

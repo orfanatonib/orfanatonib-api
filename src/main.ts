@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters';
+import { RuleException } from './common/exceptions';
 import { LoggingInterceptor } from './common/interceptors';
 import { RateLimitingMiddleware, TimeoutMiddleware } from './common/middlewares';
 
@@ -53,13 +54,10 @@ async function bootstrap() {
           })),
         }));
 
-        return {
-          statusCode: 400,
-          message: 'Validation failed',
-          error: 'Bad Request',
-          category: 'RULE',
-          details: formattedErrors,
-        } as any;
+        // Precisa ser uma exceção, não um objeto simples: o Nest lança o que
+        // esta função devolve, e um objeto cru não é classificável pelo
+        // GlobalExceptionFilter — virava 500 "Unknown error occurred".
+        return new RuleException('Validation failed', formattedErrors);
       },
     }));
 

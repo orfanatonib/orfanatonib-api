@@ -13,6 +13,7 @@ import { TeamsService } from 'src/shelter/team/services/teams.service';
 import { ManageMemberTeamDto } from '../dto/assign-team.dto';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { MemberProfileEntity } from '../entities/member-profile.entity/member-profile.entity';
+import { NotificationService } from 'src/communication/notification/services/notification.service';
 
 type AccessCtx = { role?: string; userId?: string | null };
 
@@ -24,6 +25,7 @@ export class MemberProfilesService {
     @Inject(forwardRef(() => TeamsService))
     private readonly teamsService: TeamsService,
     private readonly mediaItemProcessor: MediaItemProcessor,
+    private readonly notificationService: NotificationService,
   ) { }
 
   private async getCtx(req: Request): Promise<AccessCtx> {
@@ -83,6 +85,35 @@ export class MemberProfilesService {
     return this.repo.removeByUserId(userId);
   }
 
+  /**
+   * Vincula o usuário à equipe, criando o perfil de membro se ainda não houver.
+   * Contrato sem `Request`, usado pelo cadastro em `core/auth`.
+   */
+  async assignTeamForUser(userId: string, teamId: string): Promise<void> {
+    await this.repo.assignTeamByIdForUser(userId, teamId);
+  }
+
+  /**
+   * Avisa quem entrou ou saiu de uma equipe. Antes a mudança acontecia calada:
+   * o membro só descobria ao abrir a plataforma.
+   */
+  private async notifyTeamAssignment(member: MemberResponseDto): Promise<void> {
+    const email = member.user?.email;
+    const shelter = member.shelter;
+    if (!email || !shelter?.team) return;
+
+    try {
+      await this.notificationService.sendTeamAssignmentChanged(email, {
+        userName: member.user.name,
+        shelterName: shelter.name,
+        teamNumber: shelter.team.numberTeam,
+        assigned: true,
+      });
+    } catch {
+      // Avisar não pode desfazer o vínculo que acabou de ser gravado.
+    }
+  }
+
   async manageTeam(memberId: string, dto: ManageMemberTeamDto, req: Request): Promise<MemberResponseDto> {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
@@ -119,7 +150,9 @@ export class MemberProfilesService {
       }
     }
 
-    return this.findOne(memberId, req);
+    const updated = await this.findOne(memberId, req);
+    await this.notifyTeamAssignment(updated);
+    return updated;
   }
 
   private async populateUserImages(members: MemberProfileEntity[]): Promise<void> {

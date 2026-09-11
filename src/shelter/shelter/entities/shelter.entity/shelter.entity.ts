@@ -1,37 +1,49 @@
-import { BaseEntity } from 'src/shared/entity/base.entity';
-import { Entity, Column, OneToOne, JoinColumn, OneToMany } from 'typeorm';
-import { AddressEntity } from 'src/shelter/address/entities/address.entity/address.entity';
-import { TeamEntity } from 'src/shelter/team/entities/team.entity';
-import { ShelteredEntity } from 'src/shelter/sheltered/entities/sheltered.entity';
-import { RouteEntity } from 'src/infrastructure/route/route-page.entity';
+import { BaseEntity } from "src/shared/entity/base.entity";
+import { Entity, Column, OneToOne, JoinColumn, OneToMany } from "typeorm";
+import { AddressEntity } from "src/shelter/address/entities/address.entity/address.entity";
+import { TeamEntity } from "src/shelter/team/entities/team.entity";
+import { ShelteredEntity } from "src/shelter/sheltered/entities/sheltered.entity";
+import { RouteEntity } from "src/infrastructure/route/route-page.entity";
+import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
 
-@Entity('shelters')
+@Entity("shelters")
 export class ShelterEntity extends BaseEntity {
-  @Column({ type: 'varchar', length: 255 })
+  @Column({ type: "varchar", length: 255 })
   name: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: "text", nullable: true })
   description?: string;
 
-  @Column({ type: 'int', nullable: true })
+  @Column({ type: "int", nullable: true })
   teamsQuantity?: number;
 
-  @OneToOne(() => AddressEntity, { cascade: true, eager: true, onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'address_id' })
+  @OneToOne(() => AddressEntity, {
+    cascade: true,
+    eager: true,
+    onDelete: "RESTRICT",
+  })
+  @JoinColumn({ name: "address_id" })
   address: AddressEntity;
 
   @OneToMany(() => TeamEntity, (team) => team.shelter, { cascade: false })
   teams: TeamEntity[];
 
-  @OneToMany(() => ShelteredEntity, (sheltered) => sheltered.shelter, { cascade: false })
+  @OneToMany(() => ShelteredEntity, (sheltered) => sheltered.shelter, {
+    cascade: false,
+  })
   sheltered: ShelteredEntity[];
 
   @OneToOne(() => RouteEntity, {
     cascade: true,
     eager: true,
-    onDelete: 'CASCADE',
+    onDelete: "CASCADE",
   })
   @JoinColumn()
   route?: RouteEntity | null;
 
+  /**
+   * Foto principal, anexada em memória para a resposta. Não é coluna: a mídia
+   * vive em `media_items`, referenciada por `targetId`/`targetType`.
+   */
+  mediaItem?: MediaItemEntity | null;
 }

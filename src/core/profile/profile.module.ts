@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProfileController } from './controllers/profile.controller';
 import { CreateProfileService } from './services/profile/create-profile.service';
@@ -18,7 +18,9 @@ import { AuthModule } from '../auth/auth.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([UserEntity, PersonalData, UserPreferences]),
-    AuthModule,
+    // Ciclo real com AuthModule: o perfil usa os guards do auth e o
+    // `GET /auth/me` usa o contrato do perfil. Os dois lados usam forwardRef.
+    forwardRef(() => AuthModule),
     MediaModule,
   ],
   controllers: [ProfileController],

@@ -1,5 +1,5 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
-import { TestamentType } from '../entities/visit-material-page.entity';
+import { IsEnum, IsOptional, IsString } from "class-validator";
+import { TestamentType } from "../enums/testament-type.enum";
 
 export class QueryVisitMaterialsPageDto {
   @IsOptional()

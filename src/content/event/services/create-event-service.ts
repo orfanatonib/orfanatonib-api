@@ -1,10 +1,17 @@
-import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
-import { EventRepository } from '../event.repository';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
-import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
-import { MediaType, UploadType } from 'src/shared/media/media-item/media-item.entity';
-import { EventEntity } from '../entities/event.entity';
-import { EventNotificationHelper } from './event-notification.helper';
+import {
+  Injectable,
+  Logger,
+  InternalServerErrorException,
+} from "@nestjs/common";
+import { EventRepository } from "../event.repository";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
+import {
+  MediaType,
+  UploadType,
+} from "src/shared/media/media-item/media-item.entity";
+import { EventEntity } from "../entities/event.entity";
+import { EventNotificationHelper } from "./event-notification.helper";
 
 @Injectable()
 export class CreateEventService {
@@ -18,7 +25,7 @@ export class CreateEventService {
   ) {}
 
   async create(dto: any, file?: Express.Multer.File): Promise<EventEntity> {
-    this.logger.log('Creating new event');
+    this.logger.log("Creating new event");
 
     const event = await this.eventRepo.create({ ...dto });
 
@@ -27,8 +34,8 @@ export class CreateEventService {
         const fileUrl = await this.s3Service.upload(file);
         const media = this.mediaItemProcessor.buildBaseMediaItem(
           {
-            title: dto.title || 'Event image',
-            description: dto.description || '',
+            title: dto.title || "Event image",
+            description: dto.description || "",
             mediaType: MediaType.IMAGE,
             uploadType: UploadType.UPLOAD,
             url: fileUrl,
@@ -37,18 +44,20 @@ export class CreateEventService {
             size: file.size,
           },
           event.id,
-          'Event',
+          "Event",
         );
         await this.mediaItemProcessor.saveMediaItem(media);
         this.logger.log(`Media saved for event ${event.id}`);
       } catch (error) {
         this.logger.error(`Error processing media for event`, error.stack);
-        throw new InternalServerErrorException('Error processing event media');
+        throw new InternalServerErrorException("Error processing event media");
       }
     }
 
     this.eventNotificationHelper.notifyEventCreated(event).catch((error) => {
-      this.logger.error(`Failed to send event creation notification: ${error.message}`);
+      this.logger.error(
+        `Failed to send event creation notification: ${error.message}`,
+      );
     });
 
     return event;

@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
-import { ContactEntity } from './contact.entity';
+import { Injectable } from "@nestjs/common";
+import { DataSource, Repository } from "typeorm";
+import { ContactEntity } from "./contact.entity";
 
 @Injectable()
 export class ContactRepository extends Repository<ContactEntity> {
@@ -15,7 +15,7 @@ export class ContactRepository extends Repository<ContactEntity> {
 
   async getAll(): Promise<ContactEntity[]> {
     return this.find({
-      order: {        createdAt: 'DESC',      },
+      order: { createdAt: "DESC" },
     });
   }
 
@@ -24,5 +24,4 @@ export class ContactRepository extends Repository<ContactEntity> {
       where: { id },
     });
   }
-  
 }

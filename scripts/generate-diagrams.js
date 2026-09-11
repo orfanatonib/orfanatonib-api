@@ -23,7 +23,7 @@ function collectSources(dir) {
 }
 
 function resolveRenderer() {
-  if (spawnSync('plantuml', ['-version'], { stdio: 'ignore' }).status === 0) {
+  if (spawnSync('plantuml', ['-help'], { stdio: 'ignore' }).status === 0) {
     return (source) => execFileSync('plantuml', ['-tpng', source], { stdio: 'inherit' });
   }
 

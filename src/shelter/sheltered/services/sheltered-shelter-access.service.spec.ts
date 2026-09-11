@@ -39,18 +39,15 @@ describe("ShelteredShelterAccessService", () => {
     );
   });
 
-  it("sends an undefined role instead of null when the actor has none", async () => {
+  it("passes the actor through as-is, including a null role", async () => {
     getSheltersService.existsForActor.mockResolvedValue(true);
 
     await service.assertReachable("shelter-id", { userId: null, role: null });
 
-    expect(getSheltersService.existsForActor).toHaveBeenCalledWith(
-      "shelter-id",
-      {
-        role: undefined,
-        userId: null,
-      },
-    );
+    expect(getSheltersService.existsForActor).toHaveBeenCalledWith("shelter-id", {
+      role: null,
+      userId: null,
+    });
   });
 
   it("raises a 404 when the shelter is missing or out of scope", async () => {

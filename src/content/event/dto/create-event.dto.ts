@@ -1,5 +1,5 @@
-import { EventAudience } from '../entities/event.entity';
-import { IsEnum, IsNotEmpty, IsOptional } from 'class-validator';
+import { EventAudience } from "../entities/event.entity";
+import { IsEnum, IsNotEmpty, IsOptional } from "class-validator";
 
 export class CreateEventDto {
   @IsNotEmpty()

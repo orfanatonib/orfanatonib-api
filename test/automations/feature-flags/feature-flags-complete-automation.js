@@ -245,9 +245,16 @@ class FeatureFlagsAutomation extends AutomationBase {
 
         const allResponse = await this.client.get('/feature-flags');
         if (allResponse && allResponse.status === 200) {
-            Logger.success(`${allResponse.data.length} feature flags encontradas (total)`);
+            Logger.success(`${allResponse.data.meta.totalItems} feature flags encontradas (total)`);
         } else {
             Logger.error('Falha ao listar feature flags');
+        }
+
+        const statsResponse = await this.client.get('/feature-flags/stats');
+        if (statsResponse && statsResponse.status === 200) {
+            Logger.success(`${statsResponse.data.enabled} ligadas e ${statsResponse.data.disabled} desligadas`);
+        } else {
+            Logger.error('Falha ao obter estatísticas de feature flags');
         }
 
         const stagingResponse = await this.client.get('/feature-flags/environment/staging');
@@ -257,12 +264,19 @@ class FeatureFlagsAutomation extends AutomationBase {
             Logger.error('Falha ao listar feature flags de staging');
         }
 
-        const checkResponse = await this.client.get('/feature-flags/check/content-events?environment=staging');
+        const checkResponse = await this.client.get('/feature-flags/check/content-events');
         if (checkResponse && checkResponse.status === 200) {
             const status = checkResponse.data.enabled ? '✅ Enabled' : '❌ Disabled';
             Logger.success(`Status de 'content-events': ${status}`);
         } else {
             Logger.error('Falha ao verificar status da flag');
+        }
+
+        const mapResponse = await this.client.get('/feature-flags/map');
+        if (mapResponse && mapResponse.status === 200) {
+            Logger.success('Mapa público de feature flags carregado');
+        } else {
+            Logger.error('Falha ao carregar o mapa público de feature flags');
         }
     }
 }

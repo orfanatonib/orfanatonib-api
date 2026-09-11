@@ -1,31 +1,32 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Logger } from "@nestjs/common";
+import { PassportStrategy } from "@nestjs/passport";
+import { ExtractJwt, Strategy } from "passport-jwt";
+import { ConfigService } from "@nestjs/config";
+import { AuthenticatedUser, JwtPayload } from "../auth.types";
+import { AuthLogs } from "../constants/auth.constants";
 
-interface JwtPayload {
-  sub: string;
-  email: string;
-  role: string;
-}
-
+/**
+ * Popula `request.user` nas rotas com `JwtAuthGuard`. O formato devolvido aqui
+ * é o `AuthenticatedUser` que os controllers leem — em particular `userId`,
+ * não `id`.
+ */
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+export class JwtStrategy extends PassportStrategy(Strategy, "jwt") {
   private readonly logger = new Logger(JwtStrategy.name);
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
+      secretOrKey: configService.getOrThrow<string>("JWT_SECRET"),
     });
   }
 
-  async validate(payload: JwtPayload) {
+  validate(payload: JwtPayload): AuthenticatedUser {
     const { sub: userId, email, role } = payload;
 
     if (!role) {
-      this.logger.warn(`Missing role in JWT payload (userId: ${userId})`);
+      this.logger.warn(AuthLogs.MISSING_ROLE_IN_TOKEN(userId));
     }
 
     return { userId, email, role };

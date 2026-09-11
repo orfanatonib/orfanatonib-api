@@ -37,6 +37,14 @@ export class MediaItemProcessor {
     return media;
   }
 
+  /**
+   * Lookup by id, so a consumer can inspect the stored item (e.g. the previous
+   * S3 url) without reaching for TypeORM itself.
+   */
+  async findMediaItemById(id: string): Promise<MediaItemEntity | null> {
+    return this.mediaRepo.findById(id);
+  }
+
   async saveMediaItem(media: MediaItemEntity): Promise<MediaItemEntity> {
     return this.mediaRepo.save(media);
   }

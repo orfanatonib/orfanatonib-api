@@ -9,7 +9,7 @@ participant "NotificationService" as Notification
 participant "EmailService" as Email
 participant "GmailSmtpProvider" as Provider
 participant "Nodemailer" as Nodemailer
-cloud "smtp.gmail.com:465\nTLS" as Gmail
+participant "smtp.gmail.com:465\nTLS" as Gmail
 actor Destinatario as Recipient
 
 UseCase -> Notification : solicita notificacao

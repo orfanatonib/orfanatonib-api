@@ -1,67 +1,104 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { ProcessException } from '../../common/exceptions';
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { ProcessException } from "../../common/exceptions";
 import {
   EMAIL_CONFIG_KEYS,
   EMAIL_DEFAULTS,
   EMAIL_ERROR_MESSAGES,
   GMAIL_SMTP_CONFIG,
-} from './email.constants';
-import { EmailMessage, SmtpTransport } from './email.types';
-import { GmailSmtpTransportFactory } from './gmail-smtp-transport.factory';
-import { getRequiredEmailConfig } from './utils/email-config.util';
+} from "./email.constants";
+import { EmailMessage, SmtpTransport } from "./email.types";
+import { GmailSmtpTransportFactory } from "./gmail-smtp-transport.factory";
+import { getOptionalEmailConfig } from "./utils/email-config.util";
 import {
   getSmtpErrorMetadata,
   isRetryableSmtpError,
-} from './utils/smtp-error.util';
+} from "./utils/smtp-error.util";
 
 @Injectable()
 export class GmailSmtpProvider {
   private readonly logger = new Logger(GmailSmtpProvider.name);
-  private readonly transporter: SmtpTransport;
-  private readonly fromAddress: string;
-  private readonly fromName: string;
+  private transporter: SmtpTransport | null = null;
+  private fromAddress = "";
 
   constructor(
     private readonly configService: ConfigService,
     private readonly transportFactory: GmailSmtpTransportFactory,
-  ) {
-    this.fromAddress = getRequiredEmailConfig(
+  ) {}
+
+  /**
+   * A credencial é lida no primeiro envio, não no construtor.
+   *
+   * Antes o provider montava o transporte ao ser instanciado: um ambiente sem
+   * `GMAIL_SMTP_USER` — o caso de `env/prod.env` — **derrubava o boot da API
+   * inteira**, em vez de apenas não enviar e-mail.
+   */
+  private getTransporter(): SmtpTransport {
+    if (this.transporter) return this.transporter;
+
+    const user = getOptionalEmailConfig(
       this.configService,
       EMAIL_CONFIG_KEYS.GMAIL_USER,
     );
-    const appPassword = getRequiredEmailConfig(
+    const appPassword = getOptionalEmailConfig(
       this.configService,
       EMAIL_CONFIG_KEYS.GMAIL_APP_PASSWORD,
     );
-    this.fromName =
-      this.configService.get<string>(EMAIL_CONFIG_KEYS.FROM_NAME)?.trim() ||
-      EMAIL_DEFAULTS.FROM_NAME;
 
+    if (!user || !appPassword) {
+      const missing = !user
+        ? EMAIL_CONFIG_KEYS.GMAIL_USER
+        : EMAIL_CONFIG_KEYS.GMAIL_APP_PASSWORD;
+      this.logger.error(EMAIL_ERROR_MESSAGES.REQUIRED_CONFIG(missing));
+      throw new ProcessException(EMAIL_ERROR_MESSAGES.REQUIRED_CONFIG(missing));
+    }
+
+    this.fromAddress = user;
     this.transporter = this.transportFactory.create({
       host: GMAIL_SMTP_CONFIG.HOST,
       port: GMAIL_SMTP_CONFIG.PORT,
       secure: GMAIL_SMTP_CONFIG.SECURE,
-      auth: {
-        user: this.fromAddress,
-        pass: appPassword,
-      },
+      auth: { user, pass: appPassword },
       connectionTimeout: GMAIL_SMTP_CONFIG.CONNECTION_TIMEOUT_MS,
       greetingTimeout: GMAIL_SMTP_CONFIG.GREETING_TIMEOUT_MS,
       socketTimeout: GMAIL_SMTP_CONFIG.SOCKET_TIMEOUT_MS,
     });
+    return this.transporter;
+  }
+
+  /** `true` quando há credencial configurada para enviar. */
+  isConfigured(): boolean {
+    return (
+      !!getOptionalEmailConfig(
+        this.configService,
+        EMAIL_CONFIG_KEYS.GMAIL_USER,
+      ) &&
+      !!getOptionalEmailConfig(
+        this.configService,
+        EMAIL_CONFIG_KEYS.GMAIL_APP_PASSWORD,
+      )
+    );
+  }
+
+  private fromName(): string {
+    return (
+      getOptionalEmailConfig(this.configService, EMAIL_CONFIG_KEYS.FROM_NAME) ||
+      EMAIL_DEFAULTS.FROM_NAME
+    );
   }
 
   async send(message: EmailMessage): Promise<void> {
+    const transporter = this.getTransporter();
+
     for (
       let attempt = 1;
       attempt <= GMAIL_SMTP_CONFIG.MAX_ATTEMPTS;
       attempt += 1
     ) {
       try {
-        await this.transporter.sendMail({
+        await transporter.sendMail({
           from: {
-            name: this.fromName,
+            name: this.fromName(),
             address: this.fromAddress,
           },
           to: message.to,
@@ -69,7 +106,7 @@ export class GmailSmtpProvider {
           text: message.text,
           html: message.html,
         });
-        this.logger.log('E-mail enviado com sucesso pelo SMTP do Gmail.');
+        this.logger.log("E-mail enviado com sucesso pelo SMTP do Gmail.");
         return;
       } catch (error: unknown) {
         const canRetry =
@@ -78,14 +115,14 @@ export class GmailSmtpProvider {
 
         if (!canRetry) {
           this.logger.error({
-            message: 'Falha no envio pelo SMTP do Gmail.',
+            message: "Falha no envio pelo SMTP do Gmail.",
             ...getSmtpErrorMetadata(error),
           });
           throw new ProcessException(EMAIL_ERROR_MESSAGES.DELIVERY_FAILED);
         }
 
         this.logger.warn({
-          message: 'Falha temporária no SMTP do Gmail; o envio será repetido.',
+          message: "Falha temporária no SMTP do Gmail; o envio será repetido.",
           attempt,
           ...getSmtpErrorMetadata(error),
         });

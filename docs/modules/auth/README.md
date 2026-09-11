@@ -1,315 +1,177 @@
-# 🔐 Auth Module
+# 🔐 Módulo Auth (Autenticação)
 
-## 📋 Visão Geral
+Entrada no sistema: senha, Google, renovação de sessão, cadastro e recuperação
+de senha. É o módulo de que todos os outros dependem — o `JwtAuthGuard` e os
+guards de papel vivem aqui.
 
-O módulo Auth gerencia a autenticação e autorização do sistema de orfanato, incluindo registro, login, refresh tokens e controle de acesso baseado em roles.
+- **Contrato dos endpoints**: [`Auth_API_Documentation.md`](./Auth_API_Documentation.md)
+- **Diagrama de fluxo**: [`docs/diagrams/flow/auth/auth-flow.puml`](../../diagrams/flow/auth/auth-flow.puml)
+- **Erros**: [`docs/ERROR_HANDLING_GUIDE.md`](../../ERROR_HANDLING_GUIDE.md)
 
-## 🏗️ Estrutura
+---
 
-### Funcionalidades
-- **Registro de usuários** - Criação de contas
-- **Login/Logout** - Autenticação JWT
-- **Refresh Tokens** - Renovação de tokens
-- **Autorização** - Controle de acesso por roles
-- **Validação** - Verificação de dados
-- **Recuperação de senha** - Envio do link diretamente por Gmail SMTP
+## 📁 Estrutura
 
-### Roles do Sistema
-- `admin` - Acesso total ao sistema
-- `coordinator` (leader) - Gerencia abrigos e professores
-- `member` - Acesso limitado aos próprios dados
-
-## 🚀 Endpoints
-
-### 🔑 Autenticação
-- `POST /auth/register` - Registrar novo usuário
-- `POST /auth/login` - Fazer login
-- `POST /auth/refresh` - Renovar token
-- `POST /auth/logout` - Fazer logout
-- `POST /auth/complete-register` - Completar registro
-- `POST /auth/forgot-password` - Solicitar link de recuperação por e-mail
-- `GET /auth/reset-password/validate` - Validar token de recuperação
-- `POST /auth/reset-password` - Redefinir a senha
-
-### Entrega de e-mail
-
-O backend envia e-mails pelo SMTP do Gmail. Não há mais cadastro ou verificação
-de destinatários no SES. Por isso, login e registro não retornam mais o campo
-legado `emailVerification`, e a recuperação de senha tenta enviar o link
-diretamente ao endereço cadastrado.
-
-Veja [`../../guides/GMAIL_SMTP_CONFIGURATION.md`](../../guides/GMAIL_SMTP_CONFIGURATION.md)
-para configurar as credenciais do remetente.
-
-### 👤 Perfil do Usuário
-- `GET /auth/profile` - Obter perfil do usuário logado
-- `PATCH /auth/profile` - Atualizar perfil
-
-## 📊 Dados de Registro
-
-### Registro Inicial
-```json
-{
-  "name": "João Silva",
-  "email": "joao@example.com",
-  "phone": "+5511999999999",
-  "password": "password123",
-  "role": "member"
-}
-```
-
-### Completar Registro
-```json
-{
-  "email": "joao@example.com",
-  "name": "João Silva",
-  "phone": "+5511999999999",
-  "password": "password123",
-  "role": "member"
-}
-```
-
-## 🔐 Autenticação JWT
-
-### Headers Obrigatórios
-```
-Authorization: Bearer {access_token}
-Content-Type: application/json
-```
-
-### Estrutura do Token
-```json
-{
-  "sub": "user-uuid",
-  "email": "user@example.com",
-  "role": "member",
-  "iat": 1759008614,
-  "exp": 1759613414
-}
-```
-
-## 📝 Exemplos de Uso
-
-### Registrar Usuário
-```bash
-POST /auth/register
-Content-Type: application/json
-
-{
-  "name": "Maria Santos",
-  "email": "maria@example.com",
-  "phone": "+5511888888888",
-  "password": "password123",
-  "role": "coordinator"
-}
-```
-
-### Fazer Login
-```bash
-POST /auth/login
-Content-Type: application/json
-
-{
-  "email": "maria@example.com",
-  "password": "password123"
-}
-```
-
-### Renovar Token
-```bash
-POST /auth/refresh
-Content-Type: application/json
-
-{
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-### Obter Perfil
-```bash
-GET /auth/profile
-Authorization: Bearer {access_token}
-```
-
-## 📊 Respostas da API
-
-### Sucesso - Login (201)
-```json
-{
-  "message": "Login successful",
-  "user": {
-    "id": "uuid-user",
-    "email": "maria@example.com",
-    "name": "Maria Santos",
-    "active": true,
-    "completed": true,
-    "commonUser": false,
-    "phone": "+5511888888888",
-    "role": "coordinator",
-    "createdAt": "2025-09-27T21:00:00.000Z",
-    "updatedAt": "2025-09-27T21:26:05.000Z"
-  },
-  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-### Sucesso - Registro (201)
-```json
-{
-  "message": "User registered successfully",
-  "user": {
-    "id": "uuid-user",
-    "email": "maria@example.com",
-    "name": "Maria Santos",
-    "active": false,
-    "completed": false,
-    "commonUser": true,
-    "phone": "+5511888888888",
-    "role": "coordinator",
-    "createdAt": "2025-09-27T21:00:00.000Z",
-    "updatedAt": "2025-09-27T21:00:00.000Z"
-  }
-}
-```
-
-### Sucesso - Perfil (200)
-```json
-{
-  "id": "uuid-user",
-  "email": "maria@example.com",
-  "name": "Maria Santos",
-  "active": true,
-  "completed": true,
-  "commonUser": false,
-  "phone": "+5511888888888",
-  "role": "coordinator",
-  "createdAt": "2025-09-27T21:00:00.000Z",
-  "updatedAt": "2025-09-27T21:26:05.000Z"
-}
-```
-
-### Erro - Credenciais Inválidas (401)
-```json
-{
-  "statusCode": 401,
-  "message": "Invalid credentials",
-  "error": "Unauthorized"
-}
-```
-
-### Erro - Email Já Existe (409)
-```json
-{
-  "statusCode": 409,
-  "message": "Email already exists",
-  "error": "Conflict"
-}
-```
-
-### Erro - Validação (400)
-```json
-{
-  "statusCode": 400,
-  "message": [
-    "email must be a valid email",
-    "password must be at least 6 characters",
-    "role must be one of: admin, coordinator, member"
-  ],
-  "error": "Bad Request"
-}
-```
-
-## 🔒 Segurança
-
-### Validações de Senha
-- Mínimo 6 caracteres
-- Recomendado: maiúsculas, minúsculas, números e símbolos
-
-### Validações de Email
-- Formato válido de email
-- Único no sistema
-
-### Validações de Telefone
-- Formato internacional (+55...)
-- Único no sistema
-
-### Roles Válidos
-- `admin` - Administrador
-- `coordinator` - Coordenador/Líder
-- `member` - Professor
-
-## 🧪 Testes
-
-### Scripts Disponíveis
-- `tests/auth/test-login.js` - Teste de login
-- `tests/auth/test-register.js` - Teste de registro
-- `tests/auth/test-refresh.js` - Teste de refresh token
-
-### Executar Testes
-```bash
-node tests/auth/test-login.js
-node tests/auth/test-register.js
-node tests/auth/test-refresh.js
-```
-
-## 🤖 Automações
-
-### Scripts Disponíveis
-- `automations/auth/create-users-automation.js` - Criação em massa de usuários
-
-### Executar Automação
-```bash
-node automations/auth/create-users-automation.js
-```
-
-## 📁 Arquivos Relacionados
-
-### Código Fonte
-- `src/auth/auth.controller.ts`
-- `src/auth/auth.service.ts`
-- `src/auth/auth.repository.ts`
-- `src/auth/strategies/` - Estratégias de autenticação
-- `src/auth/guards/` - Guards de autorização
-- `src/auth/dto/` - DTOs de request e response
-
-### Documentação
-- `docs/Auth_API_Collection.postman_collection.json`
-- `docs/Auth_API_Documentation.md`
-- `docs/Auth_Collection_Usage_Example.md`
-
-## 🔄 Histórico de Mudanças
-
-### v1.2.0 - Melhorias de Segurança
-- ✅ Validação aprimorada de senhas
-- ✅ Controle de sessões
-- ✅ Refresh tokens com expiração
-- ✅ Logs de auditoria
-
-### v1.1.0 - Funcionalidades Básicas
-- ✅ Registro e login
-- ✅ JWT tokens
-- ✅ Controle de roles
-- ✅ Validação de dados
-
-## 🔧 Configuração
-
-### Variáveis de Ambiente
-```env
-JWT_SECRET=your-secret-key
-JWT_EXPIRES_IN=7d
-REFRESH_TOKEN_SECRET=your-refresh-secret
-REFRESH_TOKEN_EXPIRES_IN=30d
-```
-
-### Credenciais de Teste
-```json
-{
-  "email": "joao@example.com",
-  "password": "password123"
-}
+```text
+src/core/auth/
+├── auth.module.ts
+├── auth.controller.ts              # só HTTP: DTO de entrada, ator do token
+├── auth.types.ts                   # UserRole, JwtPayload, AuthenticatedRequest
+├── types.ts                        # claims assinadas, portadores do token
+├── constants/
+│   ├── auth.constants.ts           # mensagens, logs, alvo de mídia, TTLs
+│   └── password-recovery.constants.ts
+├── dto/
+│   ├── login.dto.ts
+│   ├── google-login.dto.ts
+│   ├── refresh-token.dto.ts
+│   ├── register.dto.ts
+│   ├── complete-register.dto.ts
+│   ├── forgot-password.dto.ts
+│   ├── reset-password.dto.ts
+│   ├── auth.response.dto.ts        # saídas de login, Google, registro
+│   └── me-response.dto.ts          # saída de GET /auth/me
+├── mappers/
+│   ├── auth-user.mapper.ts         # usuário exposto em login e registro
+│   └── me.mapper.ts                # a árvore usuário → perfil → equipe → abrigo
+├── services/
+│   ├── login.service.ts
+│   ├── google-login.service.ts
+│   ├── auth-token.service.ts       # emitir, renovar e encerrar
+│   ├── register.service.ts         # cadastro e conclusão de cadastro
+│   ├── get-me.service.ts
+│   ├── auth-context.service.ts     # ator para rotas sem JwtAuthGuard
+│   └── password-recovery.service.ts
+├── guards/
+│   ├── jwt-auth.guard.ts
+│   └── role-guard.ts               # AdminRoleGuard, AdminOrLeaderRoleGuard
+├── strategies/jwt.strategy.ts
+├── repositories/password-reset-token.repository.ts
+├── entities/password-reset-token.entity.ts
+└── utils/auth-token.util.ts        # extração do token, papel, expiresIn
 ```
 
 ---
 
-**Módulo Auth - Sistema de Orfanato** 🔐
+## 🎫 Tokens
+
+`AuthTokenService` é o dono do ciclo de vida. Os três caminhos de entrada
+(senha, Google e renovação) emitem pelo mesmo lugar.
+
+| Token | Segredo | Onde vive |
+|-------|---------|-----------|
+| `accessToken` | `JWT_SECRET` | só no cliente |
+| `refreshToken` | `JWT_REFRESH_SECRET` | no cliente **e** em `users.refreshToken` |
+
+A renovação compara o token recebido com o guardado: um refresh válido que não
+seja o último emitido é recusado. É isso que invalida a sessão antiga depois de
+um logout ou de outra renovação.
+
+Cada refresh carrega um `jti` único. **Sem ele, duas emissões no mesmo segundo
+saíam com a mesma string** — mesmas claims, mesmo `iat` — e a rotação não
+invalidava nada.
+
+### Onde o token é lido
+
+`JwtStrategy` (usada pelo `JwtAuthGuard`) lê só o header `Authorization`, e
+popula `request.user` como `AuthenticatedUser` — o campo é **`userId`**, não
+`id`. `AuthContextService`, usado por rotas que respondem diferente para anônimo
+e autenticado, aceita também cookie e query string (links que o navegador abre
+sem passar pelo axios).
+
+---
+
+## 🚪 Login
+
+| Situação | Resposta |
+|----------|----------|
+| credenciais válidas, conta ativa | `201` com usuário e o par de tokens |
+| credenciais válidas, conta inativa | `201` com usuário e **sem tokens** |
+| e-mail inexistente ou senha errada | `401 Invalid credentials` |
+
+A conta inativa responde sucesso de propósito: a tela de login lê
+`user.active === false` para pedir a validação, em vez de tratar um erro. E as
+duas falhas usam a **mesma mensagem**, para não revelar quais e-mails existem.
+
+### Google
+
+`GoogleLoginService` classifica a falha da `google-auth-library` pela mensagem
+(a biblioteca não expõe código tipado): expirado, inválido, ou a mensagem
+genérica. Só a verificação da credencial fica dentro do `try` — antes o bloco
+envolvia também a escrita no banco, e uma falha de banco era devolvida como
+"Google authentication failed".
+
+---
+
+## 🛡️ Papéis
+
+`AdminRoleGuard` e `AdminOrLeaderRoleGuard` derivam de uma base comum: eram duas
+classes quase idênticas, cada uma com um `Reflector` e um `Logger` que nunca
+foram usados. Rodam depois do `JwtAuthGuard` e respondem `403`.
+
+---
+
+## 🤝 Contratos com outros módulos
+
+O auth não alcança repositório de ninguém. O que ele precisa, os módulos donos
+expõem como serviço:
+
+| Contrato | Módulo dono |
+|----------|-------------|
+| `GetUsersService.findByEmail` / `findByIdOrNull` / `findWithProfiles` | `core/user` |
+| `UpdateUserService.setRefreshToken` / `update` | `core/user` |
+| `CreateUserService.create` | `core/user` |
+| `GetOneProfileService.execute` | `core/profile` |
+| `MemberProfilesService.assignTeamForUser` | `shelter/member-profile` |
+
+`AuthRepository` foi removido: era um encaminhamento puro para
+`UserRepository.findByEmail`, com a assinatura `validateUser(email, password)`
+que **ignorava a senha** — quem comparava o hash era o serviço.
+
+`GET /auth/me` monta dados pessoais e preferências a partir do contrato do
+módulo de perfil, que já devolve exatamente essa forma. Antes as duas normalizações
+de data conviviam, uma em cada módulo.
+
+---
+
+## ❗ Erros
+
+Todo erro sai como subclasse de `AppException`, com a categoria e o nome HTTP
+que o `ERROR_HANDLING_GUIDE.md` documenta:
+
+| Situação | Exceção | Status |
+|----------|---------|--------|
+| credencial ausente, inválida ou expirada | `UnauthenticatedException` | 401 |
+| papel insuficiente | `AccessDeniedException` | 403 |
+| e-mail sem conta | `ResourceNotFoundException` | 404 |
+| e-mail já cadastrado, cadastro já concluído | `ResourceConflictException` | 409 |
+| token de recuperação inválido | `RuleException` | 400 |
+
+`UnauthenticatedException` e `ResourceConflictException` nasceram nesta leva e
+ficam no catálogo compartilhado (`src/common/exceptions/`).
+
+---
+
+## 🧪 Testes
+
+```bash
+npx jest src/core/auth
+```
+
+15 suítes cobrindo controller, os sete serviços, mappers, guards, strategy,
+repositório, utils e a validação dos DTOs. Cobertura acima de 95% em statements
+e linhas, 100% em branches.
+
+Ao vivo: `orfanatonib-app/e2e/live/auth.api.spec.ts` (14 cenários contra a API e
+o MySQL reais), incluindo a rotação e a invalidação do refresh.
+
+---
+
+## 📌 Débitos conhecidos
+
+- **`POST /auth/forgot-password` revela quais e-mails existem**: um e-mail sem
+  conta responde `400 "Email não encontrado na base de dados."`. Responder
+  sempre sucesso fecharia a enumeração, mas tira o retorno de quem só errou de
+  digitação — é decisão de produto, não de refatoração, e ficou como está.
+- `core/user` e `core/profile` ainda não passaram pelo padrão; os contratos que
+  o auth usa foram adicionados, mas os módulos em si seguem na fila.

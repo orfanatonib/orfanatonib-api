@@ -1,6 +1,13 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
-import { Transform } from 'class-transformer';
-import { UserRole } from '../auth.types';
+import {
+  IsEmail,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from "class-validator";
+import { Transform } from "class-transformer";
+import { UserRole } from "../auth.types";
 
 export class RegisterUserDto {
   @IsString()

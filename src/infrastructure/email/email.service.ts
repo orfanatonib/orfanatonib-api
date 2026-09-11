@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { EmailMessage } from './email.types';
-import { GmailSmtpProvider } from './gmail-smtp.provider';
+import { Injectable } from "@nestjs/common";
+import { EmailMessage } from "./email.types";
+import { GmailSmtpProvider } from "./gmail-smtp.provider";
 
 @Injectable()
 export class EmailService {

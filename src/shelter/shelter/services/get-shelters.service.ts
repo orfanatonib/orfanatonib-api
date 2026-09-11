@@ -1,192 +1,138 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { Request } from 'express';
-import { SheltersRepository } from '../repositories/shelters.repository';
-import { QuerySheltersDto } from '../dto/query-shelters.dto';
+import { Injectable } from "@nestjs/common";
+import { ResourceNotFoundException } from "src/common/exceptions";
+import { GetFeatureFlagsService } from 'src/core/feature-flags/services/get-feature-flags.service';
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
+import { SheltersRepository } from "../repositories/shelters.repository";
+import { QuerySheltersDto } from "../dto/query-shelters.dto";
 import {
   ShelterResponseDto,
   ShelterSimpleResponseDto,
-  toShelterDto,
-  toShelterSimpleDto,
-} from '../dto/shelter.response.dto';
-import { Paginated } from 'src/shelter/pagela/dto/paginated.dto';
-import { ShelterSelectOptionDto } from '../dto/shelter-select-option.dto';
-import { AuthContextService } from 'src/core/auth/services/auth-context.service';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
-import { ShelterEntity } from '../entities/shelter.entity/shelter.entity';
-import { ShelterTeamsQuantityResponseDto } from '../dto/shelter-teams-quantity-response.dto';
-import { ShelterTeamSelectOptionDto } from '../dto/shelter-team-select-option.dto';
-import { FeatureFlagsService } from 'src/core/feature-flags/feature-flags.service';
-import { FeatureFlagKeys } from 'src/core/feature-flags/enums/feature-flag-keys.enum';
-
-type Ctx = { role?: string; userId?: string | null };
+} from "../dto/shelter.response.dto";
+import { ShelterPaginatedResponseDto } from "../dto/shelter-paginated-response.dto";
+import { ShelterSelectOptionDto } from "../dto/shelter-select-option.dto";
+import { ShelterTeamSelectOptionDto } from "../dto/shelter-team-select-option.dto";
+import { ShelterTeamsQuantityResponseDto } from "../dto/shelter-teams-quantity-response.dto";
+import { ShelterEntity } from "../entities/shelter.entity/shelter.entity";
+import { toShelterDto, toShelterSimpleDto } from "../mappers/shelter.mapper";
+import { assertCanManageShelters } from "../utils/shelter-access.util";
+import { ShelterAccessContext } from "../types";
+import {
+  SHELTER_LIMIT_DEFAULT,
+  SHELTER_MESSAGES,
+  SHELTER_PAGE_DEFAULT,
+} from "../constants";
+import { ShelterMediaService } from "./shelter-media.service";
 
 @Injectable()
 export class GetSheltersService {
   constructor(
     private readonly sheltersRepository: SheltersRepository,
-    private readonly authCtx: AuthContextService,
-    private readonly mediaItemProcessor: MediaItemProcessor,
-    private readonly featureFlagsService: FeatureFlagsService,
-  ) { }
+    private readonly mediaService: ShelterMediaService,
+    private readonly featureFlagsService: GetFeatureFlagsService,
+  ) {}
 
-  private async getCtx(req: Request): Promise<Ctx> {
-    const p = await this.authCtx.tryGetPayload(req);
-    return { role: p?.role?.toLowerCase(), userId: p?.sub ?? null };
+  /** O endereço do abrigo é exposto conforme a feature flag. */
+  private showAddress(): Promise<boolean> {
+    return this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
   }
 
-  private async populateMediaItems(shelters: ShelterEntity[]): Promise<ShelterEntity[]> {
-    if (!shelters.length) return shelters;
+  async findAllPaginated(
+    query: QuerySheltersDto,
+    actor: ShelterAccessContext,
+  ): Promise<ShelterPaginatedResponseDto<ShelterResponseDto>> {
+    assertCanManageShelters(actor);
 
-    const shelterIds = shelters.map(s => s.id);
-    const mediaItems = await this.mediaItemProcessor.findManyMediaItemsByTargets(
-      shelterIds,
-      'ShelterEntity'
+    const page = query.page ?? SHELTER_PAGE_DEFAULT;
+    const limit = query.limit ?? SHELTER_LIMIT_DEFAULT;
+
+    const { items, total } = await this.sheltersRepository.findAllPaginated(
+      query,
+      actor,
     );
+    await this.mediaService.attachShelterPhotos(items);
+    const showAddress = await this.showAddress();
 
-    const mediaMap = new Map();
-    mediaItems.forEach(item => {
-      if (!mediaMap.has(item.targetId)) {
-        mediaMap.set(item.targetId, item);
-      }
-    });
-
-    shelters.forEach(shelter => {
-      (shelter as any).mediaItem = mediaMap.get(shelter.id) || null;
-    });
-
-    return shelters;
+    return {
+      items: items.map((shelter) => toShelterDto(shelter, showAddress)),
+      total,
+      page,
+      limit,
+      pageCount: limit > 0 ? Math.ceil(total / limit) : 0,
+    };
   }
 
-  private async populateUserMediaItemsForShelter(shelter: ShelterEntity): Promise<void> {
-    const teams: any[] = Array.isArray((shelter as any).teams) ? (shelter as any).teams : [];
-    if (!teams.length) return;
+  async findAllSimple(
+    actor: ShelterAccessContext,
+  ): Promise<ShelterSimpleResponseDto[]> {
+    const shelters = await this.sheltersRepository.findAllSimple(actor);
+    await this.mediaService.attachAll(shelters);
+    const showAddress = await this.showAddress();
 
-    const userIdsSet = new Set<string>();
+    return shelters.map((shelter) => toShelterSimpleDto(shelter, showAddress));
+  }
 
-    teams.forEach((team: any) => {
-      const leaders = Array.isArray(team?.leaders) ? team.leaders : [];
-      const members = Array.isArray(team?.members) ? team.members : [];
+  async findOne(
+    id: string,
+    actor: ShelterAccessContext,
+  ): Promise<ShelterResponseDto> {
+    const shelter = await this.findEntityOrFail(id, actor);
+    await this.mediaService.attachAll([shelter]);
 
-      leaders.forEach((leader: any) => {
-        const userId = leader?.user?.id;
-        if (typeof userId === 'string' && userId) userIdsSet.add(userId);
-      });
+    return toShelterDto(shelter, await this.showAddress());
+  }
 
-      members.forEach((member: any) => {
-        const userId = member?.user?.id;
-        if (typeof userId === 'string' && userId) userIdsSet.add(userId);
-      });
-    });
-
-    const userIds = Array.from(userIdsSet);
-    if (!userIds.length) return;
-
-    const mediaItems = await this.mediaItemProcessor.findManyMediaItemsByTargets(
-      userIds,
-      'UserEntity',
+  /** Lookup compartilhado com os casos de uso de escrita. */
+  async findEntityOrFail(
+    id: string,
+    actor: ShelterAccessContext,
+  ): Promise<ShelterEntity> {
+    const shelter = await this.sheltersRepository.findOneOrFailForResponse(
+      id,
+      actor,
     );
-
-    const mediaMap = new Map<string, any>();
-    mediaItems.forEach((item: any) => {
-      const prev = mediaMap.get(item.targetId);
-      if (!prev) {
-        mediaMap.set(item.targetId, item);
-        return;
-      }
-      const prevTs = prev?.createdAt ? new Date(prev.createdAt).getTime() : 0;
-      const curTs = item?.createdAt ? new Date(item.createdAt).getTime() : 0;
-      if (curTs >= prevTs) {
-        mediaMap.set(item.targetId, item);
-      }
-    });
-
-    teams.forEach((team: any) => {
-      const leaders = Array.isArray(team?.leaders) ? team.leaders : [];
-      const members = Array.isArray(team?.members) ? team.members : [];
-
-      leaders.forEach((leader: any) => {
-        const userId = leader?.user?.id;
-        if (!leader?.user || typeof userId !== 'string') return;
-        leader.user.imageProfile = mediaMap.get(userId) || null;
-      });
-
-      members.forEach((member: any) => {
-        const userId = member?.user?.id;
-        if (!member?.user || typeof userId !== 'string') return;
-        member.user.imageProfile = mediaMap.get(userId) || null;
-      });
-    });
-  }
-
-  async findAllPaginated(q: QuerySheltersDto, req: Request): Promise<Paginated<ShelterResponseDto>> {
-    const ctx = await this.getCtx(req);
-    if (!ctx.role || ctx.role === 'member') throw new ForbiddenException('Acesso negado');
-
-    const { page = 1, limit = 10 } = q;
-    const { items, total } = await this.sheltersRepository.findAllPaginated(q, ctx);
-
-    const itemsWithMedia = await this.populateMediaItems(items);
-
-    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
-    return new Paginated(itemsWithMedia.map(s => toShelterDto(s, showAddress)), total, page, limit);
-  }
-
-  async findAllSimple(req: Request): Promise<ShelterSimpleResponseDto[]> {
-    const ctx = await this.getCtx(req);
-    const shelters = await this.sheltersRepository.findAllSimple(ctx);
-
-    const sheltersWithMedia = await this.populateMediaItems(shelters);
-
-    for (const shelter of sheltersWithMedia) {
-      await this.populateUserMediaItemsForShelter(shelter);
+    if (!shelter) {
+      throw new ResourceNotFoundException(SHELTER_MESSAGES.NOT_FOUND, { id });
     }
-
-    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
-    return sheltersWithMedia.map(s => toShelterSimpleDto(s, showAddress));
-  }
-
-  async findOne(id: string, req: Request): Promise<ShelterResponseDto> {
-    const ctx = await this.getCtx(req);
-    const shelter = await this.sheltersRepository.findOneOrFailForResponse(id, ctx);
-    if (!shelter) throw new NotFoundException('Shelter not found');
-
-    await this.populateMediaItems([shelter]);
-
-    await this.populateUserMediaItemsForShelter(shelter);
-
-
-
-    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
-    return toShelterDto(shelter, showAddress);
+    return shelter;
   }
 
   /**
-   * Request-free contract for other modules: answers whether the shelter exists
-   * AND is visible to the given actor, without exposing the shelter payload.
+   * Contrato sem `Request` para outros módulos: responde se o abrigo existe E
+   * está visível para o ator, sem expor o payload do abrigo.
    */
-  async existsForActor(id: string, ctx: Ctx): Promise<boolean> {
-    const shelter = await this.sheltersRepository.findOneOrFailForResponse(id, ctx);
+  async existsForActor(
+    id: string,
+    actor: ShelterAccessContext,
+  ): Promise<boolean> {
+    const shelter = await this.sheltersRepository.findOneOrFailForResponse(
+      id,
+      actor,
+    );
     return shelter !== null;
   }
 
-  async list(req: Request): Promise<ShelterSelectOptionDto[]> {
-    const ctx = await this.getCtx(req);
-    const showAddress = await this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
-    return await this.sheltersRepository.list(ctx, showAddress);
+  /**
+   * Contrato sem `Request` para outros módulos: os abrigos que um líder
+   * lidera. Evita que o módulo de líderes alcance o repositório daqui.
+   */
+  findShelterIdsForLeader(userId: string): Promise<string[]> {
+    return this.sheltersRepository.findShelterIdsForLeader(userId);
   }
 
-  async listTeamsForPublic(): Promise<ShelterTeamSelectOptionDto[]> {
+  async list(actor: ShelterAccessContext): Promise<ShelterSelectOptionDto[]> {
+    return this.sheltersRepository.list(actor, await this.showAddress());
+  }
+
+  listTeamsForPublic(): Promise<ShelterTeamSelectOptionDto[]> {
     return this.sheltersRepository.listTeamsForPublic();
   }
 
-  async getTeamsQuantity(id: string, req: Request): Promise<ShelterTeamsQuantityResponseDto> {
-    const ctx = await this.getCtx(req);
-    const shelter = await this.sheltersRepository.findOneOrFailForResponse(id, ctx);
-    if (!shelter) throw new NotFoundException('Shelter not found');
+  async getTeamsQuantity(
+    id: string,
+    actor: ShelterAccessContext,
+  ): Promise<ShelterTeamsQuantityResponseDto> {
+    const shelter = await this.findEntityOrFail(id, actor);
 
-    return {
-      id: shelter.id,
-      teamsQuantity: shelter.teamsQuantity ?? 0,
-    };
+    return { id: shelter.id, teamsQuantity: shelter.teamsQuantity ?? 0 };
   }
 }

@@ -1,41 +1,121 @@
-import { Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
-import { FeatureFlagEntity } from './entities/feature-flag.entity';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, SelectQueryBuilder } from "typeorm";
+
+import {
+  FEATURE_FLAGS_DEFAULT_LIMIT,
+  FEATURE_FLAGS_DEFAULT_PAGE,
+  FEATURE_FLAG_DEFAULT_ORDER,
+  FEATURE_FLAG_DEFAULT_SORT,
+  FEATURE_FLAG_SORT_COLUMNS,
+} from "./constants";
+import { QueryFeatureFlagsDto } from "./dto/query-feature-flags.dto";
+import { FeatureFlagEntity } from "./entities/feature-flag.entity";
 
 @Injectable()
-export class FeatureFlagsRepository extends Repository<FeatureFlagEntity> {
-    constructor(private dataSource: DataSource) {
-        super(FeatureFlagEntity, dataSource.createEntityManager());
+export class FeatureFlagsRepository {
+  constructor(
+    @InjectRepository(FeatureFlagEntity)
+    private readonly repository: Repository<FeatureFlagEntity>,
+  ) {}
+
+  private applyFilters(
+    queryBuilder: SelectQueryBuilder<FeatureFlagEntity>,
+    query: QueryFeatureFlagsDto,
+  ): void {
+    const search = query.searchString?.trim();
+    if (search) {
+      queryBuilder.andWhere(
+        `(
+          LOWER(flag.key) LIKE LOWER(:search) OR
+          LOWER(flag.name) LIKE LOWER(:search) OR
+          LOWER(flag.description) LIKE LOWER(:search)
+        )`,
+        { search: `%${search}%` },
+      );
     }
 
-    async findByKey(key: string): Promise<FeatureFlagEntity | null> {
-        return this.findOne({ where: { key } });
+    if (query.enabled !== undefined) {
+      queryBuilder.andWhere("flag.enabled = :enabled", {
+        enabled: query.enabled,
+      });
+    }
+  }
+
+  async findAllPaginated(
+    query: QueryFeatureFlagsDto,
+  ): Promise<{ items: FeatureFlagEntity[]; total: number }> {
+    const page = query.page ?? FEATURE_FLAGS_DEFAULT_PAGE;
+    const limit = query.limit ?? FEATURE_FLAGS_DEFAULT_LIMIT;
+    const sort = query.sort ?? FEATURE_FLAG_DEFAULT_SORT;
+    const order = query.order ?? FEATURE_FLAG_DEFAULT_ORDER;
+
+    const queryBuilder = this.repository.createQueryBuilder("flag");
+    this.applyFilters(queryBuilder, query);
+    queryBuilder
+      .orderBy(FEATURE_FLAG_SORT_COLUMNS[sort], order)
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [items, total] = await queryBuilder.getManyAndCount();
+    return { items, total };
+  }
+
+  async findAllFiltered(
+    query: QueryFeatureFlagsDto,
+  ): Promise<FeatureFlagEntity[]> {
+    const sort = query.sort ?? FEATURE_FLAG_DEFAULT_SORT;
+    const order = query.order ?? FEATURE_FLAG_DEFAULT_ORDER;
+    const queryBuilder = this.repository.createQueryBuilder("flag");
+
+    this.applyFilters(queryBuilder, query);
+    queryBuilder.orderBy(FEATURE_FLAG_SORT_COLUMNS[sort], order);
+    return queryBuilder.getMany();
+  }
+
+  async findAll(): Promise<FeatureFlagEntity[]> {
+    return this.repository.find({ order: { name: "ASC" } });
+  }
+
+  async findByKey(key: string): Promise<FeatureFlagEntity | null> {
+    return this.repository.findOne({ where: { key } });
+  }
+
+  async findByEnvironment(environment: string): Promise<FeatureFlagEntity[]> {
+    return this.repository.find({
+      where: { environment },
+      order: { name: "ASC" },
+    });
+  }
+
+  async findEnabledState(
+    key: string,
+    environment?: string,
+  ): Promise<boolean | null> {
+    const queryBuilder = this.repository
+      .createQueryBuilder("flag")
+      .where("flag.key = :key", { key });
+
+    if (environment) {
+      queryBuilder.andWhere(
+        "(flag.environment = :environment OR flag.environment IS NULL)",
+        { environment },
+      );
     }
 
-    async findByEnvironment(environment: string): Promise<FeatureFlagEntity[]> {
-        return this.find({ where: { environment } });
-    }
+    const flag = await queryBuilder.getOne();
+    return flag?.enabled ?? null;
+  }
 
-    async isEnabled(key: string, environment?: string): Promise<boolean> {
-        const query = this.createQueryBuilder('ff')
-            .where('ff.key = :key', { key })
-            .andWhere('ff.enabled = :enabled', { enabled: true });
+  create(data: Partial<FeatureFlagEntity>): FeatureFlagEntity {
+    return this.repository.create(data);
+  }
 
-        if (environment) {
-            query.andWhere('(ff.environment = :environment OR ff.environment IS NULL)', { environment });
-        }
+  async save(flag: FeatureFlagEntity): Promise<FeatureFlagEntity> {
+    return this.repository.save(flag);
+  }
 
-        const flag = await query.getOne();
-        return !!flag;
-    }
-
-    async toggleFlag(key: string): Promise<FeatureFlagEntity> {
-        const flag = await this.findByKey(key);
-        if (!flag) {
-            throw new Error(`Feature flag with key "${key}" not found`);
-        }
-
-        flag.enabled = !flag.enabled;
-        return this.save(flag);
-    }
+  async remove(flag: FeatureFlagEntity): Promise<void> {
+    await this.repository.remove(flag);
+  }
 }

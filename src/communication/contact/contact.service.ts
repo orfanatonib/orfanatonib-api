@@ -3,12 +3,19 @@ import {
   Logger,
   InternalServerErrorException,
   NotFoundException,
-} from '@nestjs/common';
-import { ContactRepository } from './contact.repository';
-import { NotificationService } from '../notification/notification.service';
-import { ContactEntity } from './contact.entity';
-import { ContactMessages, ContactNotificationLogs } from './constants/contact.constants';
-import { UserRepository } from '../../core/user/user.repository';
+} from "@nestjs/common";
+import { ContactRepository } from "./contact.repository";
+import { NotificationService } from "../notification/services/notification.service";
+import { ContactEntity } from "./contact.entity";
+import {
+  ContactMessages,
+  ContactNotificationLogs,
+} from "./constants/contact.constants";
+import { GetUsersService } from "src/core/user/services/get-user.service";
+
+/** Mensagem de um `unknown` vindo de `catch`, sem `any`. */
+const reasonOf = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
 @Injectable()
 export class ContactService {
@@ -17,20 +24,22 @@ export class ContactService {
   constructor(
     private readonly contactRepo: ContactRepository,
     private readonly notificationService: NotificationService,
-    private readonly userRepo: UserRepository,
-  ) { }
+    private readonly getUsersService: GetUsersService,
+  ) {}
 
   async createContact(data: Partial<ContactEntity>): Promise<ContactEntity> {
     let contact: ContactEntity;
     try {
       contact = await this.contactRepo.saveContact(data);
-    } catch (error) {
-      this.logger.error(ContactNotificationLogs.SAVE_ERROR(error.message));
+    } catch (error: unknown) {
+      this.logger.error(ContactNotificationLogs.SAVE_ERROR(reasonOf(error)));
       throw new InternalServerErrorException(ContactMessages.SAVE_ERROR);
     }
 
     this.handleNotifications(contact).catch((error) => {
-      this.logger.error(ContactNotificationLogs.NOTIFICATION_ERROR(error.message));
+      this.logger.error(
+        ContactNotificationLogs.NOTIFICATION_ERROR(reasonOf(error)),
+      );
     });
 
     return contact;
@@ -38,24 +47,34 @@ export class ContactService {
 
   private async handleNotifications(contact: ContactEntity): Promise<void> {
     try {
-      const admins = await this.userRepo.findAllAdmins();
-      const adminEmails = admins.map((admin) => admin.email).filter((email) => !!email);
+      const adminEmails = await this.getUsersService.findAdminEmails();
 
       if (adminEmails.length > 0) {
-        await this.notificationService.sendContactNotification(contact, adminEmails);
+        await this.notificationService.sendContactNotification(
+          {
+            name: contact.name,
+            email: contact.email,
+            phone: contact.phone,
+            message: contact.message,
+          },
+          adminEmails,
+        );
       } else {
-        this.logger.warn('Nenhum Admin ativo encontrado para receber notificação de contato.');
+        this.logger.warn(
+          "Nenhum Admin ativo encontrado para receber notificação de contato.",
+        );
       }
-    } catch (error) {
-      this.logger.error(ContactNotificationLogs.NOTIFICATION_ERROR(error.message));
+    } catch (error: unknown) {
+      this.logger.error(
+        ContactNotificationLogs.NOTIFICATION_ERROR(reasonOf(error)),
+      );
     }
   }
-
 
   async getAllContacts(): Promise<ContactEntity[]> {
     try {
       return this.contactRepo.getAll();
-    } catch (error) {
+    } catch {
       this.logger.error(ContactNotificationLogs.FETCH_ERROR);
       throw new InternalServerErrorException(ContactMessages.FETCH_ERROR);
     }
@@ -73,7 +92,7 @@ export class ContactService {
       await this.contactRepo.save(contact);
 
       return contact;
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundException) {
         throw error;
       }
@@ -91,7 +110,7 @@ export class ContactService {
       }
 
       await this.contactRepo.remove(contact);
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof NotFoundException) {
         throw error;
       }

@@ -1,5 +1,5 @@
-import { Exclude, Expose } from 'class-transformer';
-import { ShelterEntity } from '../entities/shelter.entity/shelter.entity';
+import { Exclude, Expose } from "class-transformer";
+import { ShelterEntity } from "../entities/shelter.entity/shelter.entity";
 
 @Exclude()
 export class ShelterSelectOptionDto {
@@ -13,12 +13,17 @@ export class ShelterSelectOptionDto {
   leader!: boolean;
 }
 
-export function toShelterSelectOption(entity: ShelterEntity, showAddress = true): ShelterSelectOptionDto {
+export function toShelterSelectOption(
+  entity: ShelterEntity,
+  showAddress = true,
+): ShelterSelectOptionDto {
   const bairro = entity.address?.district?.trim();
-  const hasLeaders = entity.teams?.some(team => team.leaders && team.leaders.length > 0) || false;
+  const hasLeaders =
+    entity.teams?.some((team) => team.leaders && team.leaders.length > 0) ||
+    false;
   return {
     id: entity.id,
-    name: `${entity.name}${showAddress ? ` : ${bairro || '—'}` : ''}`,
+    name: `${entity.name}${showAddress ? ` : ${bairro || "—"}` : ""}`,
     leader: hasLeaders,
   };
 }

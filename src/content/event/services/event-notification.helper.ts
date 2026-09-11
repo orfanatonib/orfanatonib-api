@@ -1,15 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { NotificationService } from '../../../communication/notification/notification.service';
-import { UserRepository } from '../../../core/user/user.repository';
-import { UserRole } from '../../../core/auth/auth.types';
-import { EventEntity, EventAudience } from '../entities/event.entity';
+import { Injectable, Logger } from "@nestjs/common";
+import { NotificationService } from "src/communication/notification/services/notification.service";
+import { UserRepository } from "../../../core/user/user.repository";
+import { UserRole } from "../../../core/auth/auth.types";
+import { EventEntity, EventAudience } from "../entities/event.entity";
 import {
   EventAction,
   EventNotificationLogs,
-} from '../constants/event-notification.constants';
-import { FeatureFlagsService } from '../../../core/feature-flags/feature-flags.service';
-import { FeatureFlagKeys } from '../../../core/feature-flags/enums/feature-flag-keys.enum';
+  EventNotificationMessages,
+} from "../constants/event-notification.constants";
 
+/** Mensagem de um `unknown` vindo de `catch`, sem `any`. */
+const reasonOf = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
 
 @Injectable()
 export class EventNotificationHelper {
@@ -18,20 +20,17 @@ export class EventNotificationHelper {
   constructor(
     private readonly notificationService: NotificationService,
     private readonly userRepo: UserRepository,
-    private readonly featureFlagsService: FeatureFlagsService,
-  ) { }
+  ) {}
 
   async notifyEventCreated(event: EventEntity): Promise<void> {
-    const isEnabled = await this.isFeatureEnabled();
-    if (!isEnabled) {
-      this.logger.log('Event email notifications are disabled by feature flag');
-      return;
-    }
-
-    this.logger.log(EventNotificationLogs.NOTIFICATION_STARTED(event.id, EventAction.CREATED));
+    this.logger.log(
+      EventNotificationLogs.NOTIFICATION_STARTED(event.id, EventAction.CREATED),
+    );
 
     try {
-      const recipientEmails = await this.getRecipientEmailsByAudience(event.audience);
+      const recipientEmails = await this.getRecipientEmailsByAudience(
+        event.audience,
+      );
 
       if (recipientEmails.length === 0) {
         this.logger.warn(EventNotificationLogs.NO_RECIPIENTS(event.audience));
@@ -41,24 +40,27 @@ export class EventNotificationHelper {
       await this.sendNotification(event, EventAction.CREATED, recipientEmails);
 
       this.logger.log(
-        EventNotificationLogs.NOTIFICATION_COMPLETED(event.id, recipientEmails.length),
+        EventNotificationLogs.NOTIFICATION_COMPLETED(
+          event.id,
+          recipientEmails.length,
+        ),
       );
-    } catch (error) {
-      this.logger.error(`Error sending event created notification: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Error sending event created notification: ${reasonOf(error)}`,
+      );
     }
   }
 
   async notifyEventDeleted(event: EventEntity): Promise<void> {
-    const isEnabled = await this.isFeatureEnabled();
-    if (!isEnabled) {
-      this.logger.log('Event email notifications are disabled by feature flag');
-      return;
-    }
-
-    this.logger.log(EventNotificationLogs.NOTIFICATION_STARTED(event.id, EventAction.DELETED));
+    this.logger.log(
+      EventNotificationLogs.NOTIFICATION_STARTED(event.id, EventAction.DELETED),
+    );
 
     try {
-      const recipientEmails = await this.getRecipientEmailsByAudience(event.audience);
+      const recipientEmails = await this.getRecipientEmailsByAudience(
+        event.audience,
+      );
 
       if (recipientEmails.length === 0) {
         this.logger.warn(EventNotificationLogs.NO_RECIPIENTS(event.audience));
@@ -68,10 +70,15 @@ export class EventNotificationHelper {
       await this.sendNotification(event, EventAction.DELETED, recipientEmails);
 
       this.logger.log(
-        EventNotificationLogs.NOTIFICATION_COMPLETED(event.id, recipientEmails.length),
+        EventNotificationLogs.NOTIFICATION_COMPLETED(
+          event.id,
+          recipientEmails.length,
+        ),
       );
-    } catch (error) {
-      this.logger.error(`Error sending event deleted notification: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Error sending event deleted notification: ${reasonOf(error)}`,
+      );
     }
   }
 
@@ -79,35 +86,41 @@ export class EventNotificationHelper {
     originalEvent: EventEntity,
     updatedEvent: EventEntity,
   ): Promise<void> {
-    const isEnabled = await this.isFeatureEnabled();
-    if (!isEnabled) {
-      this.logger.log('Event email notifications are disabled by feature flag');
-      return;
-    }
-
     this.logger.log(
-      EventNotificationLogs.NOTIFICATION_STARTED(updatedEvent.id, EventAction.UPDATED),
+      EventNotificationLogs.NOTIFICATION_STARTED(
+        updatedEvent.id,
+        EventAction.UPDATED,
+      ),
     );
 
     try {
       const dateChanged = originalEvent.date !== updatedEvent.date;
       const locationChanged = originalEvent.location !== updatedEvent.location;
       const titleChanged = originalEvent.title !== updatedEvent.title;
-      const descriptionChanged = originalEvent.description !== updatedEvent.description;
+      const descriptionChanged =
+        originalEvent.description !== updatedEvent.description;
       const audienceChanged = originalEvent.audience !== updatedEvent.audience;
 
       const hasRelevantChanges =
-        dateChanged || locationChanged || titleChanged || descriptionChanged || audienceChanged;
+        dateChanged ||
+        locationChanged ||
+        titleChanged ||
+        descriptionChanged ||
+        audienceChanged;
 
       if (!hasRelevantChanges) {
-        this.logger.log(`No relevant changes for event ${updatedEvent.id}, skipping notification`);
+        this.logger.log(
+          `No relevant changes for event ${updatedEvent.id}, skipping notification`,
+        );
         return;
       }
 
       if (audienceChanged) {
         await this.handleAudienceChange(originalEvent, updatedEvent);
       } else {
-        const recipientEmails = await this.getRecipientEmailsByAudience(updatedEvent.audience);
+        const recipientEmails = await this.getRecipientEmailsByAudience(
+          updatedEvent.audience,
+        );
 
         if (recipientEmails.length > 0) {
           const action = this.determineUpdateAction(
@@ -119,12 +132,17 @@ export class EventNotificationHelper {
 
           await this.sendNotification(updatedEvent, action, recipientEmails);
           this.logger.log(
-            EventNotificationLogs.NOTIFICATION_COMPLETED(updatedEvent.id, recipientEmails.length),
+            EventNotificationLogs.NOTIFICATION_COMPLETED(
+              updatedEvent.id,
+              recipientEmails.length,
+            ),
           );
         }
       }
-    } catch (error) {
-      this.logger.error(`Error sending event updated notification: ${error.message}`);
+    } catch (error: unknown) {
+      this.logger.error(
+        `Error sending event updated notification: ${reasonOf(error)}`,
+      );
     }
   }
 
@@ -141,43 +159,77 @@ export class EventNotificationHelper {
 
     if (
       oldAudience === EventAudience.LEADERS &&
-      (newAudience === EventAudience.MEMBERS || newAudience === EventAudience.ALL)
+      (newAudience === EventAudience.MEMBERS ||
+        newAudience === EventAudience.ALL)
     ) {
       const memberEmails = await this.getEmailsByRoles([UserRole.MEMBER]);
       if (memberEmails.length > 0) {
-        await this.sendNotification(updatedEvent, EventAction.CREATED, memberEmails);
-        this.logger.log(`Sent NEW EVENT to ${memberEmails.length} members who gained access`);
+        await this.sendNotification(
+          updatedEvent,
+          EventAction.CREATED,
+          memberEmails,
+        );
+        this.logger.log(
+          `Sent NEW EVENT to ${memberEmails.length} members who gained access`,
+        );
       }
 
-      const leaderAdminEmails = await this.getEmailsByRoles([UserRole.LEADER, UserRole.ADMIN]);
+      const leaderAdminEmails = await this.getEmailsByRoles([
+        UserRole.LEADER,
+        UserRole.ADMIN,
+      ]);
       if (leaderAdminEmails.length > 0) {
-        await this.sendNotification(updatedEvent, EventAction.AUDIENCE_CHANGED, leaderAdminEmails);
-        this.logger.log(`Sent AUDIENCE CHANGE to ${leaderAdminEmails.length} leaders/admins`);
+        await this.sendNotification(
+          updatedEvent,
+          EventAction.AUDIENCE_CHANGED,
+          leaderAdminEmails,
+        );
+        this.logger.log(
+          `Sent AUDIENCE CHANGE to ${leaderAdminEmails.length} leaders/admins`,
+        );
       }
       return;
     }
 
     if (
-      (oldAudience === EventAudience.MEMBERS || oldAudience === EventAudience.ALL) &&
+      (oldAudience === EventAudience.MEMBERS ||
+        oldAudience === EventAudience.ALL) &&
       newAudience === EventAudience.LEADERS
     ) {
       const memberEmails = await this.getEmailsByRoles([UserRole.MEMBER]);
       if (memberEmails.length > 0) {
-        await this.sendNotification(updatedEvent, EventAction.LOST_ACCESS, memberEmails);
-        this.logger.log(`Sent LOST ACCESS to ${memberEmails.length} members who lost access`);
+        await this.sendNotification(
+          updatedEvent,
+          EventAction.LOST_ACCESS,
+          memberEmails,
+        );
+        this.logger.log(
+          `Sent LOST ACCESS to ${memberEmails.length} members who lost access`,
+        );
       }
 
-      const leaderAdminEmails = await this.getEmailsByRoles([UserRole.LEADER, UserRole.ADMIN]);
+      const leaderAdminEmails = await this.getEmailsByRoles([
+        UserRole.LEADER,
+        UserRole.ADMIN,
+      ]);
       if (leaderAdminEmails.length > 0) {
-        await this.sendNotification(updatedEvent, EventAction.AUDIENCE_CHANGED, leaderAdminEmails);
-        this.logger.log(`Sent AUDIENCE CHANGE to ${leaderAdminEmails.length} leaders/admins`);
+        await this.sendNotification(
+          updatedEvent,
+          EventAction.AUDIENCE_CHANGED,
+          leaderAdminEmails,
+        );
+        this.logger.log(
+          `Sent AUDIENCE CHANGE to ${leaderAdminEmails.length} leaders/admins`,
+        );
       }
       return;
     }
 
     if (
-      (oldAudience === EventAudience.MEMBERS && newAudience === EventAudience.ALL) ||
-      (oldAudience === EventAudience.ALL && newAudience === EventAudience.MEMBERS)
+      (oldAudience === EventAudience.MEMBERS &&
+        newAudience === EventAudience.ALL) ||
+      (oldAudience === EventAudience.ALL &&
+        newAudience === EventAudience.MEMBERS)
     ) {
       const allRegisteredEmails = await this.getEmailsByRoles([
         UserRole.MEMBER,
@@ -224,11 +276,17 @@ export class EventNotificationHelper {
     return EventAction.UPDATED;
   }
 
-  private async getRecipientEmailsByAudience(audience: EventAudience): Promise<string[]> {
+  private async getRecipientEmailsByAudience(
+    audience: EventAudience,
+  ): Promise<string[]> {
     switch (audience) {
       case EventAudience.ALL:
       case EventAudience.MEMBERS:
-        return this.getEmailsByRoles([UserRole.MEMBER, UserRole.LEADER, UserRole.ADMIN]);
+        return this.getEmailsByRoles([
+          UserRole.MEMBER,
+          UserRole.LEADER,
+          UserRole.ADMIN,
+        ]);
 
       case EventAudience.LEADERS:
         return this.getEmailsByRoles([UserRole.LEADER, UserRole.ADMIN]);
@@ -243,27 +301,23 @@ export class EventNotificationHelper {
     action: EventAction,
     recipientEmails: string[],
   ): Promise<void> {
+    // O texto do aviso é decidido aqui: o módulo de notificação deixou de
+    // importar o enum de ações e as mensagens deste módulo.
+    const messages =
+      EventNotificationMessages[
+        action.toUpperCase() as keyof typeof EventNotificationMessages
+      ];
+
     await this.notificationService.sendEventNotification(
       {
         title: event.title,
         description: event.description,
         date: event.date,
         location: event.location,
+        actionLabel: messages.action,
+        subjectLine: messages.subject,
       },
-      action,
       recipientEmails,
     );
-  }
-
- 
-  private async isFeatureEnabled(): Promise<boolean> {
-    try {
-      return await this.featureFlagsService.isEnabled(
-        FeatureFlagKeys.EVENT_EMAIL_NOTIFICATIONS,
-      );
-    } catch (error) {
-      this.logger.error(`Error checking feature flag: ${error.message}`);
-      return false;
-    }
   }
 }

@@ -38,6 +38,8 @@ import { PasswordResetTokenEntity } from 'src/core/auth/entities/password-reset-
 import { IntegrationEntity } from 'src/shelter/integration/entities/integration.entity';
 import { VisitReportEntity } from 'src/shelter/visit-report/entities/visit-report.entity';
 import { AtendenteEntity } from 'src/atendente/entities/atendente.entity';
+import { EmailOutboxEntity } from 'src/communication/notification/outbox/email-outbox.entity';
+import { EmailVerificationTokenEntity } from 'src/core/auth/entities/email-verification-token.entity';
 
 @Module({
   imports: [
@@ -91,6 +93,8 @@ import { AtendenteEntity } from 'src/atendente/entities/atendente.entity';
             IntegrationEntity,
             VisitReportEntity,
             AtendenteEntity,
+            EmailOutboxEntity,
+            EmailVerificationTokenEntity,
           ],
           synchronize,
         };

@@ -20,10 +20,8 @@ export class ShelteredShelterAccessService {
     shelterId: string,
     actor: ShelteredAccessContext,
   ): Promise<void> {
-    const reachable = await this.getSheltersService.existsForActor(shelterId, {
-      role: actor.role ?? undefined,
-      userId: actor.userId,
-    });
+    // `ShelteredAccessContext` e `ShelterAccessContext` descrevem o mesmo ator.
+    const reachable = await this.getSheltersService.existsForActor(shelterId, actor);
 
     if (!reachable) {
       throw new ResourceNotFoundException(

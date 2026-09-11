@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
+import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { RouteModule } from './infrastructure/route/route.module';
 import { UserModule } from './core/user/user.module';
 import { AuthModule } from './core/auth/auth.module';
 import { AwsModule } from './infrastructure/aws/aws.module';
 import { EmailModule } from './infrastructure/email/email.module';
-import { TwilioModule } from './infrastructure/twilio/twilio.module';
 import { DatabaseModule } from '../database/database.module';
 import { MeditationModule } from './content/meditation/meditation.module';
 import { ImageModule } from './content/page/image-page/image-page.module';
@@ -36,6 +36,7 @@ import { ProfileModule } from './core/profile/profile.module';
 import { FeatureFlagsModule } from './core/feature-flags/feature-flags.module';
 import { IntegrationModule } from './shelter/integration/integration.module';
 import { AtendenteModule } from './atendente/atendente.module';
+import { RemindersModule } from './shelter/reminders/reminders.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import * as path from 'path';
@@ -57,10 +58,11 @@ function getEnvFilePath(): string {
       isGlobal: true,
       envFilePath: getEnvFilePath(),
     }),
+    // Agendador: fila de saída de e-mail e lembretes periódicos.
+    ScheduleModule.forRoot(),
     DatabaseModule,
     AwsModule,
     EmailModule,
-    TwilioModule,
     NotificationModule,
     ImageModule,
     RouteModule,
@@ -93,6 +95,7 @@ function getEnvFilePath(): string {
     FeatureFlagsModule,
     IntegrationModule,
     AtendenteModule,
+    RemindersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

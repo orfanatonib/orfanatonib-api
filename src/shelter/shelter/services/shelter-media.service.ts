@@ -1,0 +1,195 @@
+import { Injectable, Logger } from "@nestjs/common";
+import { RuleException } from "src/common/exceptions";
+import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import {
+  MediaItemEntity,
+  MediaType,
+  UploadType,
+} from "src/shared/media/media-item/media-item.entity";
+import { ShelterEntity } from "../entities/shelter.entity/shelter.entity";
+import {
+  SHELTER_MEDIA_DEFAULT_DESCRIPTION,
+  SHELTER_MEDIA_DEFAULT_TITLE,
+  SHELTER_MEDIA_TARGET,
+  SHELTER_MESSAGES,
+  USER_MEDIA_TARGET,
+} from "../constants";
+import { UploadedFilesDict } from "../types";
+import { ShelterMediaInput } from "../utils/shelter-payload.util";
+
+/**
+ * Toda a mídia do abrigo em um lugar: a foto principal e as fotos de perfil de
+ * quem está nas equipes. Antes essa lógica estava duplicada entre os serviços
+ * de leitura e de atualização, com comportamentos que já divergiam.
+ */
+@Injectable()
+export class ShelterMediaService {
+  private readonly logger = new Logger(ShelterMediaService.name);
+
+  constructor(
+    private readonly mediaItemProcessor: MediaItemProcessor,
+    private readonly s3: AwsS3Service,
+  ) {}
+
+  /** Dentre várias mídias do mesmo alvo, a mais recente vence. */
+  private newestByTarget(
+    items: MediaItemEntity[],
+  ): Map<string, MediaItemEntity> {
+    const newest = new Map<string, MediaItemEntity>();
+
+    for (const item of items) {
+      const previous = newest.get(item.targetId);
+      if (!previous) {
+        newest.set(item.targetId, item);
+        continue;
+      }
+      const previousAt = previous.createdAt?.getTime() ?? 0;
+      const currentAt = item.createdAt?.getTime() ?? 0;
+      if (currentAt >= previousAt) newest.set(item.targetId, item);
+    }
+
+    return newest;
+  }
+
+  /** Anexa a foto principal de cada abrigo, em uma única consulta. */
+  async attachShelterPhotos(
+    shelters: ShelterEntity[],
+  ): Promise<ShelterEntity[]> {
+    if (shelters.length === 0) return shelters;
+
+    const items = await this.mediaItemProcessor.findManyMediaItemsByTargets(
+      shelters.map((shelter) => shelter.id),
+      SHELTER_MEDIA_TARGET,
+    );
+    const newest = this.newestByTarget(items);
+
+    for (const shelter of shelters) {
+      shelter.mediaItem = newest.get(shelter.id) ?? null;
+    }
+
+    return shelters;
+  }
+
+  /**
+   * Anexa a foto de perfil de cada líder e membro das equipes do abrigo,
+   * também em uma única consulta.
+   */
+  async attachTeamUserPhotos(shelter: ShelterEntity): Promise<void> {
+    const users = (shelter.teams ?? []).flatMap((team) => [
+      ...(team.leaders ?? []).map((leader) => leader.user),
+      ...(team.members ?? []).map((member) => member.user),
+    ]);
+
+    const userIds = [
+      ...new Set(users.filter((user) => user?.id).map((user) => user.id)),
+    ];
+    if (userIds.length === 0) return;
+
+    const items = await this.mediaItemProcessor.findManyMediaItemsByTargets(
+      userIds,
+      USER_MEDIA_TARGET,
+    );
+    const newest = this.newestByTarget(items);
+
+    for (const user of users) {
+      if (user?.id) user.imageProfile = newest.get(user.id) ?? null;
+    }
+  }
+
+  /** Leitura completa: foto do abrigo e das pessoas das equipes. */
+  async attachAll(shelters: ShelterEntity[]): Promise<ShelterEntity[]> {
+    await this.attachShelterPhotos(shelters);
+    for (const shelter of shelters) {
+      await this.attachTeamUserPhotos(shelter);
+    }
+    return shelters;
+  }
+
+  async findMainPhoto(shelterId: string): Promise<MediaItemEntity | null> {
+    return this.mediaItemProcessor.findMediaItemByTarget(
+      shelterId,
+      SHELTER_MEDIA_TARGET,
+    );
+  }
+
+  /**
+   * Grava a foto principal do abrigo — criando ou substituindo — e devolve a
+   * URL resultante. Um arquivo que substitui outro upload apaga o anterior do
+   * bucket; falhar nessa limpeza não aborta a operação que o usuário pediu.
+   */
+  async upsertMainPhoto(
+    shelterId: string,
+    input: ShelterMediaInput,
+    files: UploadedFilesDict,
+  ): Promise<string> {
+    const existing = await this.findMainPhoto(shelterId);
+    // title e description são NOT NULL no banco; o payload os traz opcionais.
+    const media = this.mediaItemProcessor.buildBaseMediaItem(
+      {
+        ...input,
+        title: input.title ?? SHELTER_MEDIA_DEFAULT_TITLE,
+        description: input.description ?? SHELTER_MEDIA_DEFAULT_DESCRIPTION,
+        mediaType: MediaType.IMAGE,
+      },
+      shelterId,
+      SHELTER_MEDIA_TARGET,
+    );
+
+    if (input.uploadType === UploadType.UPLOAD && input.isLocalFile) {
+      const file = files[input.fieldKey ?? ""];
+      if (!file) {
+        throw new RuleException(
+          SHELTER_MESSAGES.MEDIA_FILE_MISSING(
+            input.fieldKey,
+            Object.keys(files),
+          ),
+        );
+      }
+
+      await this.discardStoredFile(existing);
+      media.url = await this.s3.upload(file);
+      media.isLocalFile = true;
+      media.originalName = file.originalname;
+      media.size = file.size;
+    } else if (input.url) {
+      await this.discardStoredFile(existing);
+      media.url = input.url;
+      media.isLocalFile = false;
+    } else {
+      throw new RuleException(SHELTER_MESSAGES.MEDIA_SOURCE_REQUIRED);
+    }
+
+    const saved = existing
+      ? await this.mediaItemProcessor.upsertMediaItem(existing.id, media)
+      : await this.mediaItemProcessor.saveMediaItem(media);
+
+    return saved.url;
+  }
+
+  /** Remove do bucket e do banco toda a mídia do abrigo. */
+  async removeAllForShelter(shelterId: string): Promise<number> {
+    const items = await this.mediaItemProcessor.findMediaItemsByTarget(
+      shelterId,
+      SHELTER_MEDIA_TARGET,
+    );
+    if (items.length === 0) return 0;
+
+    await this.mediaItemProcessor.deleteMediaItems(items, (url) =>
+      this.s3.delete(url),
+    );
+    return items.length;
+  }
+
+  private async discardStoredFile(
+    existing: MediaItemEntity | null,
+  ): Promise<void> {
+    if (!existing?.isLocalFile || !existing.url) return;
+
+    try {
+      await this.s3.delete(existing.url);
+    } catch {
+      this.logger.warn("Não foi possível apagar o arquivo anterior do bucket");
+    }
+  }
+}

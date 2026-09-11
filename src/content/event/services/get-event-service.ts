@@ -3,15 +3,15 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
-} from '@nestjs/common';
-import { Request } from 'express';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
-import { MediaTargetType } from 'src/shared/media/media-target-type.enum';
-import { MediaItemEntity } from 'src/shared/media/media-item/media-item.entity';
-import { EventResponseDto } from '../dto/event-response-dto';
-import { EventRepository } from '../event.repository';
-import { AuthContextService } from 'src/core/auth/services/auth-context.service';
-import { EventAudience } from '../entities/event.entity';
+} from "@nestjs/common";
+import { Request } from "express";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { MediaTargetType } from "src/shared/media/media-target-type.enum";
+import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
+import { EventResponseDto } from "../dto/event-response-dto";
+import { EventRepository } from "../event.repository";
+import { AuthContextService } from "src/core/auth/services/auth-context.service";
+import { EventAudience } from "../entities/event.entity";
 
 @Injectable()
 export class GetEventService {
@@ -21,7 +21,7 @@ export class GetEventService {
     private readonly eventRepo: EventRepository,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly authCtx: AuthContextService,
-  ) { }
+  ) {}
 
   private async getCtx(req: Request) {
     const p = await this.authCtx.tryGetPayload(req);
@@ -32,9 +32,20 @@ export class GetEventService {
     const ctx = await this.getCtx(req);
 
     let allowed: string[] = [EventAudience.ALL];
-    if (ctx.role === 'member') allowed = [EventAudience.ALL, EventAudience.MEMBERS];
-    if (ctx.role === 'leader') allowed = [EventAudience.ALL, EventAudience.MEMBERS, EventAudience.LEADERS];
-    if (ctx.role === 'admin') allowed = [EventAudience.ALL, EventAudience.MEMBERS, EventAudience.LEADERS];
+    if (ctx.role === "member")
+      allowed = [EventAudience.ALL, EventAudience.MEMBERS];
+    if (ctx.role === "leader")
+      allowed = [
+        EventAudience.ALL,
+        EventAudience.MEMBERS,
+        EventAudience.LEADERS,
+      ];
+    if (ctx.role === "admin")
+      allowed = [
+        EventAudience.ALL,
+        EventAudience.MEMBERS,
+        EventAudience.LEADERS,
+      ];
 
     const events = await this.eventRepo.findAll(allowed);
 
@@ -51,26 +62,37 @@ export class GetEventService {
   }
 
   async findOne(id: string, req: Request): Promise<EventResponseDto> {
-    if (!id || typeof id !== 'string') {
-      throw new BadRequestException('Invalid ID provided');
+    if (!id || typeof id !== "string") {
+      throw new BadRequestException("Invalid ID provided");
     }
 
     const event = await this.eventRepo.findById(id);
 
     if (!event) {
       this.logger.warn(`Event not found: ID=${id}`);
-      throw new NotFoundException('Event not found');
+      throw new NotFoundException("Event not found");
     }
 
     const ctx = await this.getCtx(req);
     let allowed: string[] = [EventAudience.ALL];
-    if (ctx.role === 'member') allowed = [EventAudience.ALL, EventAudience.MEMBERS];
-    if (ctx.role === 'leader') allowed = [EventAudience.ALL, EventAudience.MEMBERS, EventAudience.LEADERS];
-    if (ctx.role === 'admin') allowed = [EventAudience.ALL, EventAudience.MEMBERS, EventAudience.LEADERS];
+    if (ctx.role === "member")
+      allowed = [EventAudience.ALL, EventAudience.MEMBERS];
+    if (ctx.role === "leader")
+      allowed = [
+        EventAudience.ALL,
+        EventAudience.MEMBERS,
+        EventAudience.LEADERS,
+      ];
+    if (ctx.role === "admin")
+      allowed = [
+        EventAudience.ALL,
+        EventAudience.MEMBERS,
+        EventAudience.LEADERS,
+      ];
 
     if (!allowed.includes(event.audience)) {
       this.logger.warn(`Event not accessible by role=${ctx.role}: ID=${id}`);
-      throw new NotFoundException('Event not found');
+      throw new NotFoundException("Event not found");
     }
 
     const media = await this.mediaItemProcessor.findMediaItemByTarget(
@@ -85,9 +107,20 @@ export class GetEventService {
     const ctx = await this.getCtx(req);
 
     let allowed: string[] = [EventAudience.ALL];
-    if (ctx.role === 'member') allowed = [EventAudience.ALL, EventAudience.MEMBERS];
-    if (ctx.role === 'leader') allowed = [EventAudience.ALL, EventAudience.MEMBERS, EventAudience.LEADERS];
-    if (ctx.role === 'admin') allowed = [EventAudience.ALL, EventAudience.MEMBERS, EventAudience.LEADERS];
+    if (ctx.role === "member")
+      allowed = [EventAudience.ALL, EventAudience.MEMBERS];
+    if (ctx.role === "leader")
+      allowed = [
+        EventAudience.ALL,
+        EventAudience.MEMBERS,
+        EventAudience.LEADERS,
+      ];
+    if (ctx.role === "admin")
+      allowed = [
+        EventAudience.ALL,
+        EventAudience.MEMBERS,
+        EventAudience.LEADERS,
+      ];
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -112,11 +145,14 @@ export class GetEventService {
     });
   }
 
-  private async buildMediaMap(ids: string[]): Promise<Map<string, MediaItemEntity[]>> {
-    const mediaItems = await this.mediaItemProcessor.findManyMediaItemsByTargets(
-      ids,
-      MediaTargetType.Event,
-    );
+  private async buildMediaMap(
+    ids: string[],
+  ): Promise<Map<string, MediaItemEntity[]>> {
+    const mediaItems =
+      await this.mediaItemProcessor.findManyMediaItemsByTargets(
+        ids,
+        MediaTargetType.Event,
+      );
 
     const map = new Map<string, MediaItemEntity[]>();
 

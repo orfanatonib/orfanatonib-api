@@ -1,0 +1,102 @@
+@startuml notification-flow
+title Fluxo de notificações e e-mail — API Orfanato NIB
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam ParticipantBorderColor #37474F
+
+actor "Usuário / Visitante" as Client
+participant "Módulo de domínio\n(auth, contato, feedback...)" as Domain
+participant "NotificationService\n(fachada)" as Notify
+participant "EmailDispatchService" as Dispatch
+participant "Registry de templates" as Registry
+participant "FeatureFlagsService" as Flags
+database "email_outbox" as Outbox
+participant "EmailOutboxWorker\n(@Cron 1 min)" as Worker
+participant "GmailSmtpProvider" as Smtp
+participant "RemindersScheduler\n(@Cron 9h)" as Reminders
+
+== Caminho de ida: o request só registra ==
+Client -> Domain : cadastro, contato, feedback...
+activate Domain
+Domain -> Notify : sendEmailVerification(...) / sendContactNotification(...)
+activate Notify
+note right of Notify
+  A fachada nomeia o FATO do negócio.
+  Não monta HTML nem conhece SMTP.
+end note
+Notify -> Dispatch : dispatch(chave, dados, destinatários)
+activate Dispatch
+Dispatch -> Registry : renderEmail(chave, dados, contexto)
+note right of Registry
+  A chave e os dados andam juntos:
+  payload do template errado
+  não compila.
+end note
+Registry --> Dispatch : { subject, html, text }
+
+Dispatch -> Flags : email-delivery ligada?
+Dispatch -> Flags : email-<chave> ligada?
+note right of Flags
+  Flag ausente = LIGADA.
+  isEnabled devolveria false e
+  desligaria a recuperação de senha
+  num banco sem as linhas.
+end note
+
+alt alguma flag desligada
+  Dispatch -> Outbox : grava status = skipped
+  note right of Outbox
+    Fica o rastro de que a aplicação
+    quis avisar alguém.
+  end note
+else envio liberado
+  opt dedupeKey já existe
+    Dispatch -> Outbox : consulta e ignora
+    note right of Dispatch
+      É o que impede o lembrete diário
+      de virar cobrança todo dia.
+    end note
+  end
+  Dispatch -> Outbox : grava status = pending\n(uma linha por destinatário)
+end
+deactivate Dispatch
+Notify --> Domain : pronto
+deactivate Notify
+Domain --> Client : resposta (sem esperar o e-mail)
+deactivate Domain
+
+== Caminho de volta: o worker entrega ==
+Worker -> Outbox : lote pendente e vencido (20)
+activate Worker
+loop cada linha
+  Worker -> Smtp : dispatch(to, subject, text, html)
+  alt entregue
+    Worker -> Outbox : status = sent, sentAt
+  else falhou
+    Worker -> Outbox : attempts += 1, lastError
+    alt ainda há tentativa
+      Worker -> Outbox : status = pending\nscheduledFor += backoff (60s x2, teto 1h)
+    else esgotou 5 tentativas
+      Worker -> Outbox : status = failed
+    end
+  end
+end
+deactivate Worker
+note right of Smtp
+  A credencial é lida no primeiro envio.
+  Ambiente sem GMAIL_SMTP_USER não
+  derruba mais o boot da API.
+end note
+
+== Lembretes ==
+Reminders -> Reminders : visitas sem relatório\n(2 dias de carência, janela de 30 dias)
+Reminders -> Reminders : acolhidos sem pagela\n(só se alguma já foi lançada)
+Reminders -> Notify : sendVisitReportReminder / sendPagelaReminder\n+ dedupeKey
+note right of Reminders
+  Uma falha num lembrete não
+  impede o outro de rodar.
+end note
+
+@enduml

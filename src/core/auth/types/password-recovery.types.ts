@@ -1,4 +1,4 @@
-import { PasswordRecoveryStatus } from '../constants/password-recovery.constants';
+import { PasswordRecoveryStatus } from "../constants/password-recovery.constants";
 
 export interface PasswordRecoveryResponse {
   readonly status: PasswordRecoveryStatus;

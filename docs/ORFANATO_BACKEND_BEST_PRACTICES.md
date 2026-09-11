@@ -95,7 +95,7 @@ Controllers MUST NOT:
 
 - query TypeORM repositories or `DataSource` directly;
 - implement business rules, authorization-by-data, transaction logic, or response assembly loops;
-- call AWS, Twilio, email, or another external API directly;
+- call AWS, email, or another external API directly;
 - return unrestricted TypeORM entities when a response DTO exists.
 
 Every public method MUST declare an explicit return type. Use Nest pipes such as `ParseUUIDPipe` for transport-level validation.
@@ -134,7 +134,7 @@ Repositories MUST NOT own HTTP concerns, user-facing messages, role policy, noti
 
 ### 4.5 External Providers
 
-AWS S3, Gmail SMTP, Twilio, Google authentication, and every other third-party integration MUST be isolated behind injectable providers in `src/shared/providers/` or the owning feature's `providers/` directory.
+AWS S3, Gmail SMTP, Google authentication, and every other third-party integration MUST be isolated behind injectable providers in `src/shared/providers/` or the owning feature's `providers/` directory.
 
 Providers own client configuration, timeouts, retries, vendor payloads, and error translation. Services consume typed, vendor-neutral methods. Tests MUST mock providers and MUST NOT call live services.
 
@@ -242,7 +242,7 @@ Every behavior change MUST add or update tests in the same delivery.
 - Providers: success, timeout, translated vendor error, and retry policy without live network calls.
 - Bug fixes: add a regression test that fails before the correction.
 
-Use Jest, `@nestjs/testing`, and Supertest for HTTP tests. Mock TypeORM repositories, `DataSource`, AWS, Twilio, email, time, and random values. Tests MUST NOT connect to real databases or external services.
+Use Jest, `@nestjs/testing`, and Supertest for HTTP tests. Mock TypeORM repositories, `DataSource`, AWS, email, time, and random values. Tests MUST NOT connect to real databases or external services.
 
 New or changed modules should maintain at least 90% coverage in the affected scope, including meaningful branches. Keep tests deterministic and cap execution to a single worker unless parallel isolation has been proven.
 

@@ -1,10 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { UserRepository } from '../user.repository';
-import { MemberProfilesService } from 'src/shelter/member-profile/services/member-profiles.service';
-import { LeaderProfilesService } from 'src/shelter/leader-profile/services/leader-profiles.service';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
-import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
-import { UserLogs, UserSuccessMessages } from '../constants/user.constants';
+import { Injectable, Logger } from "@nestjs/common";
+import { UserRepository } from "../user.repository";
+import { MemberProfilesService } from "src/shelter/member-profile/services/member-profiles.service";
+import { LeaderProfilesService } from "src/shelter/leader-profile/services/leader-profiles.service";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
+import { UserLogs, UserSuccessMessages } from "../constants/user.constants";
 
 @Injectable()
 export class DeleteUserService {
@@ -16,12 +16,12 @@ export class DeleteUserService {
     private readonly leaderService: LeaderProfilesService,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly s3Service: AwsS3Service,
-  ) { }
+  ) {}
 
   async remove(id: string): Promise<{ message: string }> {
     const userImage = await this.mediaItemProcessor.findMediaItemByTarget(
       id,
-      'UserEntity',
+      "UserEntity",
     );
 
     if (userImage) {

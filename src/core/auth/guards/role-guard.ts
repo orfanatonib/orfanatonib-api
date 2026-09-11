@@ -1,35 +1,33 @@
-import {
-  CanActivate,
-  ExecutionContext,
-  Injectable,
-  ForbiddenException,
-  Logger,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { UserRole } from '../auth.types';
+import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
+import { AccessDeniedException } from "src/common/exceptions";
+import { AuthenticatedRequest, UserRole } from "../auth.types";
+import { AuthErrorMessages } from "../constants/auth.constants";
+import { normalizeRole } from "../utils/auth-token.util";
 
-@Injectable()
-export class AdminRoleGuard implements CanActivate {
-  private readonly logger = new Logger(AdminRoleGuard.name);
-
-  constructor(private readonly reflector: Reflector) { }
+/**
+ * Base dos guards de papel. Roda depois do `JwtAuthGuard`, que já populou
+ * `request.user`; aqui só se decide se o papel serve.
+ */
+abstract class RoleGuard implements CanActivate {
+  protected abstract readonly allowed: readonly UserRole[];
+  protected abstract readonly deniedMessage: string;
 
   canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const user = request.user;
 
     if (!user) {
-      throw new ForbiddenException('User not authenticated');
+      throw new AccessDeniedException(AuthErrorMessages.NOT_AUTHENTICATED);
     }
 
-    const { role } = user;
-
+    const role = normalizeRole(user.role);
     if (!role) {
-      throw new ForbiddenException('Insufficient permissions');
+      throw new AccessDeniedException(
+        AuthErrorMessages.INSUFFICIENT_PERMISSIONS,
+      );
     }
-
-    if (role !== UserRole.ADMIN) {
-      throw new ForbiddenException('Access restricted to administrators');
+    if (!this.allowed.includes(role)) {
+      throw new AccessDeniedException(this.deniedMessage);
     }
 
     return true;
@@ -37,29 +35,13 @@ export class AdminRoleGuard implements CanActivate {
 }
 
 @Injectable()
-export class AdminOrLeaderRoleGuard implements CanActivate {
-  private readonly logger = new Logger(AdminOrLeaderRoleGuard.name);
+export class AdminRoleGuard extends RoleGuard {
+  protected readonly allowed = [UserRole.ADMIN] as const;
+  protected readonly deniedMessage = AuthErrorMessages.ADMIN_ONLY;
+}
 
-  constructor(private readonly reflector: Reflector) { }
-
-  canActivate(context: ExecutionContext): boolean {
-    const request = context.switchToHttp().getRequest();
-    const user = request.user;
-
-    if (!user) {
-      throw new ForbiddenException('User not authenticated');
-    }
-
-    const { role } = user;
-
-    if (!role) {
-      throw new ForbiddenException('Insufficient permissions');
-    }
-
-    if (role !== UserRole.ADMIN && role !== UserRole.LEADER) {
-      throw new ForbiddenException('Access restricted to administrators and leaders');
-    }
-
-    return true;
-  }
+@Injectable()
+export class AdminOrLeaderRoleGuard extends RoleGuard {
+  protected readonly allowed = [UserRole.ADMIN, UserRole.LEADER] as const;
+  protected readonly deniedMessage = AuthErrorMessages.ADMIN_OR_LEADER_ONLY;
 }

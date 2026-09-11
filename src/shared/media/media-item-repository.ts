@@ -25,6 +25,10 @@ export class MediaItemRepository {
     });
   }
 
+  async findById(id: string): Promise<MediaItemEntity | null> {
+    return this.mediaRepo.findOneBy({ id });
+  }
+
   async save(media: MediaItemEntity): Promise<MediaItemEntity> {
     return this.mediaRepo.save(media);
   }

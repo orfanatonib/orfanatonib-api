@@ -11,8 +11,9 @@ import { LeaderProfilesQueryDto, PageDto } from '../dto/leader-profiles.query.dt
 import { AuthContextService } from 'src/core/auth/services/auth-context.service';
 import { TeamsService } from 'src/shelter/team/services/teams.service';
 import { ManageLeaderTeamDto, ManageLeaderTeamsDto } from '../dto/assign-team.dto';
-import { SheltersRepository } from 'src/shelter/shelter/repositories/shelters.repository';
-import { ShelterSimpleResponseDto, ShelterWithLeaderStatusDto, toShelterSimpleDto, toShelterWithLeaderStatusDto } from 'src/shelter/shelter/dto/shelter.response.dto';
+import { GetSheltersService } from 'src/shelter/shelter/services/get-shelters.service';
+import { ShelterSimpleResponseDto, ShelterWithLeaderStatusDto } from 'src/shelter/shelter/dto/shelter.response.dto';
+import { toShelterSimpleDto, toShelterWithLeaderStatusDto } from 'src/shelter/shelter/mappers/shelter.mapper';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { ShelterEntity } from 'src/shelter/shelter/entities/shelter.entity/shelter.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -27,8 +28,8 @@ export class LeaderProfilesService {
     private readonly authCtx: AuthContextService,
     @Inject(forwardRef(() => TeamsService))
     private readonly teamsService: TeamsService,
-    @Inject(forwardRef(() => SheltersRepository))
-    private readonly sheltersRepository: SheltersRepository,
+    @Inject(forwardRef(() => GetSheltersService))
+    private readonly getSheltersService: GetSheltersService,
     private readonly mediaItemProcessor: MediaItemProcessor,
     @InjectRepository(ShelterEntity)
     private readonly shelterRepo: Repository<ShelterEntity>,
@@ -161,7 +162,7 @@ export class LeaderProfilesService {
       throw new NotFoundException('Leader profile not found');
     }
 
-    const shelterIds = await this.sheltersRepository.findShelterIdsForLeader(ctx.userId);
+    const shelterIds = await this.getSheltersService.findShelterIdsForLeader(ctx.userId);
     
     if (shelterIds.length === 0) {
       return [];
