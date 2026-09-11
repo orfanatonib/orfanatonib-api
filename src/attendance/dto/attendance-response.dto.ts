@@ -1,311 +1,226 @@
-import { IsDateString, IsEnum, IsNumber, IsOptional, IsString, IsUUID, Min, Max, IsIn } from 'class-validator';
-import { Type } from 'class-transformer';
-import { AttendanceType, AttendanceCategory } from '../entities/attendance.entity';
+import {
+  AttendanceCategory,
+  AttendanceType,
+} from "../entities/attendance.entity";
+
+/**
+ * Respostas do módulo de frequência.
+ *
+ * O arquivo anterior tinha 494 linhas e decorava **saídas** com
+ * `@IsUUID`, `@IsEnum` e `@IsDateString`. Validador em DTO de resposta não
+ * roda: o `ValidationPipe` valida o que entra. Aqui ficam só os tipos; o que
+ * entra está em `attendance-filters.dto.ts` e nos DTOs de registro.
+ */
 
 export class AttendanceResponseDto {
-  @IsUUID()
-  id: string;
-
-  @IsEnum(AttendanceType)
-  type: AttendanceType;
-
-  @IsEnum(AttendanceCategory)
-  category: AttendanceCategory;
-
-  @IsString()
-  @IsOptional()
+  id!: string;
+  type!: AttendanceType;
+  category!: AttendanceCategory;
   comment?: string;
-
-  @IsUUID()
-  memberId: string;
-
-  @IsString()
-  memberName: string;
-
-  @IsString()
-  @IsOptional()
-  memberEmail?: string;
-
-  @IsUUID()
-  scheduleId: string;
-
-  @IsNumber()
-  visitNumber: number;
-
-  @IsDateString()
-  @IsOptional()
+  memberId!: string;
+  memberName!: string;
+  memberEmail!: string;
+  scheduleId!: string;
+  visitNumber!: number;
   visitDate?: string;
-
-  @IsDateString()
-  @IsOptional()
   meetingDate?: string;
-
-  @IsString()
-  @IsOptional()
   lessonContent?: string;
-
-  @IsString()
-  @IsOptional()
   observation?: string;
-
-  @IsString()
-  @IsOptional()
   meetingRoom?: string;
+  teamName!: string;
+  shelterName!: string;
+  createdAt!: Date;
+  updatedAt!: Date;
+}
 
-  @IsString()
-  teamName: string;
+/** Alias de leitura: a listagem devolve o mesmo formato do registro. */
+export type AttendanceRecordListItemDto = AttendanceResponseDto;
 
-  @IsString()
-  shelterName: string;
-
-  @IsDateString()
-  createdAt: Date;
-
-  @IsDateString()
-  updatedAt: Date;
+/** Registro enxuto, dentro de um encontro que já traz o contexto. */
+export class AttendanceRecordDto {
+  id!: string;
+  type!: AttendanceType;
+  category!: AttendanceCategory;
+  comment?: string;
+  memberId!: string;
+  memberName!: string;
+  memberEmail!: string;
+  createdAt!: Date;
+  updatedAt!: Date;
 }
 
 export class PendingMemberDto {
-  memberId: string;
-  memberName: string;
-  memberEmail: string;
-  role: 'leader' | 'member';
+  memberId!: string;
+  memberName!: string;
+  memberEmail!: string;
+  role!: string;
 }
 
+/** Encontro em que falta lançar a frequência de alguém. */
 export class PendingForLeaderDto {
-  @IsUUID()
-  scheduleId: string;
-
-  @IsNumber()
-  visitNumber: number;
-
-  @IsEnum(AttendanceCategory)
-  category: AttendanceCategory;
-
-  @IsDateString()
-  date: string;
-
-  @IsString()
-  lessonContent: string;
-
-  @IsString()
-  @IsOptional()
-  observation?: string;
-
-  @IsString()
-  @IsOptional()
-  location?: string;
-
-  @IsString()
-  teamName: string;
-
-  @IsString()
-  shelterName: string;
-
-  @IsNumber()
-  totalMembers: number;
-
-  pendingMembers: PendingMemberDto[];
+  scheduleId!: string;
+  visitNumber!: number;
+  category!: AttendanceCategory;
+  date!: string;
+  location!: string;
+  lessonContent?: string;
+  teamName!: string;
+  shelterName!: string;
+  pendingMembers!: PendingMemberDto[];
+  totalMembers!: number;
 }
 
+/** Encontro em que a frequência do próprio usuário não foi lançada. */
 export class PendingForMemberDto {
-  @IsUUID()
-  scheduleId: string;
+  scheduleId!: string;
+  visitNumber!: number;
+  category!: AttendanceCategory;
+  date!: string;
+  location!: string;
+  teamNumber!: number;
+  shelterName!: string;
+  teamName!: string;
+  lessonContent!: string;
+  teamId!: string;
+}
 
-  @IsNumber()
-  visitNumber: number;
+export class TeamPendingsDto {
+  teamId!: string;
+  teamName!: string;
+  shelterName!: string;
+  pendings!: PendingForLeaderDto[];
+}
 
-  @IsEnum(AttendanceCategory)
-  category: AttendanceCategory;
-
-  @IsDateString()
-  date: string;
-
-  @IsString()
-  lessonContent: string;
-
-  @IsString()
-  @IsOptional()
+export class VisitReportPendingDto {
+  scheduleId!: string;
+  visitNumber!: number;
+  visitDate!: string;
+  visitDateFormatted!: string;
+  summary!: string;
+  lessonContent?: string;
   observation?: string;
-
-  @IsString()
-  @IsOptional()
-  location?: string;
-
-  @IsUUID()
-  teamId: string;
-
-  @IsNumber()
-  teamNumber: number;
-
-  @IsString()
-  teamName: string;
-
-  @IsString()
-  shelterName: string;
+  teamId!: string;
+  teamNumber!: number;
+  teamName!: string;
+  shelterName!: string;
+  shelterAddress?: string;
 }
 
-export class PaginationDto {
-  @IsNumber()
-  @Min(1)
-  @IsOptional()
-  @Type(() => Number)
-  page?: number = 1;
-
-  @IsNumber()
-  @Min(1)
-  @Max(100)
-  @IsOptional()
-  @Type(() => Number)
-  limit?: number = 20;
+export class TeamVisitReportPendingsDto {
+  teamId!: string;
+  teamName!: string;
+  shelterName!: string;
+  pendings!: VisitReportPendingDto[];
 }
 
-export class AttendanceFiltersDto extends PaginationDto {
-  @IsDateString()
-  @IsOptional()
-  startDate?: string;
-
-  @IsDateString()
-  @IsOptional()
-  endDate?: string;
-
-  @IsEnum(AttendanceType)
-  @IsOptional()
-  type?: AttendanceType;
-
-  @IsEnum(AttendanceCategory)
-  @IsOptional()
-  category?: AttendanceCategory;
-
-  @IsUUID()
-  @IsOptional()
-  teamId?: string;
-
-  @IsUUID()
-  @IsOptional()
-  memberId?: string;
-
-  @IsUUID()
-  @IsOptional()
-  scheduleId?: string;
-
-  @IsString()
-  @IsOptional()
-  memberName?: string;
-
-  @IsIn(['asc', 'desc'])
-  @IsOptional()
-  sortOrder?: 'asc' | 'desc' = 'desc';
-
-  @IsIn(['createdAt', 'visitDate', 'meetingDate'])
-  @IsOptional()
-  sortBy?: 'createdAt' | 'visitDate' | 'meetingDate' = 'createdAt';
-}
-
-export class AttendanceStatsDto {
-  @IsNumber()
-  totalEvents: number;
-
-  @IsNumber()
-  totalAttendanceRecords: number;
-
-  @IsNumber()
-  presentCount: number;
-
-  @IsNumber()
-  absentCount: number;
-
-  @IsNumber()
-  attendanceRate: number;
-
-  @IsNumber()
-  pendingCount: number;
+export class AllPendingsResponseDto {
+  leaderPendings!: TeamPendingsDto[];
+  memberPendings!: PendingForMemberDto[];
+  visitReportPendings!: TeamVisitReportPendingsDto[];
 }
 
 export class TeamMemberDto {
-  @IsUUID()
-  id: string;
-
-  @IsString()
-  name: string;
-
-  @IsString()
-  email: string;
-
-  @IsIn(['leader', 'member'])
-  @IsOptional()
-  role: 'leader' | 'member';
+  id!: string;
+  name!: string;
+  email!: string;
+  role!: string;
 }
 
-export class TeamScheduleDto {
-  @IsUUID()
-  id: string;
-
-  @IsNumber()
-  visitNumber: number;
-
-  @IsEnum(AttendanceCategory)
-  category: AttendanceCategory;
-
-  @IsDateString()
-  date: string;
-
-  @IsString()
-  lessonContent: string;
-
-  @IsString()
-  @IsOptional()
-  observation?: string;
-
-  @IsString()
-  @IsOptional()
-  location?: string;
-
-  @IsUUID()
-  teamId: string;
-
-  @IsNumber()
-  teamNumber: number;
-
-  @IsString()
-  teamName: string;
-
-  @IsString()
-  shelterName: string;
-
-  @IsNumber()
-  @IsOptional()
-  attendanceCount?: number;
-
-  @IsNumber()
-  @IsOptional()
-  totalMembers?: number;
+export class TeamMembersDto {
+  teamId!: string;
+  teamNumber!: number;
+  shelterName!: string;
+  members!: TeamMemberDto[];
 }
 
 export class LeaderTeamDto {
-  @IsUUID()
-  teamId: string;
-
-  @IsNumber()
-  teamNumber: number;
-
-  @IsUUID()
-  shelterId: string;
-
-  @IsString()
-  shelterName: string;
-
-  @IsString()
-  description: string;
-
-  @IsNumber()
-  @IsOptional()
-  memberCount?: number;
+  teamId!: string;
+  teamNumber!: number;
+  shelterId!: string;
+  shelterName!: string;
+  description?: string;
+  memberCount!: number;
 }
 
-export class PaginatedResponseDto<T> {
-  data: T[];
-  meta: {
+export class ShelterTeamDto {
+  teamId!: string;
+  teamNumber!: number;
+  description?: string;
+  memberCount!: number;
+  members!: TeamMemberDto[];
+}
+
+export class ShelterTeamsMembersDto {
+  shelterId!: string;
+  shelterName!: string;
+  teams!: ShelterTeamDto[];
+}
+
+/** Um encontro da equipe, com quantos já foram lançados. */
+export class TeamScheduleDto {
+  id!: string;
+  category!: AttendanceCategory;
+  date!: string;
+  visitNumber!: number;
+  lessonContent?: string;
+  observation?: string;
+  location!: string;
+  teamId!: string;
+  teamNumber!: number;
+  teamName!: string;
+  shelterName!: string;
+  attendanceCount!: number;
+  totalMembers!: number;
+}
+
+export class ScheduleWithAttendanceDto {
+  scheduleId!: string;
+  category!: AttendanceCategory;
+  date!: string;
+  visitNumber!: number;
+  lessonContent?: string;
+  observation?: string;
+  location!: string;
+  totalMembers!: number;
+  presentCount!: number;
+  absentCount!: number;
+  pendingCount!: number;
+  attendanceRecords!: AttendanceRecordDto[];
+}
+
+export class TeamWithSchedulesDto {
+  teamId!: string;
+  teamNumber!: number;
+  teamName!: string;
+  description?: string;
+  totalSchedules!: number;
+  schedules!: ScheduleWithAttendanceDto[];
+}
+
+export class ShelterWithTeamsDto {
+  shelterId!: string;
+  shelterName!: string;
+  totalTeams!: number;
+  teams!: TeamWithSchedulesDto[];
+}
+
+export class AttendanceStatsDto {
+  totalEvents!: number;
+  totalAttendanceRecords!: number;
+  presentCount!: number;
+  absentCount!: number;
+  attendanceRate!: number;
+  pendingCount!: number;
+}
+
+/**
+ * Envelope paginado deste módulo. Difere do `PaginatedResponseDto`
+ * compartilhado (`meta.totalItems`/`totalPages`) porque este é o contrato que
+ * o frontend já consome; a convergência está registrada como débito.
+ */
+export class PaginatedResponseDto<TItem> {
+  data!: TItem[];
+  meta!: {
     page: number;
     limit: number;
     total: number;
@@ -313,182 +228,4 @@ export class PaginatedResponseDto<T> {
     hasNext: boolean;
     hasPrev: boolean;
   };
-}
-
-export class AttendanceRecordDto {
-  @IsUUID()
-  id: string;
-
-  @IsEnum(AttendanceType)
-  type: AttendanceType;
-
-  @IsEnum(AttendanceCategory)
-  category: AttendanceCategory;
-
-  @IsString()
-  @IsOptional()
-  comment?: string;
-
-  @IsUUID()
-  memberId: string;
-
-  @IsString()
-  memberName: string;
-
-  @IsString()
-  @IsOptional()
-  memberEmail?: string;
-
-  @IsDateString()
-  createdAt: Date;
-
-  @IsDateString()
-  updatedAt: Date;
-}
-
-export class ScheduleWithAttendanceDto {
-  @IsUUID()
-  scheduleId: string;
-
-  @IsNumber()
-  visitNumber: number;
-
-  @IsEnum(AttendanceCategory)
-  category: AttendanceCategory;
-
-  @IsDateString()
-  date: string;
-
-  @IsString()
-  lessonContent: string;
-
-  @IsString()
-  @IsOptional()
-  observation?: string;
-
-  @IsString()
-  @IsOptional()
-  @IsString()
-  @IsOptional()
-  location?: string;
-
-
-  @IsNumber()
-  totalMembers: number;
-
-  @IsNumber()
-  presentCount: number;
-
-  @IsNumber()
-  absentCount: number;
-
-  @IsNumber()
-  pendingCount: number;
-
-  attendanceRecords: AttendanceRecordDto[];
-}
-
-export class TeamWithSchedulesDto {
-  @IsUUID()
-  teamId: string;
-
-  @IsNumber()
-  teamNumber: number;
-
-  @IsString()
-  teamName: string;
-
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @IsNumber()
-  totalSchedules: number;
-
-  schedules: ScheduleWithAttendanceDto[];
-}
-
-export class ShelterWithTeamsDto {
-  @IsUUID()
-  shelterId: string;
-
-  @IsString()
-  shelterName: string;
-
-  @IsNumber()
-  totalTeams: number;
-
-  teams: TeamWithSchedulesDto[];
-}
-
-export class TeamPendingsDto {
-  @IsUUID()
-  teamId: string;
-
-  @IsString()
-  teamName: string;
-
-  @IsString()
-  shelterName: string;
-
-  pendings: PendingForLeaderDto[];
-}
-
-export class VisitReportPendingDto {
-  @IsUUID()
-  scheduleId: string;
-
-  @IsNumber()
-  visitNumber: number;
-
-  @IsDateString()
-  visitDate: string;
-
-  @IsString()
-  visitDateFormatted: string;
-
-  @IsString()
-  summary: string;
-
-  @IsString()
-  lessonContent: string;
-
-  @IsString()
-  @IsOptional()
-  observation?: string;
-
-  @IsUUID()
-  teamId: string;
-
-  @IsNumber()
-  teamNumber: number;
-
-  @IsString()
-  teamName: string;
-
-  @IsString()
-  shelterName: string;
-
-  @IsString()
-  @IsOptional()
-  shelterAddress?: string;
-}
-
-export class TeamVisitReportPendingsDto {
-  @IsUUID()
-  teamId: string;
-
-  @IsString()
-  teamName: string;
-
-  @IsString()
-  shelterName: string;
-
-  pendings: VisitReportPendingDto[];
-}
-
-export class AllPendingsResponseDto {
-  leaderPendings: TeamPendingsDto[];
-  memberPendings: PendingForMemberDto[];
-  visitReportPendings: TeamVisitReportPendingsDto[];
 }

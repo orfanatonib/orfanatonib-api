@@ -1,170 +1,168 @@
-import { Controller, Post, Body, Param, UseGuards, Get, Query, Req, ForbiddenException, Logger } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
-import { AdminOrLeaderRoleGuard } from 'src/core/auth/guards/role-guard';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 
-import { RegisterAttendanceDto } from './dto/register-attendance.dto';
-import { RegisterTeamAttendanceDto } from './dto/register-team-attendance.dto';
-import { AuthContextService } from 'src/core/auth/services/auth-context.service';
-import { AuthRequest } from 'src/core/auth/auth.types';
-import { AttendanceFiltersDto, PaginatedResponseDto, TeamScheduleDto, AttendanceResponseDto } from './dto/attendance-response.dto';
-import { AttendanceCategory } from './entities/attendance.entity';
+import { AuthenticatedRequest } from "src/core/auth/auth.types";
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { AdminOrLeaderRoleGuard } from "src/core/auth/guards/role-guard";
 
-import { AttendanceReaderService } from './services/attendance-reader.service';
-import { AttendanceWriterService } from './services/attendance-writer.service';
+import { RegisterAttendanceDto } from "./dto/register-attendance.dto";
+import { RegisterTeamAttendanceDto } from "./dto/register-team-attendance.dto";
+import {
+  AttendanceFiltersDto,
+  AttendancePeriodDto,
+} from "./dto/attendance-filters.dto";
+import {
+  AllPendingsResponseDto,
+  AttendanceRecordListItemDto,
+  AttendanceResponseDto,
+  AttendanceStatsDto,
+  LeaderTeamDto,
+  PaginatedResponseDto,
+  ShelterTeamsMembersDto,
+  ShelterWithTeamsDto,
+  TeamMembersDto,
+  TeamScheduleDto,
+} from "./dto/attendance-response.dto";
 
-@Controller('attendance')
+import { GetPendingsService } from "./services/get-pendings.service";
+import { GetRecordsService } from "./services/get-records.service";
+import { GetSchedulesService } from "./services/get-schedules.service";
+import { GetStatsService } from "./services/get-stats.service";
+import { GetTeamsService } from "./services/get-teams.service";
+import { RegisterAttendanceService } from "./services/register-attendance.service";
+import { toAttendanceActor } from "./utils/attendance-scope.util";
+
+@Controller("attendance")
 @UseGuards(JwtAuthGuard)
 export class AttendanceController {
-  private readonly logger = new Logger(AttendanceController.name);
-
   constructor(
-    private readonly attendanceReader: AttendanceReaderService,
-    private readonly attendanceWriter: AttendanceWriterService,
-    private readonly authContext: AuthContextService,
-  ) { }
+    private readonly registerService: RegisterAttendanceService,
+    private readonly pendingsService: GetPendingsService,
+    private readonly teamsService: GetTeamsService,
+    private readonly schedulesService: GetSchedulesService,
+    private readonly recordsService: GetRecordsService,
+    private readonly statsService: GetStatsService,
+  ) {}
 
-  @Post('register')
-  async registerAttendance(
-    @Req() req: AuthRequest,
+  @Post("register")
+  registerAttendance(
+    @Req() request: AuthenticatedRequest,
     @Body() dto: RegisterAttendanceDto,
   ): Promise<AttendanceResponseDto> {
-    const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    if (!userId) throw new ForbiddenException('User not identified');
-    this.logger.log(`Registering attendance for user ${userId}, schedule ${dto.scheduleId}`);
-    const result = await this.attendanceWriter.registerAttendance(
-      userId,
-      dto.scheduleId,
-      dto.type,
-      dto.comment,
-      dto.category || AttendanceCategory.VISIT
-    );
-    this.logger.log(`Attendance registered successfully for user ${userId}`);
-    return result;
+    return this.registerService.registerOwn(toAttendanceActor(request), dto);
   }
 
   @UseGuards(AdminOrLeaderRoleGuard)
-  @Post('register/team')
-  async registerTeamAttendance(
-    @Req() req: AuthRequest,
+  @Post("register/team")
+  registerTeamAttendance(
+    @Req() request: AuthenticatedRequest,
     @Body() dto: RegisterTeamAttendanceDto,
   ): Promise<AttendanceResponseDto[]> {
-    const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    if (!userId) throw new ForbiddenException('User not identified');
-    this.logger.log(`Registering team attendance for team ${dto.teamId}, schedule ${dto.scheduleId}`);
-    const result = await this.attendanceWriter.registerTeamAttendance(
-      userId,
-      dto.teamId,
-      dto.scheduleId,
-      dto.attendances,
-      dto.category || AttendanceCategory.VISIT
+    return this.registerService.registerTeam(toAttendanceActor(request), dto);
+  }
+
+  @Get("pending/all")
+  getAllPendings(
+    @Req() request: AuthenticatedRequest,
+  ): Promise<AllPendingsResponseDto> {
+    return this.pendingsService.execute(toAttendanceActor(request), new Date());
+  }
+
+  @UseGuards(AdminOrLeaderRoleGuard)
+  @Get("team/:teamId/members")
+  listTeamMembers(
+    @Req() request: AuthenticatedRequest,
+    @Param("teamId", new ParseUUIDPipe()) teamId: string,
+  ): Promise<TeamMembersDto> {
+    return this.teamsService.listTeamMembers(
+      toAttendanceActor(request),
+      teamId,
     );
-    this.logger.log(`Team attendance registered successfully for team ${dto.teamId}`);
-    return result;
   }
 
-  @Get('pending/all')
-  async getAllPendings(@Req() req: AuthRequest) {
-    const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    if (!userId) throw new ForbiddenException('User not identified');
-    this.logger.log(`Fetching all pending attendances for user ${userId}`);
-    return this.attendanceReader.findAllPendings(userId, new Date());
-  }
-
-  @UseGuards(AdminOrLeaderRoleGuard)
-  @Get('team/:teamId/members')
-  async listTeamMembers(@Req() req: AuthRequest, @Param('teamId') teamId: string) {
-    const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    if (!userId) throw new ForbiddenException('User not identified');
-    this.logger.log(`Listing team members for team ${teamId}`);
-    return this.attendanceReader.listTeamMembers(userId, teamId);
-  }
-
-  @Get('team/:teamId/schedules')
-  async listTeamSchedules(
-    @Req() req: AuthRequest,
-    @Param('teamId') teamId: string,
+  @Get("team/:teamId/schedules")
+  listTeamSchedules(
+    @Req() request: AuthenticatedRequest,
+    @Param("teamId", new ParseUUIDPipe()) teamId: string,
+    @Query() period: AttendancePeriodDto,
   ): Promise<TeamScheduleDto[]> {
-    const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    if (!userId) throw new ForbiddenException('User not identified');
-    this.logger.log(`Listing schedules for team ${teamId}`);
-    return this.attendanceReader.listTeamSchedulesFull(userId, teamId, {} as AttendanceFiltersDto);
+    return this.schedulesService.listTeamSchedules(
+      toAttendanceActor(request),
+      teamId,
+      period,
+    );
   }
 
   @UseGuards(AdminOrLeaderRoleGuard)
-  @Get('leader/teams')
-  async listLeaderTeams(@Req() req: AuthRequest) {
-    const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    if (!userId) throw new ForbiddenException('User not identified');
-    this.logger.log(`Listing leader teams for user ${userId}`);
-    return this.attendanceReader.listLeaderTeams(userId);
+  @Get("leader/teams")
+  listLeaderTeams(
+    @Req() request: AuthenticatedRequest,
+  ): Promise<LeaderTeamDto[]> {
+    return this.teamsService.listLeaderTeams(toAttendanceActor(request));
   }
 
   @UseGuards(AdminOrLeaderRoleGuard)
-  @Get('leader/teams/members')
-  async listLeaderTeamsWithMembers(@Req() req: AuthRequest) {
-    const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    if (!userId) throw new ForbiddenException('User not identified');
-    this.logger.log(`Listing leader teams with members for user ${userId}`);
-    return this.attendanceReader.listLeaderTeamsWithMembers(userId);
+  @Get("leader/teams/members")
+  listLeaderTeamsWithMembers(
+    @Req() request: AuthenticatedRequest,
+  ): Promise<ShelterTeamsMembersDto[]> {
+    return this.teamsService.listLeaderTeamsWithMembers(
+      toAttendanceActor(request),
+    );
   }
 
   @UseGuards(AdminOrLeaderRoleGuard)
-  @Get('sheets/hierarchical')
-  async listAttendanceSheetsHierarchical(
-    @Req() req: AuthRequest,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-  ) {
-    const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    if (!userId) throw new ForbiddenException('User not identified');
-    this.logger.log(`Listing hierarchical attendance sheets for user ${userId}`);
-    return this.attendanceReader.listAttendanceSheetsHierarchical(userId, { startDate, endDate });
+  @Get("sheets/hierarchical")
+  listSheetsHierarchical(
+    @Req() request: AuthenticatedRequest,
+    @Query() period: AttendancePeriodDto,
+  ): Promise<ShelterWithTeamsDto[]> {
+    return this.schedulesService.listSheetsHierarchical(
+      toAttendanceActor(request),
+      period,
+    );
   }
 
-  @UseGuards(AdminOrLeaderRoleGuard)
-  @Get('leader/shelters-teams-members')
-  async listLeaderSheltersTeamsMembers(@Req() req: AuthRequest) {
-    const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    if (!userId) throw new ForbiddenException('User not identified');
-    this.logger.log(`Listing leader shelters teams members for user ${userId}`);
-    return this.attendanceReader.listLeaderTeamsWithMembers(userId);
-  }
-
-  @Get('records')
-  async listAttendanceRecords(
-    @Req() req: AuthRequest,
+  @Get("records")
+  listAttendanceRecords(
+    @Req() request: AuthenticatedRequest,
     @Query() filters: AttendanceFiltersDto,
-  ): Promise<PaginatedResponseDto<any>> {
-    const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    if (!userId) throw new ForbiddenException('User not identified');
-    this.logger.log(`Listing attendance records for user ${userId}`);
-    return this.attendanceReader.listAttendanceRecords(userId, filters);
+  ): Promise<PaginatedResponseDto<AttendanceRecordListItemDto>> {
+    return this.recordsService.execute(toAttendanceActor(request), filters);
   }
 
-  @Get('stats')
-  async getAttendanceStats(
-    @Req() req: AuthRequest,
-    @Query('teamId') teamId?: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
-  ) {
-    const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    if (!userId) throw new ForbiddenException('User not identified');
-    this.logger.log(`Getting attendance stats for user ${userId}`);
-    return this.attendanceReader.getAttendanceStats(userId, teamId, startDate, endDate);
+  @Get("stats")
+  getAttendanceStats(
+    @Req() request: AuthenticatedRequest,
+    @Query() filters: AttendanceFiltersDto,
+  ): Promise<AttendanceStatsDto> {
+    return this.statsService.forMember(toAttendanceActor(request), {
+      teamId: filters.teamId,
+      startDate: filters.startDate,
+      endDate: filters.endDate,
+    });
   }
 
   @UseGuards(AdminOrLeaderRoleGuard)
-  @Get('leader/stats/team/:teamId')
-  async getTeamAttendanceStats(
-    @Req() req: AuthRequest,
-    @Param('teamId') teamId: string,
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string
-  ) {
-    const userId = req.user?.id ?? (await this.authContext.getUserId(req));
-    if (!userId) throw new ForbiddenException('User not identified');
-    this.logger.log(`Getting team attendance stats for team ${teamId}`);
-    return this.attendanceReader.getTeamAttendanceStats(userId, teamId, startDate, endDate);
+  @Get("leader/stats/team/:teamId")
+  getTeamAttendanceStats(
+    @Req() request: AuthenticatedRequest,
+    @Param("teamId", new ParseUUIDPipe()) teamId: string,
+    @Query() period: AttendancePeriodDto,
+  ): Promise<AttendanceStatsDto> {
+    return this.statsService.forTeam(
+      toAttendanceActor(request),
+      teamId,
+      period,
+    );
   }
 }

@@ -1,6 +1,19 @@
-import { IsArray, IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, ValidateNested, MaxLength, ArrayMinSize } from 'class-validator';
-import { Type } from 'class-transformer';
-import { AttendanceType, AttendanceCategory } from '../entities/attendance.entity';
+import {
+  IsArray,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  ValidateNested,
+  MaxLength,
+  ArrayMinSize,
+} from "class-validator";
+import { Type } from "class-transformer";
+import {
+  AttendanceType,
+  AttendanceCategory,
+} from "../entities/attendance.entity";
 
 export class MemberAttendanceDto {
   @IsUUID()
@@ -13,7 +26,7 @@ export class MemberAttendanceDto {
 
   @IsString()
   @IsOptional()
-  @MaxLength(500, { message: 'Comentário deve ter no máximo 500 caracteres' })
+  @MaxLength(500, { message: "Comentário deve ter no máximo 500 caracteres" })
   comment?: string; // Sempre opcional, independente do tipo de presença
 }
 
@@ -31,7 +44,7 @@ export class RegisterTeamAttendanceDto {
   category?: AttendanceCategory = AttendanceCategory.VISIT;
 
   @IsArray()
-  @ArrayMinSize(1, { message: 'Deve haver pelo menos um registro de presença' })
+  @ArrayMinSize(1, { message: "Deve haver pelo menos um registro de presença" })
   @ValidateNested({ each: true })
   @Type(() => MemberAttendanceDto)
   attendances: MemberAttendanceDto[];

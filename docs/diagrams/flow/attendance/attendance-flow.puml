@@ -1,0 +1,122 @@
+@startuml attendance-flow
+title Fluxo do módulo Attendance — API Orfanato NIB
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam ParticipantBorderColor #37474F
+
+actor "Membro / Líder / Admin" as Client
+participant "AttendanceController" as Controller
+participant "toAttendanceActor\n(utils)" as Actor
+participant "AttendanceScopeService" as Scope
+participant "RegisterAttendanceService" as Register
+participant "GetPendingsService" as Pendings
+participant "GetSchedulesService" as Schedules
+participant "GetRecordsService" as Records
+participant "GetStatsService" as Stats
+database "AttendanceRepository\n(TypeORM)" as Repo
+
+== Entrada ==
+Client -> Controller : Authorization: Bearer + token
+activate Controller
+Controller -> Controller : JwtAuthGuard (+ AdminOrLeader na liderança)
+Controller -> Actor : toAttendanceActor(request)
+note right of Actor
+  Lê `request.user.userId`.
+  O controller lia `req.user.id`,
+  que a JwtStrategy nunca devolve:
+  todo endpoint caía no fallback e
+  decodificava o token de novo.
+end note
+Actor --> Controller : { userId, role }
+
+== Escopo: uma pergunta só ==
+Controller -> Scope : resolve(actor)
+activate Scope
+Scope -> Repo : findUserWithMembership
+alt admin
+  Scope --> Controller : enxerga todas as equipes
+else líder / membro
+  Scope -> Repo : findLeaderTeamIds + findMemberTeamIds (em paralelo)
+end
+deactivate Scope
+note right of Scope
+  Antes cada método refazia isso,
+  e cada assert disparava outras
+  duas consultas.
+end note
+
+== GET /attendance/pending/all ==
+Controller -> Pendings : execute(actor, hoje)
+activate Pendings
+Pendings -> Repo : findTeamsWithMembers
+Pendings -> Repo : findSchedulesForTeams(todas as equipes)
+Pendings -> Repo : findAttendancesForSchedules(todos)
+Pendings -> Repo : findScheduleIdsWithReport(visitas passadas)
+note right of Repo
+  QUATRO consultas fixas.
+  Eram uma por equipe, mais duas
+  por agendamento, dentro de laços
+  aninhados — com admin, sem limite.
+end note
+Pendings -> Pendings : occurrencesOf(agendamento, equipe)
+note right of Pendings
+  Um agendamento vira até DOIS
+  encontros: visita no abrigo e
+  reunião na NIB, cada um com
+  frequência própria.
+end note
+Pendings --> Controller : { leaderPendings, memberPendings, visitReportPendings }
+deactivate Pendings
+
+== POST /attendance/register e /register/team ==
+Controller -> Register : registerOwn | registerTeam
+activate Register
+Register -> Repo : findScheduleWithTeam
+note right of Register
+  Sem data de visita nem de
+  reunião = 400.
+  Evento de outra equipe = 403.
+end note
+Register -> Scope : assertBelongs | assertLeads
+Register -> Repo : findOneAttendance(membro, encontro, categoria)
+alt já existe
+  Register -> Repo : save (corrige, não duplica)
+else
+  Register -> Repo : create + save
+end
+note right of Repo
+  O membro entra inteiro, não só
+  pelo id: a resposta declara nome
+  e e-mail, e assim não é preciso
+  reler o registro após gravá-lo.
+end note
+deactivate Register
+
+== GET /attendance/records e /sheets/hierarchical ==
+Controller -> Records : execute(actor, filtros)
+Records -> Scope : allTeamFilter
+note right of Records
+  Sem equipe alguma, devolve página
+  vazia sem tocar no banco: um
+  `IN ()` vazio quebraria a consulta.
+end note
+Records -> Repo : findRecordsPaginated(filtros, equipes)
+
+Controller -> Schedules : listSheetsHierarchical(actor, período)
+Schedules -> Repo : 3 consultas (equipes, agendamentos, frequência)
+Schedules --> Controller : abrigo → equipe → encontro → registros
+
+== GET /attendance/stats ==
+Controller -> Stats : forMember | forTeam
+note right of Stats
+  Pessoal: presença sobre o lançado.
+  Da equipe: lançado sobre o
+  esperado (encontros x membros).
+end note
+
+Controller --> Client : resposta
+deactivate Controller
+
+@enduml

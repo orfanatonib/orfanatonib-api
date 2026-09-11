@@ -4,7 +4,118 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
-## [2.8.0] - 2026-09-11 - GERENCIAMENTO DE FEATURE FLAGS 🎚️
+## [2.9.0] - 2026-09-11 - MÓDULO ATTENDANCE NO PADRÃO 📋
+
+### 🐞 Defeitos corrigidos
+
+- **FIX**: **as datas apareciam um dia antes**. `new Date("2026-09-01")` lê a
+  data como meia-noite **UTC**, e `toLocaleDateString` a exibe no fuso local —
+  em Manaus (UTC-4) o resultado era `31/08/2026`. Afetava o resumo do relatório
+  pendente (backend) e toda data de encontro na tela (`formatDateBR`).
+  Encontrado ao escrever o primeiro teste do módulo
+- **FIX**: `formatDateBR` devolvia a string `"Invalid Date"` na tela para data
+  ilegível — `toLocaleDateString` não lança, então o `try/catch` nunca entrava
+- **FIX**: o controller lia `req.user?.id`, campo que a `JwtStrategy` **nunca**
+  devolve (ela popula `userId`). Os doze endpoints caíam no fallback e
+  decodificavam o token uma segunda vez, a cada requisição
+- **FIX**: `sortBy` entrava na consulta por um ternário que aceitava qualquer
+  texto; agora é restrito ao que o SQL conhece
+- **FIX** (frontend): `getTeamAttendanceOverview` chamava
+  `/attendance/team/:id/overview`, **endpoint que não existe** no backend
+
+### 🔴 Defeitos que só a tela real revelou
+
+Encontrados ao escrever `attendance.ui.spec.ts`, dirigindo a UI de verdade:
+
+- **FIX**: **o lançamento de frequência estava quebrado**. A tela pedia os
+  encontros da equipe com `sortBy=createdAt&sortOrder=desc`, mas o endpoint só
+  aceita período — a API respondia **400** e um `catch {}` mudo virava lista
+  vazia. O botão ficava permanentemente desabilitado com "Nenhum evento
+  disponível para esta equipe". O tipo `ScheduleQuery` afirmava um contrato que
+  o backend nunca teve; virou `SortQuery`, usado só onde a ordenação existe
+- **FIX**: o erro ao carregar os encontros era engolido pelo `catch` vazio; a
+  tela mentia dizendo que a equipe não tinha eventos
+- **FIX**: **a mensagem de sucesso nunca era lida**. Depois de salvar, a tela
+  recarregava a hierarquia ligando o `loading` — o que trocava a tela inteira
+  pelo spinner, desmontava a equipe e levava junto o "Frequência registrada com
+  sucesso". A recarga passou a ser silenciosa
+- **FIX**: o mesmo desvio de fuso das datas ainda estava em **11 pontos** do
+  frontend (`AdminPendingView`, `LeaderPendingView`, `ReportGridView`,
+  `ReportTableView`, `VisitReportDetailsModal`, `VisitReportFormModal`,
+  `PendingAttendancePage`, `AttendanceBell`, `TeamSchedules`, `PendingLeader`,
+  `PendingMember`). A regra virou `formatDayBR` em `src/utils/dates.ts`
+
+### ⚡ Consultas
+
+- **CHANGE**: `findAllPendings` era um método de **278 linhas** com consultas
+  dentro de três laços aninhados — uma de agendamentos por equipe, mais duas de
+  frequência por agendamento, mais uma de relatório por visita. Com admin, que
+  enxerga todas as equipes, isso crescia sem limite. São **quatro consultas
+  fixas**, com teste cobrindo exatamente isso
+- **CHANGE**: a folha hierárquica seguia o mesmo padrão; agora são três
+  consultas
+- **CHANGE**: `AttendanceScopeService` resolve as equipes do ator **uma vez**;
+  antes cada método refazia a pergunta e cada `assert` disparava outras duas
+
+### 🏗️ Estrutura
+
+- **CHANGE**: `attendance-reader.service.ts` (**968 linhas**, o maior arquivo do
+  projeto) dividido em `GetPendingsService`, `GetTeamsService`,
+  `GetSchedulesService`, `GetRecordsService` e `GetStatsService`; o writer virou
+  `RegisterAttendanceService`
+- **ADD**: `AttendanceRepository` — os serviços não tocam mais em TypeORM
+- **ADD**: `constants.ts`, `types.ts`, `mappers/`, `utils/`
+- **CHANGE**: `dto/attendance-response.dto.ts` (494 linhas) decorava **saídas**
+  com `@IsUUID`, `@IsEnum` e `@IsDateString` — validador em DTO de resposta não
+  roda. Ficaram só os tipos; o que entra foi para `attendance-filters.dto.ts`
+- **ADD**: `occurrencesOf(agendamento, equipe)` — a expansão de um agendamento
+  em visita e reunião estava copiada em quatro métodos
+- **CHANGE**: **3 `any` → 0** no backend, **11 → 0** no frontend
+- **REMOVE**: `GET /attendance/leader/shelters-teams-members`, que chamava o
+  mesmo método de `leader/teams/members` e não era consumido por código algum
+
+### 🖥️ Frontend
+
+- **CHANGE**: `api.ts` — parâmetros pelo `params` do axios, não por
+  `URLSearchParams` montado à mão em três funções, cada uma esquecendo um campo
+  diferente
+- **CHANGE**: `getSheltersTeamsMembers` agrupava a hierarquia no cliente a
+  partir da lista plana, enquanto o endpoint que já devolve a árvore ficava sem
+  uso; agora usa o endpoint certo
+- **REMOVE**: `getTeamAttendanceOverview`, `listTeams`, `getLeaderTeamsMembers`
+  e `listShelterSchedules` — nenhuma consumida
+- **REMOVE**: `RegisterTeamAttendance.tsx` (400 linhas), sem nenhum import no
+  projeto; quem registra a frequência da equipe é `TeamMemberAttendance`
+- **ADD**: `attendanceErrorMessage` — `catch (err: any)` seguido de
+  `err?.response?.data?.message` aparecia onze vezes, com fallbacks diferentes
+- **CHANGE**: `AttendanceFiltersQuery` declara `category`, `scheduleId` e
+  `memberName`, que a tela já enviava fora do tipo
+
+### 🧪 Testes e documentação
+
+- **ADD**: 118 testes no backend (7 suítes) — o módulo não tinha **nenhum**.
+  Cobertura: **96.6% stmts / 97% linhas**
+- **ADD**: `orfanatonib-app/e2e/live/attendance.api.spec.ts` (15 cenários) e
+  `attendance.ui.spec.ts` (8 cenários). Suíte ao vivo: **95**; mockada: 38
+- **CHANGE**: o frontend não tem mais teste unitário; o que vale para tela é
+  Playwright contra a pilha real, como a documentação já pedia
+- **CHANGE**: `attendance.ui.spec.ts` **monta os próprios dados** pela API no
+  `beforeAll` (abrigo, equipe, vínculo do membro e visita no passado) e apaga
+  tudo no `afterAll`. A primeira versão pulava quatro cenários em banco vazio —
+  e teste que pula não prova nada
+- **ADD**: `data-testid` nas telas de frequência e de relatórios pendentes; o
+  módulo não tinha **nenhum**
+- **CHANGE**: `ATTENDANCE_API_DOCUMENTATION.md` saiu de `src/` para
+  `docs/modules/attendance/`
+- **ADD**: `docs/modules/attendance/README.md` e
+  `docs/diagrams/flow/attendance/attendance-flow.puml` (+ `.png`)
+- **VERIFICAÇÃO**: baseline de 26 respostas ao vivo capturado antes do refactor
+  e conferido depois — **23 idênticas**, as 3 divergentes sendo o endpoint
+  duplicado removido
+
+---
+
+## [2.8.1] - 2026-09-11 - GERENCIAMENTO DE FEATURE FLAGS 🎚️
 
 - **ADD**: painel administrativo completo no frontend em
   `/adm/feature-flags`, com criação, edição, exclusão, alternância, busca,
