@@ -1,32 +1,37 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { IdeasSectionController } from './ideas-section.controller';
-import { IdeasSectionCreateService } from './services/ideas-section-create.service';
-import { IdeasSectionUpdateService } from './services/ideas-section-update.service';
-import { IdeasSectionGetService } from './services/ideas-section-get.service';
-import { IdeasSectionDeleteService } from './services/ideas-section-delete.service';
-import { IdeasSectionRepository } from './repository/ideas-section.repository';
-import { IdeasSectionEntity } from './entites/ideas-section.entity';
-import { AwsModule } from 'src/infrastructure/aws/aws.module';
-import { MediaModule } from 'src/shared/media/media.module';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { AwsModule } from "src/infrastructure/aws/aws.module";
+import { MediaModule } from "src/shared/media/media.module";
+
+import { IdeasPageEntity } from "../ideas-page/entities/ideas-page.entity";
+import { IdeasSectionEntity } from "./entities/ideas-section.entity";
+import { IdeasSectionController } from "./ideas-section.controller";
+import { IdeasSectionRepository } from "./repositories/ideas-section.repository";
+import { AttachIdeasSectionService } from "./services/attach-ideas-section.service";
+import { CreateIdeasSectionService } from "./services/create-ideas-section.service";
+import { DeleteIdeasSectionService } from "./services/delete-ideas-section.service";
+import { GetIdeasSectionsService } from "./services/get-ideas-sections.service";
+import { IdeasSectionMediaService } from "./services/ideas-section-media.service";
+import { UpdateIdeasSectionService } from "./services/update-ideas-section.service";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([IdeasSectionEntity]),
+    TypeOrmModule.forFeature([IdeasSectionEntity, IdeasPageEntity]),
     AwsModule,
     MediaModule,
   ],
   controllers: [IdeasSectionController],
   providers: [
-    IdeasSectionCreateService,
-    IdeasSectionUpdateService,
-    IdeasSectionGetService,
-    IdeasSectionDeleteService,
+    CreateIdeasSectionService,
+    UpdateIdeasSectionService,
+    AttachIdeasSectionService,
+    GetIdeasSectionsService,
+    DeleteIdeasSectionService,
+    IdeasSectionMediaService,
     IdeasSectionRepository,
   ],
-  exports: [
-    IdeasSectionRepository,
-    IdeasSectionGetService,
-  ],
+  // Contrato de leitura para quem precisa das seções; o repositório não sai
+  // do módulo.
+  exports: [GetIdeasSectionsService],
 })
-export class IdeasSectionModule { }
+export class IdeasSectionModule {}

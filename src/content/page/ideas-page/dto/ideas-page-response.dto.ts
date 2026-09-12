@@ -5,7 +5,7 @@ import {
   MediaType,
   UploadType,
 } from 'src/shared/media/media-item/media-item.entity';
-import { IdeasSectionEntity } from '../../ideas-section/entites/ideas-section.entity';
+import { IdeasSectionEntity } from '../../ideas-section/entities/ideas-section.entity';
 import { IdeasPageEntity } from '../entities/ideas-page.entity';
 
 export class IdeasRouteDto {

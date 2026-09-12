@@ -9,7 +9,7 @@ import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
 import { RouteService } from 'src/infrastructure/route/route.service';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { IdeasPageRepository } from '../repositories/ideas-page.repository';
-import { IdeasSectionEntity } from '../../ideas-section/entites/ideas-section.entity';
+import { IdeasSectionEntity } from '../../ideas-section/entities/ideas-section.entity';
 import { IdeasPageEntity } from '../entities/ideas-page.entity';
 import { RouteEntity } from 'src/infrastructure/route/route-page.entity';
 import { MediaItemEntity } from 'src/shared/media/media-item/media-item.entity';

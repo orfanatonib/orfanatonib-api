@@ -12,7 +12,7 @@ import { IdeasPageRepository } from '../repositories/ideas-page.repository';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
 import { IdeasSectionDto, UpdateIdeasPageDto } from '../dto/update-ideas-page.dto';
 import { IdeasPageEntity } from '../entities/ideas-page.entity';
-import { IdeasSectionEntity } from '../../ideas-section/entites/ideas-section.entity';
+import { IdeasSectionEntity } from '../../ideas-section/entities/ideas-section.entity';
 import { MediaItemEntity, MediaType, UploadType } from 'src/shared/media/media-item/media-item.entity';
 import { MediaTargetType } from 'src/shared/media/media-target-type.enum';
 import { IdeasSectionRepository } from '../repositories/ideas-section.repository';

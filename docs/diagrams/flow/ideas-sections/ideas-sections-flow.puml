@@ -1,0 +1,108 @@
+@startuml ideas-sections-flow
+title Fluxo do módulo Ideas Sections — API Orfanato NIB
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam ParticipantBorderColor #37474F
+
+actor "Membro / Admin" as Client
+participant "IdeasSectionController" as Controller
+participant "parseIdeasSectionPayload\n(utils)" as Payload
+participant "CreateIdeasSectionService" as Create
+participant "UpdateIdeasSectionService" as Update
+participant "AttachIdeasSectionService" as Attach
+participant "GetIdeasSectionsService" as Get
+participant "DeleteIdeasSectionService" as Delete
+participant "IdeasSectionMediaService" as Media
+database "IdeasSectionRepository\n(TypeORM)" as Repo
+participant "AwsS3Service" as S3
+
+== Entrada ==
+Client -> Controller : multipart: sectionData + arquivos
+activate Controller
+Controller -> Controller : JwtAuthGuard (+ AdminRoleGuard na escrita)
+note right
+  As duas leituras eram públicas
+  e expunham e-mail e telefone
+  de quem enviou a ideia.
+end note
+Controller -> Payload : parse + validate do campo de texto
+note right
+  JSON.parse solto estourava 500
+  com a stack no corpo da resposta.
+end note
+Payload --> Controller : DTO validado
+
+== Compartilhar uma ideia ==
+Controller -> Create : execute(dto, arquivos, userId)
+activate Create
+Create -> Media : assertUploadsResolvable(mídias, arquivos)
+note right
+  Recusa antes de gravar: sem isto
+  sobrava uma ideia sem conteúdo.
+end note
+Create -> Repo : createUnattached(dados, userId)
+Repo --> Create : seção sem página
+Create -> Media : replaceAll(seção, mídias, arquivos)
+activate Media
+Media -> S3 : upload dos arquivos
+Media -> Media : title/description padrão\n(colunas NOT NULL)
+Media --> Create : mídias gravadas
+deactivate Media
+Create -> Repo : findById (para a resposta trazer o autor)
+Create --> Controller : IdeasSectionResponseDto
+deactivate Create
+
+== Editar ==
+Controller -> Update : execute(id, dto, arquivos)
+activate Update
+Update -> Repo : findById
+Update -> Repo : updateData(id, dados)
+note right
+  Antes: save sem id — inseria
+  uma seção nova a cada PATCH.
+end note
+Update -> Media : replaceAll (a lista enviada é a verdade)
+Update --> Controller : IdeasSectionResponseDto
+deactivate Update
+
+== Publicar numa página ==
+Controller -> Attach : execute(seção, página, dto, arquivos)
+activate Attach
+Attach -> Repo : findById + findPageById
+alt seção já vinculada
+  Attach --> Controller : 409 ResourceConflictException
+else
+  Attach -> Repo : attachToPage
+  Attach -> Media : replaceAll
+  Attach --> Controller : IdeasSectionResponseDto
+end
+deactivate Attach
+
+== Ler ==
+Controller -> Get : findUnattached()
+activate Get
+Get -> Repo : seções sem página
+Get -> Media : findBySections(todas) — uma consulta só
+Get --> Controller : lista de DTOs
+deactivate Get
+
+== Remover ==
+Controller -> Delete : execute(id)
+activate Delete
+Delete -> Repo : findById (com a relação page)
+alt seção publicada
+  Delete --> Controller : 409 ResourceConflictException
+  note right
+    A trava existia, mas a relação
+    não era carregada: nunca disparava.
+  end note
+else
+  Delete -> Media : removeAll (apaga do bucket também)
+  Delete -> Repo : deleteById
+end
+deactivate Delete
+deactivate Controller
+
+@enduml

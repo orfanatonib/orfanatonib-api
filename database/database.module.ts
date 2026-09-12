@@ -17,7 +17,7 @@ import { ContactEntity } from 'src/communication/contact/contact.entity';
 import { EventEntity } from 'src/content/event/entities/event.entity';
 import { CommentEntity } from 'src/communication/comment/entity/comment.entity';
 import { DocumentEntity } from 'src/content/document/entities/document.entity';
-import { IdeasSectionEntity } from 'src/content/page/ideas-section/entites/ideas-section.entity';
+import { IdeasSectionEntity } from 'src/content/page/ideas-section/entities/ideas-section.entity';
 import { IdeasPageEntity } from 'src/content/page/ideas-page/entities/ideas-page.entity';
 import { InformativeEntity } from 'src/content/informative/entities/informative.entity';
 import { SiteFeedbackEntity } from 'src/communication/feedback/entity/site-feedback.entity';

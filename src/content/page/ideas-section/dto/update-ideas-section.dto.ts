@@ -1,28 +1,8 @@
-import {
-  IsArray,
-  IsBoolean,
-  IsOptional,
-  IsString,
-  ValidateNested,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { IdeasSectionMediaItemDto } from './ideas-section-media-item.dto';
+import { CreateIdeasSectionDto } from "./create-ideas-section.dto";
 
-export class UpdateIdeasSectionDto {
-
-  @IsString({ message: 'O campo "title" deve ser uma string.' })
-  title: string;
-
-  @IsString({ message: 'O campo "description" deve ser uma string.' })
-  description: string;
-
-  @IsOptional()
-  @IsBoolean({ message: 'O campo "public" deve ser booleano.' })
-  @Type(() => Boolean)
-  public: boolean = false;
-
-  @IsArray({ message: 'O campo "medias" deve ser um array.' })
-  @ValidateNested({ each: true })
-  @Type(() => IdeasSectionMediaItemDto)
-  medias: IdeasSectionMediaItemDto[];
-}
+/**
+ * A atualização exige a seção inteira: o formulário sempre reenvia título,
+ * descrição e a lista completa de mídias, e a lista é o que decide o que fica
+ * e o que é removido.
+ */
+export class UpdateIdeasSectionDto extends CreateIdeasSectionDto {}

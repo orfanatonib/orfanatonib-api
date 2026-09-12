@@ -14,7 +14,7 @@ import { MediaTargetType } from 'src/shared/media/media-target-type.enum';
 import { CreateIdeasPageDto } from '../dto/create-ideas-page.dto';
 import { IdeasPageResponseDto } from '../dto/ideas-page-response.dto';
 import { IdeasPageEntity } from '../entities/ideas-page.entity';
-import { IdeasSectionEntity } from '../../ideas-section/entites/ideas-section.entity';
+import { IdeasSectionEntity } from '../../ideas-section/entities/ideas-section.entity';
 
 @Injectable()
 export class IdeasPageCreateService {

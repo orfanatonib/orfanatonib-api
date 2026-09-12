@@ -1,6 +1,6 @@
 import { BaseEntity } from "src/shared/entity/base.entity";
 import { Column, Entity, JoinColumn, OneToMany, OneToOne } from "typeorm";
-import { IdeasSectionEntity } from "../../ideas-section/entites/ideas-section.entity";
+import { IdeasSectionEntity } from "../../ideas-section/entities/ideas-section.entity";
 import { RouteEntity } from "src/infrastructure/route/route-page.entity";
 
 @Entity({ name: 'ideas_pages' })

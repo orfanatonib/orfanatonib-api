@@ -4,6 +4,93 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [2.10.0] - 2026-09-11 - MÓDULO IDEAS SECTIONS NO PADRÃO 💡
+
+### 🔴 Compartilhar uma ideia não funcionava
+
+- **FIX**: **toda ideia com mídia falhava**. `media_items.title` e
+  `.description` são `NOT NULL` sem default, mas o payload os declara
+  opcionais: o insert morria com `Field 'description' doesn't have a default
+  value`, devolvido ao usuário como um 400 sem sentido. Como a tela de envio
+  exige ao menos uma mídia, **nenhuma ideia podia ser compartilhada**
+- **FIX**: a seção já estava gravada quando a mídia falhava, e sobrava uma
+  ideia sem conteúdo que ninguém removia. Os uploads passam a ser conferidos
+  **antes** de qualquer escrita, e uma falha posterior desfaz a seção
+
+### 🐞 Outros defeitos
+
+- **FIX**: **cada `PATCH` criava uma seção nova**. `upsertSection` montava um
+  objeto **sem `id`** e chamava `save`, que o TypeORM trata como inserção: a
+  original ficava órfã no banco e o cliente recebia outro id. Conferido contra
+  o MySQL real antes e depois
+- **FIX**: `GET /ideas-sections` e `GET /ideas-sections/:id` **não tinham
+  guard** e devolviam nome, e-mail e telefone de quem enviou a ideia a
+  qualquer visitante anônimo. Toda a rota passou a exigir autenticação; a
+  escrita continua restrita a admin, e o envio a qualquer autenticado
+- **FIX**: a trava que impede remover uma seção já publicada **nunca
+  disparava** — a seção era lida sem a relação `page`, então o campo vinha
+  sempre indefinido
+- **FIX**: `JSON.parse` do campo multipart estourava `SyntaxError` e o filtro
+  global respondia **500 com a stack trace no corpo**; agora é 400 com os
+  campos que não passaram
+- **FIX**: a resposta da criação trazia `user: { name: "" }` — a seção
+  recém-salva carrega o autor só como `{ id }`
+- **FIX**: id fora do formato UUID respondia 404 em vez de 400 (sem
+  `ParseUUIDPipe` em rota alguma)
+
+### 🏗️ Estrutura
+
+- **CHANGE**: `IdeasSectionRepository` **estendia** `Repository<Entity>`,
+  entregando `find`, `save`, `merge` e `createQueryBuilder` a qualquer serviço
+  que a injetasse — e foi assim que a regra de atualização acabou espalhada
+  por três serviços. Agora encapsula o TypeORM
+- **CHANGE**: `ideas-section-update.service.ts` (**390 linhas**) virou
+  `UpdateIdeasSectionService` e `AttachIdeasSectionService`; `addMedia` e
+  `upsertMedia`, quase idênticos, viraram `IdeasSectionMediaService`
+- **ADD**: `constants.ts`, `types.ts`, `mappers/`, `utils/`
+- **CHANGE**: **24 exceções cruas do Nest → 0**; o módulo passou a usar
+  `RuleException`, `ResourceNotFoundException` e `ResourceConflictException`
+- **CHANGE**: **7 `any` → 0** no backend
+- **FIX**: a pasta da entidade se chamava `entites/` (com o typo); renomeada
+  para `entities/`, com os 7 imports do projeto corrigidos
+- **REMOVE**: `findAllOrfaSections`, cópia literal de `findAllOrphanSections`;
+  e `validateFiles` do serviço de criação, que nunca foi chamado
+- **CHANGE**: o `normalized` calculado em duas rotas de atualização e **nunca
+  usado** saiu junto
+
+### 🖥️ Frontend
+
+- **CHANGE**: os três editores de ideia montavam o multipart cada um do seu
+  jeito — um nomeava o campo do arquivo por índice e extensão, outro por
+  contador; um fixava `public: true`; só um preservava o `id` das mídias, de
+  modo que editar pelos outros apagava e recriava tudo no bucket. Virou
+  `buildIdeasSectionFormData`
+- **CHANGE**: `api.post`/`patch` cru em três componentes passou para
+  `features/ideas-sections/api.ts`; `updateIdeasSection` virou
+  `attachIdeasSectionToPage`, porque a chamada **vincula** a seção
+- **ADD**: `ideasSectionErrorMessage` — os quatro `catch {}` descartavam a
+  explicação da API ("Arquivo ausente para a mídia X" virava "algo deu errado")
+- **ADD**: `constants.ts` no padrão do `CLAUDE.md`; rótulos e ícones de mídia
+  saíram dos `switch` em `utils.ts`
+- **CHANGE**: `MediaItem.mediaType` do módulo não declara mais `audio`, que a
+  API recusa e a tela nunca ofereceu
+- **REMOVE**: `UpdateSectionPayload`, tipo sem nenhum uso
+
+### 🧪 Testes e documentação
+
+- **ADD**: 87 testes no backend (6 suítes) — o módulo não tinha **nenhum**.
+  Cobertura: **98.7% stmts / 98.6% linhas**
+- **ADD**: `ideas-sections.api.spec.ts` (16 cenários) e
+  `ideas-sections.ui.spec.ts` (6 cenários, inclusive um membro enviando a
+  ideia pela tela — o caminho que estava quebrado)
+- **ADD**: `data-testid` nas telas de ideias; não havia nenhum
+- **ADD**: `docs/modules/ideas-sections/README.md` e
+  `docs/diagrams/flow/ideas-sections/ideas-sections-flow.puml` (+ `.png`)
+- **VERIFICAÇÃO**: baseline ao vivo capturado antes e depois; as divergências
+  são todas deliberadas e estão listadas acima
+
+---
+
 ## [2.9.0] - 2026-09-11 - MÓDULO ATTENDANCE NO PADRÃO 📋
 
 ### 🐞 Defeitos corrigidos
