@@ -1,6 +1,5 @@
 import { forwardRef, Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { DataSource } from "typeorm";
 import { MeditationController } from "./meditation.controller";
 import { MeditationRepository } from "./meditation.repository";
 import { MeditationEntity } from "./entities/meditation.entity";
@@ -20,23 +19,12 @@ import { GetMeditationService } from "./services/get-meditation.service";
   ],
   controllers: [MeditationController],
   providers: [
+    MeditationRepository,
     CreateMeditationService,
     UpdateMeditationService,
     DeleteMeditationService,
     GetMeditationService,
-    {
-      provide: "MeditationRepository",
-      useFactory: (dataSource: DataSource) =>
-        new MeditationRepository(dataSource),
-      inject: [DataSource],
-    },
-    {
-      provide: MeditationRepository,
-      useFactory: (dataSource: DataSource) =>
-        new MeditationRepository(dataSource),
-      inject: [DataSource],
-    },
   ],
-  exports: [GetMeditationService],
+  exports: [MeditationRepository, GetMeditationService],
 })
 export class MeditationModule {}

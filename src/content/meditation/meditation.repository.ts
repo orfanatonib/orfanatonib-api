@@ -1,24 +1,53 @@
 import { Injectable } from "@nestjs/common";
-import { DataSource, Repository } from "typeorm";
+import { InjectRepository } from "@nestjs/typeorm";
+import { ILike, Repository } from "typeorm";
 import { MeditationEntity } from "./entities/meditation.entity";
+import { QueryMeditationDto } from "./dto/query-meditation.dto";
 
 @Injectable()
-export class MeditationRepository extends Repository<MeditationEntity> {
-  constructor(private readonly dataSource: DataSource) {
-    super(MeditationEntity, dataSource.createEntityManager());
-  }
+export class MeditationRepository {
+  constructor(
+    @InjectRepository(MeditationEntity)
+    private readonly repo: Repository<MeditationEntity>,
+  ) {}
 
   async findOneWithRelations(id: string): Promise<MeditationEntity | null> {
-    return this.findOne({
+    return this.repo.findOne({
       where: { id },
       relations: ["days"],
     });
   }
 
-  async findAllWithRelations(): Promise<MeditationEntity[]> {
-    return this.find({
+  async findAllWithRelations(query?: QueryMeditationDto): Promise<MeditationEntity[]> {
+    const search = query?.search?.trim();
+    if (search) {
+      return this.repo.find({
+        where: { topic: ILike(`%${search}%`) },
+        relations: ["days"],
+        order: { startDate: "ASC" },
+      });
+    }
+
+    return this.repo.find({
       relations: ["days"],
       order: { startDate: "ASC" },
     });
+  }
+
+  create(data: Partial<MeditationEntity>): MeditationEntity {
+    return this.repo.create(data);
+  }
+
+  async save(entity: Partial<MeditationEntity>): Promise<MeditationEntity> {
+    const created = this.repo.create(entity);
+    return this.repo.save(created);
+  }
+
+  async remove(entity: MeditationEntity): Promise<MeditationEntity> {
+    return this.repo.remove(entity);
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.repo.delete(id);
   }
 }

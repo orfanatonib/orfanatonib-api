@@ -13,10 +13,11 @@ import {
   Logger,
   UseGuards,
   HttpException,
+  Query,
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { plainToInstance } from "class-transformer";
-import { validateOrReject, validateSync } from "class-validator";
+import { validateOrReject } from "class-validator";
 
 import { CreateMeditationService } from "./services/create-meditation.service";
 import { UpdateMeditationService } from "./services/update-meditation.service";
@@ -26,7 +27,8 @@ import { GetMeditationService } from "./services/get-meditation.service";
 import { CreateMeditationDto } from "./dto/create-meditation.dto";
 import { UpdateMeditationDto } from "./dto/update-meditation.dto";
 import { MeditationEntity } from "./entities/meditation.entity";
-import { WeekMeditationResponseDto } from "./dto/meditation-response-dto";
+import { WeekMeditationResponseDto } from "./dto/meditation-response.dto";
+import { QueryMeditationDto } from "./dto/query-meditation.dto";
 
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
@@ -81,8 +83,10 @@ export class MeditationController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  async findAll(): Promise<WeekMeditationResponseDto[]> {
-    return this.getService.findAll();
+  async findAll(
+    @Query() query: QueryMeditationDto,
+  ): Promise<WeekMeditationResponseDto[]> {
+    return this.getService.findAll(query);
   }
 
   @Get("/this-week")
@@ -102,45 +106,45 @@ export class MeditationController {
   @UseInterceptors(FileInterceptor("file"))
   async update(
     @Param("id") id: string,
-    @Body("meditationData") rawMeditationData: string,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile() file: Express.Multer.File,
+    @Body("meditationData") meditationDataRaw: string,
   ): Promise<MeditationEntity> {
-    let dto: UpdateMeditationDto;
     try {
-      const parsed = JSON.parse(rawMeditationData);
-      dto = plainToInstance(UpdateMeditationDto, parsed);
-    } catch (err) {
-      this.logger.error("Invalid JSON for meditation", err.stack);
-      throw new BadRequestException("Invalid JSON in meditationData field");
-    }
+      const parsed = JSON.parse(meditationDataRaw);
+      const dto = plainToInstance(UpdateMeditationDto, parsed);
+      await validateOrReject(dto, {
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      });
 
-    const errors = validateSync(dto, {
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    });
-    if (errors.length > 0) {
-      const message = errors
-        .map((err) => Object.values(err.constraints ?? {}).join(", "))
-        .join(" | ");
+      this.logger.log(`Updating meditation ID=${id}`);
+      const result = await this.updateService.update(id, dto, file);
+      this.logger.log(`Meditation updated successfully: ${result.id}`);
+      return result;
+    } catch (error) {
+      if (
+        error instanceof HttpException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      this.logger.error(`Error updating meditation ID=${id}`, error.stack);
+      const message = Array.isArray(error)
+        ? error
+            .map((e) => Object.values(e.constraints || {}))
+            .flat()
+            .join("; ")
+        : error?.message || "Error updating meditation.";
       throw new BadRequestException(message);
     }
-
-    this.logger.log(`Updating meditation: ${id}`);
-    const result = await this.updateService.update(
-      id,
-      { ...dto, isLocalFile: !!file },
-      file,
-    );
-    this.logger.log(`Meditation updated successfully: ${id}`);
-    return result;
   }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(":id")
   @HttpCode(204)
   async remove(@Param("id") id: string): Promise<void> {
-    this.logger.log(`Deleting meditation: ${id}`);
+    this.logger.log(`Deleting meditation ID=${id}`);
     await this.deleteService.remove(id);
-    this.logger.log(`Meditation deleted successfully: ${id}`);
+    this.logger.log(`Meditation deleted successfully: ID=${id}`);
   }
 }

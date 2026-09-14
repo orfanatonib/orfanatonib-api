@@ -8,6 +8,7 @@ import {
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { DocumentRepository } from "../document.repository";
 import { DocumentDto } from "../dto/document-response.dto";
+import { QueryDocumentDto } from "../dto/query-document.dto";
 
 @Injectable()
 export class GetDocumentService {
@@ -19,9 +20,9 @@ export class GetDocumentService {
     private readonly mediaItemProcessor: MediaItemProcessor,
   ) {}
 
-  async findAll(): Promise<DocumentDto[]> {
+  async findAll(query?: QueryDocumentDto): Promise<DocumentDto[]> {
     try {
-      const documents = await this.documentRepo.findAllSorted();
+      const documents = await this.documentRepo.findAllSorted(query);
       if (!documents.length) return [];
 
       const ids = documents.map((d) => d.id);

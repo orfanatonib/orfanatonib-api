@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { DataSource } from "typeorm";
 
 import { InformativeEntity } from "./entities/informative.entity";
 import { InformativeRepository } from "./informative.repository";
@@ -19,20 +18,16 @@ import { MeditationModule } from "src/content/meditation/meditation.module";
   imports: [TypeOrmModule.forFeature([InformativeEntity]), MeditationModule],
   controllers: [InformativeController],
   providers: [
+    InformativeRepository,
     CreateInformativeService,
     GetInformativeService,
     UpdateInformativeService,
     DeleteInformativeService,
     RouteService,
-    {
-      provide: InformativeRepository,
-      useFactory: (dataSource: DataSource) =>
-        new InformativeRepository(dataSource),
-      inject: [DataSource],
-    },
     RouteRepository,
   ],
   exports: [
+    InformativeRepository,
     CreateInformativeService,
     GetInformativeService,
     UpdateInformativeService,

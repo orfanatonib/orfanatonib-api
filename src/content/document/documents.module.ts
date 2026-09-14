@@ -9,7 +9,6 @@ import { UpdateDocumentService } from "./services/update-document.service";
 import { GetDocumentService } from "./services/get-document.service";
 import { DeleteDocumentService } from "./services/delete-document.service";
 import { DocumentRepository } from "./document.repository";
-import { DataSource } from "typeorm";
 import { RouteService } from "src/infrastructure/route/route.service";
 import { RouteRepository } from "src/infrastructure/route/route-page.repository";
 import { MeditationModule } from "src/content/meditation/meditation.module";
@@ -22,20 +21,16 @@ import { MeditationModule } from "src/content/meditation/meditation.module";
   ],
   controllers: [DocumentsController],
   providers: [
+    DocumentRepository,
     CreateDocumentService,
     UpdateDocumentService,
     GetDocumentService,
     RouteService,
     DeleteDocumentService,
-    {
-      provide: DocumentRepository,
-      useFactory: (dataSource: DataSource) =>
-        new DocumentRepository(dataSource),
-      inject: [DataSource],
-    },
     RouteRepository,
   ],
   exports: [
+    DocumentRepository,
     CreateDocumentService,
     UpdateDocumentService,
     GetDocumentService,

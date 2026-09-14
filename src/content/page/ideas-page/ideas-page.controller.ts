@@ -21,10 +21,10 @@ import { CreateIdeasPageDto } from "./dto/create-ideas-page.dto";
 import { IdeasPageResponseDto } from "./dto/ideas-page-response.dto";
 import { UpdateIdeasPageDto } from "./dto/update-ideas-page.dto";
 
-import { IdeasPageCreateService } from "./services/ideas-page-create.service";
-import { IdeasPageRemoveService } from "./services/ideas-page-remove.service";
-import { IdeasPageGetService } from "./services/ideas-page-get.service";
-import { IdeasPageUpdateService } from "./services/ideas-page-update.service";
+import { CreateIdeasPageService } from "./services/create-ideas-page.service";
+import { DeleteIdeasPageService } from "./services/delete-ideas-page.service";
+import { GetIdeasPageService } from "./services/get-ideas-page.service";
+import { UpdateIdeasPageService } from "./services/update-ideas-page.service";
 
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
@@ -34,10 +34,10 @@ export class IdeasPageController {
   private readonly logger = new Logger(IdeasPageController.name);
 
   constructor(
-    private readonly ideasPageCreateService: IdeasPageCreateService,
-    private readonly ideasPageRemoveService: IdeasPageRemoveService,
-    private readonly ideasPageGetService: IdeasPageGetService,
-    private readonly updateIdeasPageService: IdeasPageUpdateService,
+    private readonly createService: CreateIdeasPageService,
+    private readonly deleteService: DeleteIdeasPageService,
+    private readonly getService: GetIdeasPageService,
+    private readonly updateService: UpdateIdeasPageService,
   ) {}
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
@@ -65,7 +65,7 @@ export class IdeasPageController {
       });
 
       this.logger.log("Creating new ideas page");
-      const result = await this.ideasPageCreateService.createIdeasPage(
+      const result = await this.createService.createIdeasPage(
         dto,
         filesDict,
       );
@@ -110,7 +110,7 @@ export class IdeasPageController {
       files.forEach((file) => (filesDict[file.fieldname] = file));
 
       this.logger.log(`Updating ideas page: ${id}`);
-      const result = await this.updateIdeasPageService.updateIdeasPage(
+      const result = await this.updateService.updateIdeasPage(
         id,
         dto,
         filesDict,
@@ -128,7 +128,7 @@ export class IdeasPageController {
   async remove(@Param("id") id: string): Promise<void> {
     try {
       this.logger.log(`Deleting ideas page: ${id}`);
-      await this.ideasPageRemoveService.removeIdeasPage(id);
+      await this.deleteService.removeIdeasPage(id);
       this.logger.log(`Ideas page deleted successfully: ${id}`);
     } catch (error) {
       this.logger.error("Error removing ideas page", error);
@@ -140,11 +140,11 @@ export class IdeasPageController {
 
   @Get()
   async findAll(): Promise<IdeasPageResponseDto[]> {
-    return this.ideasPageGetService.findAllPagesWithMedia();
+    return this.getService.findAllPagesWithMedia();
   }
 
   @Get(":id")
   async findOne(@Param("id") id: string): Promise<IdeasPageResponseDto> {
-    return this.ideasPageGetService.findPageWithMedia(id);
+    return this.getService.findPageWithMedia(id);
   }
 }

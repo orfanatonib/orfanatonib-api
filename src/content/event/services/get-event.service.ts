@@ -8,10 +8,11 @@ import { Request } from "express";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
-import { EventResponseDto } from "../dto/event-response-dto";
+import { EventResponseDto } from "../dto/event-response.dto";
 import { EventRepository } from "../event.repository";
 import { AuthContextService } from "src/core/auth/services/auth-context.service";
 import { EventAudience } from "../entities/event.entity";
+import { QueryEventDto } from "../dto/query-event.dto";
 
 @Injectable()
 export class GetEventService {
@@ -28,7 +29,7 @@ export class GetEventService {
     return { role: p?.role?.toLowerCase() };
   }
 
-  async findAll(req: Request): Promise<EventResponseDto[]> {
+  async findAll(req: Request, query?: QueryEventDto): Promise<EventResponseDto[]> {
     const ctx = await this.getCtx(req);
 
     let allowed: string[] = [EventAudience.ALL];
@@ -47,7 +48,7 @@ export class GetEventService {
         EventAudience.LEADERS,
       ];
 
-    const events = await this.eventRepo.findAll(allowed);
+    const events = await this.eventRepo.findAll(allowed, query);
 
     if (!events.length) {
       return [];

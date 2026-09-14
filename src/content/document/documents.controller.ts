@@ -13,6 +13,7 @@ import {
   Logger,
   UseGuards,
   HttpException,
+  Query,
 } from "@nestjs/common";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
 import { plainToInstance } from "class-transformer";
@@ -20,6 +21,7 @@ import { validateOrReject } from "class-validator";
 
 import { CreateDocumentDto } from "./dto/create-document.dto";
 import { UpdateDocumentDto } from "./dto/update-document.dto";
+import { QueryDocumentDto } from "./dto/query-document.dto";
 
 import { CreateDocumentService } from "./services/create-document.service";
 import { UpdateDocumentService } from "./services/update-document.service";
@@ -75,8 +77,8 @@ export class DocumentsController {
   }
 
   @Get()
-  async findAll() {
-    return this.getService.findAll();
+  async findAll(@Query() query: QueryDocumentDto) {
+    return this.getService.findAll(query);
   }
 
   @Get(":id")

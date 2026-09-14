@@ -2,6 +2,7 @@ import { MediaType } from "src/shared/media/media-item/media-item.entity";
 
 /** Multipart field carrying the JSON payload of the page. */
 export const VISIT_MATERIAL_PAYLOAD_FIELD = "visitMaterialsPageData";
+export const VISIT_MATERIAL_NON_BLANK_PATTERN = /\S/;
 
 /** Route metadata generated for every visit material page. */
 export const VISIT_MATERIAL_ROUTE_PATH_PREFIX = "materiais_visita_";
@@ -24,7 +25,11 @@ export const VISIT_MATERIAL_MESSAGES = {
   PAYLOAD_REQUIRED: `O campo "${VISIT_MATERIAL_PAYLOAD_FIELD}" é obrigatório.`,
   INVALID_PAYLOAD: "Dados inválidos na requisição.",
   PAGE_NOT_FOUND: "Página de materiais não encontrada.",
+  MEDIA_NOT_FOUND: "Mídia da página de materiais não encontrada.",
   ROUTE_NOT_FOUND: "Rota da página de materiais não encontrada.",
+  ID_MISMATCH: "O id do corpo deve ser igual ao id da rota.",
+  LINK_URL_REQUIRED: (title: string): string =>
+    `URL ausente para o item de mídia "${title}".`,
   CREATE_FAILED: "Erro ao criar a página de materiais.",
   UPDATE_FAILED: "Erro ao atualizar a página de materiais.",
   DELETE_FAILED: "Erro ao remover a página de materiais.",

@@ -14,7 +14,7 @@ import {
   EventType,
 } from "src/content/event/entities/event.entity";
 import { TeamsService } from "src/shelter/team/services/teams.service";
-import { CreateEventService } from "src/content/event/services/create-event-service";
+import { CreateEventService } from "src/content/event/services/create-event.service";
 
 @Injectable()
 export class CreateShelterScheduleService {

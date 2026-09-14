@@ -8,7 +8,7 @@ import {
 import { AttachIdeasSectionService } from "./attach-ideas-section.service";
 import { CreateIdeasSectionService } from "./create-ideas-section.service";
 import { DeleteIdeasSectionService } from "./delete-ideas-section.service";
-import { GetIdeasSectionsService } from "./get-ideas-sections.service";
+import { GetIdeasSectionService } from "./get-ideas-section.service";
 import { IdeasSectionMediaService } from "./ideas-section-media.service";
 import { UpdateIdeasSectionService } from "./update-ideas-section.service";
 import { IdeasSectionRepository } from "../repositories/ideas-section.repository";
@@ -43,7 +43,7 @@ describe("serviços de ideias compartilhadas", () => {
         CreateIdeasSectionService,
         UpdateIdeasSectionService,
         AttachIdeasSectionService,
-        GetIdeasSectionsService,
+        GetIdeasSectionService,
         DeleteIdeasSectionService,
         {
           provide: IdeasSectionRepository,
@@ -292,10 +292,10 @@ describe("serviços de ideias compartilhadas", () => {
   });
 
   describe("leitura", () => {
-    let service: GetIdeasSectionsService;
+    let service: GetIdeasSectionService;
 
     beforeEach(() => {
-      service = moduleRef.get(GetIdeasSectionsService);
+      service = moduleRef.get(GetIdeasSectionService);
     });
 
     it("404 quando a seção não existe", async () => {

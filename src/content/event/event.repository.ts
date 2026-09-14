@@ -1,19 +1,41 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { Repository, DataSource, In } from "typeorm";
+import { InjectRepository } from "@nestjs/typeorm";
+import { ILike, In, Repository } from "typeorm";
 import { EventEntity } from "./entities/event.entity";
+import { QueryEventDto } from "./dto/query-event.dto";
 
 @Injectable()
 export class EventRepository {
-  private readonly repo: Repository<EventEntity>;
+  constructor(
+    @InjectRepository(EventEntity)
+    private readonly repo: Repository<EventEntity>,
+  ) {}
 
-  constructor(private readonly ds: DataSource) {
-    this.repo = ds.getRepository(EventEntity);
-  }
+  async findAll(audiences?: string[], query?: QueryEventDto): Promise<EventEntity[]> {
+    const qb = this.repo.createQueryBuilder("event");
 
-  async findAll(audiences?: string[]): Promise<EventEntity[]> {
-    const where =
-      audiences && audiences.length > 0 ? { audience: In(audiences) } : {};
-    return this.repo.find({ where, order: { date: "ASC" } as any });
+    if (audiences && audiences.length > 0) {
+      qb.andWhere("event.audience IN (:...audiences)", { audiences });
+    }
+
+    const search = query?.search?.trim();
+    if (search) {
+      qb.andWhere("(event.title ILIKE :search OR event.description ILIKE :search OR event.location ILIKE :search)", {
+        search: `%${search}%`,
+      });
+    }
+
+    if (query?.startDate) {
+      qb.andWhere("event.date >= :startDate", { startDate: query.startDate });
+    }
+
+    if (query?.endDate) {
+      qb.andWhere("event.date <= :endDate", { endDate: query.endDate });
+    }
+
+    qb.orderBy("event.date", "ASC");
+
+    return qb.getMany();
   }
 
   async findById(id: string): Promise<EventEntity | null> {

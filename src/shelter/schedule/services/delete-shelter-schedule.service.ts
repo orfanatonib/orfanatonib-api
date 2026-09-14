@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { ShelterScheduleRepository } from "../shelter-schedule.repository";
-import { DeleteEventService } from "src/content/event/services/delete-event-service";
+import { DeleteEventService } from "src/content/event/services/delete-event.service";
 import { EventRepository } from "src/content/event/event.repository";
 
 @Injectable()

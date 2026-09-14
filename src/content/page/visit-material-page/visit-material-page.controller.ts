@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -68,6 +70,7 @@ export class VisitMaterialsPageController {
   }
 
   @Delete(":id")
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(AdminRoleGuard)
   async remove(@Param("id", new ParseUUIDPipe()) id: string): Promise<void> {
     await this.deleteService.execute(id);

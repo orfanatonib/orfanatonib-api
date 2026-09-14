@@ -1,5 +1,8 @@
 import { Test } from "@nestjs/testing";
-import { RuleException } from "src/common/exceptions";
+import {
+  ResourceNotFoundException,
+  RuleException,
+} from "src/common/exceptions";
 import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
@@ -165,6 +168,20 @@ describe("VisitMaterialMediaService", () => {
         ),
       ).not.toThrow();
     });
+
+    it("rejects a link without a URL before opening a create transaction", () => {
+      expect(() =>
+        service.toPolymorphicItems(
+          {
+            videos: [buildLinkMediaDto({ url: undefined })],
+            documents: [],
+            images: [],
+            audios: [],
+          },
+          {},
+        ),
+      ).toThrow(RuleException);
+    });
   });
 
   describe("removeMissing", () => {
@@ -299,6 +316,7 @@ describe("VisitMaterialMediaService", () => {
       mediaItemProcessor.findMediaItemById.mockResolvedValue(
         buildMediaEntity({
           id: "media-id",
+          mediaType: MediaType.DOCUMENT,
           isLocalFile: true,
           url: "https://bucket.test/old.pdf",
         }),
@@ -320,7 +338,11 @@ describe("VisitMaterialMediaService", () => {
 
     it("does not delete anything when the stored item was already a link", async () => {
       mediaItemProcessor.findMediaItemById.mockResolvedValue(
-        buildMediaEntity({ id: "media-id", isLocalFile: false }),
+        buildMediaEntity({
+          id: "media-id",
+          mediaType: MediaType.DOCUMENT,
+          isLocalFile: false,
+        }),
       );
 
       await service.upsert(
@@ -375,27 +397,36 @@ describe("VisitMaterialMediaService", () => {
       expect(mediaItemProcessor.upsertMediaItem).toHaveBeenCalled();
     });
 
-    it("does not look the item up when the payload carries no id", async () => {
-      await service.upsert(
-        buildLinkMediaDto({ id: undefined }),
-        "page-id",
-        MediaType.VIDEO,
-        {},
-      );
-
+    it("rejects an update without a stored media id", async () => {
+      await expect(
+        service.upsert(
+          buildLinkMediaDto({ id: undefined }),
+          "page-id",
+          MediaType.VIDEO,
+          {},
+        ),
+      ).rejects.toBeInstanceOf(ResourceNotFoundException);
       expect(mediaItemProcessor.findMediaItemById).not.toHaveBeenCalled();
-      expect(mediaItemProcessor.upsertMediaItem).toHaveBeenCalledWith(
-        undefined,
-        expect.any(MediaItemEntity),
-      );
+      expect(mediaItemProcessor.upsertMediaItem).not.toHaveBeenCalled();
     });
 
-    it("treats an upload without a fieldKey as a link, as the previous code did", async () => {
+    it("keeps a stored upload when no replacement file is sent", async () => {
+      mediaItemProcessor.findMediaItemById.mockResolvedValue(
+        buildMediaEntity({
+          id: "media-id",
+          mediaType: MediaType.DOCUMENT,
+          uploadType: UploadType.UPLOAD,
+          isLocalFile: true,
+          url: "https://bucket.test/stored.pdf",
+          originalName: "stored.pdf",
+          size: 123,
+        }),
+      );
+
       const media = await service.upsert(
         buildUploadMediaDto({
           id: "media-id",
           fieldKey: undefined,
-          url: "https://link.test/a",
         }),
         "page-id",
         MediaType.DOCUMENT,
@@ -403,21 +434,42 @@ describe("VisitMaterialMediaService", () => {
       );
 
       expect(s3.upload).not.toHaveBeenCalled();
+      expect(s3.delete).not.toHaveBeenCalled();
       expect(media).toMatchObject({
-        url: "https://link.test/a",
-        isLocalFile: false,
+        uploadType: UploadType.UPLOAD,
+        url: "https://bucket.test/stored.pdf",
+        originalName: "stored.pdf",
+        size: 123,
+        isLocalFile: true,
       });
+    });
+
+    it("rejects a media id owned by another page", async () => {
+      mediaItemProcessor.findMediaItemById.mockResolvedValue(
+        buildMediaEntity({ id: "media-id", targetId: "another-page" }),
+      );
+
+      await expect(
+        service.upsert(
+          buildLinkMediaDto({ id: "media-id" }),
+          "page-id",
+          MediaType.VIDEO,
+          {},
+        ),
+      ).rejects.toBeInstanceOf(ResourceNotFoundException);
+
+      expect(mediaItemProcessor.upsertMediaItem).not.toHaveBeenCalled();
     });
   });
 
   describe("link fallbacks", () => {
-    it("keeps the values already built when the payload omits the optional fields", async () => {
+    it("keeps optional values already built when the payload omits them", async () => {
       const input = buildLinkMediaDto({
         title: undefined,
         description: undefined,
         uploadType: undefined as unknown as UploadType,
         platformType: undefined,
-        url: undefined,
+        url: "https://youtube.test/watch",
         originalName: undefined,
         size: undefined,
       });
@@ -429,7 +481,7 @@ describe("VisitMaterialMediaService", () => {
           description: "Descrição base",
           uploadType: UploadType.LINK,
           platformType: PlatformType.YOUTUBE,
-          url: "https://base.test/a",
+          url: "https://youtube.test/watch",
           originalName: "base.mp4",
           size: 10,
         }),
@@ -442,7 +494,7 @@ describe("VisitMaterialMediaService", () => {
         description: "Descrição base",
         uploadType: UploadType.LINK,
         platformType: PlatformType.YOUTUBE,
-        url: "https://base.test/a",
+        url: "https://youtube.test/watch",
         originalName: "base.mp4",
         size: 10,
         isLocalFile: false,

@@ -9,9 +9,9 @@ import { UpdateShelterScheduleDto } from "../dto/update-shelter-schedule.dto";
 import { ShelterScheduleEntity } from "../entities/shelter-schedule.entity";
 import { TeamsService } from "src/shelter/team/services/teams.service";
 import { EventRepository } from "src/content/event/event.repository";
-import { CreateEventService } from "src/content/event/services/create-event-service";
-import { UpdateEventService } from "src/content/event/services/update-event-service";
-import { DeleteEventService } from "src/content/event/services/delete-event-service";
+import { CreateEventService } from "src/content/event/services/create-event.service";
+import { UpdateEventService } from "src/content/event/services/update-event.service";
+import { DeleteEventService } from "src/content/event/services/delete-event.service";
 import {
   EventAudience,
   EventType,

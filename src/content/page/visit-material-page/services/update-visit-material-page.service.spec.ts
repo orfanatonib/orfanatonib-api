@@ -3,6 +3,7 @@ import { EntityManager } from "typeorm";
 import {
   ProcessException,
   ResourceNotFoundException,
+  RuleException,
 } from "src/common/exceptions";
 import { RouteService } from "src/infrastructure/route/route.service";
 import { RouteType } from "src/infrastructure/route/route-page.entity";
@@ -192,6 +193,19 @@ describe("UpdateVisitMaterialPageService", () => {
     await expect(
       service.execute("page-id", buildUpdateDto(), {}),
     ).rejects.toBeInstanceOf(ResourceNotFoundException);
+    expect(repository.save).not.toHaveBeenCalled();
+  });
+
+  it("rejects a payload id that differs from the route before any write", async () => {
+    await expect(
+      service.execute(
+        "page-id",
+        buildUpdateDto({ id: "another-page-id" }),
+        {},
+      ),
+    ).rejects.toBeInstanceOf(RuleException);
+
+    expect(getService.findEntityOrFail).not.toHaveBeenCalled();
     expect(repository.save).not.toHaveBeenCalled();
   });
 

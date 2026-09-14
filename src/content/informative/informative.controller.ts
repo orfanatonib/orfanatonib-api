@@ -9,10 +9,12 @@ import {
   NotFoundException,
   Logger,
   UseGuards,
+  Query,
 } from "@nestjs/common";
 import { CreateInformativeDto } from "./dto/create-informative.dto";
 import { UpdateInformativeDto } from "./dto/update-informative.dto";
 import { InformativeResponseDto } from "./dto/informative-response.dto";
+import { QueryInformativeDto } from "./dto/query-informative.dto";
 import { CreateInformativeService } from "./services/create-informative.service";
 import { GetInformativeService } from "./services/get-informative.service";
 import { UpdateInformativeService } from "./services/update-informative.service";
@@ -77,7 +79,9 @@ export class InformativeController {
 
   @Get()
   @UseGuards(JwtAuthGuard)
-  async findAll(): Promise<InformativeResponseDto[]> {
-    return this.getService.findAll();
+  async findAll(
+    @Query() query: QueryInformativeDto,
+  ): Promise<InformativeResponseDto[]> {
+    return this.getService.findAll(query);
   }
 }

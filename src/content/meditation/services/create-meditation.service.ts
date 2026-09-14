@@ -58,9 +58,9 @@ export class CreateMeditationService {
 
       const meditation = this.meditationRepo.create({
         topic: dto.topic,
-        startDate: dto.startDate,
-        endDate: dto.endDate,
-        days: dto.days,
+        startDate: startDate,
+        endDate: endDate,
+        days: dto.days as any,
       });
 
       const savedMeditation = await this.meditationRepo.save(meditation);

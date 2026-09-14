@@ -1,5 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { RuleException } from "src/common/exceptions";
+import {
+  ResourceNotFoundException,
+  RuleException,
+} from "src/common/exceptions";
 import { MediaItemDto } from "src/shared/dto/media-item-dto";
 import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
@@ -88,7 +91,10 @@ export class VisitMaterialMediaService {
     // O processador compartilhado sinaliza arquivo ausente com um Error puro,
     // que viraria 500. A checagem fica aqui para continuar sendo 400.
     for (const item of items) {
-      if (!this.isUpload(item)) continue;
+      if (!this.isUpload(item)) {
+        this.assertLinkUrl(item);
+        continue;
+      }
       if (!item.fileField) {
         throw new RuleException(
           VISIT_MATERIAL_MESSAGES.MISSING_FIELD_KEY(item.title ?? ""),
@@ -133,6 +139,7 @@ export class VisitMaterialMediaService {
     if (this.isUpload(input)) {
       await this.applyUpload(media, input, files);
     } else {
+      this.assertLinkUrl(input);
       this.applyLink(media, input);
     }
 
@@ -146,26 +153,23 @@ export class VisitMaterialMediaService {
     mediaType: MediaType,
     files: UploadedFilesDict,
   ): Promise<MediaItemEntity> {
+    const stored = await this.findOwnedStoredItem(input, pageId, mediaType);
     const media = this.buildBase(input, pageId, mediaType);
-    const replacesFile =
-      input.uploadType === UploadType.UPLOAD &&
-      Boolean(input.isLocalFile) &&
-      Boolean(input.fieldKey);
-    const stored = input.id
-      ? await this.mediaItemProcessor.findMediaItemById(input.id)
-      : null;
 
-    if (replacesFile) {
-      if (stored?.isLocalFile) {
-        await this.s3.delete(stored.url);
+    if (this.isUpload(input)) {
+      if (!input.fieldKey && stored.isLocalFile) {
+        this.keepStoredUpload(media, stored);
+      } else {
+        await this.applyUpload(media, input, files);
+        await this.discardStoredFile(stored);
       }
-      await this.applyUpload(media, input, files);
     } else {
-      await this.discardReplacedFile(stored, input);
+      this.assertLinkUrl(input);
       this.applyLink(media, input);
+      await this.discardStoredFile(stored);
     }
 
-    return this.mediaItemProcessor.upsertMediaItem(input.id, media);
+    return this.mediaItemProcessor.upsertMediaItem(stored.id, media);
   }
 
   /**
@@ -216,14 +220,58 @@ export class VisitMaterialMediaService {
   }
 
   private applyLink(media: MediaItemEntity, input: MediaItemDto): void {
-    media.title = input.title || media.title;
-    media.description = input.description || media.description;
-    media.uploadType = input.uploadType || media.uploadType;
-    media.platformType = input.platformType || media.platformType;
-    media.url = input.url?.trim() || media.url;
-    media.originalName = input.originalName || media.originalName;
-    media.size = input.size || media.size;
+    media.title = input.title ?? media.title;
+    media.description = input.description ?? media.description;
+    media.uploadType = input.uploadType ?? media.uploadType;
+    media.platformType = input.platformType ?? media.platformType;
+    media.url = input.url?.trim() ?? media.url;
+    media.originalName = input.originalName ?? media.originalName;
+    media.size = input.size ?? media.size;
     media.isLocalFile = false;
+  }
+
+  private assertLinkUrl(input: MediaItemDto): void {
+    if (!input.url?.trim()) {
+      throw new RuleException(
+        VISIT_MATERIAL_MESSAGES.LINK_URL_REQUIRED(input.title ?? ""),
+      );
+    }
+  }
+
+  private async findOwnedStoredItem(
+    input: MediaItemDto,
+    pageId: string,
+    mediaType: MediaType,
+  ): Promise<MediaItemEntity> {
+    const stored = input.id
+      ? await this.mediaItemProcessor.findMediaItemById(input.id)
+      : null;
+
+    if (
+      !stored ||
+      stored.targetId !== pageId ||
+      stored.targetType !== TARGET_TYPE ||
+      stored.mediaType !== mediaType
+    ) {
+      throw new ResourceNotFoundException(
+        VISIT_MATERIAL_MESSAGES.MEDIA_NOT_FOUND,
+        { mediaId: input.id, pageId },
+      );
+    }
+
+    return stored;
+  }
+
+  private keepStoredUpload(
+    media: MediaItemEntity,
+    stored: MediaItemEntity,
+  ): void {
+    media.uploadType = UploadType.UPLOAD;
+    media.platformType = undefined;
+    media.url = stored.url;
+    media.isLocalFile = true;
+    media.originalName = stored.originalName;
+    media.size = stored.size;
   }
 
   /**
@@ -231,11 +279,8 @@ export class VisitMaterialMediaService {
    * object is best-effort deleted: failing to clean it up must not abort the
    * update the user asked for.
    */
-  private async discardReplacedFile(
-    stored: MediaItemEntity | null,
-    input: MediaItemDto,
-  ): Promise<void> {
-    if (!stored?.isLocalFile || !stored.url || input.isLocalFile) return;
+  private async discardStoredFile(stored: MediaItemEntity): Promise<void> {
+    if (!stored.isLocalFile || !stored.url) return;
 
     try {
       await this.s3.delete(stored.url);

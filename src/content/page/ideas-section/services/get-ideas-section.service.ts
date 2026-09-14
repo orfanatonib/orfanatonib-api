@@ -11,7 +11,7 @@ import { IdeasSectionRepository } from "../repositories/ideas-section.repository
 import { IdeasSectionMediaService } from "./ideas-section-media.service";
 
 @Injectable()
-export class GetIdeasSectionsService {
+export class GetIdeasSectionService {
   constructor(
     private readonly repository: IdeasSectionRepository,
     private readonly mediaService: IdeasSectionMediaService,

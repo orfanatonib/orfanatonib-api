@@ -28,6 +28,7 @@ const readMethodGuards = (
   readGuards(VisitMaterialsPageController.prototype[method] as object);
 
 describe("VisitMaterialsPageController", () => {
+  const pageId = "6f1c3c62-0f6a-4f4b-9a3f-0b5f7f2a1d11";
   const createService = { execute: jest.fn() };
   const getService = {
     findAll: jest.fn(),
@@ -113,7 +114,7 @@ describe("VisitMaterialsPageController", () => {
   it("parses the payload and forwards the id on update", async () => {
     updateService.execute.mockResolvedValue({ id: "page-id" });
     const payload = JSON.stringify({
-      id: "page-id",
+      id: pageId,
       pageTitle: "Materiais da visita",
       pageSubtitle: "Subtítulo",
       pageDescription: "Descrição",
@@ -121,13 +122,13 @@ describe("VisitMaterialsPageController", () => {
       testament: TestamentType.NEW_TESTAMENT,
     });
 
-    await controller.update("page-id", [], payload);
+    await controller.update(pageId, [], payload);
 
     const [id, dto] = updateService.execute.mock.calls[0] as [
       string,
       UpdateVisitMaterialsPageDto,
     ];
-    expect(id).toBe("page-id");
+    expect(id).toBe(pageId);
     expect(dto).toBeInstanceOf(UpdateVisitMaterialsPageDto);
     expect(dto.currentWeek).toBe(true);
   });

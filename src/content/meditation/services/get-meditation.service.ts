@@ -6,9 +6,10 @@ import {
 } from "@nestjs/common";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MeditationRepository } from "../meditation.repository";
-import { WeekMeditationResponseDto } from "../dto/meditation-response-dto";
+import { WeekMeditationResponseDto } from "../dto/meditation-response.dto";
 import { MeditationEntity } from "../entities/meditation.entity";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
+import { QueryMeditationDto } from "../dto/query-meditation.dto";
 
 @Injectable()
 export class GetMeditationService {
@@ -19,8 +20,8 @@ export class GetMeditationService {
     private readonly mediaItemProcessor: MediaItemProcessor,
   ) {}
 
-  async findAll(): Promise<WeekMeditationResponseDto[]> {
-    const meditations = await this.meditationRepo.findAllWithRelations();
+  async findAll(query?: QueryMeditationDto): Promise<WeekMeditationResponseDto[]> {
+    const meditations = await this.meditationRepo.findAllWithRelations(query);
     if (!meditations.length) {
       return [];
     }
@@ -98,6 +99,7 @@ export class GetMeditationService {
 }
 
 function parseDateAsLocal(dateStr: string): Date {
-  const [year, month, day] = dateStr.split("-").map(Number);
+  const clean = dateStr.split("T")[0];
+  const [year, month, day] = clean.split("-").map(Number);
   return new Date(year, month - 1, day);
 }

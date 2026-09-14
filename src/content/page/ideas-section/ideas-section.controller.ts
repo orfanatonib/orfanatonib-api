@@ -28,7 +28,7 @@ import { UpdateIdeasSectionDto } from "./dto/update-ideas-section.dto";
 import { AttachIdeasSectionService } from "./services/attach-ideas-section.service";
 import { CreateIdeasSectionService } from "./services/create-ideas-section.service";
 import { DeleteIdeasSectionService } from "./services/delete-ideas-section.service";
-import { GetIdeasSectionsService } from "./services/get-ideas-sections.service";
+import { GetIdeasSectionService } from "./services/get-ideas-section.service";
 import { UpdateIdeasSectionService } from "./services/update-ideas-section.service";
 import {
   parseIdeasSectionPayload,
@@ -48,7 +48,7 @@ export class IdeasSectionController {
     private readonly createService: CreateIdeasSectionService,
     private readonly updateService: UpdateIdeasSectionService,
     private readonly attachService: AttachIdeasSectionService,
-    private readonly getService: GetIdeasSectionsService,
+    private readonly getService: GetIdeasSectionService,
     private readonly deleteService: DeleteIdeasSectionService,
   ) {}
 

@@ -27,6 +27,8 @@ const validCreate = {
   pageDescription: "Descrição",
 };
 
+const VALID_PAGE_ID = "6f1c3c62-0f6a-4f4b-9a3f-0b5f7f2a1d11";
+
 const validMedia = {
   uploadType: UploadType.LINK,
   mediaType: MediaType.VIDEO,
@@ -42,6 +44,18 @@ describe("CreateVisitMaterialsPageDto", () => {
 
   it("requires title, subtitle and description", () => {
     expect(failingProperties(CreateVisitMaterialsPageDto, {})).toEqual(
+      expect.arrayContaining(["pageTitle", "pageSubtitle", "pageDescription"]),
+    );
+  });
+
+  it("rejects blank required text", () => {
+    expect(
+      failingProperties(CreateVisitMaterialsPageDto, {
+        pageTitle: "   ",
+        pageSubtitle: "   ",
+        pageDescription: "   ",
+      }),
+    ).toEqual(
       expect.arrayContaining(["pageTitle", "pageSubtitle", "pageDescription"]),
     );
   });
@@ -88,7 +102,7 @@ describe("CreateVisitMaterialsPageDto", () => {
 });
 
 describe("UpdateVisitMaterialsPageDto", () => {
-  const validUpdate = { ...validCreate, id: "page-id", currentWeek: true };
+  const validUpdate = { ...validCreate, id: VALID_PAGE_ID, currentWeek: true };
 
   it("accepts a complete payload", () => {
     expect(
@@ -100,6 +114,15 @@ describe("UpdateVisitMaterialsPageDto", () => {
     expect(failingProperties(UpdateVisitMaterialsPageDto, validCreate)).toEqual(
       expect.arrayContaining(["id", "currentWeek"]),
     );
+  });
+
+  it("requires a UUID in the payload id", () => {
+    expect(
+      failingProperties(UpdateVisitMaterialsPageDto, {
+        ...validUpdate,
+        id: "page-id",
+      }),
+    ).toContain("id");
   });
 
   it("coerces currentWeek the same way the global ValidationPipe does", () => {

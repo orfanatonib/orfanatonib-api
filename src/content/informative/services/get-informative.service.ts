@@ -7,6 +7,7 @@ import {
 } from "@nestjs/common";
 import { InformativeRepository } from "../informative.repository";
 import { InformativeResponseDto } from "../dto/informative-response.dto";
+import { QueryInformativeDto } from "../dto/query-informative.dto";
 
 @Injectable()
 export class GetInformativeService {
@@ -17,9 +18,9 @@ export class GetInformativeService {
     private readonly informativeRepo: InformativeRepository,
   ) {}
 
-  async findAll(): Promise<InformativeResponseDto[]> {
+  async findAll(query?: QueryInformativeDto): Promise<InformativeResponseDto[]> {
     try {
-      const list = await this.informativeRepo.findAllSorted();
+      const list = await this.informativeRepo.findAllSorted(query);
       return list.map((entity) => InformativeResponseDto.fromEntity(entity));
     } catch (error) {
       this.logger.error("Error fetching banners", error.stack);

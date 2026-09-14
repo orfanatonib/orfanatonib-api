@@ -2,6 +2,7 @@ import { HttpException, Injectable, Logger } from "@nestjs/common";
 import {
   ProcessException,
   ResourceNotFoundException,
+  RuleException,
 } from "src/common/exceptions";
 import { RouteService } from "src/infrastructure/route/route.service";
 import {
@@ -9,7 +10,10 @@ import {
   RouteType,
 } from "src/infrastructure/route/route-page.entity";
 import { MediaItemDto } from "src/shared/dto/media-item-dto";
-import { MediaType } from "src/shared/media/media-item/media-item.entity";
+import {
+  MediaItemEntity,
+  MediaType,
+} from "src/shared/media/media-item/media-item.entity";
 import { VisitMaterialsPageRepository } from "../repositories/visit-material-page.repository";
 import { UpdateVisitMaterialsPageDto } from "../dto/update-visit-material-page.dto";
 import { VisitMaterialsPageResponseDTO } from "../dto/visit-material-page-response.dto";
@@ -41,6 +45,13 @@ export class UpdateVisitMaterialPageService {
     dto: UpdateVisitMaterialsPageDto,
     files: UploadedFilesDict,
   ): Promise<VisitMaterialsPageResponseDTO> {
+    if (dto.id !== id) {
+      throw new RuleException(VISIT_MATERIAL_MESSAGES.ID_MISMATCH, {
+        pathId: id,
+        payloadId: dto.id,
+      });
+    }
+
     const page = await this.getService.findEntityOrFail(id);
     const route = await this.findRouteOrFail(page.id);
 
@@ -108,7 +119,7 @@ export class UpdateVisitMaterialPageService {
     pageId: string,
     mediaType: MediaType,
     files: UploadedFilesDict,
-  ): Promise<unknown> {
+  ): Promise<MediaItemEntity> {
     return item.id
       ? this.mediaService.upsert(item, pageId, mediaType, files)
       : this.mediaService.add(item, pageId, mediaType, files);

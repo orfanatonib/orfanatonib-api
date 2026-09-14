@@ -14,22 +14,24 @@ import {
   UseGuards,
   Req,
   HttpException,
+  Query,
 } from "@nestjs/common";
 import { Request } from "express";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { plainToInstance } from "class-transformer";
-import { validateOrReject, validateSync } from "class-validator";
+import { validateOrReject } from "class-validator";
 import { CreateEventDto } from "./dto/create-event.dto";
 
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
-import { CreateEventService } from "./services/create-event-service";
-import { UpdateEventService } from "./services/update-event-service";
-import { DeleteEventService } from "./services/delete-event-service";
-import { GetEventService } from "./services/get-event-service";
+import { CreateEventService } from "./services/create-event.service";
+import { UpdateEventService } from "./services/update-event.service";
+import { DeleteEventService } from "./services/delete-event.service";
+import { GetEventService } from "./services/get-event.service";
 import { EventEntity } from "./entities/event.entity";
-import { EventResponseDto } from "./dto/event-response-dto";
+import { EventResponseDto } from "./dto/event-response.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
+import { QueryEventDto } from "./dto/query-event.dto";
 
 @Controller("events")
 export class EventController {
@@ -77,8 +79,11 @@ export class EventController {
   }
 
   @Get()
-  async findAll(@Req() req: Request): Promise<EventResponseDto[]> {
-    return this.getService.findAll(req);
+  async findAll(
+    @Req() req: Request,
+    @Query() query: QueryEventDto,
+  ): Promise<EventResponseDto[]> {
+    return this.getService.findAll(req, query);
   }
 
   @Get("/upcoming")
@@ -99,46 +104,42 @@ export class EventController {
   @UseInterceptors(FileInterceptor("file"))
   async update(
     @Param("id") id: string,
-    @Body("eventData") rawEventData: string,
-    @UploadedFile() file?: Express.Multer.File,
+    @UploadedFile() file: Express.Multer.File,
+    @Body("eventData") eventDataRaw: string,
   ): Promise<EventEntity> {
-    let dto: UpdateEventDto;
     try {
-      const parsed = JSON.parse(rawEventData);
-      dto = plainToInstance(UpdateEventDto, parsed);
-    } catch (err) {
-      this.logger.error(`Invalid JSON for event`, err.stack);
-      throw new BadRequestException("Invalid JSON in eventData field");
-    }
+      const parsed = JSON.parse(eventDataRaw);
+      const dto = plainToInstance(UpdateEventDto, parsed);
+      await validateOrReject(dto, {
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      });
 
-    const errors = validateSync(dto, {
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    });
-    if (errors.length > 0) {
-      const message = errors
-        .map((err) => Object.values(err.constraints ?? {}).join(", "))
-        .join(" | ");
-      this.logger.warn(`Validation errors: ${message}`);
+      this.logger.log(`Updating event ID=${id}`);
+      const result = await this.updateService.update(id, dto, file);
+      this.logger.log(`Event updated successfully: ${result.id}`);
+      return result;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      this.logger.error(`Error updating event ID=${id}`, error.stack);
+      const message = Array.isArray(error)
+        ? error
+            .map((e) => Object.values(e.constraints || {}))
+            .flat()
+            .join("; ")
+        : error?.message || "Erro ao atualizar evento.";
       throw new BadRequestException(message);
     }
-
-    this.logger.log(`Updating event: ${id}`);
-    const result = await this.updateService.update(
-      id,
-      { ...dto, isLocalFile: !!file },
-      file,
-    );
-    this.logger.log(`Event updated successfully: ${id}`);
-    return result;
   }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(":id")
   @HttpCode(204)
   async remove(@Param("id") id: string): Promise<void> {
-    this.logger.log(`Deleting event: ${id}`);
+    this.logger.log(`Deleting event ID=${id}`);
     await this.deleteService.remove(id);
-    this.logger.log(`Event deleted successfully: ${id}`);
+    this.logger.log(`Event deleted successfully: ID=${id}`);
   }
 }

@@ -6,7 +6,7 @@ import { IdeasSectionController } from "./ideas-section.controller";
 import { AttachIdeasSectionService } from "./services/attach-ideas-section.service";
 import { CreateIdeasSectionService } from "./services/create-ideas-section.service";
 import { DeleteIdeasSectionService } from "./services/delete-ideas-section.service";
-import { GetIdeasSectionsService } from "./services/get-ideas-sections.service";
+import { GetIdeasSectionService } from "./services/get-ideas-section.service";
 import { UpdateIdeasSectionService } from "./services/update-ideas-section.service";
 import { buildFile } from "./ideas-section.fixtures";
 
@@ -44,7 +44,7 @@ describe("IdeasSectionController", () => {
           useValue: { execute: jest.fn() },
         },
         {
-          provide: GetIdeasSectionsService,
+          provide: GetIdeasSectionService,
           useValue: { findOne: jest.fn(), findUnattached: jest.fn() },
         },
         {
@@ -58,7 +58,7 @@ describe("IdeasSectionController", () => {
     createService = moduleRef.get(CreateIdeasSectionService);
     updateService = moduleRef.get(UpdateIdeasSectionService);
     attachService = moduleRef.get(AttachIdeasSectionService);
-    getService = moduleRef.get(GetIdeasSectionsService);
+    getService = moduleRef.get(GetIdeasSectionService);
     deleteService = moduleRef.get(DeleteIdeasSectionService);
   });
 
