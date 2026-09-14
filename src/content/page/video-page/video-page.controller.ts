@@ -11,23 +11,22 @@ import {
   BadRequestException,
   Logger,
   UseGuards,
-  NotFoundException,
   HttpException,
-} from '@nestjs/common';
-import { AnyFilesInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
-import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
-import { CreateVideosPageDto } from './dto/create-videos-page.dto';
-import { UpdateVideosPageDto } from './dto/update-videos-page.dto';
-import { VideosPageResponseDto } from './dto/videos-page-response.dto';
-import { CreateVideosPageService } from './services/videos-page.create.service';
-import { UpdateVideosPageService } from './services/videos-page.update.service';
-import { GetVideosPageService } from './services/videos-page.get.service';
-import { DeleteVideosPageService } from './services/videos-page.delete.service';
-import { AdminRoleGuard } from 'src/core/auth/guards/role-guard';
+} from "@nestjs/common";
+import { AnyFilesInterceptor } from "@nestjs/platform-express";
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { plainToInstance } from "class-transformer";
+import { validate } from "class-validator";
+import { CreateVideosPageDto } from "./dto/create-video-page.dto";
+import { UpdateVideosPageDto } from "./dto/update-video-page.dto";
+import { VideosPageResponseDto } from "./dto/video-page-response.dto";
+import { CreateVideosPageService } from "./services/create-video-page.service";
+import { UpdateVideosPageService } from "./services/update-video-page.service";
+import { GetVideosPageService } from "./services/get-video-page.service";
+import { DeleteVideosPageService } from "./services/delete-video-page.service";
+import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 
-@Controller('video-pages')
+@Controller("video-pages")
 export class VideosPageController {
   private readonly logger = new Logger(VideosPageController.name);
 
@@ -36,16 +35,15 @@ export class VideosPageController {
     private readonly updateService: UpdateVideosPageService,
     private readonly getService: GetVideosPageService,
     private readonly deleteService: DeleteVideosPageService,
-  ) { }
+  ) {}
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
   @UseInterceptors(AnyFilesInterceptor())
   async create(
     @UploadedFiles() files: Express.Multer.File[],
-    @Body('videosPageData') raw: string,
+    @Body("videosPageData") raw: string,
   ): Promise<VideosPageResponseDto> {
-
     try {
       const parsedData = JSON.parse(raw);
       const dto = plainToInstance(CreateVideosPageDto, parsedData);
@@ -56,14 +54,17 @@ export class VideosPageController {
       });
 
       if (validationErrors.length > 0) {
-        this.logger.error('Validation errors:', JSON.stringify(validationErrors, null, 2));
-        throw new BadRequestException('Invalid data in request');
+        this.logger.error(
+          "Validation errors:",
+          JSON.stringify(validationErrors, null, 2),
+        );
+        throw new BadRequestException("Invalid data in request");
       }
 
       const filesDict: Record<string, Express.Multer.File> = {};
       files.forEach((file) => (filesDict[file.fieldname] = file));
 
-      this.logger.log('Creating new videos page');
+      this.logger.log("Creating new videos page");
       const result = await this.createService.execute(dto, filesDict);
       this.logger.log(`Videos page created successfully: ${result.id}`);
       return result;
@@ -71,20 +72,19 @@ export class VideosPageController {
       if (error instanceof HttpException) {
         throw error;
       }
-      this.logger.error('Error creating videos page', error);
-      throw new BadRequestException('Error creating videos page.');
+      this.logger.error("Error creating videos page", error);
+      throw new BadRequestException("Error creating videos page.");
     }
   }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  @Patch(':id')
+  @Patch(":id")
   @UseInterceptors(AnyFilesInterceptor())
   async update(
-    @Param('id') id: string,
+    @Param("id") id: string,
     @UploadedFiles() files: Express.Multer.File[],
-    @Body('videosPageData') raw: string,
+    @Body("videosPageData") raw: string,
   ): Promise<VideosPageResponseDto> {
-
     try {
       const parsedData = JSON.parse(raw);
       const dto = plainToInstance(UpdateVideosPageDto, parsedData);
@@ -95,8 +95,11 @@ export class VideosPageController {
       });
 
       if (validationErrors.length > 0) {
-        this.logger.error('Validation errors:', JSON.stringify(validationErrors, null, 2));
-        throw new BadRequestException('Invalid data in request');
+        this.logger.error(
+          "Validation errors:",
+          JSON.stringify(validationErrors, null, 2),
+        );
+        throw new BadRequestException("Invalid data in request");
       }
 
       const filesDict: Record<string, Express.Multer.File> = {};
@@ -110,8 +113,8 @@ export class VideosPageController {
       if (error instanceof HttpException) {
         throw error;
       }
-      this.logger.error('Error updating videos page', error);
-      throw new BadRequestException('Error updating videos page.');
+      this.logger.error("Error updating videos page", error);
+      throw new BadRequestException("Error updating videos page.");
     }
   }
 
@@ -120,23 +123,23 @@ export class VideosPageController {
     return this.getService.findAll();
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string): Promise<VideosPageResponseDto> {
+  @Get(":id")
+  async findOne(@Param("id") id: string): Promise<VideosPageResponseDto> {
     try {
       return await this.getService.findOne(id);
     } catch (err) {
       if (err instanceof HttpException) throw err;
-      this.logger.error('Error fetching videos page', err);
-      throw new BadRequestException('Error fetching videos page.');
+      this.logger.error("Error fetching videos page", err);
+      throw new BadRequestException("Error fetching videos page.");
     }
   }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  @Delete(':id')
-  async remove(@Param('id') id: string): Promise<{ message: string }> {
+  @Delete(":id")
+  async remove(@Param("id") id: string): Promise<{ message: string }> {
     this.logger.log(`Deleting videos page: ${id}`);
     await this.deleteService.execute(id);
     this.logger.log(`Videos page deleted successfully: ${id}`);
-    return { message: 'Página de vídeos removida com sucesso' };
+    return { message: "Página de vídeos removida com sucesso" };
   }
 }

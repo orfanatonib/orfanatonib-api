@@ -12,24 +12,24 @@ import {
   Get,
   Patch,
   UseGuards,
-} from '@nestjs/common';
-import { AnyFilesInterceptor } from '@nestjs/platform-express';
-import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
+} from "@nestjs/common";
+import { AnyFilesInterceptor } from "@nestjs/platform-express";
+import { plainToInstance } from "class-transformer";
+import { validate } from "class-validator";
 
-import { CreateIdeasPageDto } from './dto/create-ideas-page.dto';
-import { IdeasPageResponseDto } from './dto/ideas-page-response.dto';
-import { UpdateIdeasPageDto } from './dto/update-ideas-page.dto';
+import { CreateIdeasPageDto } from "./dto/create-ideas-page.dto";
+import { IdeasPageResponseDto } from "./dto/ideas-page-response.dto";
+import { UpdateIdeasPageDto } from "./dto/update-ideas-page.dto";
 
-import { IdeasPageCreateService } from './services/ideas-page-create.service';
-import { IdeasPageRemoveService } from './services/ideas-page-remove.service';
-import { IdeasPageGetService } from './services/ideas-page-get.service';
-import { IdeasPageUpdateService } from './services/ideas-page-update.service';
+import { IdeasPageCreateService } from "./services/ideas-page-create.service";
+import { IdeasPageRemoveService } from "./services/ideas-page-remove.service";
+import { IdeasPageGetService } from "./services/ideas-page-get.service";
+import { IdeasPageUpdateService } from "./services/ideas-page-update.service";
 
-import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
-import { AdminRoleGuard } from 'src/core/auth/guards/role-guard';
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 
-@Controller('ideas-pages')
+@Controller("ideas-pages")
 export class IdeasPageController {
   private readonly logger = new Logger(IdeasPageController.name);
 
@@ -45,18 +45,17 @@ export class IdeasPageController {
   @UseInterceptors(AnyFilesInterceptor())
   async create(
     @UploadedFiles() files: Express.Multer.File[] = [],
-    @Body('ideasMaterialsPageData') raw: string,
+    @Body("ideasMaterialsPageData") raw: string,
   ): Promise<IdeasPageResponseDto> {
-
     try {
       if (!raw) {
-        throw new BadRequestException('ideasMaterialsPageData is required.');
+        throw new BadRequestException("ideasMaterialsPageData is required.");
       }
 
       const parsed = JSON.parse(raw);
       const validationPipe = new ValidationPipe({ transform: true });
       const dto: CreateIdeasPageDto = await validationPipe.transform(parsed, {
-        type: 'body',
+        type: "body",
         metatype: CreateIdeasPageDto,
       });
 
@@ -65,29 +64,32 @@ export class IdeasPageController {
         filesDict[f.fieldname] = f;
       });
 
-      this.logger.log('Creating new ideas page');
-      const result = await this.ideasPageCreateService.createIdeasPage(dto, filesDict);
+      this.logger.log("Creating new ideas page");
+      const result = await this.ideasPageCreateService.createIdeasPage(
+        dto,
+        filesDict,
+      );
       this.logger.log(`Ideas page created successfully: ${result.id}`);
       return result;
     } catch (err) {
-      this.logger.error('Error creating ideas page', err);
+      this.logger.error("Error creating ideas page", err);
       throw new BadRequestException(
-        'Error creating ideas page: ' + err.message,
+        "Error creating ideas page: " + err.message,
       );
     }
   }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  @Patch(':id')
+  @Patch(":id")
   @UseInterceptors(AnyFilesInterceptor())
   async update(
-    @Param('id') id: string,
+    @Param("id") id: string,
     @UploadedFiles() files: Express.Multer.File[],
-    @Body('ideasMaterialsPageData') raw: string,
+    @Body("ideasMaterialsPageData") raw: string,
   ): Promise<IdeasPageResponseDto> {
-
     try {
-      if (!raw) throw new BadRequestException('ideasMaterialsPageData is required.');
+      if (!raw)
+        throw new BadRequestException("ideasMaterialsPageData is required.");
 
       const parsedData = JSON.parse(raw);
       const dto = plainToInstance(UpdateIdeasPageDto, parsedData);
@@ -97,35 +99,41 @@ export class IdeasPageController {
       });
 
       if (validationErrors.length > 0) {
-        this.logger.error('Validation errors:', JSON.stringify(validationErrors, null, 2));
-        throw new BadRequestException('Invalid data in request');
+        this.logger.error(
+          "Validation errors:",
+          JSON.stringify(validationErrors, null, 2),
+        );
+        throw new BadRequestException("Invalid data in request");
       }
 
       const filesDict: Record<string, Express.Multer.File> = {};
       files.forEach((file) => (filesDict[file.fieldname] = file));
 
       this.logger.log(`Updating ideas page: ${id}`);
-      const result = await this.updateIdeasPageService.updateIdeasPage(id, dto, filesDict);
+      const result = await this.updateIdeasPageService.updateIdeasPage(
+        id,
+        dto,
+        filesDict,
+      );
       this.logger.log(`Ideas page updated successfully: ${id}`);
       return IdeasPageResponseDto.fromEntity(result, new Map());
     } catch (error) {
-      this.logger.error('Error updating ideas page', error);
-      throw new BadRequestException('Error updating ideas page.');
+      this.logger.error("Error updating ideas page", error);
+      throw new BadRequestException("Error updating ideas page.");
     }
   }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  @Delete(':id')
-  async remove(@Param('id') id: string): Promise<void> {
-
+  @Delete(":id")
+  async remove(@Param("id") id: string): Promise<void> {
     try {
       this.logger.log(`Deleting ideas page: ${id}`);
       await this.ideasPageRemoveService.removeIdeasPage(id);
       this.logger.log(`Ideas page deleted successfully: ${id}`);
     } catch (error) {
-      this.logger.error('Error removing ideas page', error);
+      this.logger.error("Error removing ideas page", error);
       throw new BadRequestException(
-        'Erro ao remover a página de ideias: ' + error.message,
+        "Erro ao remover a página de ideias: " + error.message,
       );
     }
   }
@@ -135,8 +143,8 @@ export class IdeasPageController {
     return this.ideasPageGetService.findAllPagesWithMedia();
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string): Promise<IdeasPageResponseDto> {
+  @Get(":id")
+  async findOne(@Param("id") id: string): Promise<IdeasPageResponseDto> {
     return this.ideasPageGetService.findPageWithMedia(id);
   }
 }

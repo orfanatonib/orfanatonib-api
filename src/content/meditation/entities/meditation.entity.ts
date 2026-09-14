@@ -1,16 +1,16 @@
-import { Column, Entity, OneToMany } from 'typeorm';
-import { DayEntity } from './day.entity';
-import { BaseEntity } from 'src/shared/entity/base.entity';
+import { Column, Entity, OneToMany } from "typeorm";
+import { DayEntity } from "./day.entity";
+import { BaseEntity } from "src/shared/entity/base.entity";
 
-@Entity('meditations')
+@Entity("meditations")
 export class MeditationEntity extends BaseEntity {
   @Column()
   topic: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: "date" })
   startDate: Date;
 
-  @Column({ type: 'date' })
+  @Column({ type: "date" })
   endDate: Date;
 
   @OneToMany(() => DayEntity, (day) => day.meditation, {

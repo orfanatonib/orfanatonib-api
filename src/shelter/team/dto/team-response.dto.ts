@@ -1,4 +1,4 @@
-import { Exclude, Expose, Type } from 'class-transformer';
+import { Exclude, Expose, Type } from "class-transformer";
 
 export class TeamLeaderDto {
   @Expose() id!: string;
@@ -51,4 +51,3 @@ export class TeamResponseDto {
   @Expose() createdAt!: Date;
   @Expose() updatedAt!: Date;
 }
-

@@ -1,4 +1,4 @@
-import { Transform, Type, TransformFnParams } from 'class-transformer';
+import { Transform, Type, TransformFnParams } from "class-transformer";
 import {
   IsBoolean,
   IsIn,
@@ -7,29 +7,34 @@ import {
   IsString,
   Max,
   Min,
-} from 'class-validator';
+} from "class-validator";
 
 const BooleanQuery = () => {
   return Transform(({ value, key, obj }) => {
-    const originalValue = obj[key];    
-    if (originalValue === undefined || originalValue === null || originalValue === '') return undefined;
-    
-    if (typeof originalValue === 'boolean') return originalValue;
-    
+    const originalValue = obj[key];
+    if (
+      originalValue === undefined ||
+      originalValue === null ||
+      originalValue === ""
+    )
+      return undefined;
+
+    if (typeof originalValue === "boolean") return originalValue;
+
     const s = String(originalValue).trim().toLowerCase();
-    if (['true', '1', 'yes', 'y'].includes(s)) return true;
-    if (['false', '0', 'no', 'n'].includes(s)) return false;
-    
+    if (["true", "1", "yes", "y"].includes(s)) return true;
+    if (["false", "0", "no", "n"].includes(s)) return false;
+
     return undefined;
   });
 };
 const toInt = (v: any): number | undefined => {
-  if (v === undefined || v === null || v === '') return undefined;
+  if (v === undefined || v === null || v === "") return undefined;
   const n = Number(String(v).trim());
   return Number.isFinite(n) ? n : undefined;
 };
 const trimOrUndef = (v: any): string | undefined => {
-  if (typeof v !== 'string') return undefined;
+  if (typeof v !== "string") return undefined;
   const t = v.trim();
   return t ? t : undefined;
 };
@@ -79,12 +84,12 @@ export class LeaderProfilesQueryDto {
   limit: number = 12;
 
   @IsOptional()
-  @IsIn(['updatedAt', 'createdAt', 'name'])
-  sort: 'updatedAt' | 'createdAt' | 'name' = 'updatedAt';
+  @IsIn(["updatedAt", "createdAt", "name"])
+  sort: "updatedAt" | "createdAt" | "name" = "updatedAt";
 
   @IsOptional()
-  @IsIn(['asc', 'desc'])
-  order: 'asc' | 'desc' = 'desc';
+  @IsIn(["asc", "desc"])
+  order: "asc" | "desc" = "desc";
 }
 
 export class PageDto<T> {

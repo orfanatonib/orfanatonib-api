@@ -1,65 +1,73 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
-import { AppModule } from './app.module';
-import { GlobalExceptionFilter } from './common/filters';
-import { RuleException } from './common/exceptions';
-import { LoggingInterceptor } from './common/interceptors';
-import { RateLimitingMiddleware, TimeoutMiddleware } from './common/middlewares';
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe, Logger } from "@nestjs/common";
+import { AppModule } from "./app.module";
+import { GlobalExceptionFilter } from "./common/filters";
+import { RuleException } from "./common/exceptions";
+import { LoggingInterceptor } from "./common/interceptors";
+import {
+  RateLimitingMiddleware,
+  TimeoutMiddleware,
+} from "./common/middlewares";
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
+  const logger = new Logger("Bootstrap");
 
   try {
     const app = await NestFactory.create(AppModule, {
-      logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+      logger: ["error", "warn", "log", "debug", "verbose"],
     });
 
     app.enableCors({
       origin: true,
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
       credentials: true,
     });
 
     app.use((req, res, next) => {
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'DENY');
-      res.setHeader('X-XSS-Protection', '1; mode=block');
-      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("X-Frame-Options", "DENY");
+      res.setHeader("X-XSS-Protection", "1; mode=block");
+      res.setHeader(
+        "Strict-Transport-Security",
+        "max-age=31536000; includeSubDomains",
+      );
       next();
     });
 
     app.useGlobalFilters(new GlobalExceptionFilter());
     app.useGlobalInterceptors(new LoggingInterceptor());
 
-    app.useGlobalPipes(new ValidationPipe({
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      forbidUnknownValues: false,
-      disableErrorMessages: false,
-      validationError: {
-        target: false,
-        value: false,
-      },
-      exceptionFactory: (errors) => {
-        const formattedErrors = errors.map(error => ({
-          field: error.property,
-          constraints: error.constraints,
-          children: error.children?.map(child => ({
-            field: child.property,
-            constraints: child.constraints,
-          })),
-        }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        transform: true,
+        transformOptions: {
+          enableImplicitConversion: true,
+        },
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        forbidUnknownValues: false,
+        disableErrorMessages: false,
+        validationError: {
+          target: false,
+          value: false,
+        },
+        exceptionFactory: (errors) => {
+          const formattedErrors = errors.map((error) => ({
+            field: error.property,
+            constraints: error.constraints,
+            children: error.children?.map((child) => ({
+              field: child.property,
+              constraints: child.constraints,
+            })),
+          }));
 
-        // Precisa ser uma exceção, não um objeto simples: o Nest lança o que
-        // esta função devolve, e um objeto cru não é classificável pelo
-        // GlobalExceptionFilter — virava 500 "Unknown error occurred".
-        return new RuleException('Validation failed', formattedErrors);
-      },
-    }));
+          // Precisa ser uma exceção, não um objeto simples: o Nest lança o que
+          // esta função devolve, e um objeto cru não é classificável pelo
+          // GlobalExceptionFilter — virava 500 "Unknown error occurred".
+          return new RuleException("Validation failed", formattedErrors);
+        },
+      }),
+    );
 
     const port = process.env.PORT ?? 3000;
 
@@ -68,20 +76,19 @@ async function bootstrap() {
     logger.log(`🚀 Application started successfully on port ${port}`);
     logger.log(`📊 Health check available at: http://localhost:${port}/health`);
 
-    process.on('SIGINT', async () => {
-      logger.log('🛑 Received SIGINT, shutting down gracefully...');
+    process.on("SIGINT", async () => {
+      logger.log("🛑 Received SIGINT, shutting down gracefully...");
       await app.close();
       process.exit(0);
     });
 
-    process.on('SIGTERM', async () => {
-      logger.log('🛑 Received SIGTERM, shutting down gracefully...');
+    process.on("SIGTERM", async () => {
+      logger.log("🛑 Received SIGTERM, shutting down gracefully...");
       await app.close();
       process.exit(0);
     });
-
   } catch (error) {
-    logger.error('❌ Failed to start application', error);
+    logger.error("❌ Failed to start application", error);
     process.exit(1);
   }
 }

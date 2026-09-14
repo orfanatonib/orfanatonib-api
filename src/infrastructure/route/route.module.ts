@@ -1,12 +1,12 @@
-import { forwardRef, Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { RouteEntity } from './route-page.entity';
-import { RouteRepository } from './route-page.repository';
-import { DataSource } from 'typeorm';
-import { RouteService } from './route.service';
-import { RouteController } from './route.controller';
-import { MeditationModule } from 'src/content/meditation/meditation.module'; 
-import { CleanupOrphanRoutesService } from './services/cleanup-orphan-routes.service'; 
+import { forwardRef, Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { RouteEntity } from "./route-page.entity";
+import { RouteRepository } from "./route-page.repository";
+import { DataSource } from "typeorm";
+import { RouteService } from "./route.service";
+import { RouteController } from "./route.controller";
+import { MeditationModule } from "src/content/meditation/meditation.module";
+import { CleanupOrphanRoutesService } from "./services/cleanup-orphan-routes.service";
 
 @Module({
   imports: [
@@ -25,4 +25,4 @@ import { CleanupOrphanRoutesService } from './services/cleanup-orphan-routes.ser
   ],
   exports: [RouteService, RouteRepository, CleanupOrphanRoutesService],
 })
-export class RouteModule { }
+export class RouteModule {}

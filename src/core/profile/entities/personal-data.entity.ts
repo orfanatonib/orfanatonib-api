@@ -1,10 +1,10 @@
-import { Entity, Column, OneToOne, JoinColumn } from 'typeorm';
-import { UserEntity } from '../../user/entities/user.entity';
-import { BaseEntity } from '../../../shared/entity/base.entity';
+import { Entity, Column, OneToOne, JoinColumn } from "typeorm";
+import { UserEntity } from "../../user/entities/user.entity";
+import { BaseEntity } from "../../../shared/entity/base.entity";
 
-@Entity('personal_data')
+@Entity("personal_data")
 export class PersonalData extends BaseEntity {
-  @Column({ type: 'date', nullable: true })
+  @Column({ type: "date", nullable: true })
   birthDate?: Date;
 
   @Column({ nullable: true })
@@ -16,8 +16,8 @@ export class PersonalData extends BaseEntity {
   @Column({ nullable: true })
   gaLeaderContact?: string;
 
-  @OneToOne(() => UserEntity, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId' })
+  @OneToOne(() => UserEntity, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "userId" })
   user?: UserEntity;
 
   @Column()

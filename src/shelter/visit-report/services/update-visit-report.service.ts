@@ -1,7 +1,7 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { VisitReportRepository } from '../visit-report.repository';
-import { UpdateVisitReportDto } from '../dto/update-visit-report.dto';
-import { VisitReportEntity } from '../entities/visit-report.entity';
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { VisitReportRepository } from "../visit-report.repository";
+import { UpdateVisitReportDto } from "../dto/update-visit-report.dto";
+import { VisitReportEntity } from "../entities/visit-report.entity";
 
 @Injectable()
 export class UpdateVisitReportService {

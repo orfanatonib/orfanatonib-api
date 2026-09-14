@@ -1,15 +1,14 @@
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { DataSource } from "typeorm";
+import { InformativeRepository } from "../informative.repository";
+import { UpdateInformativeDto } from "../dto/update-informative.dto";
+import { InformativeEntity } from "../entities/informative.entity";
+import { RouteService } from "src/infrastructure/route/route.service";
 import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
-import { DataSource } from 'typeorm';
-import { InformativeRepository } from '../informative.repository';
-import { UpdateInformativeDto } from '../dto/update-informative.dto';
-import { InformativeEntity } from '../entities/informative.entity';
-import { RouteService } from 'src/infrastructure/route/route.service';
-import { RouteEntity, RouteType } from 'src/infrastructure/route/route-page.entity';
-import { MediaTargetType } from 'src/shared/media/media-target-type.enum';
+  RouteEntity,
+  RouteType,
+} from "src/infrastructure/route/route-page.entity";
+import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 
 @Injectable()
 export class UpdateInformativeService {
@@ -19,14 +18,16 @@ export class UpdateInformativeService {
     private readonly dataSource: DataSource,
     private readonly informativeRepo: InformativeRepository,
     private readonly routeService: RouteService,
-  ) { }
+  ) {}
 
-  async execute(id: string, dto: UpdateInformativeDto): Promise<InformativeEntity> {
-
+  async execute(
+    id: string,
+    dto: UpdateInformativeDto,
+  ): Promise<InformativeEntity> {
     const existing = await this.informativeRepo.findOneWithRelations(id);
     if (!existing) {
       this.logger.warn(`Informative banner not found: ID=${id}`);
-      throw new NotFoundException('Informative not found.');
+      throw new NotFoundException("Informative not found.");
     }
 
     return await this.dataSource.transaction(async (manager) => {
@@ -56,7 +57,6 @@ export class UpdateInformativeService {
     dto: UpdateInformativeDto,
     informativeId: string,
   ): Promise<RouteEntity> {
-
     const routeData: Partial<RouteEntity> = {
       title: dto.title,
       subtitle: dto.description,
@@ -66,8 +66,8 @@ export class UpdateInformativeService {
       entityId: informativeId,
       public: dto.public,
       type: RouteType.PAGE,
-      path: 'informativo_',
-      image: '',
+      path: "informativo_",
+      image: "",
     };
 
     const route = await this.routeService.upsertRoute(routeId, routeData);

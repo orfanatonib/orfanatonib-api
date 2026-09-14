@@ -1,4 +1,4 @@
-import { InformativeEntity } from '../entities/informative.entity';
+import { InformativeEntity } from "../entities/informative.entity";
 
 export class InformativeResponseDto {
   id: string;

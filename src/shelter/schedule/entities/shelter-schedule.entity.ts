@@ -1,32 +1,34 @@
-import { BaseEntity } from 'src/shared/entity/base.entity';
-import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from 'typeorm';
-import { TeamEntity } from 'src/shelter/team/entities/team.entity';
-import { EventEntity } from 'src/content/event/entities/event.entity';
+import { BaseEntity } from "src/shared/entity/base.entity";
+import { Entity, Column, ManyToOne, JoinColumn, OneToMany } from "typeorm";
+import { TeamEntity } from "src/shelter/team/entities/team.entity";
+import { EventEntity } from "src/content/event/entities/event.entity";
 
-@Entity('shelter_schedules')
+@Entity("shelter_schedules")
 export class ShelterScheduleEntity extends BaseEntity {
-  @Column({ type: 'int' })
+  @Column({ type: "int" })
   visitNumber!: number;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: "varchar", length: 255, nullable: true })
   visitDate?: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: "varchar", length: 255, nullable: true })
   meetingDate?: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: "text" })
   lessonContent!: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: "text", nullable: true })
   observation?: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
+  @Column({ type: "varchar", length: 255, nullable: true })
   meetingRoom?: string;
 
-  @ManyToOne(() => TeamEntity, { eager: true, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'team_id' })
+  @ManyToOne(() => TeamEntity, { eager: true, onDelete: "CASCADE" })
+  @JoinColumn({ name: "team_id" })
   team!: TeamEntity;
 
-  @OneToMany(() => EventEntity, (event) => event.shelterSchedule, { cascade: false })
+  @OneToMany(() => EventEntity, (event) => event.shelterSchedule, {
+    cascade: false,
+  })
   events?: EventEntity[];
 }

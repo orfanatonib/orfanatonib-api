@@ -1,22 +1,29 @@
-import { BaseEntity } from 'src/shared/entity/base.entity';
-import { Entity, Column, ManyToOne, OneToMany, JoinColumn, ManyToMany } from 'typeorm';
-import { ShelterEntity } from 'src/shelter/shelter/entities/shelter.entity/shelter.entity';
-import { LeaderProfileEntity } from 'src/shelter/leader-profile/entities/leader-profile.entity/leader-profile.entity';
-import { MemberProfileEntity } from 'src/shelter/member-profile/entities/member-profile.entity/member-profile.entity';
+import { BaseEntity } from "src/shared/entity/base.entity";
+import {
+  Entity,
+  Column,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  ManyToMany,
+} from "typeorm";
+import { ShelterEntity } from "src/shelter/shelter/entities/shelter.entity/shelter.entity";
+import { LeaderProfileEntity } from "src/shelter/leader-profile/entities/leader-profile.entity/leader-profile.entity";
+import { MemberProfileEntity } from "src/shelter/member-profile/entities/member-profile.entity/member-profile.entity";
 
-@Entity('teams')
+@Entity("teams")
 export class TeamEntity extends BaseEntity {
-  @Column({ type: 'int' })
+  @Column({ type: "int" })
   numberTeam: number;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: "text", nullable: true })
   description?: string;
 
   @ManyToOne(() => ShelterEntity, (shelter) => shelter.teams, {
     nullable: false,
-    onDelete: 'CASCADE',
+    onDelete: "CASCADE",
   })
-  @JoinColumn({ name: 'shelter_id' })
+  @JoinColumn({ name: "shelter_id" })
   shelter: ShelterEntity;
 
   @ManyToMany(() => LeaderProfileEntity, (leader) => leader.teams, {
@@ -29,4 +36,3 @@ export class TeamEntity extends BaseEntity {
   })
   members: MemberProfileEntity[];
 }
-

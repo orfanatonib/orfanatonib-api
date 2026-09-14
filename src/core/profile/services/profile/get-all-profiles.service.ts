@@ -1,12 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { DataSource } from 'typeorm';
-import { UserRepository } from '../../../user/user.repository';
-import { PersonalDataRepository } from '../../repositories/personal-data.repository';
-import { UserPreferencesRepository } from '../../repositories/user-preferences.repository';
-import { UserRole } from '../../../auth/auth.types';
-import { QueryProfilesDto } from '../../dto/query-profiles.dto';
-import { PaginatedProfilesResponseDto } from '../../dto/paginated-profiles-response.dto';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
+import { Injectable } from "@nestjs/common";
+import { DataSource } from "typeorm";
+import { UserRepository } from "../../../user/user.repository";
+import { PersonalDataRepository } from "../../repositories/personal-data.repository";
+import { UserPreferencesRepository } from "../../repositories/user-preferences.repository";
+import { UserRole } from "../../../auth/auth.types";
+import { QueryProfilesDto } from "../../dto/query-profiles.dto";
+import { PaginatedProfilesResponseDto } from "../../dto/paginated-profiles-response.dto";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 
 @Injectable()
 export class GetAllProfilesService {
@@ -16,14 +16,14 @@ export class GetAllProfilesService {
     private readonly personalDataRepository: PersonalDataRepository,
     private readonly userPreferencesRepository: UserPreferencesRepository,
     private readonly mediaItemProcessor: MediaItemProcessor,
-  ) { }
+  ) {}
 
   async execute(
     requestingUserId: string,
     requestingUserRole: UserRole,
     queryDto: QueryProfilesDto,
   ): Promise<PaginatedProfilesResponseDto> {
-    const { page = 1, limit = 10, sortBy = 'name', order = 'ASC' } = queryDto;
+    const { page = 1, limit = 10, sortBy = "name", order = "ASC" } = queryDto;
 
     const offset = (page - 1) * limit;
 
@@ -36,10 +36,11 @@ export class GetAllProfilesService {
     );
 
     const userIds = users.map((u) => u.id);
-    const mediaItems = await this.mediaItemProcessor.findManyMediaItemsByTargets(
-      userIds,
-      'UserEntity',
-    );
+    const mediaItems =
+      await this.mediaItemProcessor.findManyMediaItemsByTargets(
+        userIds,
+        "UserEntity",
+      );
     const mediaMap = new Map();
     mediaItems.forEach((item) => {
       mediaMap.set(item.targetId, item);
@@ -47,8 +48,12 @@ export class GetAllProfilesService {
 
     const profiles = await Promise.all(
       users.map(async (user) => {
-        const personalData = await this.personalDataRepository.findByUserId(user.id);
-        const preferences = await this.userPreferencesRepository.findByUserId(user.id);
+        const personalData = await this.personalDataRepository.findByUserId(
+          user.id,
+        );
+        const preferences = await this.userPreferencesRepository.findByUserId(
+          user.id,
+        );
         const imageMedia = mediaMap.get(user.id);
 
         return {
@@ -57,35 +62,39 @@ export class GetAllProfilesService {
           phone: user.phone,
           name: user.name,
           role: user.role,
-          personalData: personalData ? {
-            birthDate: personalData.birthDate
-              ? (personalData.birthDate instanceof Date
-                ? personalData.birthDate.toISOString().split('T')[0]
-                : String(personalData.birthDate).split('T')[0])
-              : undefined,
-            gender: personalData.gender,
-            gaLeaderName: personalData.gaLeaderName,
-            gaLeaderContact: personalData.gaLeaderContact,
-          } : undefined,
-          preferences: preferences ? {
-            loveLanguages: preferences.loveLanguages,
-            temperaments: preferences.temperaments,
-            favoriteColor: preferences.favoriteColor,
-            favoriteFood: preferences.favoriteFood,
-            favoriteMusic: preferences.favoriteMusic,
-            whatMakesYouSmile: preferences.whatMakesYouSmile,
-            skillsAndTalents: preferences.skillsAndTalents,
-          } : undefined,
+          personalData: personalData
+            ? {
+                birthDate: personalData.birthDate
+                  ? personalData.birthDate instanceof Date
+                    ? personalData.birthDate.toISOString().split("T")[0]
+                    : String(personalData.birthDate).split("T")[0]
+                  : undefined,
+                gender: personalData.gender,
+                gaLeaderName: personalData.gaLeaderName,
+                gaLeaderContact: personalData.gaLeaderContact,
+              }
+            : undefined,
+          preferences: preferences
+            ? {
+                loveLanguages: preferences.loveLanguages,
+                temperaments: preferences.temperaments,
+                favoriteColor: preferences.favoriteColor,
+                favoriteFood: preferences.favoriteFood,
+                favoriteMusic: preferences.favoriteMusic,
+                whatMakesYouSmile: preferences.whatMakesYouSmile,
+                skillsAndTalents: preferences.skillsAndTalents,
+              }
+            : undefined,
           image: imageMedia
             ? {
-              id: imageMedia.id,
-              title: imageMedia.title,
-              description: imageMedia.description,
-              url: imageMedia.url,
-              uploadType: imageMedia.uploadType,
-              mediaType: imageMedia.mediaType,
-              isLocalFile: imageMedia.isLocalFile,
-            }
+                id: imageMedia.id,
+                title: imageMedia.title,
+                description: imageMedia.description,
+                url: imageMedia.url,
+                uploadType: imageMedia.uploadType,
+                mediaType: imageMedia.mediaType,
+                isLocalFile: imageMedia.isLocalFile,
+              }
             : null,
         };
       }),
@@ -121,12 +130,12 @@ export class GetAllProfilesService {
       loveLanguages,
       temperaments,
       favoriteColor,
-      sortBy = 'name',
-      order = 'ASC',
+      sortBy = "name",
+      order = "ASC",
     } = queryDto;
 
-    let baseQuery = '';
-    let countQuery = '';
+    let baseQuery = "";
+    let countQuery = "";
     const params: any[] = [];
     const countParams: any[] = [];
 
@@ -224,7 +233,7 @@ export class GetAllProfilesService {
       countParams.push(`%${favoriteColor}%`);
     }
 
-    const sortColumn = sortBy === 'birthDate' ? 'pd.birthDate' : `u.${sortBy}`;
+    const sortColumn = sortBy === "birthDate" ? "pd.birthDate" : `u.${sortBy}`;
     baseQuery += ` ORDER BY ${sortColumn} ${order}`;
 
     baseQuery += ` LIMIT ? OFFSET ?`;
@@ -232,7 +241,7 @@ export class GetAllProfilesService {
 
     const users = await this.dataSource.query(baseQuery, params);
     const countResult = await this.dataSource.query(countQuery, countParams);
-    const total = parseInt(countResult[0]?.total || '0', 10);
+    const total = parseInt(countResult[0]?.total || "0", 10);
 
     return { users, total };
   }

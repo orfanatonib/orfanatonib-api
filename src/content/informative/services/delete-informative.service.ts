@@ -4,9 +4,9 @@ import {
   NotFoundException,
   Inject,
   InternalServerErrorException,
-} from '@nestjs/common';
-import { InformativeRepository } from '../informative.repository';
-import { RouteRepository } from 'src/infrastructure/route/route-page.repository';
+} from "@nestjs/common";
+import { InformativeRepository } from "../informative.repository";
+import { RouteRepository } from "src/infrastructure/route/route-page.repository";
 
 @Injectable()
 export class DeleteInformativeService {
@@ -21,12 +21,11 @@ export class DeleteInformativeService {
   ) {}
 
   async execute(id: string): Promise<void> {
-
     const informative = await this.informativeRepo.findOneWithRelations(id);
 
     if (!informative) {
       this.logger.warn(`Banner not found: ID=${id}`);
-      throw new NotFoundException('Informative banner not found');
+      throw new NotFoundException("Informative banner not found");
     }
 
     try {
@@ -37,7 +36,7 @@ export class DeleteInformativeService {
       await this.informativeRepo.remove(informative);
     } catch (error) {
       this.logger.error(`Error removing banner ID=${id}`, error.stack);
-      throw new InternalServerErrorException('Erro ao remover banner.');
+      throw new InternalServerErrorException("Erro ao remover banner.");
     }
   }
 }

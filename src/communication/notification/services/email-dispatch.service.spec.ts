@@ -1,6 +1,6 @@
 import { Test } from "@nestjs/testing";
 import { ConfigService } from "@nestjs/config";
-import { GetFeatureFlagsService } from 'src/core/feature-flags/services/get-feature-flags.service';
+import { GetFeatureFlagsService } from "src/core/feature-flags/services/get-feature-flags.service";
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 import { EmailDispatchService } from "./email-dispatch.service";
 import { EmailOutboxService } from "../outbox/email-outbox.service";

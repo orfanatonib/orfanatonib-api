@@ -1,22 +1,22 @@
 export enum MediaTargetType {
-  VisitMaterialsPage = 'VisitMaterialsPage',
-  VideosPage = 'VideosPage',
-  ImagesPage = 'ImagesPage',
-  ImagesSection = 'ImagesSection',
-  Meditation = 'Meditation',
-  IdeasSection = 'IdeasSection',
-  IdeasPage = 'IdeasPage',
-  Document = 'Document',
-  Event = 'Event',
-  Informative = 'Informative',
-  Integration = 'Integration',
-  Atendente = 'Atendente',
+  VisitMaterialsPage = "VisitMaterialsPage",
+  VideosPage = "VideosPage",
+  ImagesPage = "ImagesPage",
+  ImagesSection = "ImagesSection",
+  Meditation = "Meditation",
+  IdeasSection = "IdeasSection",
+  IdeasPage = "IdeasPage",
+  Document = "Document",
+  Event = "Event",
+  Informative = "Informative",
+  Integration = "Integration",
+  Atendente = "Atendente",
   /** PDF Estadual de um Antecedente Criminal (um por atendente). */
-  AtendenteEstadual = 'AtendenteEstadual',
+  AtendenteEstadual = "AtendenteEstadual",
   /** PDF Federal de um Antecedente Criminal (um por atendente). */
-  AtendenteFederal = 'AtendenteFederal',
+  AtendenteFederal = "AtendenteFederal",
   /** Foto principal de um abrigo. */
-  Shelter = 'ShelterEntity',
+  Shelter = "ShelterEntity",
   /** Foto de perfil de um usuário. */
-  User = 'UserEntity',
+  User = "UserEntity",
 }

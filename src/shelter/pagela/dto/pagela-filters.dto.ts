@@ -1,18 +1,31 @@
-import { IsOptional, IsUUID, IsString, IsInt, IsBoolean, Min, Max } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import {
+  IsOptional,
+  IsUUID,
+  IsString,
+  IsInt,
+  IsBoolean,
+  Min,
+  Max,
+} from "class-validator";
+import { Transform, Type } from "class-transformer";
 
 const BooleanQuery = () => {
   return Transform(({ value, key, obj }) => {
     const originalValue = obj[key];
-    
-    if (originalValue === undefined || originalValue === null || originalValue === '') return undefined;
-    
-    if (typeof originalValue === 'boolean') return originalValue;
-    
+
+    if (
+      originalValue === undefined ||
+      originalValue === null ||
+      originalValue === ""
+    )
+      return undefined;
+
+    if (typeof originalValue === "boolean") return originalValue;
+
     const s = String(originalValue).trim().toLowerCase();
-    if (['true', '1', 'yes', 'y'].includes(s)) return true;
-    if (['false', '0', 'no', 'n'].includes(s)) return false;
-    
+    if (["true", "1", "yes", "y"].includes(s)) return true;
+    if (["false", "0", "no", "n"].includes(s)) return false;
+
     return undefined;
   });
 };

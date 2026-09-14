@@ -1,12 +1,12 @@
-import { RouteEntity } from 'src/infrastructure/route/route-page.entity';
+import { RouteEntity } from "src/infrastructure/route/route-page.entity";
 import {
   MediaItemEntity,
   PlatformType,
   MediaType,
   UploadType,
-} from 'src/shared/media/media-item/media-item.entity';
-import { IdeasSectionEntity } from '../../ideas-section/entities/ideas-section.entity';
-import { IdeasPageEntity } from '../entities/ideas-page.entity';
+} from "src/shared/media/media-item/media-item.entity";
+import { IdeasSectionEntity } from "../../ideas-section/entities/ideas-section.entity";
+import { IdeasPageEntity } from "../entities/ideas-page.entity";
 
 export class IdeasRouteDto {
   title: string;
@@ -104,11 +104,13 @@ export class IdeasSectionResponseDto {
       createdAt: section.createdAt,
       updatedAt: section.updatedAt,
       medias: mediaItems.map(IdeasMediaItemResponseDto.fromEntity),
-      user: section.user ? {
-        email: section.user.email,
-        phone: section.user.phone,
-        name: formatUserName(section.user.name),
-      } : undefined,
+      user: section.user
+        ? {
+            email: section.user.email,
+            phone: section.user.phone,
+            name: formatUserName(section.user.name),
+          }
+        : undefined,
     };
   }
 }
@@ -124,7 +126,6 @@ export class IdeasPageResponseDto {
   route: IdeasRouteDto;
   sections: IdeasSectionResponseDto[];
 
-
   static fromEntity(
     page: IdeasPageEntity,
     mediaMap: Map<string, MediaItemEntity[]>,
@@ -138,7 +139,7 @@ export class IdeasPageResponseDto {
     return {
       id: page.id,
       title: page.title,
-      subtitle: page.subtitle || '',
+      subtitle: page.subtitle || "",
       description: page.description,
       public: page.public,
       createdAt: page.createdAt,

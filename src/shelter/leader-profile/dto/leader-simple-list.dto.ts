@@ -1,5 +1,11 @@
-import { Exclude, Expose, Transform, Type, plainToInstance } from 'class-transformer';
-import { LeaderProfileEntity } from '../entities/leader-profile.entity/leader-profile.entity';
+import {
+  Exclude,
+  Expose,
+  Transform,
+  Type,
+  plainToInstance,
+} from "class-transformer";
+import { LeaderProfileEntity } from "../entities/leader-profile.entity/leader-profile.entity";
 
 @Exclude()
 class ProfileImageMiniDto {
@@ -51,7 +57,15 @@ export class LeaderSimpleListDto {
 
   @Expose()
   @Type(() => UserMiniDto)
-  @Transform(({ obj }) => obj.user ? { id: obj.user.id, name: obj.user.name, imageProfile: obj.user.imageProfile || null } : null)
+  @Transform(({ obj }) =>
+    obj.user
+      ? {
+          id: obj.user.id,
+          name: obj.user.name,
+          imageProfile: obj.user.imageProfile || null,
+        }
+      : null,
+  )
   user!: UserMiniDto;
 
   @Expose()
@@ -82,7 +96,7 @@ export class LeaderSimpleListDto {
 
       const shelter = sheltersMap.get(shelterId)!;
 
-      shelter.teams!.push({
+      shelter.teams.push({
         id: team.id,
         numberTeam: team.numberTeam,
         description: team.description,
@@ -94,5 +108,9 @@ export class LeaderSimpleListDto {
   shelters!: ShelterMiniDto[];
 }
 
-export const toLeaderSimple = (entity: LeaderProfileEntity): LeaderSimpleListDto =>
-  plainToInstance(LeaderSimpleListDto, entity, { excludeExtraneousValues: true });
+export const toLeaderSimple = (
+  entity: LeaderProfileEntity,
+): LeaderSimpleListDto =>
+  plainToInstance(LeaderSimpleListDto, entity, {
+    excludeExtraneousValues: true,
+  });

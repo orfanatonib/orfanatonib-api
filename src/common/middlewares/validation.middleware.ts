@@ -3,10 +3,13 @@ import {
   NestMiddleware,
   BadRequestException,
   Logger,
-} from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
-import { validate, ValidationError as ClassValidatorError } from 'class-validator';
-import { plainToClass } from 'class-transformer';
+} from "@nestjs/common";
+import { Request, Response, NextFunction } from "express";
+import {
+  validate,
+  ValidationError as ClassValidatorError,
+} from "class-validator";
+import { plainToClass } from "class-transformer";
 
 @Injectable()
 export class ValidationMiddleware implements NestMiddleware {
@@ -16,7 +19,7 @@ export class ValidationMiddleware implements NestMiddleware {
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      if (req.method === 'GET' || req.method === 'DELETE') {
+      if (req.method === "GET" || req.method === "DELETE") {
         if (req.query && Object.keys(req.query).length > 0) {
           const queryDto = plainToClass(this.dtoClass, req.query);
           const errors = await validate(queryDto as object, {
@@ -26,9 +29,9 @@ export class ValidationMiddleware implements NestMiddleware {
 
           if (errors.length > 0) {
             throw new BadRequestException({
-              message: 'Invalid query parameters',
+              message: "Invalid query parameters",
               details: this.formatValidationErrors(errors),
-              category: 'RULE',
+              category: "RULE",
             });
           }
         }
@@ -42,9 +45,9 @@ export class ValidationMiddleware implements NestMiddleware {
 
           if (errors.length > 0) {
             throw new BadRequestException({
-              message: 'Invalid request data',
+              message: "Invalid request data",
               details: this.formatValidationErrors(errors),
-              category: 'RULE',
+              category: "RULE",
             });
           }
 
@@ -58,11 +61,11 @@ export class ValidationMiddleware implements NestMiddleware {
         throw error;
       }
 
-      this.logger.error('Validation middleware error', error);
+      this.logger.error("Validation middleware error", error);
       throw new BadRequestException({
-        message: 'Validation processing failed',
+        message: "Validation processing failed",
         details: error.message,
-        category: 'SERVER',
+        category: "SERVER",
       });
     }
   }
@@ -70,7 +73,7 @@ export class ValidationMiddleware implements NestMiddleware {
   private formatValidationErrors(errors: ClassValidatorError[]): any {
     const formattedErrors: any = {};
 
-    const processError = (error: ClassValidatorError, path = ''): void => {
+    const processError = (error: ClassValidatorError, path = ""): void => {
       const currentPath = path ? `${path}.${error.property}` : error.property;
 
       if (error.constraints) {
@@ -78,11 +81,11 @@ export class ValidationMiddleware implements NestMiddleware {
       }
 
       if (error.children && error.children.length > 0) {
-        error.children.forEach(child => processError(child, currentPath));
+        error.children.forEach((child) => processError(child, currentPath));
       }
     };
 
-    errors.forEach(error => processError(error));
+    errors.forEach((error) => processError(error));
 
     return {
       fields: formattedErrors,

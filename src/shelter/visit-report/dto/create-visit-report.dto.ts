@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsUUID, IsNumber, Min, IsString, IsOptional } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsUUID,
+  IsNumber,
+  Min,
+  IsString,
+  IsOptional,
+} from "class-validator";
 
 export class CreateVisitReportDto {
   @IsNumber()

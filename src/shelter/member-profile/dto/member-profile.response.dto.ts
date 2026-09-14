@@ -1,5 +1,11 @@
-import { Exclude, Expose, Type, Transform, plainToInstance } from 'class-transformer';
-import { MemberProfileEntity } from '../entities/member-profile.entity/member-profile.entity';
+import {
+  Exclude,
+  Expose,
+  Type,
+  Transform,
+  plainToInstance,
+} from "class-transformer";
+import { MemberProfileEntity } from "../entities/member-profile.entity/member-profile.entity";
 
 @Exclude()
 class ProfileImageMiniDto {
@@ -93,13 +99,14 @@ export class MemberResponseDto {
         numberTeam: obj.team.numberTeam,
         description: obj.team.description,
       },
-      leader: obj.team.leaders && obj.team.leaders.length > 0
-        ? {
-            id: obj.team.leaders[0].id,
-            active: obj.team.leaders[0].active,
-            user: obj.team.leaders[0].user,
-          }
-        : null,
+      leader:
+        obj.team.leaders && obj.team.leaders.length > 0
+          ? {
+              id: obj.team.leaders[0].id,
+              active: obj.team.leaders[0].active,
+              user: obj.team.leaders[0].user,
+            }
+          : null,
     };
   })
   shelter!: ShelterMiniWithCoordinatorDto | null;
@@ -109,5 +116,7 @@ export class MemberResponseDto {
 }
 
 export function toMemberDto(entity: MemberProfileEntity): MemberResponseDto {
-  return plainToInstance(MemberResponseDto, entity, { excludeExtraneousValues: true });
+  return plainToInstance(MemberResponseDto, entity, {
+    excludeExtraneousValues: true,
+  });
 }

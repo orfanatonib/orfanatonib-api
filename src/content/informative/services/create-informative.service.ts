@@ -1,15 +1,11 @@
-import {
-  Injectable,
-  Logger,
-  BadRequestException,
-} from '@nestjs/common';
-import { DataSource, QueryRunner } from 'typeorm';
-import { RouteService } from 'src/infrastructure/route/route.service';
-import { RouteType } from 'src/infrastructure/route/route-page.entity';
-import { CreateInformativeDto } from '../dto/create-informative.dto';
-import { InformativeRepository } from '../informative.repository';
-import { InformativeEntity } from '../entities/informative.entity';
-import { MediaTargetType } from 'src/shared/media/media-target-type.enum';
+import { Injectable, Logger, BadRequestException } from "@nestjs/common";
+import { DataSource, QueryRunner } from "typeorm";
+import { RouteService } from "src/infrastructure/route/route.service";
+import { RouteType } from "src/infrastructure/route/route-page.entity";
+import { CreateInformativeDto } from "../dto/create-informative.dto";
+import { InformativeRepository } from "../informative.repository";
+import { InformativeEntity } from "../entities/informative.entity";
+import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 
 @Injectable()
 export class CreateInformativeService {
@@ -19,7 +15,7 @@ export class CreateInformativeService {
     private readonly dataSource: DataSource,
     private readonly informativeRepo: InformativeRepository,
     private readonly routeService: RouteService,
-  ) { }
+  ) {}
 
   async createInformative(
     dto: CreateInformativeDto,
@@ -37,7 +33,7 @@ export class CreateInformativeService {
       return informative;
     } catch (err) {
       await runner.rollbackTransaction();
-      this.logger.error('Transaction rolled back', err.stack);
+      this.logger.error("Transaction rolled back", err.stack);
       throw new BadRequestException(
         `Error creating informative banner: ${err.message}`,
       );
@@ -66,7 +62,7 @@ export class CreateInformativeService {
   ): Promise<void> {
     const path = await this.routeService.generateAvailablePath(
       dto.title,
-      'informativo_',
+      "informativo_",
     );
 
     const route = await this.routeService.createRouteWithManager(
@@ -80,7 +76,7 @@ export class CreateInformativeService {
         entityId: informative.id,
         idToFetch: informative.id,
         entityType: MediaTargetType.Informative,
-        image: '',
+        image: "",
         public: dto.public,
       },
     );

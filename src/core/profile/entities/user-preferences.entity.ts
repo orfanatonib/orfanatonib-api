@@ -1,8 +1,8 @@
-import { Entity, Column, OneToOne, JoinColumn } from 'typeorm';
-import { UserEntity } from '../../user/entities/user.entity';
-import { BaseEntity } from '../../../shared/entity/base.entity';
+import { Entity, Column, OneToOne, JoinColumn } from "typeorm";
+import { UserEntity } from "../../user/entities/user.entity";
+import { BaseEntity } from "../../../shared/entity/base.entity";
 
-@Entity('user_preferences')
+@Entity("user_preferences")
 export class UserPreferences extends BaseEntity {
   @Column({ nullable: true })
   loveLanguages?: string;
@@ -19,14 +19,14 @@ export class UserPreferences extends BaseEntity {
   @Column({ nullable: true })
   favoriteMusic?: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: "text", nullable: true })
   whatMakesYouSmile?: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: "text", nullable: true })
   skillsAndTalents?: string;
 
-  @OneToOne(() => UserEntity, { onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'userId' })
+  @OneToOne(() => UserEntity, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "userId" })
   user?: UserEntity;
 
   @Column()

@@ -11,19 +11,19 @@ import {
   UseGuards,
   ValidationPipe,
   Req,
-} from '@nestjs/common';
-import { Request } from 'express';
-import { CreateShelterScheduleDto } from './dto/create-shelter-schedule.dto';
-import { UpdateShelterScheduleDto } from './dto/update-shelter-schedule.dto';
-import { ShelterScheduleResponseDto } from './dto/shelter-schedule-response.dto';
-import { CreateShelterScheduleService } from './services/create-shelter-schedule.service';
-import { ListShelterSchedulesService } from './services/list-shelter-schedules.service';
-import { UpdateShelterScheduleService } from './services/update-shelter-schedule.service';
-import { DeleteShelterScheduleService } from './services/delete-shelter-schedule.service';
-import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
-import { AdminOrLeaderRoleGuard } from 'src/core/auth/guards/role-guard';
+} from "@nestjs/common";
+import { Request } from "express";
+import { CreateShelterScheduleDto } from "./dto/create-shelter-schedule.dto";
+import { UpdateShelterScheduleDto } from "./dto/update-shelter-schedule.dto";
+import { ShelterScheduleResponseDto } from "./dto/shelter-schedule-response.dto";
+import { CreateShelterScheduleService } from "./services/create-shelter-schedule.service";
+import { ListShelterSchedulesService } from "./services/list-shelter-schedules.service";
+import { UpdateShelterScheduleService } from "./services/update-shelter-schedule.service";
+import { DeleteShelterScheduleService } from "./services/delete-shelter-schedule.service";
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { AdminOrLeaderRoleGuard } from "src/core/auth/guards/role-guard";
 
-@Controller('shelter-schedules')
+@Controller("shelter-schedules")
 @UseGuards(JwtAuthGuard)
 export class ShelterScheduleController {
   private readonly logger = new Logger(ShelterScheduleController.name);
@@ -40,7 +40,7 @@ export class ShelterScheduleController {
   async create(
     @Body(ValidationPipe) dto: CreateShelterScheduleDto,
   ): Promise<ShelterScheduleResponseDto> {
-    this.logger.log('Creating new shelter schedule');
+    this.logger.log("Creating new shelter schedule");
     const result = await this.createService.execute(dto);
     this.logger.log(`Shelter schedule created successfully: ${result.id}`);
     return ShelterScheduleResponseDto.fromEntity(result);
@@ -48,15 +48,15 @@ export class ShelterScheduleController {
 
   @Get()
   async findAll(@Req() req: Request): Promise<ShelterScheduleResponseDto[]> {
-    this.logger.log('Listing shelter schedules');
+    this.logger.log("Listing shelter schedules");
     const schedules = await this.listService.execute(req);
     return schedules.map(ShelterScheduleResponseDto.fromEntity);
   }
 
   @UseGuards(AdminOrLeaderRoleGuard)
-  @Put(':id')
+  @Put(":id")
   async update(
-    @Param('id') id: string,
+    @Param("id") id: string,
     @Body(ValidationPipe) dto: UpdateShelterScheduleDto,
   ): Promise<ShelterScheduleResponseDto> {
     this.logger.log(`Updating shelter schedule: ${id}`);
@@ -66,9 +66,9 @@ export class ShelterScheduleController {
   }
 
   @UseGuards(AdminOrLeaderRoleGuard)
-  @Delete(':id')
+  @Delete(":id")
   @HttpCode(204)
-  async remove(@Param('id') id: string): Promise<void> {
+  async remove(@Param("id") id: string): Promise<void> {
     this.logger.log(`Deleting shelter schedule: ${id}`);
     await this.deleteService.execute(id);
     this.logger.log(`Shelter schedule deleted successfully: ${id}`);

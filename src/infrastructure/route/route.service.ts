@@ -1,8 +1,13 @@
-import { Injectable, Logger, NotFoundException, BadRequestException } from '@nestjs/common';
-import { RouteRepository } from './route-page.repository';
-import { RouteEntity, RouteType } from './route-page.entity';
-import { EntityManager } from 'typeorm';
-import { GetMeditationService } from 'src/content/meditation/services/get-meditation.service';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  BadRequestException,
+} from "@nestjs/common";
+import { RouteRepository } from "./route-page.repository";
+import { RouteEntity, RouteType } from "./route-page.entity";
+import { EntityManager } from "typeorm";
+import { GetMeditationService } from "src/content/meditation/services/get-meditation.service";
 
 @Injectable()
 export class RouteService {
@@ -10,25 +15,27 @@ export class RouteService {
 
   constructor(
     private readonly routeRepo: RouteRepository,
-    private readonly getMeditationService: GetMeditationService
-
-  ) { }
+    private readonly getMeditationService: GetMeditationService,
+  ) {}
 
   generateRoute(title: string, prefix: string): string {
     return (
       prefix +
       title
         .toLowerCase()
-        .normalize('NFD')
-        .replace(/[̀-ͯ]/g, '')
-        .replace(/[^\w\s]/gi, '')
-        .replace(/\s+/g, '_')
-        .replace(/_+/g, '_')
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^\w\s]/gi, "")
+        .replace(/\s+/g, "_")
+        .replace(/_+/g, "_")
         .trim()
     );
   }
 
-  async generateAvailablePath(baseName: string, prefix: string): Promise<string> {
+  async generateAvailablePath(
+    baseName: string,
+    prefix: string,
+  ): Promise<string> {
     const basePath = this.generateRoute(baseName, prefix);
     let candidate = basePath;
     let count = 1;
@@ -53,7 +60,9 @@ export class RouteService {
     image?: string;
     prefix?: string;
   }): Promise<RouteEntity> {
-    const path = data.path || (await this.generateAvailablePath(data.title, data.prefix ?? ''));
+    const path =
+      data.path ||
+      (await this.generateAvailablePath(data.title, data.prefix ?? ""));
 
     const route = new RouteEntity();
     Object.assign(route, {
@@ -66,20 +75,27 @@ export class RouteService {
       description: data.description,
       entityId: data.entityId,
       type: data.type,
-      image: data.image || '',
+      image: data.image || "",
     });
 
     return this.routeRepo.save(route);
   }
 
-  async updateRoute(id: string, updateData: Partial<Pick<RouteEntity, 'title' | 'description' | 'path' | 'subtitle'>>): Promise<RouteEntity> {
+  async updateRoute(
+    id: string,
+    updateData: Partial<
+      Pick<RouteEntity, "title" | "description" | "path" | "subtitle">
+    >,
+  ): Promise<RouteEntity> {
     const route = await this.routeRepo.findOne({ where: { id } });
-    if (!route) throw new NotFoundException('Route not found');
+    if (!route) throw new NotFoundException("Route not found");
 
     if (updateData.path) {
       const existing = await this.routeRepo.findByPath(updateData.path);
       if (existing && existing.id !== id) {
-        throw new BadRequestException(`Route "${updateData.path}" is already in use`);
+        throw new BadRequestException(
+          `Route "${updateData.path}" is already in use`,
+        );
       }
     }
 
@@ -94,27 +110,29 @@ export class RouteService {
     const meditationData = meditation.meditation;
     if (!meditationData) return routes;
 
-    const dayRoutes = meditationData.days.map((day) => ({
-      id: day.id,
-      title: day.topic,
-      subtitle: day.verse,
-      description: day.verse,
-      path: day.day,
-      public: false,
-      current: false,
-      image: meditationData.media?.url,
-      idToFetch: meditationData.id,
-      entityType: 'MeditationDay',
-      entityId: meditationData.id,
-      type: 'page',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as RouteEntity));
+    const dayRoutes = meditationData.days.map(
+      (day) =>
+        ({
+          id: day.id,
+          title: day.topic,
+          subtitle: day.verse,
+          description: day.verse,
+          path: day.day,
+          public: false,
+          current: false,
+          image: meditationData.media?.url,
+          idToFetch: meditationData.id,
+          entityType: "MeditationDay",
+          entityId: meditationData.id,
+          type: "page",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }) as RouteEntity,
+    );
 
     routes.push(...dayRoutes);
     return routes;
   }
-
 
   async findById(id: string): Promise<RouteEntity | null> {
     return this.routeRepo.findOne({ where: { id } });
@@ -133,8 +151,13 @@ export class RouteService {
     await this.routeRepo.remove(route);
   }
 
-  async removeRouteByEntity(entityType: string, entityId: string): Promise<void> {
-    const route = await this.routeRepo.findOne({ where: { entityType, entityId } });
+  async removeRouteByEntity(
+    entityType: string,
+    entityId: string,
+  ): Promise<void> {
+    const route = await this.routeRepo.findOne({
+      where: { entityType, entityId },
+    });
     if (!route) {
       return;
     }
@@ -155,43 +178,51 @@ export class RouteService {
       entityId: string;
       type: RouteType;
       image?: string;
-      current?: boolean
+      current?: boolean;
     },
   ): Promise<RouteEntity> {
     const route = manager.create(RouteEntity, {
       ...data,
       public: data.public ?? true,
-      image: data.image || '',
+      image: data.image || "",
     });
 
     return await manager.save(route);
   }
 
-  async upsertRoute(routeId: string, updateData: Partial<RouteEntity>): Promise<RouteEntity> {
+  async upsertRoute(
+    routeId: string,
+    updateData: Partial<RouteEntity>,
+  ): Promise<RouteEntity> {
     const existingRoute = await this.routeRepo.findById(routeId);
-    
-    let prefix = '';
-    if (updateData.path && updateData.path.endsWith('_')) {
+
+    let prefix = "";
+    if (updateData.path && updateData.path.endsWith("_")) {
       prefix = updateData.path;
     } else if (existingRoute?.path) {
-      const parts = existingRoute.path.split('_');
+      const parts = existingRoute.path.split("_");
       if (parts.length > 1) {
-        prefix = parts.slice(0, -1).join('_') + '_';
+        prefix = parts.slice(0, -1).join("_") + "_";
       }
     } else if (updateData.path) {
       prefix = updateData.path;
     }
-    
+
     if (updateData.title) {
-      const titleChanged = !existingRoute || existingRoute.title !== updateData.title;
-      const hasPrefix = updateData.path && updateData.path.endsWith('_');
-      
+      const titleChanged =
+        !existingRoute || existingRoute.title !== updateData.title;
+      const hasPrefix = updateData.path && updateData.path.endsWith("_");
+
       if (titleChanged || !existingRoute || hasPrefix) {
         const generatedPath = this.generateRoute(updateData.title, prefix);
-        
-        const existingPathRoute = await this.routeRepo.findByPath(generatedPath);
+
+        const existingPathRoute =
+          await this.routeRepo.findByPath(generatedPath);
         if (existingPathRoute && existingPathRoute.id !== routeId) {
-          const availablePath = await this.generateAvailablePath(updateData.title, prefix);
+          const availablePath = await this.generateAvailablePath(
+            updateData.title,
+            prefix,
+          );
           updateData.path = availablePath;
         } else {
           updateData.path = generatedPath;
@@ -199,34 +230,47 @@ export class RouteService {
       } else {
         updateData.path = existingRoute.path;
       }
-    } else if (updateData.path && !updateData.path.endsWith('_')) {
-      const existingPathRoute = await this.routeRepo.findByPath(updateData.path);
+    } else if (updateData.path && !updateData.path.endsWith("_")) {
+      const existingPathRoute = await this.routeRepo.findByPath(
+        updateData.path,
+      );
       if (existingPathRoute && existingPathRoute.id !== routeId) {
-        const pathParts = updateData.path.split('_');
-        const baseTitle = pathParts[pathParts.length - 1] || 'route';
-        const pathPrefix = pathParts.slice(0, -1).join('_') + '_';
-        const availablePath = await this.generateAvailablePath(baseTitle, pathPrefix);
+        const pathParts = updateData.path.split("_");
+        const baseTitle = pathParts[pathParts.length - 1] || "route";
+        const pathPrefix = pathParts.slice(0, -1).join("_") + "_";
+        const availablePath = await this.generateAvailablePath(
+          baseTitle,
+          pathPrefix,
+        );
         updateData.path = availablePath;
       }
     } else if (existingRoute) {
       updateData.path = existingRoute.path;
-    } else if (updateData.path && updateData.path.endsWith('_')) {
-      this.logger.warn(`Attempting upsert with only prefix "${updateData.path}" without title`);
+    } else if (updateData.path && updateData.path.endsWith("_")) {
+      this.logger.warn(
+        `Attempting upsert with only prefix "${updateData.path}" without title`,
+      );
     }
 
-    if (!updateData.path || updateData.path.endsWith('_')) {
+    if (!updateData.path || updateData.path.endsWith("_")) {
       if (updateData.title && prefix) {
         const generatedPath = this.generateRoute(updateData.title, prefix);
-        const existingPathRoute = await this.routeRepo.findByPath(generatedPath);
+        const existingPathRoute =
+          await this.routeRepo.findByPath(generatedPath);
         if (existingPathRoute && existingPathRoute.id !== routeId) {
-          updateData.path = await this.generateAvailablePath(updateData.title, prefix);
+          updateData.path = await this.generateAvailablePath(
+            updateData.title,
+            prefix,
+          );
         } else {
           updateData.path = generatedPath;
         }
       } else if (existingRoute) {
         updateData.path = existingRoute.path;
       } else {
-        throw new BadRequestException('Could not generate a valid path for the route. Title is required.');
+        throw new BadRequestException(
+          "Could not generate a valid path for the route. Title is required.",
+        );
       }
     }
 

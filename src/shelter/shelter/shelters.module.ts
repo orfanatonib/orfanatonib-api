@@ -1,6 +1,6 @@
 import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { FeatureFlagsCoreModule } from 'src/core/feature-flags/feature-flags-core.module';
+import { FeatureFlagsCoreModule } from "src/core/feature-flags/feature-flags-core.module";
 
 import { SheltersController } from "./shelters.controller";
 import { DeleteSheltersService } from "./services/delete-shelters.service";

@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
-import { MediaItemEntity } from './media-item/media-item.entity';
+import { Injectable, Logger } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { In, Repository } from "typeorm";
+import { MediaItemEntity } from "./media-item/media-item.entity";
 
 @Injectable()
 export class MediaItemRepository {
@@ -10,13 +10,19 @@ export class MediaItemRepository {
   constructor(
     @InjectRepository(MediaItemEntity)
     private readonly mediaRepo: Repository<MediaItemEntity>,
-  ) { }
+  ) {}
 
-  async findByTarget(targetId: string, targetType: string): Promise<MediaItemEntity[]> {
+  async findByTarget(
+    targetId: string,
+    targetType: string,
+  ): Promise<MediaItemEntity[]> {
     return this.mediaRepo.find({ where: { targetId, targetType } });
   }
 
-  async findManyByTargets(targetIds: string[], targetType: string): Promise<MediaItemEntity[]> {
+  async findManyByTargets(
+    targetIds: string[],
+    targetType: string,
+  ): Promise<MediaItemEntity[]> {
     return this.mediaRepo.find({
       where: {
         targetType,
@@ -33,11 +39,11 @@ export class MediaItemRepository {
     return this.mediaRepo.save(media);
   }
 
-  async saveById(id: string, data: Partial<MediaItemEntity>): Promise<MediaItemEntity> {
-    await this.mediaRepo.upsert(
-      { ...data, id },
-      ['id'],
-    );
+  async saveById(
+    id: string,
+    data: Partial<MediaItemEntity>,
+  ): Promise<MediaItemEntity> {
+    await this.mediaRepo.upsert({ ...data, id }, ["id"]);
     const updated = await this.mediaRepo.findOneBy({ id });
     return updated!;
   }

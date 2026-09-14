@@ -1,4 +1,4 @@
-import { AcceptedChristShortDto } from "src/shelter/accepted-christ/dtos/accepted-christ-short.dto";
+import { AcceptedChristShortDto } from "src/shelter/accepted-christ/dto/accepted-christ-short.dto";
 import { ShelteredGender } from "../enums/sheltered-gender.enum";
 
 export class ShelteredAddressResponseDto {

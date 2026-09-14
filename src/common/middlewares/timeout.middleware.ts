@@ -1,5 +1,9 @@
-import { Injectable, NestMiddleware, RequestTimeoutException } from '@nestjs/common';
-import { Request, Response, NextFunction } from 'express';
+import {
+  Injectable,
+  NestMiddleware,
+  RequestTimeoutException,
+} from "@nestjs/common";
+import { Request, Response, NextFunction } from "express";
 
 @Injectable()
 export class TimeoutMiddleware implements NestMiddleware {
@@ -15,16 +19,16 @@ export class TimeoutMiddleware implements NestMiddleware {
             method: req.method,
             timeout: this.timeoutMs,
           },
-          category: 'SERVER',
+          category: "SERVER",
         });
       }
     }, this.timeoutMs);
 
-    res.on('finish', () => {
+    res.on("finish", () => {
       clearTimeout(timeout);
     });
 
-    res.on('close', () => {
+    res.on("close", () => {
       clearTimeout(timeout);
     });
 

@@ -1,17 +1,12 @@
-import { BaseEntity } from 'src/shared/entity/base.entity';
-import {
-  Entity,
-  Column,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
-import { ShelteredEntity } from 'src/shelter/sheltered/entities/sheltered.entity';
-import { DecisionType } from '../enums/decision-type.enum';
+import { BaseEntity } from "src/shared/entity/base.entity";
+import { Entity, Column, ManyToOne, JoinColumn } from "typeorm";
+import { ShelteredEntity } from "src/shelter/sheltered/entities/sheltered.entity";
+import { DecisionType } from "../enums/decision-type.enum";
 
-@Entity('accepted_christs')
+@Entity("accepted_christs")
 export class AcceptedChristEntity extends BaseEntity {
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: DecisionType,
     nullable: true,
     default: null,
@@ -19,12 +14,12 @@ export class AcceptedChristEntity extends BaseEntity {
   decision: DecisionType | null;
 
   @ManyToOne(() => ShelteredEntity, (sheltered) => sheltered.acceptedChrists, {
-    onDelete: 'CASCADE',
+    onDelete: "CASCADE",
     nullable: false,
   })
-  @JoinColumn({ name: 'sheltered_id' })
+  @JoinColumn({ name: "sheltered_id" })
   sheltered: ShelteredEntity;
 
-  @Column({ type: 'varchar', length: 500, nullable: true })
+  @Column({ type: "varchar", length: 500, nullable: true })
   notes?: string | null;
 }

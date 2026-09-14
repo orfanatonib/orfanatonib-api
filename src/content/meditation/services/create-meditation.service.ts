@@ -5,16 +5,16 @@ import {
   BadRequestException,
   ConflictException,
   HttpException,
-} from '@nestjs/common';
-import { RouteService } from 'src/infrastructure/route/route.service';
-import { RouteType } from 'src/infrastructure/route/route-page.entity';
-import { MediaType } from 'src/shared/media/media-item/media-item.entity';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
-import { MeditationRepository } from '../meditation.repository';
-import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
-import { CreateMeditationDto } from '../dto/create-meditation.dto';
-import { MeditationEntity } from '../entities/meditation.entity';
-import { MediaTargetType } from 'src/shared/media/media-target-type.enum';
+} from "@nestjs/common";
+import { RouteService } from "src/infrastructure/route/route.service";
+import { RouteType } from "src/infrastructure/route/route-page.entity";
+import { MediaType } from "src/shared/media/media-item/media-item.entity";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { MeditationRepository } from "../meditation.repository";
+import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
+import { CreateMeditationDto } from "../dto/create-meditation.dto";
+import { MeditationEntity } from "../entities/meditation.entity";
+import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 
 @Injectable()
 export class CreateMeditationService {
@@ -26,7 +26,7 @@ export class CreateMeditationService {
     private readonly s3Service: AwsS3Service,
     private readonly routeService: RouteService,
     private readonly mediaItemProcessor: MediaItemProcessor,
-  ) { }
+  ) {}
 
   async create(
     dto: CreateMeditationDto,
@@ -37,9 +37,9 @@ export class CreateMeditationService {
       const endDate = parseDateAsLocal(dto.endDate);
 
       if (startDate.getDay() !== 1)
-        throw new BadRequestException('startDate must be a Monday');
+        throw new BadRequestException("startDate must be a Monday");
       if (endDate.getDay() !== 5)
-        throw new BadRequestException('endDate must be a Friday');
+        throw new BadRequestException("endDate must be a Friday");
 
       const existing = await this.meditationRepo.findAllWithRelations();
       const hasConflict = existing.some((m) => {
@@ -53,7 +53,7 @@ export class CreateMeditationService {
       });
 
       if (hasConflict) {
-        throw new ConflictException('Duplicate meditation date detected (409)');
+        throw new ConflictException("Duplicate meditation date detected (409)");
       }
 
       const meditation = this.meditationRepo.create({
@@ -65,12 +65,12 @@ export class CreateMeditationService {
 
       const savedMeditation = await this.meditationRepo.save(meditation);
 
-      let mediaUrl = dto.media.url?.trim() || '';
+      let mediaUrl = dto.media.url?.trim() || "";
       let originalName = dto.media.originalName;
       let size = dto.media.size;
 
       if (dto.media.isLocalFile) {
-        if (!file) throw new BadRequestException('File not sent.');
+        if (!file) throw new BadRequestException("File not sent.");
         mediaUrl = await this.s3Service.upload(file);
         originalName = file.originalname;
         size = file.size;
@@ -83,7 +83,7 @@ export class CreateMeditationService {
           mediaType: MediaType.DOCUMENT,
           uploadType: dto.media.uploadType,
           platformType: dto.media.platformType ?? null,
-          fileField: 'file',
+          fileField: "file",
           isLocalFile: dto.media.isLocalFile,
           url: mediaUrl,
           originalName,
@@ -97,14 +97,15 @@ export class CreateMeditationService {
 
       await this.routeService.createRoute({
         title: savedMeditation.topic,
-        subtitle: '',
+        subtitle: "",
         idToFetch: savedMeditation.id,
         entityType: MediaTargetType.Meditation,
         description: `Weekly meditation from ${dto.startDate} to ${dto.endDate}`,
         entityId: savedMeditation.id,
         type: RouteType.DOC,
-        prefix: 'meditacao_',
-        image: 'https://bucket-orfanato-galeria.s3.amazonaws.com/uploads/img_card.jpg',
+        prefix: "meditacao_",
+        image:
+          "https://bucket-orfanato-galeria.s3.amazonaws.com/uploads/img_card.jpg",
         public: false,
       });
 
@@ -113,15 +114,15 @@ export class CreateMeditationService {
       if (error instanceof HttpException) {
         throw error;
       }
-      this.logger.error('Error creating meditation', error.stack);
+      this.logger.error("Error creating meditation", error.stack);
       throw new BadRequestException(
-        error?.message || 'Unexpected error creating meditation.',
+        error?.message || "Unexpected error creating meditation.",
       );
     }
   }
 }
 
 function parseDateAsLocal(dateStr: string): Date {
-  const [year, month, day] = dateStr.split('-').map(Number);
+  const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day);
 }

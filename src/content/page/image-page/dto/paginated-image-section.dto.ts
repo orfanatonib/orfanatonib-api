@@ -1,7 +1,7 @@
-import { MediaItemEntity } from 'src/shared/media/media-item/media-item.entity';
-import { ImageSectionEntity } from '../entity/Image-section.entity';
-import { ImageSectionDto } from './image-page-response.dto';
-import { ImagePageEntity } from '../entity/Image-page.entity';
+import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
+import { ImageSectionEntity } from "../entities/image-section.entity";
+import { ImageSectionDto } from "./image-page-response.dto";
+import { ImagePageEntity } from "../entities/image-page.entity";
 
 export class PaginatedImageSectionResponseDto {
   id: string;

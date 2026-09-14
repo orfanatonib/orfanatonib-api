@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { ResourceNotFoundException } from "src/common/exceptions";
-import { GetFeatureFlagsService } from 'src/core/feature-flags/services/get-feature-flags.service';
+import { GetFeatureFlagsService } from "src/core/feature-flags/services/get-feature-flags.service";
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 import { SheltersRepository } from "../repositories/shelters.repository";
 import { QuerySheltersDto } from "../dto/query-shelters.dto";

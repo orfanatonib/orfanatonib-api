@@ -1,27 +1,40 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { MediaItemEntity, UploadType } from './media-item/media-item.entity';
-import { MediaItemRepository } from './media-item-repository';
+import { Injectable, Logger } from "@nestjs/common";
+import { MediaItemEntity, UploadType } from "./media-item/media-item.entity";
+import { MediaItemRepository } from "./media-item-repository";
 
 @Injectable()
 export class MediaItemProcessor {
   private readonly logger = new Logger(MediaItemProcessor.name);
 
-  constructor(private readonly mediaRepo: MediaItemRepository) { }
+  constructor(private readonly mediaRepo: MediaItemRepository) {}
 
-  async findMediaItemsByTarget(targetId: string, targetType: string): Promise<MediaItemEntity[]> {
+  async findMediaItemsByTarget(
+    targetId: string,
+    targetType: string,
+  ): Promise<MediaItemEntity[]> {
     return this.mediaRepo.findByTarget(targetId, targetType);
   }
 
-  async findMediaItemByTarget(targetId: string, targetType: string): Promise<MediaItemEntity | null> {
+  async findMediaItemByTarget(
+    targetId: string,
+    targetType: string,
+  ): Promise<MediaItemEntity | null> {
     const items = await this.findMediaItemsByTarget(targetId, targetType);
     return items.length > 0 ? items[0] : null;
   }
 
-  async findManyMediaItemsByTargets(targetIds: string[], targetType: string): Promise<MediaItemEntity[]> {
+  async findManyMediaItemsByTargets(
+    targetIds: string[],
+    targetType: string,
+  ): Promise<MediaItemEntity[]> {
     return this.mediaRepo.findManyByTargets(targetIds, targetType);
   }
 
-  buildBaseMediaItem(item: any, targetId: string, targetType: string): MediaItemEntity {
+  buildBaseMediaItem(
+    item: any,
+    targetId: string,
+    targetType: string,
+  ): MediaItemEntity {
     const media = new MediaItemEntity();
     media.title = item.title;
     media.description = item.description;
@@ -49,7 +62,10 @@ export class MediaItemProcessor {
     return this.mediaRepo.save(media);
   }
 
-  async upsertMediaItem(id: string | undefined, media: MediaItemEntity): Promise<MediaItemEntity> {
+  async upsertMediaItem(
+    id: string | undefined,
+    media: MediaItemEntity,
+  ): Promise<MediaItemEntity> {
     if (id) {
       await this.mediaRepo.saveById(id, media);
       media.id = id;
@@ -59,7 +75,10 @@ export class MediaItemProcessor {
     }
   }
 
-  async deleteMediaItems(items: MediaItemEntity[], deleteFn: (url: string) => Promise<void>): Promise<void> {
+  async deleteMediaItems(
+    items: MediaItemEntity[],
+    deleteFn: (url: string) => Promise<void>,
+  ): Promise<void> {
     for (const item of items) {
       if (item.isLocalFile) {
         await deleteFn(item.url);
@@ -68,7 +87,10 @@ export class MediaItemProcessor {
     await this.mediaRepo.removeMany(items);
   }
 
-  async removeMediaItem(item: MediaItemEntity, deleteFn?: (url: string) => Promise<void>): Promise<void> {
+  async removeMediaItem(
+    item: MediaItemEntity,
+    deleteFn?: (url: string) => Promise<void>,
+  ): Promise<void> {
     if (item.isLocalFile && deleteFn) {
       await deleteFn(item.url);
     }
@@ -96,7 +118,7 @@ export class MediaItemProcessor {
         media.originalName = file.originalname;
         media.size = file.size;
       } else {
-        media.url = item.url?.trim() || '';
+        media.url = item.url?.trim() || "";
         media.isLocalFile = false;
       }
 
@@ -136,7 +158,9 @@ export class MediaItemProcessor {
         .filter(Boolean),
     );
 
-    const toRemove = oldItems.filter((item) => item.isLocalFile && !validUploadUrls.has(item.url));
+    const toRemove = oldItems.filter(
+      (item) => item.isLocalFile && !validUploadUrls.has(item.url),
+    );
     if (toRemove.length) {
       await this.deleteMediaItems(toRemove, deleteFn);
     }
@@ -147,7 +171,9 @@ export class MediaItemProcessor {
       const media = this.buildBaseMediaItem(item, targetId, targetType);
 
       if (item.uploadType === UploadType.UPLOAD) {
-        const previous = oldItems.find((old) => old.url === (item.url || item.fileField));
+        const previous = oldItems.find(
+          (old) => old.url === (item.url || item.fileField),
+        );
 
         if (previous) {
           media.url = previous.url;
@@ -164,7 +190,7 @@ export class MediaItemProcessor {
           media.size = file.size;
         }
       } else {
-        media.url = item.url?.trim() || '';
+        media.url = item.url?.trim() || "";
         media.isLocalFile = false;
       }
 

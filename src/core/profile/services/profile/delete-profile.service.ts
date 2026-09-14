@@ -1,7 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { UserRepository } from '../../../user/user.repository';
-import { PersonalDataRepository } from '../../repositories/personal-data.repository';
-import { UserPreferencesRepository } from '../../repositories/user-preferences.repository';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { UserRepository } from "../../../user/user.repository";
+import { PersonalDataRepository } from "../../repositories/personal-data.repository";
+import { UserPreferencesRepository } from "../../repositories/user-preferences.repository";
 
 @Injectable()
 export class DeleteProfileService {
@@ -14,7 +14,7 @@ export class DeleteProfileService {
   async execute(userId: string): Promise<void> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException("User not found");
     }
 
     await this.personalDataRepository.deleteByUserId(userId);

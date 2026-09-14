@@ -1,14 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Repository, DataSource } from 'typeorm';
-import { VisitReportEntity } from './entities/visit-report.entity';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { Repository, DataSource } from "typeorm";
+import { VisitReportEntity } from "./entities/visit-report.entity";
 
 const FULL_RELATIONS = [
-  'schedule',
-  'schedule.team',
-  'schedule.team.shelter',
-  'schedule.team.shelter.address',
-  'schedule.team.leaders',
-  'schedule.team.leaders.user',
+  "schedule",
+  "schedule.team",
+  "schedule.team.shelter",
+  "schedule.team.shelter.address",
+  "schedule.team.leaders",
+  "schedule.team.leaders.user",
 ];
 
 @Injectable()
@@ -21,7 +21,7 @@ export class VisitReportRepository {
 
   async findAll(): Promise<VisitReportEntity[]> {
     return this.repo.find({
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
       relations: FULL_RELATIONS,
     });
   }
@@ -33,7 +33,9 @@ export class VisitReportRepository {
     });
   }
 
-  async findByScheduleId(scheduleId: string): Promise<VisitReportEntity | null> {
+  async findByScheduleId(
+    scheduleId: string,
+  ): Promise<VisitReportEntity | null> {
     return this.repo.findOne({
       where: { schedule: { id: scheduleId } },
       relations: FULL_RELATIONS,
@@ -44,7 +46,7 @@ export class VisitReportRepository {
     return this.repo.find({
       where: { schedule: { team: { id: teamId } } },
       relations: FULL_RELATIONS,
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
     });
   }
 
@@ -52,7 +54,7 @@ export class VisitReportRepository {
     return this.repo.find({
       where: { schedule: { team: { shelter: { id: shelterId } } } },
       relations: FULL_RELATIONS,
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
     });
   }
 
@@ -68,7 +70,7 @@ export class VisitReportRepository {
         },
       },
       relations: FULL_RELATIONS,
-      order: { createdAt: 'DESC' },
+      order: { createdAt: "DESC" },
     });
   }
 
@@ -84,7 +86,7 @@ export class VisitReportRepository {
 
   async remove(id: string): Promise<void> {
     const entity = await this.repo.findOne({ where: { id } });
-    if (!entity) throw new NotFoundException('Visit report not found');
+    if (!entity) throw new NotFoundException("Visit report not found");
     await this.repo.remove(entity);
   }
 }

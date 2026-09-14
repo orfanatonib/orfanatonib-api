@@ -1,7 +1,12 @@
-import { RouteEntity } from 'src/infrastructure/route/route-page.entity';
-import { MediaItemEntity, MediaType, UploadType, PlatformType } from 'src/shared/media/media-item/media-item.entity';
-import { ImagePageEntity } from '../entity/Image-page.entity';
-import { ImageSectionEntity } from '../entity/Image-section.entity';
+import { RouteEntity } from "src/infrastructure/route/route-page.entity";
+import {
+  MediaItemEntity,
+  MediaType,
+  UploadType,
+  PlatformType,
+} from "src/shared/media/media-item/media-item.entity";
+import { ImagePageEntity } from "../entities/image-page.entity";
+import { ImageSectionEntity } from "../entities/image-section.entity";
 
 export class ImageRouteDto {
   title: string;
@@ -68,7 +73,10 @@ export class ImageSectionDto {
   updatedAt: Date;
   mediaItems: GalleryMediaItemDto[];
 
-  static fromEntity(section: ImageSectionEntity, mediaItems: MediaItemEntity[]): ImageSectionDto {
+  static fromEntity(
+    section: ImageSectionEntity,
+    mediaItems: MediaItemEntity[],
+  ): ImageSectionDto {
     return {
       id: section.id,
       caption: section.caption,

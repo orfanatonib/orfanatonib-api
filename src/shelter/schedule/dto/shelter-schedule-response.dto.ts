@@ -1,4 +1,4 @@
-import { ShelterScheduleEntity } from '../entities/shelter-schedule.entity';
+import { ShelterScheduleEntity } from "../entities/shelter-schedule.entity";
 
 export class ShelterScheduleResponseDto {
   id: string;
@@ -46,15 +46,17 @@ export class ShelterScheduleResponseDto {
         id: shelter.id,
         name: shelter.name,
         description: shelter.description,
-        address: shelter.address ? {
-          street: shelter.address.street || undefined,
-          number: shelter.address.number || undefined,
-          district: shelter.address.district || undefined,
-          city: shelter.address.city,
-          state: shelter.address.state,
-          postalCode: shelter.address.postalCode || undefined,
-          complement: shelter.address.complement || undefined,
-        } : undefined,
+        address: shelter.address
+          ? {
+              street: shelter.address.street || undefined,
+              number: shelter.address.number || undefined,
+              district: shelter.address.district || undefined,
+              city: shelter.address.city,
+              state: shelter.address.state,
+              postalCode: shelter.address.postalCode || undefined,
+              complement: shelter.address.complement || undefined,
+            }
+          : undefined,
         team: {
           id: team.id,
           numberTeam: team.numberTeam,

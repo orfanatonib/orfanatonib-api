@@ -1,10 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { UserRepository } from '../../../user/user.repository';
-import { PersonalDataRepository } from '../../repositories/personal-data.repository';
-import { UserPreferencesRepository } from '../../repositories/user-preferences.repository';
-import { UpdateCompleteProfileDto } from '../../dto/update-complete-profile.dto';
-import { CompleteProfileResponseDto } from '../../dto/complete-profile-response.dto';
-import { UserErrorMessages } from '../../../user/constants/user.constants';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { UserRepository } from "../../../user/user.repository";
+import { PersonalDataRepository } from "../../repositories/personal-data.repository";
+import { UserPreferencesRepository } from "../../repositories/user-preferences.repository";
+import { UpdateCompleteProfileDto } from "../../dto/update-complete-profile.dto";
+import { CompleteProfileResponseDto } from "../../dto/complete-profile-response.dto";
+import { UserErrorMessages } from "../../../user/constants/user.constants";
 
 @Injectable()
 export class UpdateProfileService {
@@ -12,38 +12,60 @@ export class UpdateProfileService {
     private readonly userRepository: UserRepository,
     private readonly personalDataRepository: PersonalDataRepository,
     private readonly userPreferencesRepository: UserPreferencesRepository,
-  ) { }
+  ) {}
 
-  async execute(userId: string, dto: UpdateCompleteProfileDto): Promise<CompleteProfileResponseDto> {
+  async execute(
+    userId: string,
+    dto: UpdateCompleteProfileDto,
+  ): Promise<CompleteProfileResponseDto> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundException(UserErrorMessages.USER_NOT_FOUND);
     }
 
-    let personalData: Awaited<ReturnType<typeof this.personalDataRepository.findByUserId>> = null;
-    let preferences: Awaited<ReturnType<typeof this.userPreferencesRepository.findByUserId>> = null;
+    let personalData: Awaited<
+      ReturnType<typeof this.personalDataRepository.findByUserId>
+    > = null;
+    let preferences: Awaited<
+      ReturnType<typeof this.userPreferencesRepository.findByUserId>
+    > = null;
 
     if (dto.personalData) {
       const existing = await this.personalDataRepository.findByUserId(userId);
       const dataToSave = {
         ...dto.personalData,
-        birthDate: dto.personalData.birthDate ? new Date(dto.personalData.birthDate) : undefined,
+        birthDate: dto.personalData.birthDate
+          ? new Date(dto.personalData.birthDate)
+          : undefined,
       };
       if (existing) {
-        personalData = await this.personalDataRepository.updateByUserId(userId, dataToSave);
+        personalData = await this.personalDataRepository.updateByUserId(
+          userId,
+          dataToSave,
+        );
       } else {
-        personalData = await this.personalDataRepository.createForUser(userId, dataToSave);
+        personalData = await this.personalDataRepository.createForUser(
+          userId,
+          dataToSave,
+        );
       }
     } else {
       personalData = await this.personalDataRepository.findByUserId(userId);
     }
 
     if (dto.preferences) {
-      const existing = await this.userPreferencesRepository.findByUserId(userId);
+      const existing =
+        await this.userPreferencesRepository.findByUserId(userId);
       if (existing) {
-        preferences = await this.userPreferencesRepository.updateByUserId(userId, dto.preferences);
+        preferences = await this.userPreferencesRepository.updateByUserId(
+          userId,
+          dto.preferences,
+        );
       } else {
-        preferences = await this.userPreferencesRepository.createForUser(userId, dto.preferences);
+        preferences = await this.userPreferencesRepository.createForUser(
+          userId,
+          dto.preferences,
+        );
       }
     } else {
       preferences = await this.userPreferencesRepository.findByUserId(userId);
@@ -55,25 +77,29 @@ export class UpdateProfileService {
       phone: user.phone,
       name: user.name,
       role: user.role,
-      personalData: personalData ? {
-        birthDate: personalData.birthDate
-          ? (personalData.birthDate instanceof Date
-            ? personalData.birthDate.toISOString().split('T')[0]
-            : String(personalData.birthDate).split('T')[0])
-          : undefined,
-        gender: personalData.gender,
-        gaLeaderName: personalData.gaLeaderName,
-        gaLeaderContact: personalData.gaLeaderContact,
-      } : undefined,
-      preferences: preferences ? {
-        loveLanguages: preferences.loveLanguages,
-        temperaments: preferences.temperaments,
-        favoriteColor: preferences.favoriteColor,
-        favoriteFood: preferences.favoriteFood,
-        favoriteMusic: preferences.favoriteMusic,
-        whatMakesYouSmile: preferences.whatMakesYouSmile,
-        skillsAndTalents: preferences.skillsAndTalents,
-      } : undefined,
+      personalData: personalData
+        ? {
+            birthDate: personalData.birthDate
+              ? personalData.birthDate instanceof Date
+                ? personalData.birthDate.toISOString().split("T")[0]
+                : String(personalData.birthDate).split("T")[0]
+              : undefined,
+            gender: personalData.gender,
+            gaLeaderName: personalData.gaLeaderName,
+            gaLeaderContact: personalData.gaLeaderContact,
+          }
+        : undefined,
+      preferences: preferences
+        ? {
+            loveLanguages: preferences.loveLanguages,
+            temperaments: preferences.temperaments,
+            favoriteColor: preferences.favoriteColor,
+            favoriteFood: preferences.favoriteFood,
+            favoriteMusic: preferences.favoriteMusic,
+            whatMakesYouSmile: preferences.whatMakesYouSmile,
+            skillsAndTalents: preferences.skillsAndTalents,
+          }
+        : undefined,
     };
   }
 }

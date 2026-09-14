@@ -1,6 +1,5 @@
 import { HttpException, Injectable, Logger } from "@nestjs/common";
 import {
-  AppException,
   ProcessException,
   ResourceNotFoundException,
 } from "src/common/exceptions";

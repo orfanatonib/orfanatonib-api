@@ -1,5 +1,13 @@
-import { IsUUID, IsNumber, Min, IsArray, ArrayMinSize, ValidateNested, IsNotEmpty } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsUUID,
+  IsNumber,
+  Min,
+  IsArray,
+  ArrayMinSize,
+  ValidateNested,
+  IsNotEmpty,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 /**
  * DTO para vincular líder a uma equipe de um abrigo (mantido para compatibilidade)
@@ -37,4 +45,3 @@ export class ManageLeaderTeamsDto {
   @ArrayMinSize(1)
   assignments!: ShelterTeamDto[];
 }
-

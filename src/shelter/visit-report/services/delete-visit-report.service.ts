@@ -1,5 +1,5 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { VisitReportRepository } from '../visit-report.repository';
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { VisitReportRepository } from "../visit-report.repository";
 
 @Injectable()
 export class DeleteVisitReportService {

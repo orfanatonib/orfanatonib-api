@@ -1,5 +1,5 @@
 import { AddressEntity } from "src/shelter/address/entities/address.entity/address.entity";
-import { AcceptedChristShortDto } from "src/shelter/accepted-christ/dtos/accepted-christ-short.dto";
+import { AcceptedChristShortDto } from "src/shelter/accepted-christ/dto/accepted-christ-short.dto";
 import { ShelteredEntity } from "../entities/sheltered.entity";
 import {
   ShelteredAddressResponseDto,

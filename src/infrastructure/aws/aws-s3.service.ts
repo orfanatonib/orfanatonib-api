@@ -1,10 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Logger } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
-} from '@aws-sdk/client-s3';
+} from "@aws-sdk/client-s3";
 
 @Injectable()
 export class AwsS3Service {
@@ -16,17 +16,23 @@ export class AwsS3Service {
   private readonly endpoint?: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.region = this.configService.get<string>('AWS_REGION') || 'us-east-1';
+    this.region = this.configService.get<string>("AWS_REGION") || "us-east-1";
 
-    const accessKeyId = this.configService.get<string>('AWS_ACCESS_KEY_ID') ?? 'test';
-    const secretAccessKey = this.configService.get<string>('AWS_SECRET_ACCESS_KEY') ?? 'test';
-    this.environment = this.configService.get<string>('ENVIRONMENT') ?? 'local';
+    const accessKeyId =
+      this.configService.get<string>("AWS_ACCESS_KEY_ID") ?? "test";
+    const secretAccessKey =
+      this.configService.get<string>("AWS_SECRET_ACCESS_KEY") ?? "test";
+    this.environment = this.configService.get<string>("ENVIRONMENT") ?? "local";
 
-    this.bucketName = this.configService.get<string>('AWS_S3_BUCKET_NAME') || 'orfanatos-nib-storage';
-    this.endpoint = this.configService.get<string>('AWS_ENDPOINT') || this.configService.get<string>('AWS_S3_ENDPOINT');
+    this.bucketName =
+      this.configService.get<string>("AWS_S3_BUCKET_NAME") ||
+      "orfanatos-nib-storage";
+    this.endpoint =
+      this.configService.get<string>("AWS_ENDPOINT") ||
+      this.configService.get<string>("AWS_S3_ENDPOINT");
 
     if (!this.bucketName) {
-      this.logger.error('AWS_S3_BUCKET_NAME not defined');
+      this.logger.error("AWS_S3_BUCKET_NAME not defined");
     }
 
     this.s3Client = new S3Client({
@@ -41,7 +47,10 @@ export class AwsS3Service {
   }
 
   async upload(file: Express.Multer.File): Promise<string> {
-    const sanitizedFilename = file.originalname.replace(/[^a-zA-Z0-9.\-_]/g, '_');
+    const sanitizedFilename = file.originalname.replace(
+      /[^a-zA-Z0-9.\-_]/g,
+      "_",
+    );
 
     const key = `${this.environment}/uploads/${Date.now()}_${sanitizedFilename}`;
     const command = new PutObjectCommand({
@@ -59,7 +68,7 @@ export class AwsS3Service {
       return `https://${this.bucketName}.s3.amazonaws.com/${key}`;
     } catch (err: any) {
       this.logger.error(`Error uploading to S3: ${err.message}`);
-      throw new Error('Error uploading to S3');
+      throw new Error("Error uploading to S3");
     }
   }
 

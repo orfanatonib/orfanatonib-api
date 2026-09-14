@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { Repository, DataSource } from 'typeorm';
-import { ShelterScheduleEntity } from './entities/shelter-schedule.entity';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { Repository, DataSource } from "typeorm";
+import { ShelterScheduleEntity } from "./entities/shelter-schedule.entity";
 
 @Injectable()
 export class ShelterScheduleRepository {
@@ -12,31 +12,31 @@ export class ShelterScheduleRepository {
 
   async findAll(): Promise<ShelterScheduleEntity[]> {
     return this.repo.find({
-      order: { visitDate: 'ASC' } as any,
-      relations: ['team', 'team.shelter'],
+      order: { visitDate: "ASC" } as any,
+      relations: ["team", "team.shelter"],
     });
   }
 
   async findById(id: string): Promise<ShelterScheduleEntity | null> {
     return this.repo.findOne({
       where: { id },
-      relations: ['team', 'team.shelter'],
+      relations: ["team", "team.shelter"],
     });
   }
 
   async findByTeamId(teamId: string): Promise<ShelterScheduleEntity[]> {
     return this.repo.find({
       where: { team: { id: teamId } },
-      relations: ['team', 'team.shelter'],
-      order: { visitDate: 'ASC' } as any,
+      relations: ["team", "team.shelter"],
+      order: { visitDate: "ASC" } as any,
     });
   }
 
   async findByShelterId(shelterId: string): Promise<ShelterScheduleEntity[]> {
     return this.repo.find({
       where: { team: { shelter: { id: shelterId } } },
-      relations: ['team', 'team.shelter'],
-      order: { visitDate: 'ASC' } as any,
+      relations: ["team", "team.shelter"],
+      order: { visitDate: "ASC" } as any,
     });
   }
 
@@ -45,12 +45,12 @@ export class ShelterScheduleRepository {
       where: {
         team: {
           leaders: {
-            user: { id: userId }
-          }
-        }
+            user: { id: userId },
+          },
+        },
       },
-      relations: ['team', 'team.shelter'],
-      order: { visitDate: 'ASC' } as any,
+      relations: ["team", "team.shelter"],
+      order: { visitDate: "ASC" } as any,
     });
   }
 
@@ -59,22 +59,25 @@ export class ShelterScheduleRepository {
       where: {
         team: {
           members: {
-            user: { id: userId }
-          }
-        }
+            user: { id: userId },
+          },
+        },
       },
-      relations: ['team', 'team.shelter'],
-      order: { visitDate: 'ASC' } as any,
+      relations: ["team", "team.shelter"],
+      order: { visitDate: "ASC" } as any,
     });
   }
 
-  async findByTeamIdAndVisitNumber(teamId: string, visitNumber: number): Promise<ShelterScheduleEntity | null> {
+  async findByTeamIdAndVisitNumber(
+    teamId: string,
+    visitNumber: number,
+  ): Promise<ShelterScheduleEntity | null> {
     return this.repo.findOne({
       where: {
         team: { id: teamId },
         visitNumber: visitNumber,
       },
-      relations: ['team', 'team.shelter'],
+      relations: ["team", "team.shelter"],
     });
   }
 
@@ -90,7 +93,7 @@ export class ShelterScheduleRepository {
 
   async remove(id: string): Promise<void> {
     const entity = await this.repo.findOne({ where: { id } });
-    if (!entity) throw new NotFoundException('Shelter schedule not found');
+    if (!entity) throw new NotFoundException("Shelter schedule not found");
     await this.repo.remove(entity);
   }
 }

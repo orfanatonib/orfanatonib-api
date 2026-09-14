@@ -1,17 +1,17 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { IdeasPageController } from './ideas-page.controller';
-import { IdeasPageEntity } from './entities/ideas-page.entity';
-import { IdeasSectionEntity } from '../ideas-section/entities/ideas-section.entity';
-import { IdeasPageRepository } from './repositories/ideas-page.repository';
-import { IdeasPageCreateService } from './services/ideas-page-create.service';
-import { RouteModule } from 'src/infrastructure/route/route.module';
-import { AwsModule } from 'src/infrastructure/aws/aws.module';
-import { MediaModule } from 'src/shared/media/media.module';
-import { IdeasPageRemoveService } from './services/ideas-page-remove.service';
-import { IdeasPageGetService } from './services/ideas-page-get.service';
-import { IdeasPageUpdateService } from './services/ideas-page-update.service';
-import { IdeasSectionRepository } from './repositories/ideas-section.repository';
+import { Module } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { IdeasPageController } from "./ideas-page.controller";
+import { IdeasPageEntity } from "./entities/ideas-page.entity";
+import { IdeasSectionEntity } from "../ideas-section/entities/ideas-section.entity";
+import { IdeasPageRepository } from "./repositories/ideas-page.repository";
+import { IdeasPageCreateService } from "./services/ideas-page-create.service";
+import { RouteModule } from "src/infrastructure/route/route.module";
+import { AwsModule } from "src/infrastructure/aws/aws.module";
+import { MediaModule } from "src/shared/media/media.module";
+import { IdeasPageRemoveService } from "./services/ideas-page-remove.service";
+import { IdeasPageGetService } from "./services/ideas-page-get.service";
+import { IdeasPageUpdateService } from "./services/ideas-page-update.service";
+import { IdeasSectionRepository } from "./repositories/ideas-section.repository";
 
 @Module({
   imports: [
@@ -28,7 +28,7 @@ import { IdeasSectionRepository } from './repositories/ideas-section.repository'
     IdeasPageRemoveService,
     IdeasPageGetService,
     IdeasPageUpdateService,
-    IdeasSectionRepository
+    IdeasSectionRepository,
   ],
 })
-export class IdeasPageModule { }
+export class IdeasPageModule {}

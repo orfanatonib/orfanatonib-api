@@ -1,6 +1,6 @@
-import { ImageSectionEntity } from 'src/content/page/image-page/entity/Image-section.entity';
-import { MediaItemEntity } from 'src/shared/media/media-item/media-item.entity';
-import { MediaItemDto } from 'src/shared/dto/media-item-dto';
+import { ImageSectionEntity } from "src/content/page/image-page/entities/image-section.entity";
+import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
+import { MediaItemDto } from "src/shared/dto/media-item-dto";
 
 export class ImageSectionResponseDto {
   id: string;
@@ -11,7 +11,10 @@ export class ImageSectionResponseDto {
   updatedAt: Date;
   mediaItems: MediaItemDto[];
 
-  static fromEntity(section: ImageSectionEntity, mediaItems: MediaItemEntity[]): ImageSectionResponseDto {
+  static fromEntity(
+    section: ImageSectionEntity,
+    mediaItems: MediaItemEntity[],
+  ): ImageSectionResponseDto {
     return {
       id: section.id,
       caption: section.caption,

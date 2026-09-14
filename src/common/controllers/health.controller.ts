@@ -1,7 +1,7 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { Controller, Get, Logger } from "@nestjs/common";
 
 interface HealthCheckResponse {
-  status: 'ok' | 'error';
+  status: "ok" | "error";
   timestamp: string;
   uptime: number;
   memory: {
@@ -12,21 +12,21 @@ interface HealthCheckResponse {
   version: string;
 }
 
-@Controller('health')
+@Controller("health")
 export class HealthController {
   @Get()
   getHealth(): HealthCheckResponse {
     const memUsage = process.memoryUsage();
     const totalMem = memUsage.heapTotal;
     const usedMem = memUsage.heapUsed;
-    const memPercentage = ((usedMem / totalMem) * 100);
+    const memPercentage = (usedMem / totalMem) * 100;
 
     if (memPercentage > 90) {
-      throw new Error('High memory usage detected');
+      throw new Error("High memory usage detected");
     }
 
     return {
-      status: 'ok',
+      status: "ok",
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       memory: {
@@ -34,24 +34,24 @@ export class HealthController {
         total: totalMem,
         percentage: Math.round(memPercentage * 100) / 100,
       },
-      version: process.env.npm_package_version || '1.0.0',
+      version: process.env.npm_package_version || "1.0.0",
     };
   }
 
-  @Get('detailed')
+  @Get("detailed")
   async getDetailedHealth(): Promise<any> {
     const basicHealth = this.getHealth();
 
     return {
       ...basicHealth,
       services: {
-        database: 'unknown',
-        cache: 'unknown',
-        externalApis: 'unknown',
+        database: "unknown",
+        cache: "unknown",
+        externalApis: "unknown",
       },
       environment: {
         nodeVersion: process.version,
-        environment: process.env.NODE_ENV || 'development',
+        environment: process.env.NODE_ENV || "development",
         platform: process.platform,
       },
     };

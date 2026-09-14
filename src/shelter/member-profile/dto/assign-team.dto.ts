@@ -1,4 +1,4 @@
-import { IsUUID, IsNumber, Min } from 'class-validator';
+import { IsUUID, IsNumber, Min } from "class-validator";
 
 export class ManageMemberTeamDto {
   @IsUUID()
@@ -8,4 +8,3 @@ export class ManageMemberTeamDto {
   @Min(1)
   numberTeam!: number;
 }
-

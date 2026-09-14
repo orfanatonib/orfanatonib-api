@@ -1,4 +1,4 @@
-import { PagelaEntity } from '../entities/pagela.entity';
+import { PagelaEntity } from "../entities/pagela.entity";
 
 export class ShelteredMiniDto {
   id: string;

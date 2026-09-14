@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
-import { MeditationEntity } from './entities/meditation.entity';
+import { Injectable } from "@nestjs/common";
+import { DataSource, Repository } from "typeorm";
+import { MeditationEntity } from "./entities/meditation.entity";
 
 @Injectable()
 export class MeditationRepository extends Repository<MeditationEntity> {
@@ -11,14 +11,14 @@ export class MeditationRepository extends Repository<MeditationEntity> {
   async findOneWithRelations(id: string): Promise<MeditationEntity | null> {
     return this.findOne({
       where: { id },
-      relations: ['days'],
+      relations: ["days"],
     });
   }
 
   async findAllWithRelations(): Promise<MeditationEntity[]> {
     return this.find({
-      relations: ['days'],
-      order: { startDate: 'ASC' },
+      relations: ["days"],
+      order: { startDate: "ASC" },
     });
   }
 }

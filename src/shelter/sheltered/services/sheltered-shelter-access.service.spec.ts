@@ -44,10 +44,13 @@ describe("ShelteredShelterAccessService", () => {
 
     await service.assertReachable("shelter-id", { userId: null, role: null });
 
-    expect(getSheltersService.existsForActor).toHaveBeenCalledWith("shelter-id", {
-      role: null,
-      userId: null,
-    });
+    expect(getSheltersService.existsForActor).toHaveBeenCalledWith(
+      "shelter-id",
+      {
+        role: null,
+        userId: null,
+      },
+    );
   });
 
   it("raises a 404 when the shelter is missing or out of scope", async () => {

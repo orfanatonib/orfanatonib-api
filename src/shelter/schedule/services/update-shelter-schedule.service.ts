@@ -3,16 +3,20 @@ import {
   Logger,
   NotFoundException,
   ConflictException,
-} from '@nestjs/common';
-import { ShelterScheduleRepository } from '../shelter-schedule.repository';
-import { UpdateShelterScheduleDto } from '../dto/update-shelter-schedule.dto';
-import { ShelterScheduleEntity } from '../entities/shelter-schedule.entity';
-import { TeamsService } from 'src/shelter/team/services/teams.service';
-import { EventRepository } from 'src/content/event/event.repository';
-import { CreateEventService } from 'src/content/event/services/create-event-service';
-import { UpdateEventService } from 'src/content/event/services/update-event-service';
-import { DeleteEventService } from 'src/content/event/services/delete-event-service';
-import { EventAudience, EventType, EventEntity } from 'src/content/event/entities/event.entity';
+} from "@nestjs/common";
+import { ShelterScheduleRepository } from "../shelter-schedule.repository";
+import { UpdateShelterScheduleDto } from "../dto/update-shelter-schedule.dto";
+import { ShelterScheduleEntity } from "../entities/shelter-schedule.entity";
+import { TeamsService } from "src/shelter/team/services/teams.service";
+import { EventRepository } from "src/content/event/event.repository";
+import { CreateEventService } from "src/content/event/services/create-event-service";
+import { UpdateEventService } from "src/content/event/services/update-event-service";
+import { DeleteEventService } from "src/content/event/services/delete-event-service";
+import {
+  EventAudience,
+  EventType,
+  EventEntity,
+} from "src/content/event/entities/event.entity";
 
 @Injectable()
 export class UpdateShelterScheduleService {
@@ -25,7 +29,7 @@ export class UpdateShelterScheduleService {
     private readonly createEventService: CreateEventService,
     private readonly updateEventService: UpdateEventService,
     private readonly deleteEventService: DeleteEventService,
-  ) { }
+  ) {}
 
   async execute(
     id: string,
@@ -49,10 +53,11 @@ export class UpdateShelterScheduleService {
     const newTeamId = dto.teamId ?? schedule.team.id;
 
     if (dto.visitNumber !== undefined || dto.teamId !== undefined) {
-      const existingSchedule = await this.scheduleRepo.findByTeamIdAndVisitNumber(
-        newTeamId,
-        newVisitNumber,
-      );
+      const existingSchedule =
+        await this.scheduleRepo.findByTeamIdAndVisitNumber(
+          newTeamId,
+          newVisitNumber,
+        );
       if (existingSchedule && existingSchedule.id !== id) {
         throw new ConflictException(
           `A schedule for this team with visit number ${newVisitNumber} already exists. Cannot create duplicate visit.`,
@@ -64,7 +69,8 @@ export class UpdateShelterScheduleService {
     if (dto.visitNumber !== undefined) updateData.visitNumber = dto.visitNumber;
     if (dto.visitDate !== undefined) updateData.visitDate = dto.visitDate;
     if (dto.meetingDate !== undefined) updateData.meetingDate = dto.meetingDate;
-    if (dto.lessonContent !== undefined) updateData.lessonContent = dto.lessonContent;
+    if (dto.lessonContent !== undefined)
+      updateData.lessonContent = dto.lessonContent;
     if (dto.observation !== undefined) updateData.observation = dto.observation;
     if (dto.meetingRoom !== undefined) updateData.meetingRoom = dto.meetingRoom;
     if (dto.teamId !== undefined) updateData.team = { id: dto.teamId };
@@ -80,10 +86,20 @@ export class UpdateShelterScheduleService {
     const team = await this.teamsService.findOneEntity(newTeamId);
 
     const existingEvents = await this.eventRepo.findByScheduleId(id);
-    const visitEvent = existingEvents.find((e) => e.eventType === EventType.VISIT);
-    const meetingEvent = existingEvents.find((e) => e.eventType === EventType.MEETING);
+    const visitEvent = existingEvents.find(
+      (e) => e.eventType === EventType.VISIT,
+    );
+    const meetingEvent = existingEvents.find(
+      (e) => e.eventType === EventType.MEETING,
+    );
 
-    await this.handleVisitEvent(visitEvent, newVisitDate, newLessonContent, team, id);
+    await this.handleVisitEvent(
+      visitEvent,
+      newVisitDate,
+      newLessonContent,
+      team,
+      id,
+    );
 
     await this.handleMeetingEvent(
       meetingEvent,
@@ -123,9 +139,13 @@ export class UpdateShelterScheduleService {
 
       if (hasChanges) {
         await this.updateEventService.update(existingEvent.id, eventData);
-        this.logger.log(`Visit event ${existingEvent.id} updated for schedule ${scheduleId}`);
+        this.logger.log(
+          `Visit event ${existingEvent.id} updated for schedule ${scheduleId}`,
+        );
       } else {
-        this.logger.log(`No changes detected for visit event ${existingEvent.id}, skipping update`);
+        this.logger.log(
+          `No changes detected for visit event ${existingEvent.id}, skipping update`,
+        );
       }
     } else if (!existingEvent && hasValidDate) {
       const eventData = {
@@ -137,7 +157,9 @@ export class UpdateShelterScheduleService {
       this.logger.log(`Visit event created for schedule ${scheduleId}`);
     } else if (existingEvent && !hasValidDate) {
       await this.deleteEventService.remove(existingEvent.id);
-      this.logger.log(`Visit event ${existingEvent.id} deleted for schedule ${scheduleId}`);
+      this.logger.log(
+        `Visit event ${existingEvent.id} deleted for schedule ${scheduleId}`,
+      );
     }
   }
 
@@ -152,7 +174,12 @@ export class UpdateShelterScheduleService {
     const hasValidDate = this.isValidDate(newDate);
 
     if (existingEvent && hasValidDate) {
-      const eventData = this.buildMeetingEventData(newDate!, observation, meetingRoom, team);
+      const eventData = this.buildMeetingEventData(
+        newDate!,
+        observation,
+        meetingRoom,
+        team,
+      );
 
       const hasChanges =
         existingEvent.date !== eventData.date ||
@@ -162,9 +189,13 @@ export class UpdateShelterScheduleService {
 
       if (hasChanges) {
         await this.updateEventService.update(existingEvent.id, eventData);
-        this.logger.log(`Meeting event ${existingEvent.id} updated for schedule ${scheduleId}`);
+        this.logger.log(
+          `Meeting event ${existingEvent.id} updated for schedule ${scheduleId}`,
+        );
       } else {
-        this.logger.log(`No changes detected for meeting event ${existingEvent.id}, skipping update`);
+        this.logger.log(
+          `No changes detected for meeting event ${existingEvent.id}, skipping update`,
+        );
       }
     } else if (!existingEvent && hasValidDate) {
       const eventData = {
@@ -176,7 +207,9 @@ export class UpdateShelterScheduleService {
       this.logger.log(`Meeting event created for schedule ${scheduleId}`);
     } else if (existingEvent && !hasValidDate) {
       await this.deleteEventService.remove(existingEvent.id);
-      this.logger.log(`Meeting event ${existingEvent.id} deleted for schedule ${scheduleId}`);
+      this.logger.log(
+        `Meeting event ${existingEvent.id} deleted for schedule ${scheduleId}`,
+      );
     }
   }
 
@@ -188,15 +221,15 @@ export class UpdateShelterScheduleService {
     const shelter = team.shelter;
     const address = shelter?.address;
     const visitLocation = address?.street
-      ? `${address.street}, ${address.number || 's/n'} - ${address.city || ''}, ${address.state || ''}`.trim()
-      : shelter?.name || 'Local a definir';
+      ? `${address.street}, ${address.number || "s/n"} - ${address.city || ""}, ${address.state || ""}`.trim()
+      : shelter?.name || "Local a definir";
 
-    const teamInfo = `Equipe ${team.numberTeam} - ${shelter?.name || 'Abrigo'}`;
+    const teamInfo = `Equipe ${team.numberTeam} - ${shelter?.name || "Abrigo"}`;
     const visitTitle = `Visita - ${teamInfo}`;
 
     return {
       title: visitTitle,
-      description: `${lessonContent || ''}\n\n${teamInfo}`,
+      description: `${lessonContent || ""}\n\n${teamInfo}`,
       date: visitDate,
       location: visitLocation,
       audience: EventAudience.MEMBERS,
@@ -210,20 +243,20 @@ export class UpdateShelterScheduleService {
     team: any,
   ): any {
     const shelter = team.shelter;
-    const teamInfo = `Equipe ${team.numberTeam} - ${shelter?.name || 'Abrigo'}`;
+    const teamInfo = `Equipe ${team.numberTeam} - ${shelter?.name || "Abrigo"}`;
     const meetingTitle = `Reunião - ${teamInfo}`;
 
     return {
       title: meetingTitle,
-      description: `${observation || 'Reunião de planejamento'}\n\n${teamInfo}`,
+      description: `${observation || "Reunião de planejamento"}\n\n${teamInfo}`,
       date: meetingDate,
-      location: meetingRoom || 'NIB - Nova Igreja Batista',
+      location: meetingRoom || "NIB - Nova Igreja Batista",
       audience: EventAudience.MEMBERS,
     };
   }
 
   private isValidDate(date: string | undefined): boolean {
-    if (!date || typeof date !== 'string' || date.trim() === '') {
+    if (!date || typeof date !== "string" || date.trim() === "") {
       return false;
     }
 

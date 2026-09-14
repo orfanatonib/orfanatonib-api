@@ -1,8 +1,8 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Request } from 'express';
-import { VisitReportRepository } from '../visit-report.repository';
-import { VisitReportEntity } from '../entities/visit-report.entity';
-import { AuthContextService } from 'src/core/auth/services/auth-context.service';
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { Request } from "express";
+import { VisitReportRepository } from "../visit-report.repository";
+import { VisitReportEntity } from "../entities/visit-report.entity";
+import { AuthContextService } from "src/core/auth/services/auth-context.service";
 
 @Injectable()
 export class ListVisitReportsService {
@@ -14,7 +14,7 @@ export class ListVisitReportsService {
   ) {}
 
   async execute(req: Request): Promise<VisitReportEntity[]> {
-    this.logger.log('Listing visit reports');
+    this.logger.log("Listing visit reports");
 
     const payload = await this.authCtx.tryGetPayload(req);
     const role = payload?.role?.toLowerCase();
@@ -40,11 +40,11 @@ export class ListVisitReportsService {
       return this.visitReportRepo.findByShelterId(shelterId);
     }
 
-    if (role === 'admin') {
+    if (role === "admin") {
       return this.visitReportRepo.findAll();
     }
 
-    if (role === 'leader' && userId) {
+    if (role === "leader" && userId) {
       return this.visitReportRepo.findByLeaderId(userId);
     }
 

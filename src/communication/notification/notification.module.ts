@@ -2,7 +2,7 @@ import { Global, Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { EmailModule } from "src/infrastructure/email/email.module";
-import { FeatureFlagsCoreModule } from 'src/core/feature-flags/feature-flags-core.module';
+import { FeatureFlagsCoreModule } from "src/core/feature-flags/feature-flags-core.module";
 import { AuthModule } from "src/core/auth/auth.module";
 
 import { EmailOutboxEntity } from "./outbox/email-outbox.entity";

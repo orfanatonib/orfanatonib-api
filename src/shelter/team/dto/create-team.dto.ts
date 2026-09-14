@@ -1,4 +1,12 @@
-import { IsNumber, IsUUID, IsOptional, IsArray, ArrayUnique, Min, IsString } from 'class-validator';
+import {
+  IsNumber,
+  IsUUID,
+  IsOptional,
+  IsArray,
+  ArrayUnique,
+  Min,
+  IsString,
+} from "class-validator";
 
 export class CreateTeamDto {
   @IsNumber()
@@ -24,4 +32,3 @@ export class CreateTeamDto {
   @IsUUID(undefined, { each: true })
   memberProfileIds?: string[];
 }
-

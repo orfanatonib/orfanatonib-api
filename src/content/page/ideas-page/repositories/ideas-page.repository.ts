@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { DataSource, EntityManager, Repository } from 'typeorm';
-import { IdeasPageEntity } from '../entities/ideas-page.entity';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { DataSource, EntityManager, Repository } from "typeorm";
+import { IdeasPageEntity } from "../entities/ideas-page.entity";
 
 @Injectable()
 export class IdeasPageRepository extends Repository<IdeasPageEntity> {
@@ -9,11 +9,14 @@ export class IdeasPageRepository extends Repository<IdeasPageEntity> {
   }
 
   async findAllPages(): Promise<IdeasPageEntity[]> {
-    return this.find({ relations: ['route'] });
+    return this.find({ relations: ["route"] });
   }
 
   async findOnePageById(id: string): Promise<IdeasPageEntity | null> {
-    return this.findOne({ where: { id }, relations: ['route', 'sections', 'sections.user'] });
+    return this.findOne({
+      where: { id },
+      relations: ["route", "sections", "sections.user"],
+    });
   }
 
   async savePage(page: IdeasPageEntity): Promise<IdeasPageEntity> {
@@ -47,6 +50,6 @@ export class IdeasPageRepository extends Repository<IdeasPageEntity> {
   }
 
   async findAllPagesWithSections(): Promise<IdeasPageEntity[]> {
-    return this.find({ relations: ['route', 'sections', 'sections.user'] });
+    return this.find({ relations: ["route", "sections", "sections.user"] });
   }
 }

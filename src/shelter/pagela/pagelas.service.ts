@@ -1,15 +1,15 @@
-import { Injectable } from '@nestjs/common';
-import { PagelasRepository } from './pagelas.repository';
-import { CreatePagelaDto } from './dto/create-pagela.dto';
-import { UpdatePagelaDto } from './dto/update-pagela.dto';
-import { PagelaResponseDto } from './dto/pagela-response.dto';
-import { PagelaFiltersDto } from './dto/pagela-filters.dto';
-import { PaginationQueryDto, PaginatedResponse } from './dto/paginated.dto';
-import { getISOWeekYear } from './week.util';
+import { Injectable } from "@nestjs/common";
+import { PagelasRepository } from "./pagelas.repository";
+import { CreatePagelaDto } from "./dto/create-pagela.dto";
+import { UpdatePagelaDto } from "./dto/update-pagela.dto";
+import { PagelaResponseDto } from "./dto/pagela-response.dto";
+import { PagelaFiltersDto } from "./dto/pagela-filters.dto";
+import { PaginationQueryDto, PaginatedResponse } from "./dto/paginated.dto";
+import { getISOWeekYear } from "./week.util";
 
 @Injectable()
 export class PagelasService {
-  constructor(private readonly repo: PagelasRepository) { }
+  constructor(private readonly repo: PagelasRepository) {}
 
   async create(dto: CreatePagelaDto): Promise<PagelaResponseDto> {
     const visit = dto.visit;
@@ -28,7 +28,9 @@ export class PagelasService {
     return PagelaResponseDto.fromEntity(created);
   }
 
-  async findAllSimple(filters?: PagelaFiltersDto): Promise<PagelaResponseDto[]> {
+  async findAllSimple(
+    filters?: PagelaFiltersDto,
+  ): Promise<PagelaResponseDto[]> {
     const items = await this.repo.findAllSimple(filters);
     return items.map(PagelaResponseDto.fromEntity);
   }
@@ -38,7 +40,11 @@ export class PagelasService {
     page: number,
     limit: number,
   ): Promise<PaginatedResponse<PagelaResponseDto>> {
-    const { items, total } = await this.repo.findAllPaginated(filters, page, limit);
+    const { items, total } = await this.repo.findAllPaginated(
+      filters,
+      page,
+      limit,
+    );
     return {
       items: items.map(PagelaResponseDto.fromEntity),
       total,
@@ -53,11 +59,11 @@ export class PagelasService {
   }
 
   async update(id: string, dto: UpdatePagelaDto): Promise<PagelaResponseDto> {
-
     const updated = await this.repo.updateOne(id, {
-      member: dto.memberProfileId === undefined
-        ? undefined
-        : ({ id: dto.memberProfileId } as any),
+      member:
+        dto.memberProfileId === undefined
+          ? undefined
+          : ({ id: dto.memberProfileId } as any),
 
       referenceDate: dto.referenceDate ?? undefined,
       year: dto.year ?? undefined,

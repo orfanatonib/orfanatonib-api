@@ -2,26 +2,27 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
-} from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
 import {
   DataSource,
   Repository,
   SelectQueryBuilder,
   EntityManager,
-} from 'typeorm';
+  In,
+} from "typeorm";
 
-import { LeaderProfileEntity } from '../entities/leader-profile.entity/leader-profile.entity';
-import { TeamEntity } from 'src/shelter/team/entities/team.entity';
-import { ShelterEntity } from 'src/shelter/shelter/entities/shelter.entity/shelter.entity';
-import { UserEntity } from 'src/core/user/entities/user.entity';
+import { LeaderProfileEntity } from "../entities/leader-profile.entity/leader-profile.entity";
+import { TeamEntity } from "src/shelter/team/entities/team.entity";
+import { ShelterEntity } from "src/shelter/shelter/entities/shelter.entity/shelter.entity";
+import { UserEntity } from "src/core/user/entities/user.entity";
 import {
   LeaderSimpleListDto,
   toLeaderSimple,
-} from '../dto/leader-simple-list.dto';
-import { LeaderProfilesQueryDto } from '../dto/leader-profiles.query.dto';
+} from "../dto/leader-simple-list.dto";
+import { LeaderProfilesQueryDto } from "../dto/leader-profiles.query.dto";
 
-type SortDir = 'ASC' | 'DESC';
+type SortDir = "ASC" | "DESC";
 
 @Injectable()
 export class LeaderProfilesRepository {
@@ -43,52 +44,52 @@ export class LeaderProfilesRepository {
       : this.leaderRepo;
 
     return repo
-      .createQueryBuilder('leader')
-      .leftJoinAndSelect('leader.teams', 'team')
-      .leftJoinAndSelect('team.shelter', 'shelter')
-      .leftJoinAndSelect('team.members', 'members')
-      .leftJoin('leader.user', 'leader_user')
+      .createQueryBuilder("leader")
+      .leftJoinAndSelect("leader.teams", "team")
+      .leftJoinAndSelect("team.shelter", "shelter")
+      .leftJoinAndSelect("team.members", "members")
+      .leftJoin("leader.user", "leader_user")
       .addSelect([
-        'leader_user.id',
-        'leader_user.name',
-        'leader_user.email',
-        'leader_user.phone',
-        'leader_user.active',
-        'leader_user.completed',
-        'leader_user.commonUser',
+        "leader_user.id",
+        "leader_user.name",
+        "leader_user.email",
+        "leader_user.phone",
+        "leader_user.active",
+        "leader_user.completed",
+        "leader_user.commonUser",
       ])
-      .leftJoin('members.user', 'member_user')
+      .leftJoin("members.user", "member_user")
       .addSelect([
-        'member_user.id',
-        'member_user.name',
-        'member_user.email',
-        'member_user.phone',
-        'member_user.active',
-        'member_user.completed',
-        'member_user.commonUser',
+        "member_user.id",
+        "member_user.name",
+        "member_user.email",
+        "member_user.phone",
+        "member_user.active",
+        "member_user.completed",
+        "member_user.commonUser",
       ])
-      .where('leader_user.active = true')
+      .where("leader_user.active = true")
       .distinct(true);
   }
 
   private baseIdsQuery(): SelectQueryBuilder<LeaderProfileEntity> {
     return this.leaderRepo
-      .createQueryBuilder('leader')
-      .leftJoin('leader.user', 'leader_user')
-      .where('leader_user.active = true');
+      .createQueryBuilder("leader")
+      .leftJoin("leader.user", "leader_user")
+      .where("leader_user.active = true");
   }
 
   private resolveSort(sort?: string) {
     const map: Record<string, string> = {
-      createdAt: 'leader.createdAt',
-      updatedAt: 'leader.updatedAt',
-      name: 'leader_user.name',
+      createdAt: "leader.createdAt",
+      updatedAt: "leader.updatedAt",
+      name: "leader_user.name",
     };
-    return map[sort ?? 'updatedAt'] ?? 'leader.updatedAt';
+    return map[sort ?? "updatedAt"] ?? "leader.updatedAt";
   }
 
   private coerceShelterId(input: unknown): string | undefined {
-    if (input === undefined || input === null || input === '') return undefined;
+    if (input === undefined || input === null || input === "") return undefined;
     const s = String(input).trim();
     return s ? s : undefined;
   }
@@ -97,7 +98,14 @@ export class LeaderProfilesRepository {
     qb: SelectQueryBuilder<LeaderProfileEntity>,
     params: LeaderProfilesQueryDto,
   ) {
-    const { leaderSearchString, shelterSearchString, hasShelter, teamId, teamName, hasTeam } = params;
+    const {
+      leaderSearchString,
+      shelterSearchString,
+      hasShelter,
+      teamId,
+      teamName,
+      hasTeam,
+    } = params;
 
     if (leaderSearchString?.trim()) {
       const like = `%${leaderSearchString.trim().toLowerCase()}%`;
@@ -108,10 +116,10 @@ export class LeaderProfilesRepository {
           LOWER(leader_user.email) LIKE :leaderSearchString OR
           leader_user.phone LIKE :leaderSearchStringRaw
         )`,
-        { 
-          leaderSearchString: like, 
-          leaderSearchStringRaw: likeRaw 
-        }
+        {
+          leaderSearchString: like,
+          leaderSearchStringRaw: likeRaw,
+        },
       );
     }
 
@@ -137,10 +145,10 @@ export class LeaderProfilesRepository {
               LOWER(shelter_addr.complement) LIKE :shelterSearchString
             )
         )`,
-        { 
-          shelterSearchString: like, 
-          shelterSearchStringRaw: likeRaw 
-        }
+        {
+          shelterSearchString: like,
+          shelterSearchStringRaw: likeRaw,
+        },
       );
     }
 
@@ -148,13 +156,13 @@ export class LeaderProfilesRepository {
       qb.andWhere(
         `EXISTS (
           SELECT 1 FROM leader_teams lt WHERE lt.leader_id = leader.id
-        )`
+        )`,
       );
     } else if (hasShelter === false) {
       qb.andWhere(
         `NOT EXISTS (
           SELECT 1 FROM leader_teams lt WHERE lt.leader_id = leader.id
-        )`
+        )`,
       );
     }
 
@@ -164,7 +172,7 @@ export class LeaderProfilesRepository {
           SELECT 1 FROM leader_teams lt 
           WHERE lt.leader_id = leader.id AND lt.team_id = :teamId
         )`,
-        { teamId: teamId.trim() }
+        { teamId: teamId.trim() },
       );
     }
 
@@ -178,7 +186,7 @@ export class LeaderProfilesRepository {
             WHERE lt.leader_id = leader.id
               AND t.numberTeam = :teamNumber
           )`,
-          { teamNumber }
+          { teamNumber },
         );
       }
     }
@@ -187,13 +195,13 @@ export class LeaderProfilesRepository {
       qb.andWhere(
         `EXISTS (
           SELECT 1 FROM leader_teams lt WHERE lt.leader_id = leader.id
-        )`
+        )`,
       );
     } else if (hasTeam === false) {
       qb.andWhere(
         `NOT EXISTS (
           SELECT 1 FROM leader_teams lt WHERE lt.leader_id = leader.id
-        )`
+        )`,
       );
     }
 
@@ -206,26 +214,21 @@ export class LeaderProfilesRepository {
     page: number;
     limit: number;
   }> {
-    const {
-      page = 1,
-      limit = 12,
-      sort = 'updatedAt',
-      order = 'desc',
-    } = query;
+    const { page = 1, limit = 12, sort = "updatedAt", order = "desc" } = query;
 
     const sortColumn = this.resolveSort(sort);
     const sortDir: SortDir =
-      (order || 'desc').toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+      (order || "desc").toUpperCase() === "ASC" ? "ASC" : "DESC";
     const offset = (page - 1) * limit;
 
     const total = await this.applyFilters(this.baseIdsQuery(), query)
-      .select('leader.id')
+      .select("leader.id")
       .distinct(true)
       .getCount();
 
     const pageIdsRaw = await this.applyFilters(this.baseIdsQuery(), query)
-      .select('leader.id', 'id')
-      .addSelect(sortColumn, 'ord')
+      .select("leader.id", "id")
+      .addSelect(sortColumn, "ord")
       .distinct(true)
       .orderBy(sortColumn, sortDir)
       .offset(offset)
@@ -238,10 +241,10 @@ export class LeaderProfilesRepository {
     }
 
     const items = await this.buildLeaderBaseQB()
-      .andWhere('leader.id IN (:...ids)', { ids })
+      .andWhere("leader.id IN (:...ids)", { ids })
       .orderBy(sortColumn, sortDir)
-      .addOrderBy('shelter.name', 'ASC')
-      .addOrderBy('members.createdAt', 'ASC')
+      .addOrderBy("shelter.name", "ASC")
+      .addOrderBy("members.createdAt", "ASC")
       .getMany();
 
     return { items, total, page, limit };
@@ -251,15 +254,14 @@ export class LeaderProfilesRepository {
     id: string,
   ): Promise<LeaderProfileEntity> {
     const leader = await this.buildLeaderBaseQB()
-      .andWhere('leader.id = :id', { id })
-      .orderBy('shelter.name', 'ASC')
-      .addOrderBy('members.createdAt', 'ASC')
+      .andWhere("leader.id = :id", { id })
+      .orderBy("shelter.name", "ASC")
+      .addOrderBy("members.createdAt", "ASC")
       .getOne();
 
-    if (!leader) throw new NotFoundException('LeaderProfile not found');
+    if (!leader) throw new NotFoundException("LeaderProfile not found");
     return leader;
   }
-
 
   async createForUser(userId: string): Promise<LeaderProfileEntity> {
     return this.dataSource.transaction(async (manager) => {
@@ -267,9 +269,11 @@ export class LeaderProfilesRepository {
       const txUser = manager.withRepository(this.userRepo);
 
       const user = await txUser.findOne({ where: { id: userId } });
-      if (!user) throw new NotFoundException('User not found');
+      if (!user) throw new NotFoundException("User not found");
 
-      const existing = await txLeader.findOne({ where: { user: { id: userId } } });
+      const existing = await txLeader.findOne({
+        where: { user: { id: userId } },
+      });
       if (existing) return existing;
 
       const entity = txLeader.create({ user: user as any, active: true });
@@ -304,15 +308,36 @@ export class LeaderProfilesRepository {
 
   async listEntities(): Promise<LeaderProfileEntity[]> {
     return this.buildLeaderBaseQB()
-      .orderBy('leader.createdAt', 'ASC')
-      .addOrderBy('shelter.name', 'ASC')
+      .orderBy("leader.createdAt", "ASC")
+      .addOrderBy("shelter.name", "ASC")
       .getMany();
   }
 
   async findByUserId(userId: string): Promise<LeaderProfileEntity | null> {
     return this.leaderRepo.findOne({
       where: { user: { id: userId } },
-      relations: ['teams'],
+      relations: ["teams"],
+    });
+  }
+
+  async findSheltersByIds(shelterIds: string[]): Promise<ShelterEntity[]> {
+    if (!shelterIds.length) return [];
+    return this.shelterRepo.find({
+      where: { id: In(shelterIds) },
+      relations: [
+        "address",
+        "teams",
+        "teams.leaders",
+        "teams.leaders.user",
+        "teams.members",
+        "teams.members.user",
+      ],
+      order: {
+        name: "ASC",
+        teams: {
+          numberTeam: "ASC",
+        },
+      },
     });
   }
 }

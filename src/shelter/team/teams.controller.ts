@@ -10,16 +10,16 @@ import {
   ParseUUIDPipe,
   Req,
   Logger,
-} from '@nestjs/common';
-import { Request } from 'express';
-import { TeamsService } from './services/teams.service';
-import { CreateTeamDto } from './dto/create-team.dto';
-import { UpdateTeamDto } from './dto/update-team.dto';
-import { TeamResponseDto } from './dto/team-response.dto';
-import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
-import { AuthContextService } from 'src/core/auth/services/auth-context.service';
+} from "@nestjs/common";
+import { Request } from "express";
+import { TeamsService } from "./services/teams.service";
+import { CreateTeamDto } from "./dto/create-team.dto";
+import { UpdateTeamDto } from "./dto/update-team.dto";
+import { TeamResponseDto } from "./dto/team-response.dto";
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { AuthContextService } from "src/core/auth/services/auth-context.service";
 
-@Controller('teams')
+@Controller("teams")
 @UseGuards(JwtAuthGuard)
 export class TeamsController {
   private readonly logger = new Logger(TeamsController.name);
@@ -27,7 +27,7 @@ export class TeamsController {
   constructor(
     private readonly service: TeamsService,
     private readonly authContext: AuthContextService,
-  ) { }
+  ) {}
 
   @Post()
   async create(@Body() dto: CreateTeamDto): Promise<TeamResponseDto> {
@@ -39,17 +39,17 @@ export class TeamsController {
 
   @Get()
   async findAll(): Promise<TeamResponseDto[]> {
-    this.logger.log('Fetching all teams');
+    this.logger.log("Fetching all teams");
     return this.service.findAll();
   }
 
-  @Get('my-teams')
+  @Get("my-teams")
   async findMyTeams(@Req() req: Request): Promise<TeamResponseDto[]> {
     const userId = await this.authContext.getUserId(req);
     const role = await this.authContext.getRole(req);
 
     if (!userId || !role) {
-      this.logger.log('User not identified for my-teams request');
+      this.logger.log("User not identified for my-teams request");
       return [];
     }
 
@@ -57,25 +57,25 @@ export class TeamsController {
     return this.service.findByUserContext(userId, role);
   }
 
-  @Get('by-shelter/:shelterId')
+  @Get("by-shelter/:shelterId")
   async findByShelter(
-    @Param('shelterId', new ParseUUIDPipe()) shelterId: string,
+    @Param("shelterId", new ParseUUIDPipe()) shelterId: string,
   ): Promise<TeamResponseDto[]> {
     this.logger.log(`Fetching teams for shelter ${shelterId}`);
     return this.service.findByShelter(shelterId);
   }
 
-  @Get(':id')
+  @Get(":id")
   async findOne(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param("id", new ParseUUIDPipe()) id: string,
   ): Promise<TeamResponseDto> {
     this.logger.log(`Fetching team ${id}`);
     return this.service.findOne(id);
   }
 
-  @Put(':id')
+  @Put(":id")
   async update(
-    @Param('id', new ParseUUIDPipe()) id: string,
+    @Param("id", new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateTeamDto,
   ): Promise<TeamResponseDto> {
     this.logger.log(`Updating team ${id}`);
@@ -84,11 +84,10 @@ export class TeamsController {
     return result;
   }
 
-  @Delete(':id')
-  async remove(@Param('id', new ParseUUIDPipe()) id: string): Promise<void> {
+  @Delete(":id")
+  async remove(@Param("id", new ParseUUIDPipe()) id: string): Promise<void> {
     this.logger.log(`Deleting team ${id}`);
     await this.service.remove(id);
     this.logger.log(`Team deleted successfully: ${id}`);
   }
 }
-

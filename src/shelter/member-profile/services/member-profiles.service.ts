@@ -1,19 +1,32 @@
-import { ForbiddenException, Injectable, NotFoundException, BadRequestException, forwardRef, Inject } from '@nestjs/common';
-import { Request } from 'express';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  forwardRef,
+  Inject,
+} from "@nestjs/common";
+import { Request } from "express";
 
-import { MemberProfilesRepository } from '../repositories/member-profiles.repository';
+import { MemberProfilesRepository } from "../repositories/member-profiles.repository";
 import {
   MemberResponseDto,
   toMemberDto,
-} from '../dto/member-profile.response.dto';
-import { MemberSimpleListDto, toMemberSimple } from '../dto/member-simple-list.dto';
-import { AuthContextService } from 'src/core/auth/services/auth-context.service';
-import { PageDto, MemberProfilesQueryDto } from '../dto/member-profiles.query.dto';
-import { TeamsService } from 'src/shelter/team/services/teams.service';
-import { ManageMemberTeamDto } from '../dto/assign-team.dto';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
-import { MemberProfileEntity } from '../entities/member-profile.entity/member-profile.entity';
-import { NotificationService } from 'src/communication/notification/services/notification.service';
+} from "../dto/member-profile.response.dto";
+import {
+  MemberSimpleListDto,
+  toMemberSimple,
+} from "../dto/member-simple-list.dto";
+import { AuthContextService } from "src/core/auth/services/auth-context.service";
+import {
+  PageDto,
+  MemberProfilesQueryDto,
+} from "../dto/member-profiles.query.dto";
+import { TeamsService } from "src/shelter/team/services/teams.service";
+import { ManageMemberTeamDto } from "../dto/assign-team.dto";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { MemberProfileEntity } from "../entities/member-profile.entity/member-profile.entity";
+import { NotificationService } from "src/communication/notification/services/notification.service";
 
 type AccessCtx = { role?: string; userId?: string | null };
 
@@ -26,7 +39,7 @@ export class MemberProfilesService {
     private readonly teamsService: TeamsService,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly notificationService: NotificationService,
-  ) { }
+  ) {}
 
   private async getCtx(req: Request): Promise<AccessCtx> {
     const payload = await this.authCtx.tryGetPayload(req);
@@ -42,7 +55,10 @@ export class MemberProfilesService {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    const { items, total, page, limit } = await this.repo.findPageWithFilters(query, ctx);
+    const { items, total, page, limit } = await this.repo.findPageWithFilters(
+      query,
+      ctx,
+    );
 
     await this.populateUserImages(items);
 
@@ -54,8 +70,8 @@ export class MemberProfilesService {
     };
   }
   private assertAllowed(ctx: AccessCtx) {
-    if (!ctx.role) throw new ForbiddenException('Acesso negado');
-    if (ctx.role === 'member') throw new ForbiddenException('Acesso negado');
+    if (!ctx.role) throw new ForbiddenException("Acesso negado");
+    if (ctx.role === "member") throw new ForbiddenException("Acesso negado");
   }
 
   async list(req: Request): Promise<MemberSimpleListDto[]> {
@@ -114,15 +130,22 @@ export class MemberProfilesService {
     }
   }
 
-  async manageTeam(memberId: string, dto: ManageMemberTeamDto, req: Request): Promise<MemberResponseDto> {
+  async manageTeam(
+    memberId: string,
+    dto: ManageMemberTeamDto,
+    req: Request,
+  ): Promise<MemberResponseDto> {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    const member = await this.repo.findOneWithShelterAndLeaderOrFail(memberId, ctx);
+    const member = await this.repo.findOneWithShelterAndLeaderOrFail(
+      memberId,
+      ctx,
+    );
 
     const teams = await this.teamsService.findByShelter(dto.shelterId);
 
-    let targetTeam = teams.find(t => t.numberTeam === dto.numberTeam);
+    let targetTeam = teams.find((t) => t.numberTeam === dto.numberTeam);
 
     if (!targetTeam) {
       const newTeam = await this.teamsService.create({
@@ -135,7 +158,9 @@ export class MemberProfilesService {
       if (member.team && member.team.id !== targetTeam.id) {
         const currentTeam = await this.teamsService.findOne(member.team.id);
         if (currentTeam) {
-          const currentMemberIds = currentTeam.members.map(t => t.id).filter(id => id !== memberId);
+          const currentMemberIds = currentTeam.members
+            .map((t) => t.id)
+            .filter((id) => id !== memberId);
           await this.teamsService.update(currentTeam.id, {
             memberProfileIds: currentMemberIds,
           });
@@ -143,7 +168,9 @@ export class MemberProfilesService {
       }
 
       if (!member.team || member.team.id !== targetTeam.id) {
-        const currentMemberIds = targetTeam.members.map(t => t.id).filter(id => id !== memberId);
+        const currentMemberIds = targetTeam.members
+          .map((t) => t.id)
+          .filter((id) => id !== memberId);
         await this.teamsService.update(targetTeam.id, {
           memberProfileIds: [...currentMemberIds, memberId],
         });
@@ -155,22 +182,23 @@ export class MemberProfilesService {
     return updated;
   }
 
-  private async populateUserImages(members: MemberProfileEntity[]): Promise<void> {
+  private async populateUserImages(
+    members: MemberProfileEntity[],
+  ): Promise<void> {
     if (!members.length) return;
 
-    const userIds = members
-      .filter(m => m.user?.id)
-      .map(m => m.user.id);
+    const userIds = members.filter((m) => m.user?.id).map((m) => m.user.id);
 
     if (!userIds.length) return;
 
-    const mediaItems = await this.mediaItemProcessor.findManyMediaItemsByTargets(
-      userIds,
-      'UserEntity'
-    );
+    const mediaItems =
+      await this.mediaItemProcessor.findManyMediaItemsByTargets(
+        userIds,
+        "UserEntity",
+      );
 
     const mediaMap = new Map<string, any>();
-    mediaItems.forEach(item => {
+    mediaItems.forEach((item) => {
       if (!mediaMap.has(item.targetId)) {
         mediaMap.set(item.targetId, {
           id: item.id,
@@ -184,9 +212,10 @@ export class MemberProfilesService {
       }
     });
 
-    members.forEach(member => {
+    members.forEach((member) => {
       if (member.user?.id) {
-        (member.user as any).imageProfile = mediaMap.get(member.user.id) || null;
+        (member.user as any).imageProfile =
+          mediaMap.get(member.user.id) || null;
       }
     });
   }

@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsUUID, IsNumber, Min } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsUUID, IsNumber, Min } from "class-validator";
 
 export class CreateShelterScheduleDto {
   @IsNumber()

@@ -1,7 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { EntityManager } from 'typeorm';
-import { AddressEntity } from './entities/address.entity/address.entity';
-import { AddressesRepository } from './repositories/addresses.repository';
+import { Injectable, Logger } from "@nestjs/common";
+import { EntityManager } from "typeorm";
+import { AddressEntity } from "./entities/address.entity/address.entity";
+import { AddressesRepository } from "./repositories/addresses.repository";
 
 @Injectable()
 export class AddressesService {
@@ -9,7 +9,9 @@ export class AddressesService {
 
   constructor(private readonly repo: AddressesRepository) {}
 
-  private tag(txId?: string) { return txId ? `[${txId}] ` : ''; }
+  private tag(txId?: string) {
+    return txId ? `[${txId}] ` : "";
+  }
 
   create(partial: Partial<AddressEntity>, txId?: string) {
     return this.repo.create(partial);
@@ -35,7 +37,7 @@ export class AddressesService {
     const t0 = Date.now();
     const entity = await this.repo.findById(id);
     if (!entity) {
-      throw new Error('Address not found');
+      throw new Error("Address not found");
     }
     const merged = this.repo.merge(entity, partial);
     const out = await this.repo.save(merged);

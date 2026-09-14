@@ -4,9 +4,9 @@ import {
   IsArray,
   ValidateNested,
   IsBoolean,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { MediaItemDto } from 'src/shared/dto/media-item-dto';
+} from "class-validator";
+import { Type } from "class-transformer";
+import { MediaItemDto } from "src/shared/dto/media-item-dto";
 
 export class IdeasSectionDto {
   @IsOptional()
@@ -36,7 +36,7 @@ export class UpdateIdeasPageDto {
 
   @IsString({ message: 'O campo "title" da página deve ser uma string.' })
   title: string;
-  
+
   @IsOptional()
   @IsString({ message: 'O campo "subtitle" da página deve ser uma string.' })
   subtitle?: string;

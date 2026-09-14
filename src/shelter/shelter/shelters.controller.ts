@@ -17,7 +17,7 @@ import {
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AuthenticatedRequest } from "src/core/auth/auth.types";
-import { GetFeatureFlagsService } from 'src/core/feature-flags/services/get-feature-flags.service';
+import { GetFeatureFlagsService } from "src/core/feature-flags/services/get-feature-flags.service";
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 import { CreateSheltersService } from "./services/create-shelters.service";

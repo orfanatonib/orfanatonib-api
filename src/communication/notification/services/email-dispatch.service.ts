@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { GetFeatureFlagsService } from 'src/core/feature-flags/services/get-feature-flags.service';
+import { GetFeatureFlagsService } from "src/core/feature-flags/services/get-feature-flags.service";
 import {
   FeatureFlagKeys,
   emailFeatureFlagKey,
