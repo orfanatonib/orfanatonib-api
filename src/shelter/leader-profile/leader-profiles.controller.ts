@@ -11,7 +11,8 @@ import {
   Logger,
 } from "@nestjs/common";
 import { Request } from "express";
-import { LeaderProfilesService } from "./services/leader-profiles.service";
+import { GetLeaderProfilesService } from "./services/get-leader-profiles.service";
+import { UpdateLeaderProfileService } from "./services/update-leader-profile.service";
 import { LeaderResponseDto } from "./dto/leader-profile.response.dto";
 import { LeaderSimpleListDto } from "./dto/leader-simple-list.dto";
 import {
@@ -19,11 +20,7 @@ import {
   LeaderProfilesQueryDto,
 } from "./dto/leader-profiles.query.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
-import {
-  ManageLeaderTeamDto,
-  ManageLeaderTeamsDto,
-  ShelterTeamDto,
-} from "./dto/assign-team.dto";
+import { ShelterTeamDto } from "./dto/assign-team.dto";
 import { ShelterWithLeaderStatusDto } from "src/shelter/shelter/dto/shelter.response.dto";
 
 @Controller("leader-profiles")
@@ -31,24 +28,27 @@ import { ShelterWithLeaderStatusDto } from "src/shelter/shelter/dto/shelter.resp
 export class LeaderProfilesController {
   private readonly logger = new Logger(LeaderProfilesController.name);
 
-  constructor(private readonly service: LeaderProfilesService) {}
+  constructor(
+    private readonly getLeaderProfilesService: GetLeaderProfilesService,
+    private readonly updateLeaderProfileService: UpdateLeaderProfileService,
+  ) {}
 
   @Get()
   findPage(
     @Req() req: Request,
     @Query() query: LeaderProfilesQueryDto,
   ): Promise<PageDto<LeaderResponseDto>> {
-    return this.service.findPage(req, query);
+    return this.getLeaderProfilesService.findPage(req, query);
   }
 
   @Get("simple")
   listSimple(@Req() req: Request): Promise<LeaderSimpleListDto[]> {
-    return this.service.list(req);
+    return this.getLeaderProfilesService.list(req);
   }
 
   @Get("my-shelters")
   findMyShelters(@Req() req: Request): Promise<ShelterWithLeaderStatusDto[]> {
-    return this.service.findMyShelters(req);
+    return this.getLeaderProfilesService.findMyShelters(req);
   }
 
   @Get(":id")
@@ -56,7 +56,7 @@ export class LeaderProfilesController {
     @Param("id", new ParseUUIDPipe()) id: string,
     @Req() req: Request,
   ): Promise<LeaderResponseDto> {
-    return this.service.findOne(id, req);
+    return this.getLeaderProfilesService.findOne(id, req);
   }
 
   @Put(":leaderId")
@@ -66,7 +66,7 @@ export class LeaderProfilesController {
     @Req() req: Request,
   ): Promise<LeaderResponseDto> {
     this.logger.log(`Updating leader profile: ${leaderId}`);
-    const result = await this.service.manageTeams(
+    const result = await this.updateLeaderProfileService.manageTeams(
       leaderId,
       { assignments: dto },
       req,

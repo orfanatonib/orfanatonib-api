@@ -1,279 +1,65 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  forwardRef,
-  Inject,
-} from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { Request } from "express";
-import { LeaderProfilesRepository } from "../repositories/leader-profiles.repository";
-import {
-  LeaderResponseDto,
-  toLeaderDto,
-} from "../dto/leader-profile.response.dto";
-import {
-  LeaderSimpleListDto,
-  toLeaderSimple,
-} from "../dto/leader-simple-list.dto";
+import { GetLeaderProfilesService } from "./get-leader-profiles.service";
+import { CreateLeaderProfileService } from "./create-leader-profile.service";
+import { UpdateLeaderProfileService } from "./update-leader-profile.service";
+import { DeleteLeaderProfileService } from "./delete-leader-profile.service";
+import { LeaderResponseDto } from "../dto/leader-profile.response.dto";
+import { LeaderSimpleListDto } from "../dto/leader-simple-list.dto";
 import { LeaderProfileEntity } from "../entities/leader-profile.entity/leader-profile.entity";
-import {
-  LeaderProfilesQueryDto,
-  PageDto,
-} from "../dto/leader-profiles.query.dto";
-import { AuthContextService } from "src/core/auth/services/auth-context.service";
-import { TeamsService } from "src/shelter/team/services/teams.service";
-import {
-  ManageLeaderTeamDto,
-  ManageLeaderTeamsDto,
-} from "../dto/assign-team.dto";
-import { GetSheltersService } from "src/shelter/shelter/services/get-shelters.service";
-import {
-  ShelterSimpleResponseDto,
-  ShelterWithLeaderStatusDto,
-} from "src/shelter/shelter/dto/shelter.response.dto";
-import {
-  toShelterSimpleDto,
-  toShelterWithLeaderStatusDto,
-} from "src/shelter/shelter/mappers/shelter.mapper";
-import { MediaItemProcessor } from "src/shared/media/media-item-processor";
-import { ShelterEntity } from "src/shelter/shelter/entities/shelter.entity/shelter.entity";
-
-type AccessCtx = { role?: string; userId?: string | null };
+import { LeaderProfilesQueryDto, PageDto } from "../dto/leader-profiles.query.dto";
+import { ManageLeaderTeamDto, ManageLeaderTeamsDto } from "../dto/assign-team.dto";
+import { ShelterWithLeaderStatusDto } from "src/shelter/shelter/dto/shelter.response.dto";
 
 @Injectable()
 export class LeaderProfilesService {
   constructor(
-    private readonly repo: LeaderProfilesRepository,
-    private readonly authCtx: AuthContextService,
-    @Inject(forwardRef(() => TeamsService))
-    private readonly teamsService: TeamsService,
-    @Inject(forwardRef(() => GetSheltersService))
-    private readonly getSheltersService: GetSheltersService,
-    private readonly mediaItemProcessor: MediaItemProcessor,
+    private readonly getService: GetLeaderProfilesService,
+    private readonly createService: CreateLeaderProfileService,
+    private readonly updateService: UpdateLeaderProfileService,
+    private readonly deleteService: DeleteLeaderProfileService,
   ) {}
 
-  private async getCtx(req: Request): Promise<AccessCtx> {
-    const payload = await this.authCtx.tryGetPayload(req);
-    return {
-      role: payload?.role?.toString().toLowerCase(),
-      userId: payload?.sub ?? null,
-    };
-  }
-
-  async findPage(
+  findPage(
     req: Request,
     query: LeaderProfilesQueryDto,
   ): Promise<PageDto<LeaderResponseDto>> {
-    const ctx = await this.getCtx(req);
-    this.assertAllowed(ctx);
-
-    const { items, total, page, limit } =
-      await this.repo.findPageWithFilters(query);
-
-    await this.populateUserImages(items);
-
-    return {
-      items: items.map(toLeaderDto),
-      total,
-      page,
-      limit,
-    };
+    return this.getService.findPage(req, query);
   }
 
-  private assertAllowed(ctx: AccessCtx) {
-    if (!ctx.role) throw new ForbiddenException("Acesso negado");
-    if (ctx.role === "member") throw new ForbiddenException("Acesso negado");
+  list(req: Request): Promise<LeaderSimpleListDto[]> {
+    return this.getService.list(req);
   }
 
-  async list(req: Request): Promise<LeaderSimpleListDto[]> {
-    const ctx = await this.getCtx(req);
-    this.assertAllowed(ctx);
-
-    const items = await this.repo.listEntities();
-    await this.populateUserImages(items);
-
-    return items.map(toLeaderSimple);
+  findOne(id: string, req: Request): Promise<LeaderResponseDto> {
+    return this.getService.findOne(id, req);
   }
 
-  async findOne(id: string, req: Request): Promise<LeaderResponseDto> {
-    const ctx = await this.getCtx(req);
-    this.assertAllowed(ctx);
-
-    const leader = await this.repo.findOneWithSheltersAndMembersOrFail(id);
-    await this.populateUserImages([leader]);
-    return toLeaderDto(leader);
+  createForUser(userId: string): Promise<LeaderProfileEntity> {
+    return this.createService.createForUser(userId);
   }
 
-  async createForUser(userId: string) {
-    return this.repo.createForUser(userId);
+  removeByUserId(userId: string): Promise<void> {
+    return this.deleteService.removeByUserId(userId);
   }
 
-  async removeByUserId(userId: string) {
-    return this.repo.removeByUserId(userId);
-  }
-
-  /**
-   * Move líder exclusivamente para múltiplas equipes de múltiplos abrigos
-   * Primeiro desvincula de todas as equipes, depois vincula às especificadas no payload
-   */
-  async manageTeams(
+  manageTeams(
     leaderId: string,
     dto: ManageLeaderTeamsDto,
     req: Request,
   ): Promise<LeaderResponseDto> {
-    const ctx = await this.getCtx(req);
-    this.assertAllowed(ctx);
-
-    const leader =
-      await this.repo.findOneWithSheltersAndMembersOrFail(leaderId);
-
-    await this.teamsService.removeLeaderFromAllTeams(leaderId);
-
-    for (const assignment of dto.assignments) {
-      const shelterTeams = await this.teamsService.findByShelter(
-        assignment.shelterId,
-      );
-
-      for (const teamNumber of assignment.teams) {
-        const targetTeam = shelterTeams.find(
-          (t) => t.numberTeam === teamNumber,
-        );
-
-        if (!targetTeam) {
-          await this.teamsService.create({
-            numberTeam: teamNumber,
-            shelterId: assignment.shelterId,
-            leaderProfileIds: [leaderId],
-          });
-        } else {
-          await this.teamsService.addLeadersToTeam(targetTeam.id, [leaderId]);
-        }
-      }
-    }
-
-    return this.findOne(leaderId, req);
+    return this.updateService.manageTeams(leaderId, dto, req);
   }
 
-  /**
-   * Move líder exclusivamente para uma equipe de um abrigo (mantido para compatibilidade)
-   * Remove o líder de todas as equipes atuais antes de vincular à nova equipe
-   */
-  async manageTeam(
+  manageTeam(
     leaderId: string,
     dto: ManageLeaderTeamDto,
     req: Request,
   ): Promise<LeaderResponseDto> {
-    const ctx = await this.getCtx(req);
-    this.assertAllowed(ctx);
-
-    const newDto: ManageLeaderTeamsDto = {
-      assignments: [
-        {
-          shelterId: dto.shelterId,
-          teams: [dto.numberTeam],
-        },
-      ],
-    };
-
-    return this.manageTeams(leaderId, newDto, req);
+    return this.updateService.manageTeam(leaderId, dto, req);
   }
 
-  /**
-   * Busca todos os abrigos do líder logado
-   * Retorna todas as equipes de cada abrigo, indicando em quais o líder está inserido
-   */
-  async findMyShelters(req: Request): Promise<ShelterWithLeaderStatusDto[]> {
-    const ctx = await this.getCtx(req);
-
-    if (!ctx.role || ctx.role !== "leader" || !ctx.userId) {
-      throw new ForbiddenException("Only leaders can access their shelters");
-    }
-
-    const leader = await this.repo.findByUserId(ctx.userId);
-
-    if (!leader) {
-      throw new NotFoundException("Leader profile not found");
-    }
-
-    const shelterIds = await this.getSheltersService.findShelterIdsForLeader(
-      ctx.userId,
-    );
-
-    if (shelterIds.length === 0) {
-      return [];
-    }
-
-    const shelters = await this.repo.findSheltersByIds(shelterIds);
-
-    const sheltersWithMedia = await this.populateMediaItems(shelters);
-
-    return sheltersWithMedia.map((shelter) =>
-      toShelterWithLeaderStatusDto(shelter, leader.id),
-    );
-  }
-
-  private async populateUserImages(
-    leaders: LeaderProfileEntity[],
-  ): Promise<void> {
-    if (!leaders.length) return;
-
-    const userIds = leaders.filter((l) => l.user?.id).map((l) => l.user.id);
-
-    if (!userIds.length) return;
-
-    const mediaItems =
-      await this.mediaItemProcessor.findManyMediaItemsByTargets(
-        userIds,
-        "UserEntity",
-      );
-
-    const mediaMap = new Map<string, any>();
-    mediaItems.forEach((item) => {
-      if (!mediaMap.has(item.targetId)) {
-        mediaMap.set(item.targetId, {
-          id: item.id,
-          url: item.url,
-          title: item.title,
-          description: item.description,
-          uploadType: item.uploadType,
-          mediaType: item.mediaType,
-          isLocalFile: item.isLocalFile,
-        });
-      }
-    });
-
-    leaders.forEach((leader) => {
-      if (leader.user?.id) {
-        (leader.user as any).imageProfile =
-          mediaMap.get(leader.user.id) || null;
-      }
-    });
-  }
-
-  private async populateMediaItems(
-    shelters: ShelterEntity[],
-  ): Promise<ShelterEntity[]> {
-    if (!shelters.length) return shelters;
-
-    const shelterIds = shelters.map((s) => s.id);
-    const mediaItems =
-      await this.mediaItemProcessor.findManyMediaItemsByTargets(
-        shelterIds,
-        "ShelterEntity",
-      );
-
-    const mediaMap = new Map();
-    mediaItems.forEach((item) => {
-      if (!mediaMap.has(item.targetId)) {
-        mediaMap.set(item.targetId, item);
-      }
-    });
-
-    shelters.forEach((shelter) => {
-      (shelter as any).mediaItem = mediaMap.get(shelter.id) || null;
-    });
-
-    return shelters;
+  findMyShelters(req: Request): Promise<ShelterWithLeaderStatusDto[]> {
+    return this.getService.findMyShelters(req);
   }
 }
