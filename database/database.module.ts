@@ -15,7 +15,7 @@ import { VisitMaterialsPageEntity } from 'src/content/page/visit-material-page/e
 import { MediaItemEntity } from 'src/shared/media/media-item/media-item.entity';
 import { ContactEntity } from 'src/communication/contact/contact.entity';
 import { EventEntity } from 'src/content/event/entities/event.entity';
-import { CommentEntity } from 'src/communication/comment/entity/comment.entity';
+import { CommentEntity } from 'src/communication/comment/entities/comment.entity';
 import { DocumentEntity } from 'src/content/document/entities/document.entity';
 import { IdeasSectionEntity } from 'src/content/page/ideas-section/entities/ideas-section.entity';
 import { IdeasPageEntity } from 'src/content/page/ideas-page/entities/ideas-page.entity';

@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { DataSource, Repository } from "typeorm";
 import { CreateCommentDto } from "../dto/create-comment.dto";
-import { CommentEntity } from "../entity/comment.entity";
+import { UpdateCommentDto } from "../dto/update-comment.dto";
+import { CommentEntity } from "../entities/comment.entity";
 
 @Injectable()
 export class CommentRepository extends Repository<CommentEntity> {
@@ -30,7 +31,7 @@ export class CommentRepository extends Repository<CommentEntity> {
 
   async updateAndSave(
     entity: CommentEntity,
-    dto: CreateCommentDto,
+    dto: UpdateCommentDto,
   ): Promise<CommentEntity> {
     Object.assign(entity, dto);
     return this.save(entity);

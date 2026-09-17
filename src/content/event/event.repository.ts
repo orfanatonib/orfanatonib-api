@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { ILike, In, Repository } from "typeorm";
+import { Repository } from "typeorm";
 import { EventEntity } from "./entities/event.entity";
 import { QueryEventDto } from "./dto/query-event.dto";
 
@@ -20,9 +20,10 @@ export class EventRepository {
 
     const search = query?.search?.trim();
     if (search) {
-      qb.andWhere("(event.title ILIKE :search OR event.description ILIKE :search OR event.location ILIKE :search)", {
-        search: `%${search}%`,
-      });
+      qb.andWhere(
+        "(LOWER(event.title) LIKE LOWER(:search) OR LOWER(event.description) LIKE LOWER(:search) OR LOWER(event.location) LIKE LOWER(:search))",
+        { search: `%${search}%` },
+      );
     }
 
     if (query?.startDate) {
