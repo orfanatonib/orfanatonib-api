@@ -18,7 +18,7 @@ import {
   UploadType,
   MediaItemEntity,
 } from "src/shared/media/media-item/media-item.entity";
-import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 
 @Injectable()
 export class UpdateIntegrationService {

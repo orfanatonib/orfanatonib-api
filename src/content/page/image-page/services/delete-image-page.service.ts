@@ -7,8 +7,8 @@ import {
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { DataSource } from "typeorm";
-import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
-import { RouteService } from "src/infrastructure/route/route.service";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { ImagePageRepository } from "../repositories/image-page.repository";
 

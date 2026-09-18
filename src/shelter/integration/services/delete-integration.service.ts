@@ -7,7 +7,7 @@ import {
 import { IntegrationRepository } from "../integration.repository";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
-import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 
 @Injectable()
 export class DeleteIntegrationService {

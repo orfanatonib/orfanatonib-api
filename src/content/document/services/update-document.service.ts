@@ -5,9 +5,9 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { DataSource } from "typeorm";
-import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
-import { RouteService } from "src/infrastructure/route/route.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import {
   RouteType,
   RouteEntity,

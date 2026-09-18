@@ -1,5 +1,5 @@
 import { Test } from "@nestjs/testing";
-import { EmailService } from "src/infrastructure/email/email.service";
+import { EmailService } from "src/infrastructure/email/services/email.service";
 import { EmailOutboxWorker } from "./email-outbox.worker";
 import { EmailOutboxService } from "./email-outbox.service";
 import { EmailOutboxEntity } from "./email-outbox.entity";

@@ -13,6 +13,9 @@ export class AcceptedChristEntity extends BaseEntity {
   })
   decision: DecisionType | null;
 
+  @Column({ name: "sheltered_id", type: "varchar", length: 36, nullable: true })
+  shelteredId?: string;
+
   @ManyToOne(() => ShelteredEntity, (sheltered) => sheltered.acceptedChrists, {
     onDelete: "CASCADE",
     nullable: false,

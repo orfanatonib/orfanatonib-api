@@ -1,0 +1,114 @@
+import {
+  ForbiddenException,
+  Injectable,
+  forwardRef,
+  Inject,
+} from "@nestjs/common";
+import { Request } from "express";
+import { MemberProfilesRepository } from "../repositories/member-profiles.repository";
+import { MemberResponseDto } from "../dto/member-profile.response.dto";
+import { AuthContextService } from "src/core/auth/services/auth-context.service";
+import { TeamsService } from "src/shelter/team/services/teams.service";
+import { ManageMemberTeamDto } from "../dto/assign-team.dto";
+import { NotificationService } from "src/communication/notification/services/notification.service";
+import { GetMemberProfilesService } from "./get-member-profiles.service";
+
+type AccessCtx = { role?: string; userId?: string | null };
+
+@Injectable()
+export class UpdateMemberProfileService {
+  constructor(
+    private readonly repo: MemberProfilesRepository,
+    private readonly authCtx: AuthContextService,
+    private readonly getMemberProfilesService: GetMemberProfilesService,
+    @Inject(forwardRef(() => TeamsService))
+    private readonly teamsService: TeamsService,
+    private readonly notificationService: NotificationService,
+  ) {}
+
+  private async getCtx(req: Request): Promise<AccessCtx> {
+    const payload = await this.authCtx.tryGetPayload(req);
+    return {
+      role: payload?.role?.toString().toLowerCase(),
+      userId: payload?.sub ?? null,
+    };
+  }
+
+  private assertAllowed(ctx: AccessCtx): void {
+    if (!ctx.role || ctx.role === "member") {
+      throw new ForbiddenException("Acesso negado");
+    }
+  }
+
+  async assignTeamForUser(userId: string, teamId: string): Promise<void> {
+    await this.repo.assignTeamByIdForUser(userId, teamId);
+  }
+
+  private async notifyTeamAssignment(member: MemberResponseDto): Promise<void> {
+    const email = member.user?.email;
+    const shelter = member.shelter;
+    if (!email || !shelter?.team) return;
+
+    try {
+      await this.notificationService.sendTeamAssignmentChanged(email, {
+        userName: member.user.name,
+        shelterName: shelter.name,
+        teamNumber: shelter.team.numberTeam,
+        assigned: true,
+      });
+    } catch {
+      // Avisar não pode desfazer o vínculo que acabou de ser gravado.
+    }
+  }
+
+  async manageTeam(
+    memberId: string,
+    dto: ManageMemberTeamDto,
+    req: Request,
+  ): Promise<MemberResponseDto> {
+    const ctx = await this.getCtx(req);
+    this.assertAllowed(ctx);
+
+    const member = await this.repo.findOneWithShelterAndLeaderOrFail(
+      memberId,
+      ctx,
+    );
+
+    const teams = await this.teamsService.findByShelter(dto.shelterId);
+    let targetTeam = teams.find((t) => t.numberTeam === dto.numberTeam);
+
+    if (!targetTeam) {
+      const newTeam = await this.teamsService.create({
+        numberTeam: dto.numberTeam,
+        shelterId: dto.shelterId,
+        memberProfileIds: [memberId],
+      });
+      targetTeam = newTeam;
+    } else {
+      if (member.team && member.team.id !== targetTeam.id) {
+        const currentTeam = await this.teamsService.findOne(member.team.id);
+        if (currentTeam) {
+          const currentMemberIds = currentTeam.members
+            .map((t) => t.id)
+            .filter((id) => id !== memberId);
+          await this.teamsService.update(currentTeam.id, {
+            memberProfileIds: currentMemberIds,
+          });
+        }
+      }
+
+      if (!member.team || member.team.id !== targetTeam.id) {
+        const currentMemberIds = targetTeam.members
+          .map((t) => t.id)
+          .filter((id) => id !== memberId);
+        await this.teamsService.update(targetTeam.id, {
+          memberProfileIds: [...currentMemberIds, memberId],
+        });
+      }
+    }
+
+    const updated = await this.getMemberProfilesService.findOne(memberId, req);
+    await this.notifyTeamAssignment(updated);
+    return updated;
+  }
+}

@@ -1,167 +1,84 @@
 import { Injectable } from "@nestjs/common";
-import { TeamsRepository } from "../repositories/teams.repository";
 import { CreateTeamDto } from "../dto/create-team.dto";
 import { UpdateTeamDto } from "../dto/update-team.dto";
 import { TeamResponseDto } from "../dto/team-response.dto";
 import { TeamEntity } from "../entities/team.entity";
 
+import { GetTeamsService } from "./get-teams.service";
+import { CreateTeamService } from "./create-team.service";
+import { UpdateTeamService } from "./update-team.service";
+import { DeleteTeamService } from "./delete-team.service";
+
 @Injectable()
 export class TeamsService {
-  constructor(private readonly repository: TeamsRepository) {}
+  constructor(
+    private readonly getTeamsService: GetTeamsService,
+    private readonly createTeamService: CreateTeamService,
+    private readonly updateTeamService: UpdateTeamService,
+    private readonly deleteTeamService: DeleteTeamService,
+  ) {}
 
   async create(dto: CreateTeamDto): Promise<TeamResponseDto> {
-    const team = await this.repository.create(dto);
-    return this.toDto(team);
+    return this.createTeamService.execute(dto);
   }
 
   async findAll(): Promise<TeamResponseDto[]> {
-    const teams = await this.repository.findAll();
-    const dtos = teams.map((team) => this.toDto(team));
-    return dtos;
+    return this.getTeamsService.findAll();
   }
 
   async findOne(id: string): Promise<TeamResponseDto> {
-    const team = await this.repository.findOne(id);
-    if (!team) {
-      throw new Error("Team não encontrado");
-    }
-    return this.toDto(team);
+    return this.getTeamsService.findOne(id);
   }
 
   async findByShelter(shelterId: string): Promise<TeamResponseDto[]> {
-    const teams = await this.repository.findByShelter(shelterId);
-    return teams.map((team) => this.toDto(team));
+    return this.getTeamsService.findByShelter(shelterId);
   }
 
   async findByLeader(userId: string): Promise<TeamResponseDto[]> {
-    const leaderProfile =
-      await this.repository.findLeaderProfileByUserId(userId);
-
-    if (!leaderProfile) {
-      return [];
-    }
-
-    const teams = await this.repository.findByLeader(leaderProfile.id);
-    const dtos = teams.map((team) => this.toDto(team));
-    return dtos;
+    return this.getTeamsService.findByLeader(userId);
   }
 
   async findTeamByShelterAndNumber(
     shelterId: string,
     numberTeam: number,
   ): Promise<TeamResponseDto | null> {
-    const team = await this.repository.findTeamByShelterAndNumber(
-      shelterId,
-      numberTeam,
-    );
-    return team ? this.toDto(team) : null;
+    return this.getTeamsService.findTeamByShelterAndNumber(shelterId, numberTeam);
   }
 
   async addLeadersToTeam(
     teamId: string,
     leaderProfileIds: string[],
   ): Promise<TeamResponseDto> {
-    const team = await this.repository.addLeadersToTeam(
-      teamId,
-      leaderProfileIds,
-    );
-    return this.toDto(team);
+    return this.updateTeamService.addLeadersToTeam(teamId, leaderProfileIds);
   }
 
   async removeLeadersFromTeam(
     teamId: string,
     leaderProfileIds: string[],
   ): Promise<TeamResponseDto> {
-    const team = await this.repository.removeLeadersFromTeam(
-      teamId,
-      leaderProfileIds,
-    );
-    return this.toDto(team);
+    return this.updateTeamService.removeLeadersFromTeam(teamId, leaderProfileIds);
   }
 
   async removeLeaderFromAllTeams(leaderId: string): Promise<void> {
-    return this.repository.removeLeaderFromAllTeams(leaderId);
+    return this.deleteTeamService.removeLeaderFromAllTeams(leaderId);
   }
 
   async update(id: string, dto: UpdateTeamDto): Promise<TeamResponseDto> {
-    const team = await this.repository.update(id, dto);
-    return this.toDto(team);
+    return this.updateTeamService.execute(id, dto);
   }
 
   async remove(id: string): Promise<void> {
-    await this.repository.remove(id);
+    return this.deleteTeamService.execute(id);
   }
 
   async findOneEntity(id: string): Promise<TeamEntity | null> {
-    return this.repository.findOne(id);
+    return this.getTeamsService.findOneEntity(id);
   }
 
   async findByUserContext(
     userId: string,
     role: string,
   ): Promise<TeamResponseDto[]> {
-    if (role === "admin") {
-      return this.findAll();
-    }
-
-    if (role === "leader") {
-      return this.findByLeader(userId);
-    }
-
-    if (role === "member") {
-      const allTeams = await this.repository.findAll();
-
-      const memberTeams = allTeams.filter((team) => {
-        return (
-          team.members &&
-          team.members.some((member) => member.user?.id === userId)
-        );
-      });
-
-      return memberTeams.map((team) => this.toDto(team));
-    }
-
-    return [];
-  }
-
-  private toDto(entity: TeamEntity): TeamResponseDto {
-    return {
-      id: entity.id,
-      numberTeam: entity.numberTeam,
-      description: entity.description,
-      shelterId: entity.shelter?.id || "",
-      shelter: entity.shelter
-        ? {
-            id: entity.shelter.id,
-            name: entity.shelter.name,
-            description: entity.shelter.description,
-            address: entity.shelter.address
-              ? {
-                  street: entity.shelter.address.street ?? undefined,
-                  number: entity.shelter.address.number,
-                  district: entity.shelter.address.district ?? undefined,
-                  city: entity.shelter.address.city,
-                  state: entity.shelter.address.state,
-                  postalCode: entity.shelter.address.postalCode ?? undefined,
-                  complement: entity.shelter.address.complement,
-                }
-              : undefined,
-          }
-        : undefined,
-      leaders: (entity.leaders || []).map((leader) => ({
-        id: leader.id || "", // ID do perfil
-        name: leader.user?.name || "",
-        email: leader.user?.email || "",
-        phone: leader.user?.phone || "",
-      })),
-      members: (entity.members || []).map((member) => ({
-        id: member.id || "", // ID do perfil
-        name: member.user?.name || "",
-        email: member.user?.email || "",
-        phone: member.user?.phone || "",
-      })),
-      createdAt: entity.createdAt,
-      updatedAt: entity.updatedAt,
-    };
+    return this.getTeamsService.findByUserContext(userId, role);
   }
 }

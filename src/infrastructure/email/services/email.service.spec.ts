@@ -1,7 +1,7 @@
 import { Test } from "@nestjs/testing";
-import { EmailMessage } from "./email.types";
+import { EmailMessage } from "../email.types";
 import { EmailService } from "./email.service";
-import { GmailSmtpProvider } from "./gmail-smtp.provider";
+import { GmailSmtpProvider } from "../gmail-smtp.provider";
 
 describe("EmailService", () => {
   const send = jest.fn<Promise<void>, [EmailMessage]>();

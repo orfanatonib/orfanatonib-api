@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { EntityManager } from "typeorm";
-import { RouteService } from "src/infrastructure/route/route.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import {
   RouteEntity,
   RouteType,

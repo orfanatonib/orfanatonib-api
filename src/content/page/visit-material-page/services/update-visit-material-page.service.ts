@@ -4,7 +4,7 @@ import {
   ResourceNotFoundException,
   RuleException,
 } from "src/common/exceptions";
-import { RouteService } from "src/infrastructure/route/route.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import {
   RouteEntity,
   RouteType,

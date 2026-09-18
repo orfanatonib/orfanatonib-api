@@ -3,7 +3,7 @@ import { UserRepository } from "../user.repository";
 import { MemberProfilesService } from "src/shelter/member-profile/services/member-profiles.service";
 import { LeaderProfilesService } from "src/shelter/leader-profile/services/leader-profiles.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
-import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { UserLogs, UserSuccessMessages } from "../constants/user.constants";
 
 @Injectable()

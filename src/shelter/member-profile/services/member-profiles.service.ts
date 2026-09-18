@@ -1,222 +1,56 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-  BadRequestException,
-  forwardRef,
-  Inject,
-} from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { Request } from "express";
-
-import { MemberProfilesRepository } from "../repositories/member-profiles.repository";
-import {
-  MemberResponseDto,
-  toMemberDto,
-} from "../dto/member-profile.response.dto";
-import {
-  MemberSimpleListDto,
-  toMemberSimple,
-} from "../dto/member-simple-list.dto";
-import { AuthContextService } from "src/core/auth/services/auth-context.service";
-import {
-  PageDto,
-  MemberProfilesQueryDto,
-} from "../dto/member-profiles.query.dto";
-import { TeamsService } from "src/shelter/team/services/teams.service";
-import { ManageMemberTeamDto } from "../dto/assign-team.dto";
-import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { GetMemberProfilesService } from "./get-member-profiles.service";
+import { CreateMemberProfileService } from "./create-member-profile.service";
+import { UpdateMemberProfileService } from "./update-member-profile.service";
+import { DeleteMemberProfileService } from "./delete-member-profile.service";
+import { MemberResponseDto } from "../dto/member-profile.response.dto";
+import { MemberSimpleListDto } from "../dto/member-simple-list.dto";
 import { MemberProfileEntity } from "../entities/member-profile.entity/member-profile.entity";
-import { NotificationService } from "src/communication/notification/services/notification.service";
-
-type AccessCtx = { role?: string; userId?: string | null };
+import { MemberProfilesQueryDto, PageDto } from "../dto/member-profiles.query.dto";
+import { ManageMemberTeamDto } from "../dto/assign-team.dto";
 
 @Injectable()
 export class MemberProfilesService {
   constructor(
-    private readonly repo: MemberProfilesRepository,
-    private readonly authCtx: AuthContextService,
-    @Inject(forwardRef(() => TeamsService))
-    private readonly teamsService: TeamsService,
-    private readonly mediaItemProcessor: MediaItemProcessor,
-    private readonly notificationService: NotificationService,
+    private readonly getService: GetMemberProfilesService,
+    private readonly createService: CreateMemberProfileService,
+    private readonly updateService: UpdateMemberProfileService,
+    private readonly deleteService: DeleteMemberProfileService,
   ) {}
 
-  private async getCtx(req: Request): Promise<AccessCtx> {
-    const payload = await this.authCtx.tryGetPayload(req);
-    return {
-      role: payload?.role?.toString().toLowerCase(),
-      userId: payload?.sub ?? null,
-    };
-  }
-  async findPage(
+  findPage(
     req: Request,
     query: MemberProfilesQueryDto,
   ): Promise<PageDto<MemberResponseDto>> {
-    const ctx = await this.getCtx(req);
-    this.assertAllowed(ctx);
-
-    const { items, total, page, limit } = await this.repo.findPageWithFilters(
-      query,
-      ctx,
-    );
-
-    await this.populateUserImages(items);
-
-    return {
-      items: items.map(toMemberDto),
-      total,
-      page,
-      limit,
-    };
-  }
-  private assertAllowed(ctx: AccessCtx) {
-    if (!ctx.role) throw new ForbiddenException("Acesso negado");
-    if (ctx.role === "member") throw new ForbiddenException("Acesso negado");
+    return this.getService.findPage(req, query);
   }
 
-  async list(req: Request): Promise<MemberSimpleListDto[]> {
-    const ctx = await this.getCtx(req);
-    this.assertAllowed(ctx);
-
-    const items = await this.repo.listEntities(ctx);
-    await this.populateUserImages(items);
-
-    return items.map(toMemberSimple);
+  list(req: Request): Promise<MemberSimpleListDto[]> {
+    return this.getService.list(req);
   }
 
-  async findOne(id: string, req: Request): Promise<MemberResponseDto> {
-    const ctx = await this.getCtx(req);
-    this.assertAllowed(ctx);
-
-    const member = await this.repo.findOneWithShelterAndLeaderOrFail(id, ctx);
-    await this.populateUserImages([member]);
-    return toMemberDto(member);
+  findOne(id: string, req: Request): Promise<MemberResponseDto> {
+    return this.getService.findOne(id, req);
   }
 
-  async createForUser(userId: string) {
-    return this.repo.createForUser(userId);
+  createForUser(userId: string): Promise<MemberProfileEntity> {
+    return this.createService.createForUser(userId);
   }
 
-  async removeByUserId(userId: string) {
-    return this.repo.removeByUserId(userId);
+  removeByUserId(userId: string): Promise<void> {
+    return this.deleteService.removeByUserId(userId);
   }
 
-  /**
-   * Vincula o usuário à equipe, criando o perfil de membro se ainda não houver.
-   * Contrato sem `Request`, usado pelo cadastro em `core/auth`.
-   */
-  async assignTeamForUser(userId: string, teamId: string): Promise<void> {
-    await this.repo.assignTeamByIdForUser(userId, teamId);
+  assignTeamForUser(userId: string, teamId: string): Promise<void> {
+    return this.updateService.assignTeamForUser(userId, teamId);
   }
 
-  /**
-   * Avisa quem entrou ou saiu de uma equipe. Antes a mudança acontecia calada:
-   * o membro só descobria ao abrir a plataforma.
-   */
-  private async notifyTeamAssignment(member: MemberResponseDto): Promise<void> {
-    const email = member.user?.email;
-    const shelter = member.shelter;
-    if (!email || !shelter?.team) return;
-
-    try {
-      await this.notificationService.sendTeamAssignmentChanged(email, {
-        userName: member.user.name,
-        shelterName: shelter.name,
-        teamNumber: shelter.team.numberTeam,
-        assigned: true,
-      });
-    } catch {
-      // Avisar não pode desfazer o vínculo que acabou de ser gravado.
-    }
-  }
-
-  async manageTeam(
+  manageTeam(
     memberId: string,
     dto: ManageMemberTeamDto,
     req: Request,
   ): Promise<MemberResponseDto> {
-    const ctx = await this.getCtx(req);
-    this.assertAllowed(ctx);
-
-    const member = await this.repo.findOneWithShelterAndLeaderOrFail(
-      memberId,
-      ctx,
-    );
-
-    const teams = await this.teamsService.findByShelter(dto.shelterId);
-
-    let targetTeam = teams.find((t) => t.numberTeam === dto.numberTeam);
-
-    if (!targetTeam) {
-      const newTeam = await this.teamsService.create({
-        numberTeam: dto.numberTeam,
-        shelterId: dto.shelterId,
-        memberProfileIds: [memberId],
-      });
-      targetTeam = newTeam;
-    } else {
-      if (member.team && member.team.id !== targetTeam.id) {
-        const currentTeam = await this.teamsService.findOne(member.team.id);
-        if (currentTeam) {
-          const currentMemberIds = currentTeam.members
-            .map((t) => t.id)
-            .filter((id) => id !== memberId);
-          await this.teamsService.update(currentTeam.id, {
-            memberProfileIds: currentMemberIds,
-          });
-        }
-      }
-
-      if (!member.team || member.team.id !== targetTeam.id) {
-        const currentMemberIds = targetTeam.members
-          .map((t) => t.id)
-          .filter((id) => id !== memberId);
-        await this.teamsService.update(targetTeam.id, {
-          memberProfileIds: [...currentMemberIds, memberId],
-        });
-      }
-    }
-
-    const updated = await this.findOne(memberId, req);
-    await this.notifyTeamAssignment(updated);
-    return updated;
-  }
-
-  private async populateUserImages(
-    members: MemberProfileEntity[],
-  ): Promise<void> {
-    if (!members.length) return;
-
-    const userIds = members.filter((m) => m.user?.id).map((m) => m.user.id);
-
-    if (!userIds.length) return;
-
-    const mediaItems =
-      await this.mediaItemProcessor.findManyMediaItemsByTargets(
-        userIds,
-        "UserEntity",
-      );
-
-    const mediaMap = new Map<string, any>();
-    mediaItems.forEach((item) => {
-      if (!mediaMap.has(item.targetId)) {
-        mediaMap.set(item.targetId, {
-          id: item.id,
-          url: item.url,
-          title: item.title,
-          description: item.description,
-          uploadType: item.uploadType,
-          mediaType: item.mediaType,
-          isLocalFile: item.isLocalFile,
-        });
-      }
-    });
-
-    members.forEach((member) => {
-      if (member.user?.id) {
-        (member.user as any).imageProfile =
-          mediaMap.get(member.user.id) || null;
-      }
-    });
+    return this.updateService.manageTeam(memberId, dto, req);
   }
 }

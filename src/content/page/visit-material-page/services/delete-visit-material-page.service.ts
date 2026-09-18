@@ -1,7 +1,7 @@
 import { HttpException, Injectable, Logger } from "@nestjs/common";
 import { ProcessException } from "src/common/exceptions";
-import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
-import { RouteService } from "src/infrastructure/route/route.service";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { VisitMaterialsPageRepository } from "../repositories/visit-material-page.repository";
 import { GetVisitMaterialPageService } from "./get-visit-material-page.service";

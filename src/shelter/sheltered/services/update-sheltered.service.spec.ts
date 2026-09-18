@@ -1,5 +1,5 @@
 import { Test } from "@nestjs/testing";
-import { AddressesService } from "src/shelter/address/addresses.service";
+import { AddressesService } from "src/shelter/address/services/addresses.service";
 import { ResourceNotFoundException } from "src/common/exceptions";
 import { ShelteredRepository } from "../repositories/sheltered.repository";
 import { UpdateShelteredService } from "./update-sheltered.service";

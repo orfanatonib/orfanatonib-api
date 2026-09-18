@@ -3,6 +3,10 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { MemberProfilesRepository } from "./repositories/member-profiles.repository";
 import { MemberProfilesService } from "./services/member-profiles.service";
+import { GetMemberProfilesService } from "./services/get-member-profiles.service";
+import { CreateMemberProfileService } from "./services/create-member-profile.service";
+import { UpdateMemberProfileService } from "./services/update-member-profile.service";
+import { DeleteMemberProfileService } from "./services/delete-member-profile.service";
 import { MemberProfilesController } from "./member-profiles.controller";
 
 import { MemberProfileEntity } from "./entities/member-profile.entity/member-profile.entity";
@@ -24,7 +28,22 @@ import { MediaModule } from "src/shared/media/media.module";
     MediaModule,
   ],
   controllers: [MemberProfilesController],
-  providers: [MemberProfilesRepository, MemberProfilesService],
-  exports: [MemberProfilesRepository, MemberProfilesService, TypeOrmModule],
+  providers: [
+    MemberProfilesRepository,
+    MemberProfilesService,
+    GetMemberProfilesService,
+    CreateMemberProfileService,
+    UpdateMemberProfileService,
+    DeleteMemberProfileService,
+  ],
+  exports: [
+    MemberProfilesRepository,
+    MemberProfilesService,
+    GetMemberProfilesService,
+    CreateMemberProfileService,
+    UpdateMemberProfileService,
+    DeleteMemberProfileService,
+    TypeOrmModule,
+  ],
 })
 export class MemberProfilesModule {}

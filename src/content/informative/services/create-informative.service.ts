@@ -1,6 +1,6 @@
 import { Injectable, Logger, BadRequestException } from "@nestjs/common";
 import { DataSource, QueryRunner } from "typeorm";
-import { RouteService } from "src/infrastructure/route/route.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import { RouteType } from "src/infrastructure/route/route-page.entity";
 import { CreateInformativeDto } from "../dto/create-informative.dto";
 import { InformativeRepository } from "../informative.repository";

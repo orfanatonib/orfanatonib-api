@@ -1,8 +1,8 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
-import { RouteService } from "src/infrastructure/route/route.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MeditationRepository } from "../meditation.repository";
-import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 
 @Injectable()

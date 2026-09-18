@@ -1,6 +1,6 @@
 import { Test } from "@nestjs/testing";
 import { EntityManager } from "typeorm";
-import { RouteService } from "src/infrastructure/route/route.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import { RouteType } from "src/infrastructure/route/route-page.entity";
 import { ShelterRouteService } from "./shelter-route.service";
 import {

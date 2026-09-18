@@ -2,6 +2,10 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 import { TeamsController } from "./teams.controller";
 import { TeamsService } from "./services/teams.service";
+import { GetTeamsService } from "./services/get-teams.service";
+import { CreateTeamService } from "./services/create-team.service";
+import { UpdateTeamService } from "./services/update-team.service";
+import { DeleteTeamService } from "./services/delete-team.service";
 import { TeamsRepository } from "./repositories/teams.repository";
 import { TeamEntity } from "./entities/team.entity";
 import { LeaderProfileEntity } from "src/shelter/leader-profile/entities/leader-profile.entity/leader-profile.entity";
@@ -20,7 +24,21 @@ import { AuthModule } from "src/core/auth/auth.module";
     AuthModule,
   ],
   controllers: [TeamsController],
-  providers: [TeamsService, TeamsRepository],
-  exports: [TeamsService, TeamsRepository],
+  providers: [
+    TeamsService,
+    TeamsRepository,
+    GetTeamsService,
+    CreateTeamService,
+    UpdateTeamService,
+    DeleteTeamService,
+  ],
+  exports: [
+    TeamsService,
+    TeamsRepository,
+    GetTeamsService,
+    CreateTeamService,
+    UpdateTeamService,
+    DeleteTeamService,
+  ],
 })
 export class TeamsModule {}

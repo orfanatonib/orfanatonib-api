@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { AddressesService } from "src/shelter/address/addresses.service";
+import { AddressesService } from "src/shelter/address/services/addresses.service";
 import { ShelteredRepository } from "../repositories/sheltered.repository";
 import { CreateShelteredDto } from "../dto/create-sheltered.dto";
 import { ShelteredResponseDto } from "../dto/sheltered-response.dto";

@@ -3,7 +3,7 @@ import { DataSource } from "typeorm";
 import { InformativeRepository } from "../informative.repository";
 import { UpdateInformativeDto } from "../dto/update-informative.dto";
 import { InformativeEntity } from "../entities/informative.entity";
-import { RouteService } from "src/infrastructure/route/route.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import {
   RouteEntity,
   RouteType,

@@ -14,7 +14,7 @@ export class AcceptedChristResponseDto {
       id: entity.id,
       decision: entity.decision,
       notes: entity.notes,
-      shelteredId: entity.sheltered?.id ?? (entity as any).shelteredId,
+      shelteredId: entity.sheltered?.id ?? entity.shelteredId ?? "",
       createdAt: entity.createdAt ? entity.createdAt.toISOString() : new Date().toISOString(),
       updatedAt: entity.updatedAt ? entity.updatedAt.toISOString() : new Date().toISOString(),
     };

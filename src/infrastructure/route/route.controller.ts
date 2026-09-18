@@ -8,7 +8,7 @@ import {
   NotFoundException,
   Post,
 } from "@nestjs/common";
-import { RouteService } from "./route.service";
+import { RouteService } from "./services/route.service";
 import { RouteEntity } from "./route-page.entity";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";

@@ -30,13 +30,13 @@ const BooleanQuery = () => {
   });
 };
 
-const toInt = (v: any): number | undefined => {
+const toInt = (v: unknown): number | undefined => {
   if (v === undefined || v === null || v === "") return undefined;
   const n = Number(String(v).trim());
   return Number.isFinite(n) ? n : undefined;
 };
 
-const trimOrUndef = (v: any): string | undefined => {
+const trimOrUndef = (v: unknown): string | undefined => {
   if (typeof v !== "string") return undefined;
   const t = v.trim();
   return t ? t : undefined;

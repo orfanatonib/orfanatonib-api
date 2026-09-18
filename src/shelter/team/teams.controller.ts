@@ -12,7 +12,10 @@ import {
   Logger,
 } from "@nestjs/common";
 import { Request } from "express";
-import { TeamsService } from "./services/teams.service";
+import { CreateTeamService } from "./services/create-team.service";
+import { GetTeamsService } from "./services/get-teams.service";
+import { UpdateTeamService } from "./services/update-team.service";
+import { DeleteTeamService } from "./services/delete-team.service";
 import { CreateTeamDto } from "./dto/create-team.dto";
 import { UpdateTeamDto } from "./dto/update-team.dto";
 import { TeamResponseDto } from "./dto/team-response.dto";
@@ -25,14 +28,17 @@ export class TeamsController {
   private readonly logger = new Logger(TeamsController.name);
 
   constructor(
-    private readonly service: TeamsService,
+    private readonly createTeamService: CreateTeamService,
+    private readonly getTeamsService: GetTeamsService,
+    private readonly updateTeamService: UpdateTeamService,
+    private readonly deleteTeamService: DeleteTeamService,
     private readonly authContext: AuthContextService,
   ) {}
 
   @Post()
   async create(@Body() dto: CreateTeamDto): Promise<TeamResponseDto> {
     this.logger.log(`Creating team: ${dto.numberTeam}`);
-    const result = await this.service.create(dto);
+    const result = await this.createTeamService.execute(dto);
     this.logger.log(`Team created successfully: ${result.id}`);
     return result;
   }
@@ -40,7 +46,7 @@ export class TeamsController {
   @Get()
   async findAll(): Promise<TeamResponseDto[]> {
     this.logger.log("Fetching all teams");
-    return this.service.findAll();
+    return this.getTeamsService.findAll();
   }
 
   @Get("my-teams")
@@ -54,7 +60,7 @@ export class TeamsController {
     }
 
     this.logger.log(`Fetching teams for user ${userId} with role ${role}`);
-    return this.service.findByUserContext(userId, role);
+    return this.getTeamsService.findByUserContext(userId, role);
   }
 
   @Get("by-shelter/:shelterId")
@@ -62,7 +68,7 @@ export class TeamsController {
     @Param("shelterId", new ParseUUIDPipe()) shelterId: string,
   ): Promise<TeamResponseDto[]> {
     this.logger.log(`Fetching teams for shelter ${shelterId}`);
-    return this.service.findByShelter(shelterId);
+    return this.getTeamsService.findByShelter(shelterId);
   }
 
   @Get(":id")
@@ -70,7 +76,7 @@ export class TeamsController {
     @Param("id", new ParseUUIDPipe()) id: string,
   ): Promise<TeamResponseDto> {
     this.logger.log(`Fetching team ${id}`);
-    return this.service.findOne(id);
+    return this.getTeamsService.findOne(id);
   }
 
   @Put(":id")
@@ -79,7 +85,7 @@ export class TeamsController {
     @Body() dto: UpdateTeamDto,
   ): Promise<TeamResponseDto> {
     this.logger.log(`Updating team ${id}`);
-    const result = await this.service.update(id, dto);
+    const result = await this.updateTeamService.execute(id, dto);
     this.logger.log(`Team updated successfully: ${id}`);
     return result;
   }
@@ -87,7 +93,7 @@ export class TeamsController {
   @Delete(":id")
   async remove(@Param("id", new ParseUUIDPipe()) id: string): Promise<void> {
     this.logger.log(`Deleting team ${id}`);
-    await this.service.remove(id);
+    await this.deleteTeamService.execute(id);
     this.logger.log(`Team deleted successfully: ${id}`);
   }
 }

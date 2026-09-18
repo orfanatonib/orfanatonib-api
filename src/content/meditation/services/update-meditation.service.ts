@@ -7,7 +7,7 @@ import {
 } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
-import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { MeditationRepository } from "../meditation.repository";
 import { UpdateMeditationDto } from "../dto/update-meditation.dto";
 import { MeditationEntity } from "../entities/meditation.entity";

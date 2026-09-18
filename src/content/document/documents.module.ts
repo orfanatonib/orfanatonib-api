@@ -9,7 +9,7 @@ import { UpdateDocumentService } from "./services/update-document.service";
 import { GetDocumentService } from "./services/get-document.service";
 import { DeleteDocumentService } from "./services/delete-document.service";
 import { DocumentRepository } from "./document.repository";
-import { RouteService } from "src/infrastructure/route/route.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import { RouteRepository } from "src/infrastructure/route/route-page.repository";
 import { MeditationModule } from "src/content/meditation/meditation.module";
 

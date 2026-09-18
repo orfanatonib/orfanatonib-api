@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
-import { EmailService } from "src/infrastructure/email/email.service";
+import { EmailService } from "src/infrastructure/email/services/email.service";
 import { EmailOutboxService } from "./email-outbox.service";
 import { OutboxLogs } from "../constants/notification.constants";
 

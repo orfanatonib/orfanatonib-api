@@ -4,8 +4,8 @@ import {
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
-import { RouteRepository } from "./route-page.repository";
-import { RouteEntity, RouteType } from "./route-page.entity";
+import { RouteRepository } from "../route-page.repository";
+import { RouteEntity, RouteType } from "../route-page.entity";
 import { EntityManager } from "typeorm";
 import { GetMeditationService } from "src/content/meditation/services/get-meditation.service";
 

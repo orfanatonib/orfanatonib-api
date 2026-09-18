@@ -11,15 +11,17 @@ import {
   UseGuards,
   Logger,
   UseInterceptors,
-  UploadedFile,
   UploadedFiles,
   BadRequestException,
   HttpException,
 } from "@nestjs/common";
-import { FileInterceptor, AnyFilesInterceptor } from "@nestjs/platform-express";
+import { AnyFilesInterceptor } from "@nestjs/platform-express";
 import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
-import { IntegrationService } from "./integration.service";
+import { CreateIntegrationService } from "./services/create-integration.service";
+import { GetIntegrationService } from "./services/get-integration.service";
+import { UpdateIntegrationService } from "./services/update-integration.service";
+import { DeleteIntegrationService } from "./services/delete-integration.service";
 import { CreateIntegrationDto } from "./dto/create-integration.dto";
 import { UpdateIntegrationDto } from "./dto/update-integration.dto";
 import {
@@ -35,7 +37,12 @@ import { AdminOrLeaderRoleGuard } from "src/core/auth/guards/role-guard";
 export class IntegrationController {
   private readonly logger = new Logger(IntegrationController.name);
 
-  constructor(private readonly service: IntegrationService) {}
+  constructor(
+    private readonly createService: CreateIntegrationService,
+    private readonly getService: GetIntegrationService,
+    private readonly updateService: UpdateIntegrationService,
+    private readonly deleteService: DeleteIntegrationService,
+  ) {}
 
   @Post()
   @UseInterceptors(AnyFilesInterceptor())
@@ -60,7 +67,6 @@ export class IntegrationController {
         throw new BadRequestException("Invalid data in request");
       }
 
-      // Extract files with array pattern (files[0], files[1], etc.)
       const files: Express.Multer.File[] = [];
       if (uploadedFiles) {
         const fileMap = new Map<number, Express.Multer.File>();
@@ -72,7 +78,6 @@ export class IntegrationController {
           }
         });
 
-        // Sort by index and get files array
         const sortedIndices = Array.from(fileMap.keys()).sort((a, b) => a - b);
         sortedIndices.forEach((index) => {
           files.push(fileMap.get(index)!);
@@ -80,7 +85,7 @@ export class IntegrationController {
       }
 
       this.logger.log(`Creating new integration: ${dto.name}`);
-      const result = await this.service.create(dto, files);
+      const result = await this.createService.execute(dto, files);
       this.logger.log(`Integration created successfully: ${result.id}`);
       return result;
     } catch (error) {
@@ -96,19 +101,19 @@ export class IntegrationController {
   async findAllPaginated(
     @Query() query: QueryIntegrationDto,
   ): Promise<PaginatedResponseDto<IntegrationResponseDto>> {
-    return this.service.findAllPaginated(query);
+    return this.getService.findAllPaginated(query);
   }
 
   @Get("simple")
   async findAll(): Promise<IntegrationResponseDto[]> {
-    return this.service.findAll();
+    return this.getService.findAll();
   }
 
   @Get(":id")
   async findOne(
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<IntegrationResponseDto> {
-    return this.service.findOne(id);
+    return this.getService.findOne(id);
   }
 
   @Put(":id")
@@ -135,7 +140,6 @@ export class IntegrationController {
         throw new BadRequestException("Invalid data in request");
       }
 
-      // Extract files with array pattern (files[0], files[1], etc.)
       const files: Express.Multer.File[] = [];
       if (uploadedFiles) {
         const fileMap = new Map<number, Express.Multer.File>();
@@ -147,7 +151,6 @@ export class IntegrationController {
           }
         });
 
-        // Sort by index and get files array
         const sortedIndices = Array.from(fileMap.keys()).sort((a, b) => a - b);
         sortedIndices.forEach((index) => {
           files.push(fileMap.get(index)!);
@@ -155,7 +158,7 @@ export class IntegrationController {
       }
 
       this.logger.log(`Updating integration: ${id}`);
-      const result = await this.service.update(id, dto, files);
+      const result = await this.updateService.execute(id, dto, files);
       this.logger.log(`Integration updated successfully: ${id}`);
       return result;
     } catch (error) {
@@ -170,7 +173,7 @@ export class IntegrationController {
   @Delete(":id")
   async remove(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     this.logger.log(`Deleting integration: ${id}`);
-    await this.service.remove(id);
+    await this.deleteService.execute(id);
     this.logger.log(`Integration deleted successfully: ${id}`);
   }
 }

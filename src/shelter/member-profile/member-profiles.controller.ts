@@ -11,7 +11,8 @@ import {
   Logger,
 } from "@nestjs/common";
 import { Request } from "express";
-import { MemberProfilesService } from "./services/member-profiles.service";
+import { GetMemberProfilesService } from "./services/get-member-profiles.service";
+import { UpdateMemberProfileService } from "./services/update-member-profile.service";
 import { MemberResponseDto } from "./dto/member-profile.response.dto";
 import { MemberSimpleListDto } from "./dto/member-simple-list.dto";
 import {
@@ -26,19 +27,22 @@ import { ManageMemberTeamDto } from "./dto/assign-team.dto";
 export class MemberProfilesController {
   private readonly logger = new Logger(MemberProfilesController.name);
 
-  constructor(private readonly service: MemberProfilesService) {}
+  constructor(
+    private readonly getMemberProfilesService: GetMemberProfilesService,
+    private readonly updateMemberProfileService: UpdateMemberProfileService,
+  ) {}
 
   @Get()
   findPage(
     @Req() req: Request,
     @Query() query: MemberProfilesQueryDto,
   ): Promise<PageDto<MemberResponseDto>> {
-    return this.service.findPage(req, query);
+    return this.getMemberProfilesService.findPage(req, query);
   }
 
   @Get("simple")
   listSimple(@Req() req: Request): Promise<MemberSimpleListDto[]> {
-    return this.service.list(req);
+    return this.getMemberProfilesService.list(req);
   }
 
   @Get(":id")
@@ -46,7 +50,7 @@ export class MemberProfilesController {
     @Param("id", new ParseUUIDPipe()) id: string,
     @Req() req: Request,
   ): Promise<MemberResponseDto> {
-    return this.service.findOne(id, req);
+    return this.getMemberProfilesService.findOne(id, req);
   }
 
   @Put(":memberId")
@@ -56,7 +60,11 @@ export class MemberProfilesController {
     @Req() req: Request,
   ): Promise<MemberResponseDto> {
     this.logger.log(`Updating member profile: ${memberId}`);
-    const result = await this.service.manageTeam(memberId, dto, req);
+    const result = await this.updateMemberProfileService.manageTeam(
+      memberId,
+      dto,
+      req,
+    );
     this.logger.log(`Member profile updated successfully: ${memberId}`);
     return result;
   }

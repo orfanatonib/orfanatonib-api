@@ -1,8 +1,8 @@
 import { Test } from "@nestjs/testing";
 import { EntityManager } from "typeorm";
 import { ProcessException, RuleException } from "src/common/exceptions";
-import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
-import { RouteService } from "src/infrastructure/route/route.service";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import { RouteType } from "src/infrastructure/route/route-page.entity";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";

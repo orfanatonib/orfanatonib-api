@@ -4,7 +4,7 @@ import { CreateAcceptedChristDto } from "../dto/create-accepted-christ.dto";
 import { AcceptedChristResponseDto } from "../dto/accepted-christ-response.dto";
 
 @Injectable()
-export class CreateAcceptedChristDtoService {
+export class CreateAcceptedChristService {
   constructor(
     private readonly acceptedChristRepository: AcceptedChristRepository,
   ) {}
@@ -25,4 +25,3 @@ export class CreateAcceptedChristDtoService {
     return AcceptedChristResponseDto.fromEntity(saved);
   }
 }
-export { CreateAcceptedChristDtoService as CreateAcceptedChristService };

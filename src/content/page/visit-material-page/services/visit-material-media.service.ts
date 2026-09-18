@@ -4,7 +4,7 @@ import {
   RuleException,
 } from "src/common/exceptions";
 import { MediaItemDto } from "src/shared/dto/media-item-dto";
-import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import {

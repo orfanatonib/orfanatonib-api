@@ -2,7 +2,7 @@ import { ConfigService } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
 import { EMAIL_CONFIG_KEYS } from "./email.constants";
 import { EmailModule } from "./email.module";
-import { EmailService } from "./email.service";
+import { EmailService } from "./services/email.service";
 import {
   GmailSmtpTransportOptions,
   SmtpMailOptions,

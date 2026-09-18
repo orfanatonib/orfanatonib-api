@@ -1,6 +1,6 @@
 import { Global, Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
-import { EmailService } from "./email.service";
+import { EmailService } from "./services/email.service";
 import { GmailSmtpProvider } from "./gmail-smtp.provider";
 import { GmailSmtpTransportFactory } from "./gmail-smtp-transport.factory";
 

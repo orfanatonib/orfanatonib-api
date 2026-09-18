@@ -5,7 +5,7 @@ import {
   ResourceNotFoundException,
   RuleException,
 } from "src/common/exceptions";
-import { RouteService } from "src/infrastructure/route/route.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import { RouteType } from "src/infrastructure/route/route-page.entity";
 import { MediaType } from "src/shared/media/media-item/media-item.entity";
 import { UpdateVisitMaterialPageService } from "./update-visit-material-page.service";

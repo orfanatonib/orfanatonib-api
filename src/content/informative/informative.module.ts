@@ -10,7 +10,7 @@ import { GetInformativeService } from "./services/get-informative.service";
 import { UpdateInformativeService } from "./services/update-informative.service";
 import { DeleteInformativeService } from "./services/delete-informative.service";
 
-import { RouteService } from "src/infrastructure/route/route.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import { RouteRepository } from "src/infrastructure/route/route-page.repository";
 import { MeditationModule } from "src/content/meditation/meditation.module";
 

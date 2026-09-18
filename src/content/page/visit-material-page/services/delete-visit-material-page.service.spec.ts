@@ -4,8 +4,8 @@ import {
   ProcessException,
   ResourceNotFoundException,
 } from "src/common/exceptions";
-import { AwsS3Service } from "src/infrastructure/aws/aws-s3.service";
-import { RouteService } from "src/infrastructure/route/route.service";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { DeleteVisitMaterialPageService } from "./delete-visit-material-page.service";
 import { GetVisitMaterialPageService } from "./get-visit-material-page.service";

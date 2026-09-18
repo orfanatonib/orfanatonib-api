@@ -13,7 +13,10 @@ import {
   UseGuards,
 } from "@nestjs/common";
 import { plainToInstance } from "class-transformer";
-import { SiteFeedbackService } from "./site-feedback.service";
+import { CreateSiteFeedbackService } from "./services/create-site-feedback.service";
+import { GetSiteFeedbackService } from "./services/get-site-feedback.service";
+import { UpdateSiteFeedbackService } from "./services/update-site-feedback.service";
+import { DeleteSiteFeedbackService } from "./services/delete-site-feedback.service";
 import { CreateSiteFeedbackDto } from "./dto/create-site-feedback.dto";
 import { SiteFeedbackResponseDto } from "./dto/site-feedback-response.dto";
 import { UpdateSiteFeedbackDto } from "./dto/update-site-feedback.dto";
@@ -24,7 +27,12 @@ import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 export class SiteFeedbackController {
   private readonly logger = new Logger(SiteFeedbackController.name);
 
-  constructor(private readonly siteFeedbackService: SiteFeedbackService) {}
+  constructor(
+    private readonly createFeedbackService: CreateSiteFeedbackService,
+    private readonly getFeedbackService: GetSiteFeedbackService,
+    private readonly updateFeedbackService: UpdateSiteFeedbackService,
+    private readonly deleteFeedbackService: DeleteSiteFeedbackService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
@@ -33,7 +41,7 @@ export class SiteFeedbackController {
     @Body() dto: CreateSiteFeedbackDto,
   ): Promise<SiteFeedbackResponseDto> {
     this.logger.log("Creating new site feedback");
-    const created = await this.siteFeedbackService.create(dto);
+    const created = await this.createFeedbackService.execute(dto);
     this.logger.log(`Site feedback created successfully: ${created.id}`);
     return plainToInstance(SiteFeedbackResponseDto, created);
   }
@@ -41,14 +49,14 @@ export class SiteFeedbackController {
   @Get()
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async findAll(): Promise<SiteFeedbackResponseDto[]> {
-    const feedbacks = await this.siteFeedbackService.findAll();
+    const feedbacks = await this.getFeedbackService.findAll();
     return plainToInstance(SiteFeedbackResponseDto, feedbacks);
   }
 
   @Get(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async findOne(@Param("id") id: string): Promise<SiteFeedbackResponseDto> {
-    const feedback = await this.siteFeedbackService.findOne(id);
+    const feedback = await this.getFeedbackService.findOne(id);
     return plainToInstance(SiteFeedbackResponseDto, feedback);
   }
 
@@ -59,7 +67,7 @@ export class SiteFeedbackController {
     @Body() dto: UpdateSiteFeedbackDto,
   ): Promise<SiteFeedbackResponseDto> {
     this.logger.log(`Updating site feedback: ${id}`);
-    const updated = await this.siteFeedbackService.update(id, dto);
+    const updated = await this.updateFeedbackService.update(id, dto);
     this.logger.log(`Site feedback updated successfully: ${id}`);
     return plainToInstance(SiteFeedbackResponseDto, updated);
   }
@@ -68,7 +76,7 @@ export class SiteFeedbackController {
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async remove(@Param("id") id: string): Promise<void> {
     this.logger.log(`Deleting site feedback: ${id}`);
-    await this.siteFeedbackService.remove(id);
+    await this.deleteFeedbackService.remove(id);
     this.logger.log(`Site feedback deleted successfully: ${id}`);
   }
 
@@ -76,7 +84,7 @@ export class SiteFeedbackController {
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async setRead(@Param("id") id: string): Promise<SiteFeedbackResponseDto> {
     this.logger.log(`Marking site feedback as read: ${id}`);
-    const feedback = await this.siteFeedbackService.setReadOnFeedback(id);
+    const feedback = await this.updateFeedbackService.setReadOnFeedback(id);
     this.logger.log(`Site feedback marked as read successfully: ${id}`);
     return plainToInstance(SiteFeedbackResponseDto, feedback);
   }
