@@ -9,6 +9,7 @@ import { MeditationModule } from "src/content/meditation/meditation.module";
 import { JwtModule } from "@nestjs/jwt";
 import { AuthContextService } from "src/core/auth/services/auth-context.service";
 import { CleanupOrphanRoutesService } from "./services/cleanup-orphan-routes.service";
+import { RouteExistenceRepository } from "./route-existence.repository";
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { CleanupOrphanRoutesService } from "./services/cleanup-orphan-routes.ser
   providers: [
     RouteService,
     CleanupOrphanRoutesService,
+    RouteExistenceRepository,
     AuthContextService,
     {
       provide: RouteRepository,
