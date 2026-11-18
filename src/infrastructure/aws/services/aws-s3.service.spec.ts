@@ -1,5 +1,9 @@
 import { ConfigService } from "@nestjs/config";
 
+import {
+  UploadScope,
+  uploadScopeStorage,
+} from "src/shared/media/storage/upload-scope";
 import { AwsS3Service } from "./aws-s3.service";
 
 const send = jest.fn();
@@ -33,6 +37,7 @@ describe("AwsS3Service", () => {
     const f = {
       originalname: "a b.png",
       mimetype: "image/png",
+      size: 1,
       buffer: Buffer.from("x"),
     } as Express.Multer.File;
     const [u1, u2] = [await s.upload(f), await s.upload(f)];
@@ -40,6 +45,54 @@ describe("AwsS3Service", () => {
     expect(u1).toMatch(
       /^http:\/\/ls:4566\/b\/local\/uploads\/[0-9a-f-]{36}_a_b\.png$/,
     );
+  });
+
+  it("upload legado recusa MIME fora da política e arquivo vazio, sem enviar nada", async () => {
+    const s = make();
+    const bad = {
+      originalname: "x.exe",
+      mimetype: "application/x-msdownload",
+      size: 2,
+      buffer: Buffer.from("MZ"),
+    } as Express.Multer.File;
+    const empty = {
+      originalname: "a.png",
+      mimetype: "image/png",
+      size: 0,
+      buffer: Buffer.alloc(0),
+    } as Express.Multer.File;
+    await expect(s.upload(bad)).rejects.toThrow("recusado");
+    await expect(s.upload(empty)).rejects.toThrow("recusado");
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  it("dentro de um escopo de requisição, delete é adiado e upload é registrado", async () => {
+    send.mockResolvedValue({});
+    const s = make();
+    const scope = new UploadScope();
+    await uploadScopeStorage.run(scope, async () => {
+      const url = await s.upload({
+        originalname: "a.png",
+        mimetype: "image/png",
+        size: 1,
+        buffer: Buffer.from("x"),
+      } as Express.Multer.File);
+      await s.delete("http://ls:4566/b/local/uploads/old.png");
+      expect(scope.uploadedUrls).toEqual([url]);
+    });
+    expect(scope.deferredDeletes).toEqual([
+      "http://ls:4566/b/local/uploads/old.png",
+    ]);
+    expect(send).toHaveBeenCalledTimes(1);
+  });
+
+  it("exclusão imediata que falha avisa o handler (fila de limpeza)", async () => {
+    send.mockRejectedValue(new Error("denied"));
+    const s = make();
+    const handler = jest.fn().mockResolvedValue(undefined);
+    s.setDeleteFailureHandler(handler);
+    await s.delete("http://ls:4566/b/local/uploads/x.png");
+    expect(handler).toHaveBeenCalledWith("local/uploads/x.png", "denied");
   });
 
   it("putObject devolve a URL e traduz falha", async () => {

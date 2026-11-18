@@ -1,6 +1,9 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { randomUUID } from "node:crypto";
+import { MediaType } from "src/shared/media/media-item/media-item.entity";
+import { currentUploadScope } from "src/shared/media/storage/upload-scope";
+import { validateUploadedFile } from "src/shared/media/storage/media-storage.utils";
 import {
   S3Client,
   PutObjectCommand,
@@ -48,7 +51,34 @@ export class AwsS3Service {
     });
   }
 
+  private deleteFailureHandler:
+    | ((key: string, error: string) => Promise<void>)
+    | null = null;
+
+  /** Registrado pelo módulo de mídia: exclusão imediata que falha vai para a fila de limpeza. */
+  setDeleteFailureHandler(
+    handler: (key: string, error: string) => Promise<void>,
+  ): void {
+    this.deleteFailureHandler = handler;
+  }
+
+  private mediaTypeOf(mimetype: string): MediaType {
+    if (mimetype.startsWith("image/")) return MediaType.IMAGE;
+    if (mimetype.startsWith("video/")) return MediaType.VIDEO;
+    if (mimetype.startsWith("audio/")) return MediaType.AUDIO;
+    return MediaType.DOCUMENT;
+  }
+
   async upload(file: Express.Multer.File): Promise<string> {
+    // Política única de MIME/tamanho (antes qualquer `mimetype` do cliente ia direto ao bucket).
+    const check = validateUploadedFile(file, this.mediaTypeOf(file.mimetype));
+    if (!check.ok) {
+      throw new BadRequestException({
+        message: `Arquivo "${file.originalname}" recusado (${check.reason}).`,
+        category: "RULE",
+        details: { code: `MEDIA_${check.reason.toUpperCase()}` },
+      });
+    }
     const sanitizedFilename = file.originalname.replace(
       /[^a-zA-Z0-9.\-_]/g,
       "_",
@@ -64,10 +94,11 @@ export class AwsS3Service {
 
     try {
       await this.s3Client.send(command);
-      if (this.endpoint) {
-        return `${this.endpoint}/${this.bucketName}/${key}`;
-      }
-      return `https://${this.bucketName}.s3.amazonaws.com/${key}`;
+      const url = this.endpoint
+        ? `${this.endpoint}/${this.bucketName}/${key}`
+        : `https://${this.bucketName}.s3.amazonaws.com/${key}`;
+      currentUploadScope()?.recordUpload(url);
+      return url;
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.error(`Error uploading to S3: ${message}`);
@@ -76,6 +107,12 @@ export class AwsS3Service {
   }
 
   async delete(url: string): Promise<void> {
+    // Dentro de uma requisição HTTP a exclusão só ocorre depois do sucesso (UploadScopeInterceptor).
+    const scope = currentUploadScope();
+    if (scope) {
+      scope.deferDelete(url);
+      return;
+    }
     let key = url.split(`${this.bucketName}.s3.amazonaws.com/`)[1];
     if (!key && url.includes(`/${this.bucketName}/`)) {
       key = url.split(`/${this.bucketName}/`)[1];
@@ -96,6 +133,7 @@ export class AwsS3Service {
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.error(`Error deleting from S3: ${message}`);
+      await this.deleteFailureHandler?.(key, message);
     }
   }
 
