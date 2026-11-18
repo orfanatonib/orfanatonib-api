@@ -50,7 +50,9 @@ export class ShelterScheduleController {
   async findAll(@Req() req: Request): Promise<ShelterScheduleResponseDto[]> {
     this.logger.log("Listing shelter schedules");
     const schedules = await this.listService.execute(req);
-    return schedules.map(ShelterScheduleResponseDto.fromEntity);
+    return schedules.map((schedule) =>
+      ShelterScheduleResponseDto.fromEntity(schedule),
+    );
   }
 
   @UseGuards(AdminOrLeaderRoleGuard)

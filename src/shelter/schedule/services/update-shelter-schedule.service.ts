@@ -1,3 +1,4 @@
+import type { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import {
   Injectable,
   Logger,
@@ -54,7 +55,7 @@ export class UpdateShelterScheduleService {
       }
     }
 
-    const updateData: Partial<ShelterScheduleEntity> = {};
+    const updateData: QueryDeepPartialEntity<ShelterScheduleEntity> = {};
     if (dto.visitNumber !== undefined) updateData.visitNumber = dto.visitNumber;
     if (dto.visitDate !== undefined) updateData.visitDate = dto.visitDate;
     if (dto.meetingDate !== undefined) updateData.meetingDate = dto.meetingDate;
@@ -62,7 +63,7 @@ export class UpdateShelterScheduleService {
       updateData.lessonContent = dto.lessonContent;
     if (dto.observation !== undefined) updateData.observation = dto.observation;
     if (dto.meetingRoom !== undefined) updateData.meetingRoom = dto.meetingRoom;
-    if (dto.teamId !== undefined) updateData.team = { id: dto.teamId } as any;
+    if (dto.teamId !== undefined) updateData.team = { id: dto.teamId };
 
     const newVisitDate = dto.visitDate ?? schedule.visitDate;
     const newMeetingDate = dto.meetingDate ?? schedule.meetingDate;
@@ -70,9 +71,14 @@ export class UpdateShelterScheduleService {
     const newObservation = dto.observation ?? schedule.observation;
     const newMeetingRoom = dto.meetingRoom ?? schedule.meetingRoom;
 
-    await this.scheduleRepo.update(id, updateData);
-
+    // Resolve a equipe ANTES de gravar: sem ela os eventos não podem ser sincronizados e a
+    // agenda ficaria alterada com os eventos antigos.
     const team = await this.getTeamsService.findOneEntity(newTeamId);
+    if (!team) {
+      throw new NotFoundException(`Team with ID ${newTeamId} not found`);
+    }
+
+    await this.scheduleRepo.update(id, updateData);
 
     await this.scheduleEventService.syncEventsForUpdate(
       id,

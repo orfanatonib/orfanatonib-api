@@ -14,6 +14,10 @@ export const validationMessage = (error: unknown, fallback: string): string => {
   return error instanceof Error && error.message ? error.message : fallback;
 };
 
+/** Mensagem de um `unknown` vindo de `catch`, só para o log. */
+export const errorMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error);
+
 /** Stack de um `unknown` vindo de `catch`, só para o log. */
 export const errorStack = (error: unknown): string | undefined =>
   error instanceof Error ? error.stack : undefined;

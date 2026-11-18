@@ -1,6 +1,12 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { Repository, DataSource } from "typeorm";
+import { DataSource, DeepPartial, FindOptionsOrder, Repository } from "typeorm";
+import type { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import { ShelterScheduleEntity } from "./entities/shelter-schedule.entity";
+
+/** Agenda sempre em ordem cronológica de visita. */
+const BY_VISIT_DATE: FindOptionsOrder<ShelterScheduleEntity> = {
+  visitDate: "ASC",
+};
 
 @Injectable()
 export class ShelterScheduleRepository {
@@ -12,7 +18,7 @@ export class ShelterScheduleRepository {
 
   async findAll(): Promise<ShelterScheduleEntity[]> {
     return this.repo.find({
-      order: { visitDate: "ASC" } as any,
+      order: BY_VISIT_DATE,
       relations: ["team", "team.shelter"],
     });
   }
@@ -28,7 +34,7 @@ export class ShelterScheduleRepository {
     return this.repo.find({
       where: { team: { id: teamId } },
       relations: ["team", "team.shelter"],
-      order: { visitDate: "ASC" } as any,
+      order: BY_VISIT_DATE,
     });
   }
 
@@ -36,7 +42,7 @@ export class ShelterScheduleRepository {
     return this.repo.find({
       where: { team: { shelter: { id: shelterId } } },
       relations: ["team", "team.shelter"],
-      order: { visitDate: "ASC" } as any,
+      order: BY_VISIT_DATE,
     });
   }
 
@@ -50,7 +56,7 @@ export class ShelterScheduleRepository {
         },
       },
       relations: ["team", "team.shelter"],
-      order: { visitDate: "ASC" } as any,
+      order: BY_VISIT_DATE,
     });
   }
 
@@ -64,7 +70,7 @@ export class ShelterScheduleRepository {
         },
       },
       relations: ["team", "team.shelter"],
-      order: { visitDate: "ASC" } as any,
+      order: BY_VISIT_DATE,
     });
   }
 
@@ -81,13 +87,16 @@ export class ShelterScheduleRepository {
     });
   }
 
-  async create(dto: any): Promise<ShelterScheduleEntity> {
-    const entity = this.repo.create(dto);
-    const saved = await this.repo.save(entity);
-    return saved as unknown as ShelterScheduleEntity;
+  async create(
+    dto: DeepPartial<ShelterScheduleEntity>,
+  ): Promise<ShelterScheduleEntity> {
+    return this.repo.save(this.repo.create(dto));
   }
 
-  async update(id: string, dto: any): Promise<void> {
+  async update(
+    id: string,
+    dto: QueryDeepPartialEntity<ShelterScheduleEntity>,
+  ): Promise<void> {
     await this.repo.update(id, dto);
   }
 

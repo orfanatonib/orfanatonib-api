@@ -1,3 +1,4 @@
+import { errorMessage } from "src/common/utils/validation-message.util";
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { ShelterScheduleRepository } from "../shelter-schedule.repository";
 import { DeleteEventService } from "src/content/event/services/delete-event.service";
@@ -30,7 +31,7 @@ export class DeleteShelterScheduleService {
         this.logger.log(`Deleted ${events.length} events for schedule ${id}`);
       }
     } catch (error) {
-      this.logger.warn(`Could not delete events: ${error.message}`);
+      this.logger.warn(`Could not delete events: ${errorMessage(error)}`);
     }
 
     await this.scheduleRepo.remove(id);

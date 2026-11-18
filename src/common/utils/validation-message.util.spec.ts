@@ -1,4 +1,8 @@
-import { errorStack, validationMessage } from "./validation-message.util";
+import {
+  errorMessage,
+  errorStack,
+  validationMessage,
+} from "./validation-message.util";
 
 describe("validationMessage", () => {
   it("junta as restrições violadas de todos os campos", () => {
@@ -30,5 +34,13 @@ describe("errorStack", () => {
     expect(errorStack(new Error("x"))).toContain("Error: x");
     expect(errorStack("texto")).toBeUndefined();
     expect(errorStack(null)).toBeUndefined();
+  });
+});
+
+describe("errorMessage", () => {
+  it("usa a mensagem do Error e converte o resto para texto", () => {
+    expect(errorMessage(new Error("falhou"))).toBe("falhou");
+    expect(errorMessage("texto")).toBe("texto");
+    expect(errorMessage(42)).toBe("42");
   });
 });

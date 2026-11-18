@@ -10,6 +10,7 @@ import {
 } from "src/content/event/entities/event.entity";
 import { CreateShelterScheduleDto } from "../dto/create-shelter-schedule.dto";
 import { ShelterScheduleEntity } from "../entities/shelter-schedule.entity";
+import type { TeamEntity } from "src/shelter/team/entities/team.entity";
 
 @Injectable()
 export class ShelterScheduleEventService {
@@ -33,7 +34,7 @@ export class ShelterScheduleEventService {
   async syncEventsForCreate(
     schedule: ShelterScheduleEntity,
     dto: CreateShelterScheduleDto,
-    team: any,
+    team: TeamEntity,
   ): Promise<void> {
     if (this.isValidDate(dto.visitDate)) {
       await this.createVisitEvent(schedule, dto, team);
@@ -50,7 +51,7 @@ export class ShelterScheduleEventService {
     newLessonContent: string | undefined,
     newObservation: string | undefined,
     newMeetingRoom: string | undefined,
-    team: any,
+    team: TeamEntity,
   ): Promise<void> {
     const existingEvents = await this.eventRepo.findByScheduleId(id);
     const visitEvent = existingEvents.find(
@@ -81,7 +82,7 @@ export class ShelterScheduleEventService {
   private async createVisitEvent(
     schedule: ShelterScheduleEntity,
     dto: CreateShelterScheduleDto,
-    team: any,
+    team: TeamEntity,
   ): Promise<void> {
     const eventData = {
       ...this.buildVisitEventData(dto.visitDate!, dto.lessonContent, team),
@@ -94,7 +95,7 @@ export class ShelterScheduleEventService {
   private async createMeetingEvent(
     schedule: ShelterScheduleEntity,
     dto: CreateShelterScheduleDto,
-    team: any,
+    team: TeamEntity,
   ): Promise<void> {
     const eventData = {
       ...this.buildMeetingEventData(
@@ -113,7 +114,7 @@ export class ShelterScheduleEventService {
     existingEvent: EventEntity | undefined,
     newDate: string | undefined,
     lessonContent: string | undefined,
-    team: any,
+    team: TeamEntity,
     scheduleId: string,
   ): Promise<void> {
     const hasValidDate = this.isValidDate(newDate);
@@ -146,7 +147,7 @@ export class ShelterScheduleEventService {
     newDate: string | undefined,
     observation: string | undefined,
     meetingRoom: string | undefined,
-    team: any,
+    team: TeamEntity,
     scheduleId: string,
   ): Promise<void> {
     const hasValidDate = this.isValidDate(newDate);
@@ -182,7 +183,7 @@ export class ShelterScheduleEventService {
   private buildVisitEventData(
     visitDate: string,
     lessonContent: string | undefined,
-    team: any,
+    team: TeamEntity,
   ) {
     const shelter = team.shelter;
     const address = shelter?.address;
@@ -206,7 +207,7 @@ export class ShelterScheduleEventService {
     meetingDate: string,
     observation: string | undefined,
     meetingRoom: string | undefined,
-    team: any,
+    team: TeamEntity,
   ) {
     const shelter = team?.shelter;
     const teamInfo = `Equipe ${team?.numberTeam ?? ""} - ${shelter?.name || "Abrigo"}`;
