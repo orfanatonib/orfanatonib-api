@@ -75,8 +75,17 @@ export class CreateFeatureFlagService implements OnModuleInit {
         environment: null,
         metadata: metadataWithTargetRoles(null, definition.targetRoles),
       });
-      created.push(await this.repository.save(flag));
-      this.logger.log(`Feature flag de fábrica criada: ${definition.key}`);
+      try {
+        created.push(await this.repository.save(flag));
+        this.logger.log(`Feature flag de fábrica criada: ${definition.key}`);
+      } catch (error: unknown) {
+        // Outra instância pode ter semeado a mesma chave entre o find e o save
+        // (ER_DUP_ENTRY); uma falha não pode impedir as flags seguintes.
+        const message = error instanceof Error ? error.message : String(error);
+        this.logger.warn(
+          `Não foi possível semear a flag ${definition.key}: ${message}`,
+        );
+      }
     }
 
     if (created.length > 0) this.getService.invalidateAll();

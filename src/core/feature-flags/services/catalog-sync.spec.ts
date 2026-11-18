@@ -106,6 +106,19 @@ describe("catálogo de feature flags", () => {
       expect(getService.invalidateAll).not.toHaveBeenCalled();
     });
 
+    it("chave duplicada numa flag (corrida entre instâncias) não impede as seguintes", async () => {
+      repository.save.mockImplementationOnce(() =>
+        Promise.reject(new Error("ER_DUP_ENTRY")),
+      );
+
+      const created = await service.seedDefaults();
+
+      expect(created).toHaveLength(DEFAULT_FEATURE_FLAGS.length - 1);
+      expect(repository.save).toHaveBeenCalledTimes(
+        DEFAULT_FEATURE_FLAGS.length,
+      );
+    });
+
     it("preserva o estado escolhido pelo operador numa flag existente", async () => {
       const desligada = buildFlag("email-delivery");
       desligada.enabled = false;
