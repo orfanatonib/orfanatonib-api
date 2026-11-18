@@ -26,8 +26,14 @@ import { GetMeditationService } from "./services/get-meditation.service";
 
 import { CreateMeditationDto } from "./dto/create-meditation.dto";
 import { UpdateMeditationDto } from "./dto/update-meditation.dto";
-import { MeditationEntity } from "./entities/meditation.entity";
-import { WeekMeditationResponseDto } from "./dto/meditation-response.dto";
+import {
+  errorStack,
+  validationMessage,
+} from "src/common/utils/validation-message.util";
+import {
+  MeditationDto,
+  WeekMeditationResponseDto,
+} from "./dto/meditation-response.dto";
 import { QueryMeditationDto } from "./dto/query-meditation.dto";
 
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
@@ -50,9 +56,9 @@ export class MeditationController {
   async create(
     @UploadedFile() file: Express.Multer.File,
     @Body("meditationData") meditationDataRaw: string,
-  ): Promise<MeditationEntity> {
+  ): Promise<MeditationDto> {
     try {
-      const parsed = JSON.parse(meditationDataRaw);
+      const parsed: unknown = JSON.parse(meditationDataRaw);
       const dto = plainToInstance(CreateMeditationDto, parsed);
       await validateOrReject(dto, {
         whitelist: true,
@@ -62,7 +68,7 @@ export class MeditationController {
       this.logger.log("Creating new meditation");
       const result = await this.createService.create(dto, file);
       this.logger.log(`Meditation created successfully: ${result.id}`);
-      return result;
+      return MeditationDto.fromEntity(result, null);
     } catch (error) {
       if (
         error instanceof HttpException ||
@@ -70,14 +76,10 @@ export class MeditationController {
       ) {
         throw error;
       }
-      this.logger.error("Error creating meditation", error.stack);
-      const message = Array.isArray(error)
-        ? error
-            .map((e) => Object.values(e.constraints || {}))
-            .flat()
-            .join("; ")
-        : error?.message || "Error creating meditation.";
-      throw new BadRequestException(message);
+      this.logger.error("Error creating meditation", errorStack(error));
+      throw new BadRequestException(
+        validationMessage(error, "Error creating meditation."),
+      );
     }
   }
 
@@ -108,9 +110,9 @@ export class MeditationController {
     @Param("id") id: string,
     @UploadedFile() file: Express.Multer.File,
     @Body("meditationData") meditationDataRaw: string,
-  ): Promise<MeditationEntity> {
+  ): Promise<MeditationDto> {
     try {
-      const parsed = JSON.parse(meditationDataRaw);
+      const parsed: unknown = JSON.parse(meditationDataRaw);
       const dto = plainToInstance(UpdateMeditationDto, parsed);
       await validateOrReject(dto, {
         whitelist: true,
@@ -120,7 +122,7 @@ export class MeditationController {
       this.logger.log(`Updating meditation ID=${id}`);
       const result = await this.updateService.update(id, dto, file);
       this.logger.log(`Meditation updated successfully: ${result.id}`);
-      return result;
+      return MeditationDto.fromEntity(result, null);
     } catch (error) {
       if (
         error instanceof HttpException ||
@@ -128,14 +130,13 @@ export class MeditationController {
       ) {
         throw error;
       }
-      this.logger.error(`Error updating meditation ID=${id}`, error.stack);
-      const message = Array.isArray(error)
-        ? error
-            .map((e) => Object.values(e.constraints || {}))
-            .flat()
-            .join("; ")
-        : error?.message || "Error updating meditation.";
-      throw new BadRequestException(message);
+      this.logger.error(
+        `Error updating meditation ID=${id}`,
+        errorStack(error),
+      );
+      throw new BadRequestException(
+        validationMessage(error, "Error updating meditation."),
+      );
     }
   }
 

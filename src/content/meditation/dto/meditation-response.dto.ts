@@ -1,3 +1,12 @@
+import type {
+  MediaItemEntity,
+  MediaType,
+  PlatformType,
+  UploadType,
+} from "src/shared/media/media-item/media-item.entity";
+import type { DayEntity } from "../entities/day.entity";
+import type { MeditationEntity } from "../entities/meditation.entity";
+
 export enum WeekDay {
   Monday = "Monday",
   Tuesday = "Tuesday",
@@ -10,23 +19,24 @@ export class MediaItemDto {
   id: string;
   title: string;
   description: string;
-  mediaType: "video" | "document" | "image" | "audio";
-  typeUpload: "link" | "upload";
+  mediaType: MediaType;
+  typeUpload: UploadType;
   url: string;
   isLocalFile: boolean;
-  platformType?: "youtube" | "googledrive" | "onedrive" | "dropbox" | "any";
+  platformType?: PlatformType;
   originalName?: string;
   size?: number;
   createdAt?: Date;
   updatedAt?: Date;
 
-  static fromEntity(entity: any): MediaItemDto {
+  static fromEntity(entity: MediaItemEntity): MediaItemDto {
     return {
       id: entity.id,
       title: entity.title,
       description: entity.description,
       mediaType: entity.mediaType,
-      typeUpload: entity.type,
+      // O campo da entidade é `uploadType`; `type` não existe e a chave saía sempre `undefined`.
+      typeUpload: entity.uploadType,
       url: entity.url,
       isLocalFile: entity.isLocalFile,
       platformType: entity.platformType ?? undefined,
@@ -46,7 +56,7 @@ export class MeditationDayDto {
   createdAt: Date;
   updatedAt: Date;
 
-  static fromEntity(entity: any): MeditationDayDto {
+  static fromEntity(entity: DayEntity): MeditationDayDto {
     return {
       id: entity.id,
       day: entity.day,
@@ -68,7 +78,10 @@ export class MeditationDto {
   createdAt: Date;
   updatedAt: Date;
 
-  static fromEntity(meditation: any, media: any): MeditationDto {
+  static fromEntity(
+    meditation: MeditationEntity,
+    media: MediaItemEntity | null,
+  ): MeditationDto {
     return {
       id: meditation.id,
       topic: meditation.topic,
@@ -76,7 +89,9 @@ export class MeditationDto {
       endDate: meditation.endDate,
       createdAt: meditation.createdAt,
       updatedAt: meditation.updatedAt,
-      days: meditation.days.map((day: any) => MeditationDayDto.fromEntity(day)),
+      days: (meditation.days ?? []).map((day) =>
+        MeditationDayDto.fromEntity(day),
+      ),
       media: media ? MediaItemDto.fromEntity(media) : null,
     };
   }
@@ -86,7 +101,10 @@ export class WeekMeditationResponseDto {
   status: string;
   meditation: MeditationDto | null;
 
-  static success(meditation: any, media: any): WeekMeditationResponseDto {
+  static success(
+    meditation: MeditationEntity,
+    media: MediaItemEntity | null,
+  ): WeekMeditationResponseDto {
     return {
       status: "Meditação da Semana",
       meditation: MeditationDto.fromEntity(meditation, media),

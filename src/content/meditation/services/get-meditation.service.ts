@@ -7,7 +7,6 @@ import {
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MeditationRepository } from "../meditation.repository";
 import { WeekMeditationResponseDto } from "../dto/meditation-response.dto";
-import { MeditationEntity } from "../entities/meditation.entity";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { QueryMeditationDto } from "../dto/query-meditation.dto";
 
@@ -20,7 +19,9 @@ export class GetMeditationService {
     private readonly mediaItemProcessor: MediaItemProcessor,
   ) {}
 
-  async findAll(query?: QueryMeditationDto): Promise<WeekMeditationResponseDto[]> {
+  async findAll(
+    query?: QueryMeditationDto,
+  ): Promise<WeekMeditationResponseDto[]> {
     const meditations = await this.meditationRepo.findAllWithRelations(query);
     if (!meditations.length) {
       return [];

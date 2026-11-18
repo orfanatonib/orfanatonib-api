@@ -1,4 +1,8 @@
 import {
+  errorStack,
+  validationMessage,
+} from "src/common/utils/validation-message.util";
+import {
   Inject,
   Injectable,
   Logger,
@@ -60,7 +64,7 @@ export class CreateMeditationService {
         topic: dto.topic,
         startDate: startDate,
         endDate: endDate,
-        days: dto.days as any,
+        days: dto.days.map(({ day, verse, topic }) => ({ day, verse, topic })),
       });
 
       const savedMeditation = await this.meditationRepo.save(meditation);
@@ -114,9 +118,9 @@ export class CreateMeditationService {
       if (error instanceof HttpException) {
         throw error;
       }
-      this.logger.error("Error creating meditation", error.stack);
+      this.logger.error("Error creating meditation", errorStack(error));
       throw new BadRequestException(
-        error?.message || "Unexpected error creating meditation.",
+        validationMessage(error, "Unexpected error creating meditation."),
       );
     }
   }

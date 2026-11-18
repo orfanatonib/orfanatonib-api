@@ -115,16 +115,15 @@ export class UpdateMeditationService {
             MediaTargetType.Meditation,
           );
 
-        const [mediaEntity] =
-          await this.mediaItemProcessor.cleanAndReplaceMediaItems(
-            mediaItemsInput,
-            savedMeditation.id,
-            MediaTargetType.Meditation,
-            filesDict,
-            existingMedia,
-            (url) => this.s3Service.delete(url),
-            (file) => this.s3Service.upload(file),
-          );
+        await this.mediaItemProcessor.cleanAndReplaceMediaItems(
+          mediaItemsInput,
+          savedMeditation.id,
+          MediaTargetType.Meditation,
+          filesDict,
+          existingMedia,
+          (url) => this.s3Service.delete(url),
+          (file) => this.s3Service.upload(file),
+        );
       }
 
       return savedMeditation;

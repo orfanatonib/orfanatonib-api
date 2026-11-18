@@ -19,7 +19,7 @@ import {
 import { Request } from "express";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { plainToInstance } from "class-transformer";
-import { validateOrReject, ValidationError } from "class-validator";
+import { validateOrReject } from "class-validator";
 import { CreateEventDto } from "./dto/create-event.dto";
 
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
@@ -28,6 +28,7 @@ import { CreateEventService } from "./services/create-event.service";
 import { UpdateEventService } from "./services/update-event.service";
 import { DeleteEventService } from "./services/delete-event.service";
 import { GetEventService } from "./services/get-event.service";
+import { validationMessage } from "src/common/utils/validation-message.util";
 import { EventResponseDto } from "./dto/event-response.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
 import { QueryEventDto } from "./dto/query-event.dto";
@@ -43,16 +44,6 @@ const parseEventData = (raw: string): unknown => {
   } catch {
     throw new BadRequestException("eventData deve ser um JSON válido.");
   }
-};
-
-/** Mensagem de falha de validação/parse sem vazar stack. */
-const validationMessage = (error: unknown, fallback: string): string => {
-  if (Array.isArray(error)) {
-    return (error as ValidationError[])
-      .flatMap((e) => Object.values(e.constraints ?? {}))
-      .join("; ");
-  }
-  return error instanceof Error && error.message ? error.message : fallback;
 };
 
 @Controller("events")

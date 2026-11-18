@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { ILike, Repository } from "typeorm";
+import { DeepPartial, ILike, Repository } from "typeorm";
 import { MeditationEntity } from "./entities/meditation.entity";
 import { QueryMeditationDto } from "./dto/query-meditation.dto";
 
@@ -18,7 +18,9 @@ export class MeditationRepository {
     });
   }
 
-  async findAllWithRelations(query?: QueryMeditationDto): Promise<MeditationEntity[]> {
+  async findAllWithRelations(
+    query?: QueryMeditationDto,
+  ): Promise<MeditationEntity[]> {
     const search = query?.search?.trim();
     if (search) {
       return this.repo.find({
@@ -34,11 +36,11 @@ export class MeditationRepository {
     });
   }
 
-  create(data: Partial<MeditationEntity>): MeditationEntity {
+  create(data: DeepPartial<MeditationEntity>): MeditationEntity {
     return this.repo.create(data);
   }
 
-  async save(entity: Partial<MeditationEntity>): Promise<MeditationEntity> {
+  async save(entity: DeepPartial<MeditationEntity>): Promise<MeditationEntity> {
     const created = this.repo.create(entity);
     return this.repo.save(created);
   }
