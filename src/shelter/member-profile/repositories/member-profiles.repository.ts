@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { DataSource, Repository, SelectQueryBuilder } from "typeorm";
 
@@ -104,7 +100,9 @@ export class MemberProfilesRepository {
 
   private coerceInt(input: unknown): number | undefined {
     if (input === undefined || input === null || input === "") return undefined;
-    const n = Number(String(input).trim());
+    const n = Number(
+      typeof input === "string" || typeof input === "number" ? input : NaN,
+    );
     return Number.isInteger(n) ? n : undefined;
   }
 
@@ -282,9 +280,9 @@ export class MemberProfilesRepository {
       if (existing) return existing;
 
       const entity = txMember.create({
-        user: user as any,
+        user,
         active: true,
-        team: null as any,
+        team: null,
       });
       return txMember.save(entity);
     });
@@ -317,19 +315,19 @@ export class MemberProfilesRepository {
       if (!team) throw new NotFoundException("Team not found");
 
       let profile = await txMember.findOne({
-        where: { user: { id: userId } as any },
+        where: { user: { id: userId } },
         relations: ["team"],
       });
 
       if (!profile) {
         profile = txMember.create({
-          user: user as any,
+          user,
           active: true,
-          team: null as any,
+          team: null,
         });
       }
 
-      (profile as any).team = team as any;
+      profile.team = team;
       await txMember.save(profile);
     });
   }
@@ -361,9 +359,6 @@ export class MemberProfilesRepository {
       return false;
     }
 
-    const hasGetExists = typeof (qb as any).getExists === "function";
-    return hasGetExists
-      ? !!(await (qb as any).getExists())
-      : (await qb.getCount()) > 0;
+    return qb.getExists();
   }
 }

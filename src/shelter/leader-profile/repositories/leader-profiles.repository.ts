@@ -1,8 +1,4 @@
-import {
-  BadRequestException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import {
   DataSource,
@@ -13,7 +9,6 @@ import {
 } from "typeorm";
 
 import { LeaderProfileEntity } from "../entities/leader-profile.entity/leader-profile.entity";
-import { TeamEntity } from "src/shelter/team/entities/team.entity";
 import { ShelterEntity } from "src/shelter/shelter/entities/shelter.entity/shelter.entity";
 import { UserEntity } from "src/core/user/entities/user.entity";
 import {
@@ -88,9 +83,17 @@ export class LeaderProfilesRepository {
     return map[sort ?? "updatedAt"] ?? "leader.updatedAt";
   }
 
+  private scalarToString(input: unknown): string {
+    if (typeof input === "string") return input;
+    if (typeof input === "number" || typeof input === "boolean") {
+      return String(input);
+    }
+    return "";
+  }
+
   private coerceShelterId(input: unknown): string | undefined {
     if (input === undefined || input === null || input === "") return undefined;
-    const s = String(input).trim();
+    const s = this.scalarToString(input).trim();
     return s ? s : undefined;
   }
 
@@ -276,7 +279,7 @@ export class LeaderProfilesRepository {
       });
       if (existing) return existing;
 
-      const entity = txLeader.create({ user: user as any, active: true });
+      const entity = txLeader.create({ user, active: true });
       return txLeader.save(entity);
     });
   }
@@ -284,8 +287,6 @@ export class LeaderProfilesRepository {
   async removeByUserId(userId: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const txLeader = manager.withRepository(this.leaderRepo);
-      const txShelter = manager.withRepository(this.shelterRepo);
-
       const leader = await txLeader.findOne({
         where: { user: { id: userId } },
         relations: { teams: true },
