@@ -74,7 +74,7 @@ export interface FakeDirective {
 export function parseFakeDirective(text: string): FakeDirective | null {
   for (const match of text.matchAll(DIRECTIVE)) {
     const name = match[1].toLowerCase();
-    const descriptor = Object.values(FAILURES).find((d) => d.failure === name);
+    const descriptor = Object.values(FAILURES).find((d) => String(d.failure) === name);
     if (descriptor) {
       return {
         descriptor,
