@@ -129,7 +129,8 @@ export class UpdateIdeasPageService {
             id: In(processedMediaIds),
           },
         });
-        (section as any).medias = medias;
+        // `medias` não é coluna da seção: é anexada só para a resposta.
+        Object.assign(section, { medias });
       }
 
       await queryRunner.commitTransaction();

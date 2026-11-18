@@ -118,7 +118,7 @@ export class UpdateVideosPageService {
 
   private async deleteMedia(
     existingMedia: MediaItemEntity[],
-    requestedMedia: any[],
+    requestedMedia: ReadonlyArray<{ id?: string | null }>,
     queryRunner: QueryRunner,
   ): Promise<void> {
     const requestedMediaIds = requestedMedia
