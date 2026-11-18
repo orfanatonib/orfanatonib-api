@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseUUIDPipe,
+  ParseArrayPipe,
   Query,
   Req,
   UseGuards,
@@ -62,7 +63,8 @@ export class LeaderProfilesController {
   @Put(":leaderId")
   async update(
     @Param("leaderId", new ParseUUIDPipe()) leaderId: string,
-    @Body() dto: ShelterTeamDto[],
+    @Body(new ParseArrayPipe({ items: ShelterTeamDto, whitelist: true }))
+    dto: ShelterTeamDto[],
     @Req() req: Request,
   ): Promise<LeaderResponseDto> {
     this.logger.log(`Updating leader profile: ${leaderId}`);
