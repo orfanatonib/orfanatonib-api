@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { IntegrationRepository } from "../integration.repository";
 import {
   IntegrationResponseDto,
@@ -75,7 +75,7 @@ export class GetIntegrationService {
   async findOne(id: string): Promise<IntegrationResponseDto> {
     const integration = await this.repository.findById(id);
     if (!integration) {
-      throw new Error(`Integration with ID ${id} not found`);
+      throw new NotFoundException(`Integration with ID ${id} not found`);
     }
 
     const mediaItems = await this.mediaProcessor.findMediaItemsByTarget(
