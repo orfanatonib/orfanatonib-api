@@ -20,6 +20,8 @@ import { CreateVisitReportService } from "./services/create-visit-report.service
 import { ListVisitReportsService } from "./services/list-visit-reports.service";
 import { UpdateVisitReportService } from "./services/update-visit-report.service";
 import { DeleteVisitReportService } from "./services/delete-visit-report.service";
+import type { AuthenticatedRequest } from "src/core/auth/auth.types";
+import { toShelterAccessContext } from "src/shelter/shelter/utils/shelter-access.util";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminOrLeaderRoleGuard } from "src/core/auth/guards/role-guard";
 
@@ -37,10 +39,14 @@ export class VisitReportController {
 
   @Post()
   async create(
+    @Req() req: AuthenticatedRequest,
     @Body(ValidationPipe) dto: CreateVisitReportDto,
   ): Promise<VisitReportResponseDto> {
     this.logger.log("Creating new visit report");
-    const result = await this.createService.execute(dto);
+    const result = await this.createService.execute(
+      dto,
+      toShelterAccessContext(req),
+    );
     this.logger.log(`Visit report created successfully: ${result.id}`);
     return VisitReportResponseDto.fromEntity(result);
   }
@@ -49,32 +55,46 @@ export class VisitReportController {
   async findAll(@Req() req: Request): Promise<VisitReportResponseDto[]> {
     this.logger.log("Listing visit reports");
     const reports = await this.listService.execute(req);
-    return reports.map(VisitReportResponseDto.fromEntity);
+    return reports.map((report) => VisitReportResponseDto.fromEntity(report));
   }
 
   @Get(":id")
-  async findOne(@Param("id") id: string): Promise<VisitReportResponseDto> {
+  async findOne(
+    @Req() req: AuthenticatedRequest,
+    @Param("id") id: string,
+  ): Promise<VisitReportResponseDto> {
     this.logger.log(`Finding visit report: ${id}`);
-    const report = await this.listService.findOne(id);
+    const report = await this.listService.findOne(
+      id,
+      toShelterAccessContext(req),
+    );
     return VisitReportResponseDto.fromEntity(report);
   }
 
   @Put(":id")
   async update(
+    @Req() req: AuthenticatedRequest,
     @Param("id") id: string,
     @Body(ValidationPipe) dto: UpdateVisitReportDto,
   ): Promise<VisitReportResponseDto> {
     this.logger.log(`Updating visit report: ${id}`);
-    const result = await this.updateService.execute(id, dto);
+    const result = await this.updateService.execute(
+      id,
+      dto,
+      toShelterAccessContext(req),
+    );
     this.logger.log(`Visit report updated successfully: ${id}`);
     return VisitReportResponseDto.fromEntity(result);
   }
 
   @Delete(":id")
   @HttpCode(204)
-  async remove(@Param("id") id: string): Promise<void> {
+  async remove(
+    @Req() req: AuthenticatedRequest,
+    @Param("id") id: string,
+  ): Promise<void> {
     this.logger.log(`Deleting visit report: ${id}`);
-    await this.deleteService.execute(id);
+    await this.deleteService.execute(id, toShelterAccessContext(req));
     this.logger.log(`Visit report deleted successfully: ${id}`);
   }
 }

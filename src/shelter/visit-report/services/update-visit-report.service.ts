@@ -2,6 +2,8 @@ import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { VisitReportRepository } from "../visit-report.repository";
 import { UpdateVisitReportDto } from "../dto/update-visit-report.dto";
 import { VisitReportEntity } from "../entities/visit-report.entity";
+import type { ShelterAccessContext } from "src/shelter/shelter/types";
+import { canAccessReport } from "../utils/visit-report-access.util";
 
 @Injectable()
 export class UpdateVisitReportService {
@@ -12,11 +14,12 @@ export class UpdateVisitReportService {
   async execute(
     id: string,
     dto: UpdateVisitReportDto,
+    actor: ShelterAccessContext,
   ): Promise<VisitReportEntity> {
     this.logger.log(`Updating visit report ${id}`);
 
     const existingReport = await this.visitReportRepo.findById(id);
-    if (!existingReport) {
+    if (!existingReport || !canAccessReport(actor, existingReport)) {
       throw new NotFoundException(`Visit report with ID ${id} not found`);
     }
 

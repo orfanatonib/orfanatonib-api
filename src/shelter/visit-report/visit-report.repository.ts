@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { Repository, DataSource } from "typeorm";
 import { VisitReportEntity } from "./entities/visit-report.entity";
+import { LeaderProfileEntity } from "src/shelter/leader-profile/entities/leader-profile.entity/leader-profile.entity";
 
 const FULL_RELATIONS = [
   "schedule",
@@ -71,6 +72,13 @@ export class VisitReportRepository {
       },
       relations: FULL_RELATIONS,
       order: { createdAt: "DESC" },
+    });
+  }
+
+  /** O usuário lidera a equipe? (escopo de criação do líder) */
+  async isLeaderOfTeam(userId: string, teamId: string): Promise<boolean> {
+    return this.ds.getRepository(LeaderProfileEntity).exists({
+      where: { user: { id: userId }, teams: { id: teamId } },
     });
   }
 
