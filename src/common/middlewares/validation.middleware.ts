@@ -1,3 +1,4 @@
+import type { ClassConstructor } from "class-transformer";
 import {
   Injectable,
   NestMiddleware,
@@ -15,14 +16,14 @@ import { plainToClass } from "class-transformer";
 export class ValidationMiddleware implements NestMiddleware {
   private readonly logger = new Logger(ValidationMiddleware.name);
 
-  constructor(private readonly dtoClass: any) {}
+  constructor(private readonly dtoClass: ClassConstructor<object>) {}
 
   async use(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (req.method === "GET" || req.method === "DELETE") {
         if (req.query && Object.keys(req.query).length > 0) {
           const queryDto = plainToClass(this.dtoClass, req.query);
-          const errors = await validate(queryDto as object, {
+          const errors = await validate(queryDto, {
             whitelist: true,
             forbidNonWhitelisted: true,
           });
@@ -38,7 +39,7 @@ export class ValidationMiddleware implements NestMiddleware {
       } else {
         if (req.body && Object.keys(req.body).length > 0) {
           const dtoInstance = plainToClass(this.dtoClass, req.body);
-          const errors = await validate(dtoInstance as object, {
+          const errors = await validate(dtoInstance, {
             whitelist: true,
             forbidNonWhitelisted: true,
           });
@@ -64,14 +65,16 @@ export class ValidationMiddleware implements NestMiddleware {
       this.logger.error("Validation middleware error", error);
       throw new BadRequestException({
         message: "Validation processing failed",
-        details: error.message,
+        details: error instanceof Error ? error.message : "unknown",
         category: "SERVER",
       });
     }
   }
 
-  private formatValidationErrors(errors: ClassValidatorError[]): any {
-    const formattedErrors: any = {};
+  private formatValidationErrors(
+    errors: ClassValidatorError[],
+  ): Record<string, unknown> {
+    const formattedErrors: Record<string, unknown> = {};
 
     const processError = (error: ClassValidatorError, path = ""): void => {
       const currentPath = path ? `${path}.${error.property}` : error.property;
@@ -94,6 +97,6 @@ export class ValidationMiddleware implements NestMiddleware {
   }
 }
 
-export function createValidationMiddleware(dtoClass: any) {
+export function createValidationMiddleware(dtoClass: ClassConstructor<object>) {
   return new ValidationMiddleware(dtoClass);
 }

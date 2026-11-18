@@ -1,5 +1,5 @@
 import { Injectable, NestMiddleware, HttpStatus } from "@nestjs/common";
-import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction, RequestHandler } from "express";
 import rateLimit from "express-rate-limit";
 import { TooManyRequestsException } from "../exceptions/too-many-requests.exception";
 
@@ -16,7 +16,7 @@ declare module "express" {
 
 @Injectable()
 export class RateLimitingMiddleware implements NestMiddleware {
-  private readonly limiters: Map<string, any> = new Map();
+  private readonly limiters: Map<string, RequestHandler> = new Map();
 
   constructor() {
     this.setupLimiters();
@@ -42,7 +42,7 @@ export class RateLimitingMiddleware implements NestMiddleware {
         },
         standardHeaders: true,
         legacyHeaders: false,
-        handler: (req: Request, res: Response) => {
+        handler: (req: Request) => {
           const retryAfter = Math.ceil(
             (req.rateLimit?.resetTime?.getTime() || Date.now()) / 1000,
           );
@@ -71,7 +71,7 @@ export class RateLimitingMiddleware implements NestMiddleware {
         },
         standardHeaders: true,
         legacyHeaders: false,
-        handler: (req: Request, res: Response) => {
+        handler: (req: Request) => {
           const retryAfter = Math.ceil(
             (req.rateLimit?.resetTime?.getTime() || Date.now()) / 1000,
           );
@@ -97,7 +97,7 @@ export class RateLimitingMiddleware implements NestMiddleware {
         },
         standardHeaders: true,
         legacyHeaders: false,
-        handler: (req: Request, res: Response) => {
+        handler: (req: Request) => {
           const retryAfter = Math.ceil(
             (req.rateLimit?.resetTime?.getTime() || Date.now()) / 1000,
           );
@@ -123,7 +123,7 @@ export class RateLimitingMiddleware implements NestMiddleware {
         },
         standardHeaders: true,
         legacyHeaders: false,
-        handler: (req: Request, res: Response) => {
+        handler: (req: Request) => {
           const retryAfter = Math.ceil(
             (req.rateLimit?.resetTime?.getTime() || Date.now()) / 1000,
           );
@@ -136,23 +136,29 @@ export class RateLimitingMiddleware implements NestMiddleware {
     );
   }
 
-  private getLimiterForRoute(req: Request): any {
+  private limiter(name: string): RequestHandler {
+    const limiter = this.limiters.get(name);
+    if (!limiter) throw new Error(`Limitador não configurado: ${name}`);
+    return limiter;
+  }
+
+  private getLimiterForRoute(req: Request): RequestHandler {
     const url = req.url.toLowerCase();
     const method = req.method.toUpperCase();
 
     if (url.includes("/auth/") && (method === "POST" || method === "PUT")) {
-      return this.limiters.get("auth");
+      return this.limiter("auth");
     }
     if (
       url.includes("/upload") ||
       req.headers["content-type"]?.includes("multipart/form-data")
     ) {
-      return this.limiters.get("upload");
+      return this.limiter("upload");
     }
 
     if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-      return this.limiters.get("write");
+      return this.limiter("write");
     }
-    return this.limiters.get("general");
+    return this.limiter("general");
   }
 }

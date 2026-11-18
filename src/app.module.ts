@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import { APP_FILTER, APP_INTERCEPTOR } from "@nestjs/core";
+import { APP_FILTER } from "@nestjs/core";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ConfigModule } from "@nestjs/config";
 import { RouteModule } from "./infrastructure/route/route.module";
@@ -39,7 +39,7 @@ import { IntegrationModule } from "./shelter/integration/integration.module";
 import { AtendenteModule } from "./shelter/atendente/atendente.module";
 import { RemindersModule } from "./shelter/reminders/reminders.module";
 import { GlobalExceptionFilter } from "./common/filters";
-import { LoggingInterceptor } from "./common/interceptors";
+import { RequestContextModule } from "./core/request-context";
 import { HealthModule } from "./common/controllers/health.module";
 import { validateEnv } from "./config/env.validation";
 import { AppController } from "./app.controller";
@@ -104,13 +104,13 @@ function getEnvFilePath(): string {
     AtendenteModule,
     RemindersModule,
     HealthModule,
+    RequestContextModule,
   ],
   controllers: [AppController],
   providers: [
     AppService,
-    // Registrados por DI (antes eram `new` em main.ts): recebem serviços e valem em testes de módulo.
+    // Registrado por DI (antes era `new` em main.ts): recebe o contexto da requisição e a configuração.
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
-    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
   ],
 })
 export class AppModule {}

@@ -1,15 +1,16 @@
 import { INestApplication, Module } from "@nestjs/common";
-import { APP_FILTER, APP_INTERCEPTOR } from "@nestjs/core";
+import { APP_FILTER } from "@nestjs/core";
 import { Test } from "@nestjs/testing";
 import * as request from "supertest";
 import { DataSource } from "typeorm";
 
 import { HealthController } from "./common/controllers/health.controller";
 import { GlobalExceptionFilter } from "./common/filters";
-import { LoggingInterceptor } from "./common/interceptors";
+import { RequestContextModule } from "./core/request-context";
 import { createCorsOptions } from "./config/cors.config";
 
 @Module({
+  imports: [RequestContextModule],
   controllers: [HealthController],
   providers: [
     {
@@ -17,7 +18,6 @@ import { createCorsOptions } from "./config/cors.config";
       useValue: { query: jest.fn().mockResolvedValue([]) },
     },
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
-    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
   ],
 })
 class BootModule {}
@@ -56,6 +56,10 @@ describe("bootstrap (DI do filtro/interceptor, health e CORS)", () => {
       .expect(404);
     expect(response.body).toHaveProperty("statusCode", 404);
     expect(response.body).toHaveProperty("category");
+    // O id do corpo de erro é o mesmo devolvido no cabeçalho (antes era "unknown").
+    expect((response.body as { requestId: string }).requestId).toBe(
+      response.headers["x-request-id"],
+    );
   });
 
   it("CORS: origem permitida recebe o cabeçalho; origem estranha não", async () => {
