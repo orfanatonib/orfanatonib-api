@@ -3,6 +3,22 @@ import { Request, Response, NextFunction, RequestHandler } from "express";
 import rateLimit from "express-rate-limit";
 import { TooManyRequestsException } from "../exceptions/too-many-requests.exception";
 
+/**
+ * Limites por IP (janelas fixas abaixo). Os antigos (auth 5, write 50, upload 10) derrubavam
+ * o uso normal — por isso o recurso estava desligado. Cada um pode ser ajustado por variável
+ * de ambiente (`RATE_LIMIT_AUTH_MAX`, `RATE_LIMIT_WRITE_MAX`, `RATE_LIMIT_UPLOAD_MAX`, `RATE_LIMIT_GENERAL_MAX`).
+ */
+const fromEnv = (name: string, fallback: number): number => {
+  const value = Number(process.env[name]);
+  return Number.isInteger(value) && value > 0 ? value : fallback;
+};
+export const RATE_LIMITS = {
+  auth: fromEnv("RATE_LIMIT_AUTH_MAX", 30),
+  write: fromEnv("RATE_LIMIT_WRITE_MAX", 300),
+  upload: fromEnv("RATE_LIMIT_UPLOAD_MAX", 60),
+  general: fromEnv("RATE_LIMIT_GENERAL_MAX", 1000),
+} as const;
+
 declare module "express" {
   interface Request {
     rateLimit?: {
@@ -32,7 +48,7 @@ export class RateLimitingMiddleware implements NestMiddleware {
       "general",
       rateLimit({
         windowMs: 15 * 60 * 1000,
-        max: 1000,
+        max: RATE_LIMITS.general,
         message: {
           statusCode: HttpStatus.TOO_MANY_REQUESTS,
           message: "Too many requests from this IP, please try again later.",
@@ -61,7 +77,7 @@ export class RateLimitingMiddleware implements NestMiddleware {
       "auth",
       rateLimit({
         windowMs: 15 * 60 * 1000,
-        max: 5,
+        max: RATE_LIMITS.auth,
         message: {
           statusCode: HttpStatus.TOO_MANY_REQUESTS,
           message: "Too many authentication attempts, please try again later.",
@@ -87,7 +103,7 @@ export class RateLimitingMiddleware implements NestMiddleware {
       "write",
       rateLimit({
         windowMs: 5 * 60 * 1000,
-        max: 50,
+        max: RATE_LIMITS.write,
         message: {
           statusCode: HttpStatus.TOO_MANY_REQUESTS,
           message: "Too many write operations, please slow down.",
@@ -113,7 +129,7 @@ export class RateLimitingMiddleware implements NestMiddleware {
       "upload",
       rateLimit({
         windowMs: 60 * 60 * 1000,
-        max: 10,
+        max: RATE_LIMITS.upload,
         message: {
           statusCode: HttpStatus.TOO_MANY_REQUESTS,
           message: "Too many file uploads, please try again later.",
@@ -143,7 +159,7 @@ export class RateLimitingMiddleware implements NestMiddleware {
   }
 
   private getLimiterForRoute(req: Request): RequestHandler {
-    const url = req.url.toLowerCase();
+    const url = (req.originalUrl || req.url).toLowerCase();
     const method = req.method.toUpperCase();
 
     if (url.includes("/auth/") && (method === "POST" || method === "PUT")) {
