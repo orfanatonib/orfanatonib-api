@@ -12,8 +12,15 @@ import {
   Get,
   Patch,
   UseGuards,
+  Req,
 } from "@nestjs/common";
+import type { Request } from "express";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
+
+/** Mídias de ideias: até 10 arquivos de 200 MB (MIME validado no armazenamento quando migrado). */
+const IDEAS_UPLOAD_OPTIONS = {
+  limits: { fileSize: 200 * 1024 * 1024, files: 10 },
+} as const;
 import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 
@@ -42,7 +49,7 @@ export class IdeasPageController {
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(IDEAS_UPLOAD_OPTIONS))
   async create(
     @UploadedFiles() files: Express.Multer.File[] = [],
     @Body("ideasMaterialsPageData") raw: string,
@@ -52,7 +59,7 @@ export class IdeasPageController {
         throw new BadRequestException("ideasMaterialsPageData is required.");
       }
 
-      const parsed = JSON.parse(raw);
+      const parsed: unknown = JSON.parse(raw);
       const validationPipe = new ValidationPipe({ transform: true });
       const dto: CreateIdeasPageDto = await validationPipe.transform(parsed, {
         type: "body",
@@ -65,23 +72,18 @@ export class IdeasPageController {
       });
 
       this.logger.log("Creating new ideas page");
-      const result = await this.createService.createIdeasPage(
-        dto,
-        filesDict,
-      );
+      const result = await this.createService.createIdeasPage(dto, filesDict);
       this.logger.log(`Ideas page created successfully: ${result.id}`);
       return result;
     } catch (err) {
       this.logger.error("Error creating ideas page", err);
-      throw new BadRequestException(
-        "Error creating ideas page: " + err.message,
-      );
+      throw new BadRequestException("Error creating ideas page.");
     }
   }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(IDEAS_UPLOAD_OPTIONS))
   async update(
     @Param("id") id: string,
     @UploadedFiles() files: Express.Multer.File[],
@@ -91,7 +93,7 @@ export class IdeasPageController {
       if (!raw)
         throw new BadRequestException("ideasMaterialsPageData is required.");
 
-      const parsedData = JSON.parse(raw);
+      const parsedData: unknown = JSON.parse(raw);
       const dto = plainToInstance(UpdateIdeasPageDto, parsedData);
       const validationErrors = await validate(dto, {
         whitelist: true,
@@ -132,19 +134,26 @@ export class IdeasPageController {
       this.logger.log(`Ideas page deleted successfully: ${id}`);
     } catch (error) {
       this.logger.error("Error removing ideas page", error);
-      throw new BadRequestException(
-        "Erro ao remover a página de ideias: " + error.message,
-      );
+      throw new BadRequestException("Erro ao remover a página de ideias.");
     }
   }
 
+  /** Anônimo recebe só páginas públicas; com sessão, todas. */
   @Get()
-  async findAll(): Promise<IdeasPageResponseDto[]> {
-    return this.getService.findAllPagesWithMedia();
+  async findAll(@Req() req: Request): Promise<IdeasPageResponseDto[]> {
+    return this.getService.findAllPagesWithMedia(
+      await this.getService.canSeeNonPublic(req),
+    );
   }
 
   @Get(":id")
-  async findOne(@Param("id") id: string): Promise<IdeasPageResponseDto> {
-    return this.getService.findPageWithMedia(id);
+  async findOne(
+    @Param("id") id: string,
+    @Req() req: Request,
+  ): Promise<IdeasPageResponseDto> {
+    return this.getService.findPageWithMedia(
+      id,
+      await this.getService.canSeeNonPublic(req),
+    );
   }
 }

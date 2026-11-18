@@ -6,6 +6,8 @@ import { IdeasPageEntity } from "./entities/ideas-page.entity";
 import { IdeasSectionEntity } from "../ideas-section/entities/ideas-section.entity";
 import { IdeasPageRepository } from "./repositories/ideas-page.repository";
 import { CreateIdeasPageService } from "./services/create-ideas-page.service";
+import { JwtModule } from "@nestjs/jwt";
+import { AuthContextService } from "src/core/auth/services/auth-context.service";
 import { RouteModule } from "src/infrastructure/route/route.module";
 import { AwsModule } from "src/infrastructure/aws/aws.module";
 import { MediaModule } from "src/shared/media/media.module";
@@ -19,9 +21,12 @@ import { UpdateIdeasPageService } from "./services/update-ideas-page.service";
     RouteModule,
     AwsModule,
     MediaModule,
+    // Só valida o token (secret explícito); evita importar o AuthModule (ciclo de módulos).
+    JwtModule.register({}),
   ],
   controllers: [IdeasPageController],
   providers: [
+    AuthContextService,
     CreateIdeasPageService,
     DeleteIdeasPageService,
     GetIdeasPageService,

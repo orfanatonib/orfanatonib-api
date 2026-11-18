@@ -13,6 +13,11 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
+
+/** Mídias de ideias: até 10 arquivos de 200 MB (MIME validado no armazenamento quando migrado). */
+const IDEAS_UPLOAD_OPTIONS = {
+  limits: { fileSize: 200 * 1024 * 1024, files: 10 },
+} as const;
 import { UnauthenticatedException } from "src/common/exceptions";
 import { AuthenticatedRequest } from "src/core/auth/auth.types";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
@@ -54,7 +59,7 @@ export class IdeasSectionController {
 
   /** Qualquer usuário autenticado pode compartilhar uma ideia. */
   @Post()
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(IDEAS_UPLOAD_OPTIONS))
   async create(
     @Req() request: AuthenticatedRequest,
     @UploadedFiles() files: Express.Multer.File[],
@@ -73,7 +78,7 @@ export class IdeasSectionController {
 
   @Patch(":id")
   @UseGuards(AdminRoleGuard)
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(IDEAS_UPLOAD_OPTIONS))
   async update(
     @Param("id", new ParseUUIDPipe()) id: string,
     @UploadedFiles() files: Express.Multer.File[],
@@ -85,7 +90,7 @@ export class IdeasSectionController {
 
   @Patch(":id/attach/:pageId")
   @UseGuards(AdminRoleGuard)
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(IDEAS_UPLOAD_OPTIONS))
   async attach(
     @Param("id", new ParseUUIDPipe()) id: string,
     @Param("pageId", new ParseUUIDPipe()) pageId: string,
