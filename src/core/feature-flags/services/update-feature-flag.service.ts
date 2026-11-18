@@ -1,6 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
 
-import { ResourceConflictException } from "src/common/exceptions";
+import {
+  ResourceConflictException,
+  RuleException,
+} from "src/common/exceptions";
+import { DEFAULT_FEATURE_FLAGS } from "../constants";
 
 import { UpdateFeatureFlagDto } from "../dto/update-feature-flag.dto";
 import { FeatureFlagResponseDto } from "../dto/feature-flag-response.dto";
@@ -29,6 +33,12 @@ export class UpdateFeatureFlagService {
     const flag = await this.getService.findEntityOrFail(key);
 
     if (dto.key !== undefined && dto.key !== flag.key) {
+      // O boot recria a chave original: renomear só gera flag duplicada e código sem flag.
+      if (DEFAULT_FEATURE_FLAGS.some((d) => d.key === flag.key)) {
+        throw new RuleException(
+          `A chave da flag de fábrica "${flag.key}" não pode ser renomeada`,
+        );
+      }
       if (await this.repository.findByKey(dto.key)) {
         throw new ResourceConflictException(
           `Já existe uma feature flag com a chave "${dto.key}"`,

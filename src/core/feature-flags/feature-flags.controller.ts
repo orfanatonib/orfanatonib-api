@@ -20,6 +20,8 @@ import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
 import { AdminRoleGuard } from "../auth/guards/role-guard";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { AuthContextService } from "../auth/services/auth-context.service";
+import { UserRole } from "../auth/auth.types";
+import { isInternalFeatureFlag } from "./constants";
 import { CreateFeatureFlagDto } from "./dto/create-feature-flag.dto";
 import { FeatureFlagResponseDto } from "./dto/feature-flag-response.dto";
 import { FeatureFlagStatsDto } from "./dto/feature-flag-stats.dto";
@@ -94,6 +96,10 @@ export class FeatureFlagsController {
     @Req() request: Request,
   ): Promise<{ key: string; enabled: boolean }> {
     const role = await this.authContext.getRole(request);
+    // Flags internas (e-mail) não revelam o estado a quem não é admin.
+    if (isInternalFeatureFlag(key) && role !== UserRole.ADMIN) {
+      return { key, enabled: false };
+    }
     return {
       key,
       enabled: await this.getService.isEnabledForRole(key, role),

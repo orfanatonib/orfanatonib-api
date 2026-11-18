@@ -123,10 +123,17 @@ describe("feature flag write services", () => {
     ).resolves.toMatchObject({
       enabled: false,
     });
-    await deleteService.remove("shelter-management");
 
     expect(repository.save).toHaveBeenCalled();
-    expect(repository.remove).toHaveBeenCalled();
-    expect(getService.invalidate).toHaveBeenCalledWith("shelter-management");
+  });
+
+  it("recusa remover ou renomear flag de fábrica (o boot a recriaria)", async () => {
+    await expect(deleteService.remove("shelter-management")).rejects.toThrow(
+      "não pode ser removida",
+    );
+    await expect(
+      updateService.update("shelter-management", { key: "outro" }),
+    ).rejects.toThrow("não pode ser renomeada");
+    expect(repository.remove).not.toHaveBeenCalled();
   });
 });
