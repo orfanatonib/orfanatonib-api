@@ -12,8 +12,15 @@ import {
   Logger,
   UseGuards,
   HttpException,
+  Req,
 } from "@nestjs/common";
+import type { Request } from "express";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
+
+/** Vídeos/imagens da página: até 10 arquivos de 200 MB. */
+const VIDEO_PAGE_UPLOAD_OPTIONS = {
+  limits: { fileSize: 200 * 1024 * 1024, files: 10 },
+} as const;
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
@@ -39,13 +46,13 @@ export class VideosPageController {
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(VIDEO_PAGE_UPLOAD_OPTIONS))
   async create(
     @UploadedFiles() files: Express.Multer.File[],
     @Body("videosPageData") raw: string,
   ): Promise<VideosPageResponseDto> {
     try {
-      const parsedData = JSON.parse(raw);
+      const parsedData: unknown = JSON.parse(raw);
       const dto = plainToInstance(CreateVideosPageDto, parsedData);
 
       const validationErrors = await validate(dto, {
@@ -79,14 +86,14 @@ export class VideosPageController {
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(VIDEO_PAGE_UPLOAD_OPTIONS))
   async update(
     @Param("id") id: string,
     @UploadedFiles() files: Express.Multer.File[],
     @Body("videosPageData") raw: string,
   ): Promise<VideosPageResponseDto> {
     try {
-      const parsedData = JSON.parse(raw);
+      const parsedData: unknown = JSON.parse(raw);
       const dto = plainToInstance(UpdateVideosPageDto, parsedData);
 
       const validationErrors = await validate(dto, {
@@ -118,15 +125,22 @@ export class VideosPageController {
     }
   }
 
+  /** Anônimo recebe só páginas públicas; com sessão, todas. */
   @Get()
-  async findAll(): Promise<VideosPageResponseDto[]> {
-    return this.getService.findAll();
+  async findAll(@Req() req: Request): Promise<VideosPageResponseDto[]> {
+    return this.getService.findAll(await this.getService.canSeeNonPublic(req));
   }
 
   @Get(":id")
-  async findOne(@Param("id") id: string): Promise<VideosPageResponseDto> {
+  async findOne(
+    @Param("id") id: string,
+    @Req() req: Request,
+  ): Promise<VideosPageResponseDto> {
     try {
-      return await this.getService.findOne(id);
+      return await this.getService.findOne(
+        id,
+        await this.getService.canSeeNonPublic(req),
+      );
     } catch (err) {
       if (err instanceof HttpException) throw err;
       this.logger.error("Error fetching videos page", err);

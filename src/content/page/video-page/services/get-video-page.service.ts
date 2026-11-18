@@ -3,6 +3,8 @@ import { VideosPageRepository } from "../repositories/video-page.repository";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { VideosPageResponseDto } from "../dto/video-page-response.dto";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
+import { AuthContextService } from "src/core/auth/services/auth-context.service";
+import type { Request } from "express";
 
 @Injectable()
 export class GetVideosPageService {
@@ -11,10 +13,19 @@ export class GetVideosPageService {
   constructor(
     private readonly videosPageRepo: VideosPageRepository,
     private readonly mediaItemProcessor: MediaItemProcessor,
+    private readonly authContext: AuthContextService,
   ) {}
 
-  async findAll(): Promise<VideosPageResponseDto[]> {
-    const pages = await this.videosPageRepo.findAll();
+  /** Páginas não públicas só aparecem com sessão válida. */
+  canSeeNonPublic(req: Request): Promise<boolean> {
+    return this.authContext.isLoggedIn(req);
+  }
+
+  async findAll(includeNonPublic = true): Promise<VideosPageResponseDto[]> {
+    const allPages = await this.videosPageRepo.findAll();
+    const pages = includeNonPublic
+      ? allPages
+      : allPages.filter((page) => page.public);
     const pageIds = pages.map((page) => page.id);
     const mediaItems =
       await this.mediaItemProcessor.findManyMediaItemsByTargets(
@@ -33,9 +44,13 @@ export class GetVideosPageService {
     );
   }
 
-  async findOne(id: string): Promise<VideosPageResponseDto> {
+  async findOne(
+    id: string,
+    includeNonPublic = true,
+  ): Promise<VideosPageResponseDto> {
     const page = await this.videosPageRepo.findById(id);
-    if (!page) throw new NotFoundException("Videos page not found.");
+    if (!page || (!includeNonPublic && !page.public))
+      throw new NotFoundException("Videos page not found.");
 
     const mediaItems = await this.mediaItemProcessor.findMediaItemsByTarget(
       page.id,
