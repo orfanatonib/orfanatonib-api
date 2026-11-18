@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { APP_FILTER, APP_INTERCEPTOR } from "@nestjs/core";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ConfigModule } from "@nestjs/config";
 import { RouteModule } from "./infrastructure/route/route.module";
@@ -37,6 +38,10 @@ import { FeatureFlagsModule } from "./core/feature-flags/feature-flags.module";
 import { IntegrationModule } from "./shelter/integration/integration.module";
 import { AtendenteModule } from "./shelter/atendente/atendente.module";
 import { RemindersModule } from "./shelter/reminders/reminders.module";
+import { GlobalExceptionFilter } from "./common/filters";
+import { LoggingInterceptor } from "./common/interceptors";
+import { HealthModule } from "./common/controllers/health.module";
+import { validateEnv } from "./config/env.validation";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 import * as path from "path";
@@ -57,6 +62,8 @@ function getEnvFilePath(): string {
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: getEnvFilePath(),
+      // Falha o boot com a lista de variáveis ausentes/inválidas (sem ecoar valores).
+      validate: validateEnv,
     }),
     // Agendador: fila de saída de e-mail e lembretes periódicos.
     ScheduleModule.forRoot(),
@@ -96,8 +103,14 @@ function getEnvFilePath(): string {
     IntegrationModule,
     AtendenteModule,
     RemindersModule,
+    HealthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    // Registrados por DI (antes eram `new` em main.ts): recebem serviços e valem em testes de módulo.
+    { provide: APP_FILTER, useClass: GlobalExceptionFilter },
+    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
+  ],
 })
 export class AppModule {}

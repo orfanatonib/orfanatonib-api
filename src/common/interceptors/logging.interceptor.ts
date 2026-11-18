@@ -7,7 +7,7 @@ import {
 } from "@nestjs/common";
 import { Observable } from "rxjs";
 import { tap, catchError } from "rxjs/operators";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "node:crypto";
 import { Request, Response } from "express";
 
 interface RequestLogContext {
@@ -29,7 +29,7 @@ export class LoggingInterceptor implements NestInterceptor {
     const response = context.switchToHttp().getResponse<Response>();
     const startTime = Date.now();
 
-    const requestId = uuidv4();
+    const requestId = randomUUID();
     const logContext: RequestLogContext = {
       requestId,
       method: request.method,

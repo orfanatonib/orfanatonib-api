@@ -17,7 +17,6 @@ import {
 import { Request, Response } from "express";
 import { QueryFailedError, EntityNotFoundError, TypeORMError } from "typeorm";
 import { ValidationError } from "class-validator";
-import { v4 as uuidv4 } from "uuid";
 import { ErrorCategory } from "../exceptions/error-category.enum";
 
 interface ErrorResponse {
