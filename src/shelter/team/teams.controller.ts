@@ -21,6 +21,9 @@ import { UpdateTeamDto } from "./dto/update-team.dto";
 import { TeamResponseDto } from "./dto/team-response.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AuthContextService } from "src/core/auth/services/auth-context.service";
+import { AdminOrLeaderRoleGuard } from "src/core/auth/guards/role-guard";
+import type { AuthenticatedRequest } from "src/core/auth/auth.types";
+import { toShelterAccessContext } from "src/shelter/shelter/utils/shelter-access.util";
 
 @Controller("teams")
 @UseGuards(JwtAuthGuard)
@@ -36,9 +39,16 @@ export class TeamsController {
   ) {}
 
   @Post()
-  async create(@Body() dto: CreateTeamDto): Promise<TeamResponseDto> {
+  @UseGuards(AdminOrLeaderRoleGuard)
+  async create(
+    @Req() req: AuthenticatedRequest,
+    @Body() dto: CreateTeamDto,
+  ): Promise<TeamResponseDto> {
     this.logger.log(`Creating team: ${dto.numberTeam}`);
-    const result = await this.createTeamService.execute(dto);
+    const result = await this.createTeamService.executeAs(
+      toShelterAccessContext(req),
+      dto,
+    );
     this.logger.log(`Team created successfully: ${result.id}`);
     return result;
   }
@@ -80,20 +90,30 @@ export class TeamsController {
   }
 
   @Put(":id")
+  @UseGuards(AdminOrLeaderRoleGuard)
   async update(
+    @Req() req: AuthenticatedRequest,
     @Param("id", new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateTeamDto,
   ): Promise<TeamResponseDto> {
     this.logger.log(`Updating team ${id}`);
-    const result = await this.updateTeamService.execute(id, dto);
+    const result = await this.updateTeamService.executeAs(
+      toShelterAccessContext(req),
+      id,
+      dto,
+    );
     this.logger.log(`Team updated successfully: ${id}`);
     return result;
   }
 
   @Delete(":id")
-  async remove(@Param("id", new ParseUUIDPipe()) id: string): Promise<void> {
+  @UseGuards(AdminOrLeaderRoleGuard)
+  async remove(
+    @Req() req: AuthenticatedRequest,
+    @Param("id", new ParseUUIDPipe()) id: string,
+  ): Promise<void> {
     this.logger.log(`Deleting team ${id}`);
-    await this.deleteTeamService.execute(id);
+    await this.deleteTeamService.executeAs(toShelterAccessContext(req), id);
     this.logger.log(`Team deleted successfully: ${id}`);
   }
 }

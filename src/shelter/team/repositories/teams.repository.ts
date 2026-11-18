@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { Repository } from "typeorm";
+import { In, Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
 import { TeamEntity } from "../entities/team.entity";
 import { CreateTeamDto } from "../dto/create-team.dto";
 import { UpdateTeamDto } from "../dto/update-team.dto";
+import { MemberProfileEntity } from "src/shelter/member-profile/entities/member-profile.entity/member-profile.entity";
 import { LeaderProfileEntity } from "src/shelter/leader-profile/entities/leader-profile.entity/leader-profile.entity";
 
 @Injectable()
@@ -19,7 +20,7 @@ export class TeamsRepository {
     const team = this.teamRepo.create({
       numberTeam: dto.numberTeam,
       description: dto.description,
-      shelter: { id: dto.shelterId } as any,
+      shelter: { id: dto.shelterId },
     });
     return this.teamRepo.save(team);
   }
@@ -204,11 +205,11 @@ export class TeamsRepository {
     }
 
     if (dto.memberProfileIds !== undefined) {
-      const memberProfileRepo = this.teamRepo.manager.getRepository(
-        "MemberProfileEntity",
-      );
-      const members = await memberProfileRepo.findByIds(dto.memberProfileIds);
-      team.members = members as any;
+      const memberProfileRepo =
+        this.teamRepo.manager.getRepository(MemberProfileEntity);
+      team.members = await memberProfileRepo.findBy({
+        id: In(dto.memberProfileIds),
+      });
     }
 
     return this.teamRepo.save(team);

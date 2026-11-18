@@ -37,6 +37,12 @@ export class GetTeamsService {
     return teams.map((team) => this.toDto(team));
   }
 
+  /** Abrigos em que o usuário lidera ao menos uma equipe (escopo de escrita do líder). */
+  async findLedShelterIds(userId: string): Promise<Set<string>> {
+    const teams = await this.findByLeader(userId);
+    return new Set(teams.map((team) => team.shelterId));
+  }
+
   async findTeamByShelterAndNumber(
     shelterId: string,
     numberTeam: number,
