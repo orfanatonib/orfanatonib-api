@@ -45,6 +45,7 @@ import {
   type ShelterMediaRawBody,
   type ShelterRawBody,
 } from "./utils/shelter-payload.util";
+import { IMAGE_UPLOAD_OPTIONS } from "src/shared/media/storage/upload-limits.constants";
 
 @Controller("shelters")
 export class SheltersController {
@@ -117,7 +118,7 @@ export class SheltersController {
 
   @UseGuards(JwtAuthGuard)
   @Post()
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(IMAGE_UPLOAD_OPTIONS))
   async create(
     @UploadedFiles() files: Express.Multer.File[] = [],
     @Req() request: AuthenticatedRequest,
@@ -136,7 +137,7 @@ export class SheltersController {
 
   @UseGuards(JwtAuthGuard)
   @Put(":id")
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(IMAGE_UPLOAD_OPTIONS))
   async update(
     @Param("id", new ParseUUIDPipe()) id: string,
     @UploadedFiles() files: Express.Multer.File[] = [],
@@ -156,7 +157,7 @@ export class SheltersController {
 
   @UseGuards(JwtAuthGuard)
   @Patch(":id/media")
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(IMAGE_UPLOAD_OPTIONS))
   async updateMedia(
     @Param("id", new ParseUUIDPipe()) id: string,
     @UploadedFiles() files: Express.Multer.File[] = [],

@@ -29,6 +29,7 @@ import { validate } from "class-validator";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 import { PaginatedImageSectionResponseDto } from "./dto/paginated-image-section.dto";
 import { Request } from "express";
+import { IMAGE_GALLERY_UPLOAD_OPTIONS } from "src/shared/media/storage/upload-limits.constants";
 
 interface RawImagePageData {
   sections?: Array<{ mediaItems?: Array<{ file?: unknown }> }>;
@@ -50,7 +51,7 @@ export class ImageController {
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(IMAGE_GALLERY_UPLOAD_OPTIONS))
   async create(
     @UploadedFiles() files: Express.Multer.File[],
     @Body("imageData") raw: string,
@@ -74,7 +75,7 @@ export class ImageController {
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(IMAGE_GALLERY_UPLOAD_OPTIONS))
   async update(
     @Param("id") id: string,
     @UploadedFiles() files: Express.Multer.File[],

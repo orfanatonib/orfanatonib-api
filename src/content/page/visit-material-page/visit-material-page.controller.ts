@@ -32,6 +32,7 @@ import {
   toFilesDict,
 } from "./utils/visit-material-payload.util";
 import { VISIT_MATERIAL_PAYLOAD_FIELD } from "./constants";
+import { MEDIA_PAGE_UPLOAD_OPTIONS } from "src/shared/media/storage/upload-limits.constants";
 
 @Controller("visit-material-pages")
 @UseGuards(JwtAuthGuard)
@@ -46,7 +47,7 @@ export class VisitMaterialsPageController {
 
   @Post()
   @UseGuards(AdminRoleGuard)
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(MEDIA_PAGE_UPLOAD_OPTIONS))
   async create(
     @UploadedFiles() files: Express.Multer.File[],
     @Body(VISIT_MATERIAL_PAYLOAD_FIELD) raw: string,
@@ -59,7 +60,7 @@ export class VisitMaterialsPageController {
 
   @Patch(":id")
   @UseGuards(AdminRoleGuard)
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(MEDIA_PAGE_UPLOAD_OPTIONS))
   async update(
     @Param("id", new ParseUUIDPipe()) id: string,
     @UploadedFiles() files: Express.Multer.File[],

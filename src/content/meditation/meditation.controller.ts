@@ -38,6 +38,7 @@ import { QueryMeditationDto } from "./dto/query-meditation.dto";
 
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
+import { SINGLE_MEDIA_UPLOAD_OPTIONS } from "src/shared/media/storage/upload-limits.constants";
 
 @Controller("meditations")
 export class MeditationController {
@@ -52,7 +53,7 @@ export class MeditationController {
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", SINGLE_MEDIA_UPLOAD_OPTIONS))
   async create(
     @UploadedFile() file: Express.Multer.File,
     @Body("meditationData") meditationDataRaw: string,
@@ -105,7 +106,7 @@ export class MeditationController {
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", SINGLE_MEDIA_UPLOAD_OPTIONS))
   async update(
     @Param("id") id: string,
     @UploadedFile() file: Express.Multer.File,
