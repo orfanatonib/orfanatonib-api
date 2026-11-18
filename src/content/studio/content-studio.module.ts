@@ -5,6 +5,9 @@ import { AuthModule } from "src/core/auth/auth.module";
 import { FeatureFlagsModule } from "src/core/feature-flags/feature-flags.module";
 
 import { ContentStudioController } from "./content-studio.controller";
+import { ConfigService } from "@nestjs/config";
+import { AiGenerationGateway } from "./ai/ai-generation.gateway";
+import { FakeAiGenerationGateway } from "./ai/fake-ai-generation.gateway";
 import { OpenAiGenerationGateway } from "./ai/openai-generation.gateway";
 import { ContentStudioDashboardRepository } from "./dashboard/content-studio-dashboard.repository";
 import { AiManagementController } from "./ai-management/ai-management.controller";
@@ -66,6 +69,22 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
     SubmitPackageReviewService,
     GetAiProvidersService,
     OpenAiGenerationGateway,
+    {
+      // `AI_PROVIDER_MODE=fake` (fora de produção) troca o provedor por um simulado: E2E nunca chama LLM real.
+      provide: AiGenerationGateway,
+      inject: [ConfigService, OpenAiGenerationGateway],
+      useFactory: (
+        config: ConfigService,
+        openai: OpenAiGenerationGateway,
+      ): AiGenerationGateway =>
+        config.get<string>("AI_PROVIDER_MODE") === "fake"
+          ? new FakeAiGenerationGateway(
+              "fake",
+              config.get<string>("ENVIRONMENT"),
+              Number(config.get<string>("FAKE_AI_QUOTA_TOKENS") ?? 20000),
+            )
+          : openai,
+    },
   ],
   exports: [GetContentStudioCatalogService, GetContentPackagesService],
 })

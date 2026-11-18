@@ -9,4 +9,3 @@ export enum AiProviderErrorKind {
   CANCELLED = "CANCELLED",
   UNKNOWN = "UNKNOWN",
 }
-

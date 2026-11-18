@@ -30,4 +30,3 @@ export function calculateRetryDelayMs(
   const jitter = exponentialDelay * jitterRatio * boundedRandom;
   return Math.round(exponentialDelay + jitter);
 }
-
