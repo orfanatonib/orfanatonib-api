@@ -187,15 +187,14 @@ export class UpdateIdeasPageService {
     sectionIds: string[],
     queryRunner: QueryRunner,
   ): Promise<MediaItemEntity[]> {
+    // Seção sem mídia é válida: atualizar a página não pode falhar por isso.
+    if (sectionIds.length === 0) return [];
     const media = await queryRunner.manager.find(MediaItemEntity, {
       where: {
         targetId: In(sectionIds),
         targetType: MediaTargetType.IdeasSection,
       },
     });
-    if (!media || media.length === 0) {
-      throw new NotFoundException("Media associated with ideas page not found");
-    }
     return media;
   }
 
