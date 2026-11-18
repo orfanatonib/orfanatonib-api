@@ -103,12 +103,13 @@ export class MediaItemProcessor {
     items: MediaItemEntity[],
     deleteFn: (url: string) => Promise<void>,
   ): Promise<void> {
+    // Linhas primeiro: se o banco falha, nenhum objeto foi apagado (sem referência quebrada).
+    await this.mediaRepo.removeMany(items);
     for (const item of items) {
       if (item.isLocalFile) {
         await deleteFn(item.url);
       }
     }
-    await this.mediaRepo.removeMany(items);
   }
 
   /**
@@ -128,10 +129,10 @@ export class MediaItemProcessor {
     item: MediaItemEntity,
     deleteFn?: (url: string) => Promise<void>,
   ): Promise<void> {
+    await this.mediaRepo.removeOne(item);
     if (item.isLocalFile && deleteFn) {
       await deleteFn(item.url);
     }
-    await this.mediaRepo.removeOne(item);
   }
 
   /**
@@ -189,6 +190,12 @@ export class MediaItemProcessor {
     }
   }
 
+  /**
+   * Ordem segura para o bucket: sobe os novos → grava/atualiza as linhas →
+   * só então remove as linhas e os objetos que saíram da lista. Se algo falha
+   * antes disso, os objetos recém-enviados são apagados e os antigos seguem
+   * referenciados (sem órfão e sem referência quebrada).
+   */
   async cleanAndReplaceMediaItems(
     items: MediaItemInput[],
     targetId: string,
@@ -221,41 +228,54 @@ export class MediaItemProcessor {
     const toRemove = oldItems.filter(
       (item) => item.isLocalFile && !validUploadUrls.has(item.url),
     );
-    if (toRemove.length) {
-      await this.deleteMediaItems(toRemove, deleteFn);
-    }
 
     const results: MediaItemEntity[] = [];
+    const uploadedUrls: string[] = [];
 
-    for (const item of validIncoming) {
-      const media = this.buildBaseMediaItem(item, targetId, targetType);
+    try {
+      for (const item of validIncoming) {
+        const media = this.buildBaseMediaItem(item, targetId, targetType);
 
-      if (item.uploadType === UploadType.UPLOAD) {
-        const previous = oldItems.find(
-          (old) => old.url === (item.url || item.fileField),
-        );
+        if (item.uploadType === UploadType.UPLOAD) {
+          const previous = oldItems.find(
+            (old) => old.url === (item.url || item.fileField),
+          );
 
-        if (previous) {
-          media.url = previous.url;
-          media.isLocalFile = previous.isLocalFile;
-          media.originalName = previous.originalName;
-          media.size = previous.size;
+          if (previous) {
+            media.url = previous.url;
+            media.isLocalFile = previous.isLocalFile;
+            media.originalName = previous.originalName;
+            media.size = previous.size;
+          } else {
+            const file = filesDict[item.fileField ?? ""];
+            if (!file) throw new Error(`File missing for "${item.title}"`);
+
+            media.url = await uploadFn(file);
+            uploadedUrls.push(media.url);
+            media.isLocalFile = true;
+            media.originalName = file.originalname;
+            media.size = file.size;
+          }
         } else {
-          const file = filesDict[item.fileField ?? ""];
-          if (!file) throw new Error(`File missing for "${item.title}"`);
-
-          media.url = await uploadFn(file);
-          media.isLocalFile = true;
-          media.originalName = file.originalname;
-          media.size = file.size;
+          media.url = item.url?.trim() || "";
+          media.isLocalFile = false;
         }
-      } else {
-        media.url = item.url?.trim() || "";
-        media.isLocalFile = false;
-      }
 
-      const saved = await this.upsertMediaItem(item.id, media);
-      results.push(saved);
+        results.push(await this.upsertMediaItem(item.id, media));
+      }
+    } catch (error) {
+      for (const url of uploadedUrls) {
+        try {
+          await deleteFn(url);
+        } catch (cleanupError) {
+          this.logger.warn(`Falha ao descartar ${url}`, cleanupError);
+        }
+      }
+      throw error;
+    }
+
+    if (toRemove.length) {
+      await this.deleteMediaItems(toRemove, deleteFn);
     }
 
     return results;

@@ -139,6 +139,7 @@ describe("CreateVisitMaterialPageService", () => {
       MediaTargetType.VisitMaterialsPage,
       {},
       expect.any(Function),
+      expect.any(Function),
     );
     expect(result.videos).toHaveLength(1);
   });

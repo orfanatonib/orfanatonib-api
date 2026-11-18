@@ -107,6 +107,7 @@ export class CreateImagePageService {
             MediaTargetType.ImagesPage,
             filesDict,
             this.awsS3Service.upload.bind(this.awsS3Service),
+this.awsS3Service.delete.bind(this.awsS3Service),
           );
         mediaMap.set(savedSection.id, mediaItems);
       }

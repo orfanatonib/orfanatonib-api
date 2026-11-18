@@ -160,3 +160,105 @@ describe("MediaItemProcessor.removeMediaItemsKeepingFiles", () => {
     expect(await proc.removeMediaItemsKeepingFiles([])).toEqual([]);
   });
 });
+
+describe("MediaItemProcessor: ordem linhas → objetos e compensação em cleanAndReplace", () => {
+  it("deleteMediaItems/removeMediaItem removem a linha ANTES de apagar o objeto", async () => {
+    const { proc, repo } = setup();
+    const item = Object.assign(new MediaItemEntity(), {
+      url: "u/a",
+      isLocalFile: true,
+    });
+    const order: string[] = [];
+    repo.removeMany.mockImplementation(async () => {
+      order.push("row");
+    });
+    repo.removeOne.mockImplementation(async () => {
+      order.push("row");
+    });
+    const del = jest.fn(async () => {
+      order.push("object");
+    });
+    await proc.deleteMediaItems([item], del);
+    await proc.removeMediaItem(item, del);
+    expect(order).toEqual(["row", "object", "row", "object"]);
+  });
+
+  it("falha do banco na remoção não apaga o objeto", async () => {
+    const { proc, repo } = setup();
+    repo.removeMany.mockRejectedValue(new Error("db"));
+    const del = jest.fn();
+    await expect(
+      proc.deleteMediaItems(
+        [Object.assign(new MediaItemEntity(), { url: "u", isLocalFile: true })],
+        del,
+      ),
+    ).rejects.toThrow("db");
+    expect(del).not.toHaveBeenCalled();
+  });
+
+  it("cleanAndReplace: o objeto antigo só sai DEPOIS de gravar o novo", async () => {
+    const { proc } = setup();
+    const drop = Object.assign(new MediaItemEntity(), {
+      url: "u/drop",
+      isLocalFile: true,
+    });
+    const order: string[] = [];
+    jest.spyOn(proc, "upsertMediaItem").mockImplementation(async (_i, m) => {
+      order.push("save");
+      return m;
+    });
+    const del = jest.fn(async () => {
+      order.push("delete-old");
+    });
+    await proc.cleanAndReplaceMediaItems(
+      [
+        {
+          title: "n",
+          description: "d",
+          mediaType: MediaType.IMAGE,
+          uploadType: UploadType.UPLOAD,
+          fileField: "f",
+        },
+      ],
+      "t1",
+      "Event",
+      { f: file("n.png") },
+      [drop],
+      del,
+      async () => "u/new",
+    );
+    expect(order).toEqual(["save", "delete-old"]);
+    expect(del).toHaveBeenCalledWith("u/drop");
+  });
+
+  it("cleanAndReplace: falha ao gravar descarta o novo e NÃO apaga o antigo", async () => {
+    const { proc } = setup();
+    const drop = Object.assign(new MediaItemEntity(), {
+      url: "u/drop",
+      isLocalFile: true,
+    });
+    jest.spyOn(proc, "upsertMediaItem").mockRejectedValue(new Error("db"));
+    const del = jest.fn(async () => undefined);
+    await expect(
+      proc.cleanAndReplaceMediaItems(
+        [
+          {
+            title: "n",
+            description: "d",
+            mediaType: MediaType.IMAGE,
+            uploadType: UploadType.UPLOAD,
+            fileField: "f",
+          },
+        ],
+        "t1",
+        "Event",
+        { f: file("n.png") },
+        [drop],
+        del,
+        async () => "u/new",
+      ),
+    ).rejects.toThrow("db");
+    expect(del).toHaveBeenCalledTimes(1);
+    expect(del).toHaveBeenCalledWith("u/new");
+  });
+});

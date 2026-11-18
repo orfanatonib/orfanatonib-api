@@ -143,6 +143,7 @@ export class CreateIdeasPageService {
         MediaTargetType.IdeasSection,
         filesDict,
         this.s3.upload.bind(this.s3),
+this.s3.delete.bind(this.s3),
       );
     }
   }

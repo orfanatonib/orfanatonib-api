@@ -53,6 +53,7 @@ export class CreateImageSectionService {
           MediaTargetType.ImagesPage,
           filesDict,
           this.awsS3Service.upload.bind(this.awsS3Service),
+this.awsS3Service.delete.bind(this.awsS3Service),
         );
 
       await queryRunner.commitTransaction();

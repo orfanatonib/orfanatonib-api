@@ -84,6 +84,7 @@ export class CreateVisitMaterialPageService {
             MediaTargetType.VisitMaterialsPage,
             files,
             (file) => this.s3.upload(file),
+(url) => this.s3.delete(url),
           );
 
         return { savedPage, mediaItems };
