@@ -19,6 +19,11 @@ export class DeleteUserService {
   ) {}
 
   async remove(id: string): Promise<{ message: string }> {
+    await this.deleteMemberService.removeByUserId(id);
+    await this.deleteLeaderService.removeByUserId(id);
+    await this.userRepo.delete(id);
+
+    // A foto só sai depois que o usuário foi apagado: se algo acima falha, a mídia continua referenciada.
     const userImage = await this.mediaItemProcessor.findMediaItemByTarget(
       id,
       "UserEntity",
@@ -31,10 +36,6 @@ export class DeleteUserService {
       );
       this.logger.log(`Imagem do usuário deletada: ${userImage.id}`);
     }
-
-    await this.deleteMemberService.removeByUserId(id);
-    await this.deleteLeaderService.removeByUserId(id);
-    await this.userRepo.delete(id);
 
     this.logger.log(UserLogs.DELETED(id));
     return { message: UserSuccessMessages.DELETED };
