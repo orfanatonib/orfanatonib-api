@@ -2,6 +2,11 @@ export enum FeatureFlagKeys {
   SHELTER_ADDRESS = "shelter-address",
   SHELTER_MANAGEMENT = "shelter-management",
   SHELTER_PAGELAS = "shelter-pagelas",
+  CONTENT_STUDIO = "content-studio",
+  CONTENT_STUDIO_GENERATION = "content-studio-generation",
+  CONTENT_STUDIO_REVIEW = "content-studio-review",
+  CONTENT_STUDIO_PUBLICATION = "content-studio-publication",
+  CONTENT_STUDIO_PROVIDER_ADMIN = "content-studio-provider-admin",
 
   /**
    * Chave-mestra do envio de e-mail. Desligar interrompe TODOS os tipos,

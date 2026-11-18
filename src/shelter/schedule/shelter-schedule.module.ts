@@ -7,6 +7,7 @@ import { CreateShelterScheduleService } from "./services/create-shelter-schedule
 import { ListShelterSchedulesService } from "./services/list-shelter-schedules.service";
 import { UpdateShelterScheduleService } from "./services/update-shelter-schedule.service";
 import { DeleteShelterScheduleService } from "./services/delete-shelter-schedule.service";
+import { ShelterScheduleEventService } from "./services/shelter-schedule-event.service";
 import { EventModule } from "src/content/event/event.module";
 import { AuthModule } from "src/core/auth/auth.module";
 import { TeamEntity } from "src/shelter/team/entities/team.entity";
@@ -23,12 +24,13 @@ import { MediaModule } from "src/shared/media/media.module";
   ],
   providers: [
     ShelterScheduleRepository,
+    ShelterScheduleEventService,
     CreateShelterScheduleService,
     ListShelterSchedulesService,
     UpdateShelterScheduleService,
     DeleteShelterScheduleService,
   ],
   controllers: [ShelterScheduleController],
-  exports: [ShelterScheduleRepository],
+  exports: [ShelterScheduleRepository, ShelterScheduleEventService],
 })
 export class ShelterScheduleModule {}

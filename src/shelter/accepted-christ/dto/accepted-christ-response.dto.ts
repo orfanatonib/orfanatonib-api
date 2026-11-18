@@ -15,8 +15,12 @@ export class AcceptedChristResponseDto {
       decision: entity.decision,
       notes: entity.notes,
       shelteredId: entity.sheltered?.id ?? entity.shelteredId ?? "",
-      createdAt: entity.createdAt ? entity.createdAt.toISOString() : new Date().toISOString(),
-      updatedAt: entity.updatedAt ? entity.updatedAt.toISOString() : new Date().toISOString(),
+      createdAt: entity.createdAt
+        ? entity.createdAt.toISOString()
+        : new Date().toISOString(),
+      updatedAt: entity.updatedAt
+        ? entity.updatedAt.toISOString()
+        : new Date().toISOString(),
     };
   }
 }

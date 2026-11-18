@@ -6,8 +6,8 @@ import { CreateUserDto } from "../dto/create-user.dto";
 import { UserEntity } from "../entities/user.entity";
 
 import { UserRole } from "src/core/auth/auth.types";
-import { MemberProfilesService } from "src/shelter/member-profile/services/member-profiles.service";
-import { LeaderProfilesService } from "src/shelter/leader-profile/services/leader-profiles.service";
+import { CreateMemberProfileService } from "src/shelter/member-profile/services/create-member-profile.service";
+import { CreateLeaderProfileService } from "src/shelter/leader-profile/services/create-leader-profile.service";
 import { UserLogs } from "../constants/user.constants";
 
 @Injectable()
@@ -16,8 +16,8 @@ export class CreateUserService {
 
   constructor(
     private readonly userRepo: UserRepository,
-    private readonly memberService: MemberProfilesService,
-    private readonly leaderService: LeaderProfilesService,
+    private readonly createMemberService: CreateMemberProfileService,
+    private readonly createLeaderService: CreateLeaderProfileService,
   ) {}
 
   async create(dto: CreateUserDto): Promise<UserEntity> {
@@ -34,9 +34,9 @@ export class CreateUserService {
     });
 
     if (user.role === UserRole.LEADER) {
-      await this.leaderService.createForUser(user.id);
+      await this.createLeaderService.createForUser(user.id);
     } else if (user.role === UserRole.MEMBER) {
-      await this.memberService.createForUser(user.id);
+      await this.createMemberService.createForUser(user.id);
     }
 
     this.logger.log(UserLogs.CREATED(user.id));

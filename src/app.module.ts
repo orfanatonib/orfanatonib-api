@@ -38,6 +38,7 @@ import { FeatureFlagsModule } from "./core/feature-flags/feature-flags.module";
 import { IntegrationModule } from "./shelter/integration/integration.module";
 import { AtendenteModule } from "./shelter/atendente/atendente.module";
 import { RemindersModule } from "./shelter/reminders/reminders.module";
+import { ContentStudioModule } from "./content/studio/content-studio.module";
 import { GlobalExceptionFilter } from "./common/filters";
 import { RequestContextModule } from "./core/request-context";
 import { HealthModule } from "./common/controllers/health.module";
@@ -103,6 +104,7 @@ function getEnvFilePath(): string {
     IntegrationModule,
     AtendenteModule,
     RemindersModule,
+    ContentStudioModule,
     HealthModule,
     RequestContextModule,
   ],

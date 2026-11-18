@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { UserRepository } from "../user.repository";
-import { MemberProfilesService } from "src/shelter/member-profile/services/member-profiles.service";
-import { LeaderProfilesService } from "src/shelter/leader-profile/services/leader-profiles.service";
+import { DeleteMemberProfileService } from "src/shelter/member-profile/services/delete-member-profile.service";
+import { DeleteLeaderProfileService } from "src/shelter/leader-profile/services/delete-leader-profile.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { UserLogs, UserSuccessMessages } from "../constants/user.constants";
@@ -12,8 +12,8 @@ export class DeleteUserService {
 
   constructor(
     private readonly userRepo: UserRepository,
-    private readonly memberService: MemberProfilesService,
-    private readonly leaderService: LeaderProfilesService,
+    private readonly deleteMemberService: DeleteMemberProfileService,
+    private readonly deleteLeaderService: DeleteLeaderProfileService,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly s3Service: AwsS3Service,
   ) {}
@@ -32,8 +32,8 @@ export class DeleteUserService {
       this.logger.log(`Imagem do usuário deletada: ${userImage.id}`);
     }
 
-    await this.memberService.removeByUserId(id);
-    await this.leaderService.removeByUserId(id);
+    await this.deleteMemberService.removeByUserId(id);
+    await this.deleteLeaderService.removeByUserId(id);
     await this.userRepo.delete(id);
 
     this.logger.log(UserLogs.DELETED(id));

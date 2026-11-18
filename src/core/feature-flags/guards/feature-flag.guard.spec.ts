@@ -8,13 +8,19 @@ import { AccessDeniedException } from "src/common/exceptions";
 import { FeatureFlagGuard } from "./feature-flag.guard";
 import { GetFeatureFlagsService } from "../services/get-feature-flags.service";
 
-const context = {
-  getHandler: () => () => undefined,
-} as unknown as ExecutionContext;
+const contextFor = (role?: string) =>
+  ({
+    getHandler: () => () => undefined,
+    getClass: () => class Controller {},
+    switchToHttp: () => ({
+      getRequest: () => ({ user: role ? { role } : undefined }),
+    }),
+  }) as unknown as ExecutionContext;
+const context = contextFor();
 
 describe("FeatureFlagGuard", () => {
-  const reflector = { get: jest.fn() };
-  const featureFlags = { isEnabled: jest.fn() };
+  const reflector = { getAllAndOverride: jest.fn() };
+  const featureFlags = { isEnabled: jest.fn(), isEnabledForRole: jest.fn() };
   const configService = { get: jest.fn() };
 
   let guard: FeatureFlagGuard;
@@ -33,8 +39,9 @@ describe("FeatureFlagGuard", () => {
 
     guard = moduleRef.get(FeatureFlagGuard);
 
-    reflector.get.mockReturnValue("shelter-pagelas");
+    reflector.getAllAndOverride.mockReturnValue("shelter-pagelas");
     featureFlags.isEnabled.mockResolvedValue(true);
+    featureFlags.isEnabledForRole.mockResolvedValue(true);
     configService.get.mockReturnValue("local");
   });
 
@@ -48,7 +55,7 @@ describe("FeatureFlagGuard", () => {
   });
 
   it("libera a rota que não declara flag nenhuma", async () => {
-    reflector.get.mockReturnValue(undefined);
+    reflector.getAllAndOverride.mockReturnValue(undefined);
 
     await expect(guard.canActivate(context)).resolves.toBe(true);
     expect(featureFlags.isEnabled).not.toHaveBeenCalled();
@@ -72,6 +79,32 @@ describe("FeatureFlagGuard", () => {
     expect(featureFlags.isEnabled).toHaveBeenCalledWith(
       "shelter-pagelas",
       undefined,
+    );
+  });
+
+  it("respeita a audiência por papel: ligada para líder, bloqueada para membro", async () => {
+    featureFlags.isEnabledForRole.mockImplementation(
+      (_key: string, role: string | null) => Promise.resolve(role === "leader"),
+    );
+
+    await expect(guard.canActivate(contextFor("leader"))).resolves.toBe(true);
+    await expect(
+      guard.canActivate(contextFor("member")),
+    ).rejects.toBeInstanceOf(AccessDeniedException);
+    await expect(guard.canActivate(contextFor())).rejects.toBeInstanceOf(
+      AccessDeniedException,
+    );
+    expect(featureFlags.isEnabledForRole).toHaveBeenCalledWith(
+      "shelter-pagelas",
+      null,
+    );
+  });
+
+  it("lê o decorator também da classe (método vence)", async () => {
+    await guard.canActivate(context);
+    expect(reflector.getAllAndOverride).toHaveBeenCalledWith(
+      expect.any(String),
+      [expect.any(Function), expect.any(Function)],
     );
   });
 });

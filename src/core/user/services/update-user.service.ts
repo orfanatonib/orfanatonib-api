@@ -5,8 +5,10 @@ import { UserRepository } from "../user.repository";
 import { UpdateUserDto } from "../dto/update-user.dto";
 import { UserEntity } from "../entities/user.entity";
 
-import { MemberProfilesService } from "src/shelter/member-profile/services/member-profiles.service";
-import { LeaderProfilesService } from "src/shelter/leader-profile/services/leader-profiles.service";
+import { CreateMemberProfileService } from "src/shelter/member-profile/services/create-member-profile.service";
+import { DeleteMemberProfileService } from "src/shelter/member-profile/services/delete-member-profile.service";
+import { CreateLeaderProfileService } from "src/shelter/leader-profile/services/create-leader-profile.service";
+import { DeleteLeaderProfileService } from "src/shelter/leader-profile/services/delete-leader-profile.service";
 import { UserRole } from "src/core/auth/auth.types";
 import { UserErrorMessages, UserLogs } from "../constants/user.constants";
 import { NotificationService } from "src/communication/notification/services/notification.service";
@@ -17,20 +19,17 @@ export class UpdateUserService {
 
   constructor(
     private readonly userRepo: UserRepository,
-    private readonly memberService: MemberProfilesService,
-    private readonly leaderService: LeaderProfilesService,
+    private readonly createMemberService: CreateMemberProfileService,
+    private readonly deleteMemberService: DeleteMemberProfileService,
+    private readonly createLeaderService: CreateLeaderProfileService,
+    private readonly deleteLeaderService: DeleteLeaderProfileService,
     private readonly notificationService: NotificationService,
   ) {}
 
-  /** Registra a confirmação do e-mail. Contrato usado por `core/auth`. */
   async markEmailVerified(id: string, verifiedAt: Date): Promise<void> {
     await this.userRepo.update(id, { emailVerifiedAt: verifiedAt });
   }
 
-  /**
-   * Troca o refresh token guardado. Passar `null` encerra a sessão: a
-   * renovação compara o token recebido com este.
-   */
   async setRefreshToken(id: string, token: string | null): Promise<void> {
     await this.userRepo.updateRefreshToken(id, token);
   }
@@ -51,26 +50,26 @@ export class UpdateUserService {
 
     if (willChangeRole) {
       if (nextRole === UserRole.MEMBER) {
-        await this.leaderService.removeByUserId(id);
+        await this.deleteLeaderService.removeByUserId(id);
         if (nextActive) {
           try {
-            await this.memberService.createForUser(id);
+            await this.createMemberService.createForUser(id);
           } catch {}
         } else {
-          await this.memberService.removeByUserId(id);
+          await this.deleteMemberService.removeByUserId(id);
         }
       } else if (nextRole === UserRole.LEADER) {
-        await this.memberService.removeByUserId(id);
+        await this.deleteMemberService.removeByUserId(id);
         if (nextActive) {
           try {
-            await this.leaderService.createForUser(id);
+            await this.createLeaderService.createForUser(id);
           } catch {}
         } else {
-          await this.leaderService.removeByUserId(id);
+          await this.deleteLeaderService.removeByUserId(id);
         }
       } else {
-        await this.memberService.removeByUserId(id);
-        await this.leaderService.removeByUserId(id);
+        await this.deleteMemberService.removeByUserId(id);
+        await this.deleteLeaderService.removeByUserId(id);
       }
     }
 
@@ -78,26 +77,24 @@ export class UpdateUserService {
       if (nextRole === UserRole.MEMBER) {
         if (nextActive) {
           try {
-            await this.memberService.createForUser(id);
+            await this.createMemberService.createForUser(id);
           } catch {}
         } else {
-          await this.memberService.removeByUserId(id);
+          await this.deleteMemberService.removeByUserId(id);
         }
       } else if (nextRole === UserRole.LEADER) {
         if (nextActive) {
           try {
-            await this.leaderService.createForUser(id);
+            await this.createLeaderService.createForUser(id);
           } catch {}
         } else {
-          await this.leaderService.removeByUserId(id);
+          await this.deleteLeaderService.removeByUserId(id);
         }
       }
     }
     const user = await this.userRepo.update(id, dto);
     this.logger.log(UserLogs.UPDATED(id));
 
-    // Conta que acabou de ser aprovada: até aqui o usuário ficava sabendo
-    // apenas ao tentar entrar de novo.
     if (activeInDto && nextActive && !current.active) {
       await this.notifyAccountApproved(user);
     }
@@ -105,7 +102,6 @@ export class UpdateUserService {
     return user;
   }
 
-  /** Avisar não pode derrubar a atualização que o admin acabou de fazer. */
   private async notifyAccountApproved(user: UserEntity): Promise<void> {
     try {
       await this.notificationService.sendAccountApproved(user.email, user.name);

@@ -1,6 +1,9 @@
 import { Inject, Injectable, forwardRef } from "@nestjs/common";
 import { RuleException } from "src/common/exceptions";
-import { TeamsService } from "src/shelter/team/services/teams.service";
+import { CreateTeamService } from "src/shelter/team/services/create-team.service";
+import { GetTeamsService } from "src/shelter/team/services/get-teams.service";
+import { UpdateTeamService } from "src/shelter/team/services/update-team.service";
+import { DeleteTeamService } from "src/shelter/team/services/delete-team.service";
 import { CreateTeamDto } from "src/shelter/team/dto/create-team.dto";
 import { UpdateTeamDto } from "src/shelter/team/dto/update-team.dto";
 import { TeamInputDto } from "../dto/create-shelter.dto";
@@ -14,8 +17,14 @@ import { SHELTER_MESSAGES } from "../constants";
 @Injectable()
 export class ShelterTeamsService {
   constructor(
-    @Inject(forwardRef(() => TeamsService))
-    private readonly teamsService: TeamsService,
+    @Inject(forwardRef(() => CreateTeamService))
+    private readonly createTeamService: CreateTeamService,
+    @Inject(forwardRef(() => GetTeamsService))
+    private readonly getTeamsService: GetTeamsService,
+    @Inject(forwardRef(() => UpdateTeamService))
+    private readonly updateTeamService: UpdateTeamService,
+    @Inject(forwardRef(() => DeleteTeamService))
+    private readonly deleteTeamService: DeleteTeamService,
   ) {}
 
   /**
@@ -70,7 +79,7 @@ export class ShelterTeamsService {
     });
 
     for (let numberTeam = 1; numberTeam <= teamsQuantity; numberTeam += 1) {
-      await this.teamsService.create(
+      await this.createTeamService.execute(
         this.toCreateDto(shelterId, numberTeam, byNumber.get(numberTeam)),
       );
     }
@@ -90,7 +99,7 @@ export class ShelterTeamsService {
       checkMemberUniqueness: false,
     });
 
-    const existing = await this.teamsService.findByShelter(shelterId);
+    const existing = await this.getTeamsService.findByShelter(shelterId);
     const existingByNumber = new Map(
       existing.map((team) => [team.numberTeam, team]),
     );
@@ -101,7 +110,7 @@ export class ShelterTeamsService {
       numberTeam += 1
     ) {
       const team = existingByNumber.get(numberTeam);
-      if (team) await this.teamsService.remove(team.id);
+      if (team) await this.deleteTeamService.execute(team.id);
     }
 
     for (let numberTeam = 1; numberTeam <= teamsQuantity; numberTeam += 1) {
@@ -114,11 +123,11 @@ export class ShelterTeamsService {
           leaderProfileIds: input?.leaderProfileIds ?? [],
           memberProfileIds: input?.memberProfileIds ?? [],
         };
-        await this.teamsService.update(current.id, updateDto);
+        await this.updateTeamService.execute(current.id, updateDto);
         continue;
       }
 
-      await this.teamsService.create(
+      await this.createTeamService.execute(
         this.toCreateDto(shelterId, numberTeam, input),
       );
     }

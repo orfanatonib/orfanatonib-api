@@ -4,6 +4,39 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-10-02 - ESTÚDIO ORFANATO
+
+- **ADD**: `DataSource` compartilhado pela aplicação e pela CLI do TypeORM.
+- **ADD**: comandos locais para gerar, aplicar, reverter e consultar migrations.
+- **ADD**: baseline inicial gerado pelo TypeORM; aplicada por adoção verificada
+  no banco local existente e validada separadamente em banco descartável.
+- **DOCS**: procedimento de adoção do baseline, drift, rollback e ordem de deploy.
+- **ADD**: catálogo inicial de feature flags do Estúdio Orfanato, desligadas e
+  restritas a administradores por padrão.
+- **ADD**: fila paginada de revisão com busca e filtros server-side por status,
+  público e período, submissão,
+  aprovação por etapa e comentários obrigatórios para solicitar ajustes.
+- **ADD**: dashboard administrativo com contagens agregadas, filtros por
+  período/público, alertas de jobs e cinco pacotes recentes; métricas comparativas
+  e reconciliação automatizada continuam pendentes.
+- **FIX**: requisições do dashboard deixam de falhar no banco local após adoção
+  segura da baseline existente e aplicação das migrations do Estúdio.
+- **ADD**: arquivamento protegido de pacote, bloqueado durante publicação e
+  geração ativa.
+- **FIX**: criação e edição manual de pacotes não dependem da flag de geração
+  de IA; salvar conteúdo cancela jobs ativos da etapa e dos descendentes
+  invalidados.
+- **FIX**: decisões de revisão exigem a versão, checksum e lock atuais; uma
+  edição concorrente não aprova nem comenta uma versão que já ficou desatualizada.
+- **ADD**: comentários de revisão vinculados à versão passam a aparecer no
+  detalhe da etapa para orientar a nova edição.
+- **ADD**: histórico imutável de aprovação/solicitação de ajustes, com versão,
+  checksum, revisor e timestamp; gravação transacional e migration gerada via
+  TypeORM.
+- **SECURITY**: pacotes e payloads estruturados rejeitam padrões comuns de
+  dados pessoais e têm limites de tamanho/profundidade; as regras não substituem
+  revisão humana.
+
 ## [2.10.0] - 2026-09-11 - MÓDULO IDEAS SECTIONS NO PADRÃO 💡
 
 ### 🔴 Compartilhar uma ideia não funcionava

@@ -1,0 +1,173 @@
+@startuml content-studio-schema
+title Content Studio - database schema
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam EntityBorderColor #37474F
+
+entity "content_packages" as packages {
+  * id : uuid
+  --
+  theme : varchar(180)
+  biblicalReferences : varchar(500)
+  canonicalObjective : text
+  canonicalNotes : text?
+  templateCatalogVersion : varchar(64)
+  status : enum
+  createdById : uuid
+  archivedAt : datetime?
+  lockVersion : int
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "content_tracks" as tracks {
+  * id : uuid
+  --
+  package_id : uuid
+  audience : enum
+  audienceName : varchar(80)
+  minimumAge : smallint
+  maximumAge : smallint?
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "content_stages" as stages {
+  * id : uuid
+  --
+  track_id : uuid
+  stageType : enum
+  position : smallint
+  required : boolean
+  dependencies : json
+  status : enum
+  current_version_id : uuid?
+  lockVersion : int
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "content_versions" as versions {
+  * id : uuid
+  --
+  stage_id : uuid
+  versionNumber : int
+  structuredContent : json
+  contentChecksum : char(64)
+  templateVersion : varchar(64)
+  generationSnapshot : json?
+  createdById : uuid
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "content_generation_jobs" as jobs {
+  * id : uuid
+  --
+  stage_id : uuid
+  idempotencyKey : varchar(191)
+  capability : enum
+  status : enum
+  normalizedRequest : json
+  configurationSnapshot : json
+  attempts : int
+  availableAt : datetime
+  workerId : varchar(100)?
+  leaseExpiresAt : datetime?
+  heartbeatAt : datetime?
+  errorCode : varchar(80)?
+  errorMessage : varchar(500)?
+  requestedById : uuid
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "content_assets" as assets {
+  * id : uuid
+  --
+  package_id : uuid
+  stage_id : uuid?
+  version_id : uuid?
+  kind : enum
+  storageKey : varchar(500)
+  mediaType : varchar(120)
+  sizeBytes : bigint
+  checksum : char(64)
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "content_review_comments" as comments {
+  * id : uuid
+  --
+  package_id : uuid
+  stage_id : uuid
+  version_id : uuid
+  blockKey : varchar(255)?
+  message : text
+  status : enum
+  authorId : uuid
+  resolvedById : uuid?
+  resolvedAt : datetime?
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "content_review_decisions" as decisions {
+  * id : uuid
+  --
+  package_id : uuid
+  stage_id : uuid
+  version_id : uuid
+  contentChecksum : char(64)
+  decision : enum
+  reviewerId : uuid
+  related_comment_id : uuid?
+  decidedAt : datetime
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "content_publications" as publications {
+  * id : uuid
+  --
+  package_id : uuid
+  idempotencyKey : varchar(191)
+  targetType : enum
+  status : enum
+  approvedVersions : json
+  asset_id : uuid?
+  errorCode : varchar(80)?
+  publishedAt : datetime?
+  requestedById : uuid
+  lockVersion : int
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+packages ||--o{ tracks : package_id
+tracks ||--o{ stages : track_id
+stages ||--o{ versions : stage_id
+versions ||--o{ stages : current_version_id
+stages ||--o{ jobs : stage_id
+packages ||--o{ assets : package_id
+stages ||--o{ assets : stage_id
+versions ||--o{ assets : version_id
+packages ||--o{ comments : package_id
+stages ||--o{ comments : stage_id
+versions ||--o{ comments : version_id
+stages ||--o{ decisions : stage_id (RESTRICT)
+versions ||--o{ decisions : version_id (RESTRICT)
+packages ||--o{ publications : package_id
+assets ||--o{ publications : asset_id
+
+note right of packages
+  createdById, requestedById and authorId
+  are audit references to authenticated users.
+  They are indexed where needed but are not
+  FK-constrained in the current MVP schema.
+end note
+
+@enduml

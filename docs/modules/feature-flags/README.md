@@ -45,6 +45,21 @@ src/core/feature-flags/
 
 O mapa é público porque o menu e as rotas dependem dele antes do login.
 
+### Estúdio Orfanato
+
+O catálogo inclui cinco flags do Estúdio, todas inicialmente desligadas e
+visíveis somente para administradores enquanto a matriz definitiva de papéis
+não é aprovada:
+
+- `content-studio`: entrada principal e APIs de consulta;
+- `content-studio-generation`: operações de geração e regeneração;
+- `content-studio-review`: revisão, comentários e aprovação;
+- `content-studio-publication`: publicação de conteúdo aprovado;
+- `content-studio-provider-admin`: administração de provedores e modelos.
+
+Essas flags controlam rollout, mas não substituem autenticação, guards de papel
+ou verificações de escopo no backend.
+
 **As flags operacionais ficam fora dele.** Toda chave com prefixo `email-` é
 interna (`isInternalFeatureFlag`): governa envio no servidor e não é consumida
 pela interface. O mapa devolvia o catálogo inteiro a qualquer visitante anônimo

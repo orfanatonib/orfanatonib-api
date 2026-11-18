@@ -4,7 +4,7 @@ import { ResourceNotFoundException } from "src/common/exceptions";
 import { CreateUserService } from "src/core/user/services/create-user.service";
 import { GetUsersService } from "src/core/user/services/get-user.service";
 import { UpdateUserService } from "src/core/user/services/update-user.service";
-import { MemberProfilesService } from "src/shelter/member-profile/services/member-profiles.service";
+import { UpdateMemberProfileService } from "src/shelter/member-profile/services/update-member-profile.service";
 import { UserRole } from "../auth.types";
 import { CompleteUserDto } from "../dto/complete-register.dto";
 import { RegisterUserDto } from "../dto/register.dto";
@@ -30,7 +30,7 @@ export class RegisterService {
     private readonly getUsersService: GetUsersService,
     private readonly createUserService: CreateUserService,
     private readonly updateUserService: UpdateUserService,
-    private readonly memberProfilesService: MemberProfilesService,
+    private readonly updateMemberProfileService: UpdateMemberProfileService,
     private readonly emailVerification: EmailVerificationService,
   ) {}
 
@@ -116,7 +116,7 @@ export class RegisterService {
     if (role !== UserRole.MEMBER || !teamId) return;
 
     try {
-      await this.memberProfilesService.assignTeamForUser(userId, teamId);
+      await this.updateMemberProfileService.assignTeamForUser(userId, teamId);
     } catch (error: unknown) {
       this.logger.warn(
         AuthLogs.TEAM_ASSIGN_FAILED(userId, errorMessageOf(error)),

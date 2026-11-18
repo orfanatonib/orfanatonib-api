@@ -8,7 +8,10 @@ import { Request } from "express";
 import { LeaderProfilesRepository } from "../repositories/leader-profiles.repository";
 import { LeaderResponseDto } from "../dto/leader-profile.response.dto";
 import { AuthContextService } from "src/core/auth/services/auth-context.service";
-import { TeamsService } from "src/shelter/team/services/teams.service";
+import { GetTeamsService } from "src/shelter/team/services/get-teams.service";
+import { CreateTeamService } from "src/shelter/team/services/create-team.service";
+import { UpdateTeamService } from "src/shelter/team/services/update-team.service";
+import { DeleteTeamService } from "src/shelter/team/services/delete-team.service";
 import {
   ManageLeaderTeamDto,
   ManageLeaderTeamsDto,
@@ -23,8 +26,14 @@ export class UpdateLeaderProfileService {
     private readonly repo: LeaderProfilesRepository,
     private readonly authCtx: AuthContextService,
     private readonly getLeaderProfilesService: GetLeaderProfilesService,
-    @Inject(forwardRef(() => TeamsService))
-    private readonly teamsService: TeamsService,
+    @Inject(forwardRef(() => GetTeamsService))
+    private readonly getTeamsService: GetTeamsService,
+    @Inject(forwardRef(() => CreateTeamService))
+    private readonly createTeamService: CreateTeamService,
+    @Inject(forwardRef(() => UpdateTeamService))
+    private readonly updateTeamService: UpdateTeamService,
+    @Inject(forwardRef(() => DeleteTeamService))
+    private readonly deleteTeamService: DeleteTeamService,
   ) {}
 
   private async getCtx(req: Request): Promise<AccessCtx> {
@@ -42,6 +51,32 @@ export class UpdateLeaderProfileService {
   }
 
   /**
+   * Admin gerencia qualquer líder. Líder só mexe em quem está (e só aloca em)
+   * abrigos que ele mesmo lidera: senão poderia tirar/pôr gente em equipe alheia.
+   */
+  private async assertLeaderScope(
+    ctx: AccessCtx,
+    target: {
+      teams?: Array<{ shelter?: { id: string } | null }> | null;
+    },
+    dto: ManageLeaderTeamsDto,
+  ): Promise<void> {
+    if (ctx.role === "admin") return;
+    const led = ctx.userId
+      ? await this.getTeamsService.findLedShelterIds(ctx.userId)
+      : new Set<string>();
+    const touched = [
+      ...(target.teams ?? []).flatMap((team) =>
+        team.shelter ? [team.shelter.id] : [],
+      ),
+      ...dto.assignments.map((assignment) => assignment.shelterId),
+    ];
+    if (touched.some((shelterId) => !led.has(shelterId))) {
+      throw new ForbiddenException("Acesso negado");
+    }
+  }
+
+  /**
    * Move líder exclusivamente para múltiplas equipes de múltiplos abrigos
    * Primeiro desvincula de todas as equipes, depois vincula às especificadas no payload
    */
@@ -53,11 +88,13 @@ export class UpdateLeaderProfileService {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    await this.repo.findOneWithSheltersAndMembersOrFail(leaderId);
-    await this.teamsService.removeLeaderFromAllTeams(leaderId);
+    const target =
+      await this.repo.findOneWithSheltersAndMembersOrFail(leaderId);
+    await this.assertLeaderScope(ctx, target, dto);
+    await this.deleteTeamService.removeLeaderFromAllTeams(leaderId);
 
     for (const assignment of dto.assignments) {
-      const shelterTeams = await this.teamsService.findByShelter(
+      const shelterTeams = await this.getTeamsService.findByShelter(
         assignment.shelterId,
       );
 
@@ -67,13 +104,15 @@ export class UpdateLeaderProfileService {
         );
 
         if (!targetTeam) {
-          await this.teamsService.create({
+          await this.createTeamService.execute({
             numberTeam: teamNumber,
             shelterId: assignment.shelterId,
             leaderProfileIds: [leaderId],
           });
         } else {
-          await this.teamsService.addLeadersToTeam(targetTeam.id, [leaderId]);
+          await this.updateTeamService.addLeadersToTeam(targetTeam.id, [
+            leaderId,
+          ]);
         }
       }
     }

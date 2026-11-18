@@ -2,7 +2,6 @@ import { Module, forwardRef } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { MemberProfilesRepository } from "./repositories/member-profiles.repository";
-import { MemberProfilesService } from "./services/member-profiles.service";
 import { GetMemberProfilesService } from "./services/get-member-profiles.service";
 import { CreateMemberProfileService } from "./services/create-member-profile.service";
 import { UpdateMemberProfileService } from "./services/update-member-profile.service";
@@ -30,7 +29,6 @@ import { MediaModule } from "src/shared/media/media.module";
   controllers: [MemberProfilesController],
   providers: [
     MemberProfilesRepository,
-    MemberProfilesService,
     GetMemberProfilesService,
     CreateMemberProfileService,
     UpdateMemberProfileService,
@@ -38,7 +36,6 @@ import { MediaModule } from "src/shared/media/media.module";
   ],
   exports: [
     MemberProfilesRepository,
-    MemberProfilesService,
     GetMemberProfilesService,
     CreateMemberProfileService,
     UpdateMemberProfileService,

@@ -3,7 +3,6 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { LeaderProfileEntity } from "./entities/leader-profile.entity/leader-profile.entity";
 import { LeaderProfilesRepository } from "./repositories/leader-profiles.repository";
-import { LeaderProfilesService } from "./services/leader-profiles.service";
 import { GetLeaderProfilesService } from "./services/get-leader-profiles.service";
 import { CreateLeaderProfileService } from "./services/create-leader-profile.service";
 import { UpdateLeaderProfileService } from "./services/update-leader-profile.service";
@@ -31,7 +30,6 @@ import { ShelterEntity } from "../shelter/entities/shelter.entity/shelter.entity
   controllers: [LeaderProfilesController],
   providers: [
     LeaderProfilesRepository,
-    LeaderProfilesService,
     GetLeaderProfilesService,
     CreateLeaderProfileService,
     UpdateLeaderProfileService,
@@ -39,7 +37,6 @@ import { ShelterEntity } from "../shelter/entities/shelter.entity/shelter.entity
   ],
   exports: [
     LeaderProfilesRepository,
-    LeaderProfilesService,
     GetLeaderProfilesService,
     CreateLeaderProfileService,
     UpdateLeaderProfileService,

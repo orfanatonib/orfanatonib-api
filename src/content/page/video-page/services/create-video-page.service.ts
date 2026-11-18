@@ -80,7 +80,7 @@ export class CreateVideosPageService {
           MediaTargetType.VideosPage,
           filesDict,
           this.awsS3Service.upload.bind(this.awsS3Service),
-this.awsS3Service.delete.bind(this.awsS3Service),
+          this.awsS3Service.delete.bind(this.awsS3Service),
         );
 
       const finalPage = await queryRunner.manager.save(savedPage);

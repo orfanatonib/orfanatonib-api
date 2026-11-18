@@ -9,10 +9,16 @@ export class CreateAcceptedChristService {
     private readonly acceptedChristRepository: AcceptedChristRepository,
   ) {}
 
-  async create(dto: CreateAcceptedChristDto): Promise<AcceptedChristResponseDto> {
-    const sheltered = await this.acceptedChristRepository.findShelteredById(dto.shelteredId);
+  async create(
+    dto: CreateAcceptedChristDto,
+  ): Promise<AcceptedChristResponseDto> {
+    const sheltered = await this.acceptedChristRepository.findShelteredById(
+      dto.shelteredId,
+    );
     if (!sheltered) {
-      throw new NotFoundException(`Sheltered with id ${dto.shelteredId} not found.`);
+      throw new NotFoundException(
+        `Sheltered with id ${dto.shelteredId} not found.`,
+      );
     }
 
     const accepted = this.acceptedChristRepository.create({

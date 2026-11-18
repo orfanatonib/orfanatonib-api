@@ -1,0 +1,8 @@
+export enum ContentPublicationStatus {
+  PENDING = "PENDING",
+  PUBLISHING = "PUBLISHING",
+  PUBLISHED = "PUBLISHED",
+  FAILED = "FAILED",
+  UNCERTAIN = "UNCERTAIN",
+}
+

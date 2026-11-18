@@ -6,7 +6,7 @@ import {
 import { CreateUserService } from "src/core/user/services/create-user.service";
 import { GetUsersService } from "src/core/user/services/get-user.service";
 import { UpdateUserService } from "src/core/user/services/update-user.service";
-import { MemberProfilesService } from "src/shelter/member-profile/services/member-profiles.service";
+import { UpdateMemberProfileService } from "src/shelter/member-profile/services/update-member-profile.service";
 import { RegisterService } from "./register.service";
 import { EmailVerificationService } from "./email-verification.service";
 import { UserRole } from "../auth.types";
@@ -24,7 +24,7 @@ describe("RegisterService", () => {
   const getUsersService = { findByEmail: jest.fn() };
   const createUserService = { create: jest.fn() };
   const updateUserService = { update: jest.fn() };
-  const memberProfilesService = { assignTeamForUser: jest.fn() };
+  const updateMemberProfileService = { assignTeamForUser: jest.fn() };
   const emailVerification = { requestFor: jest.fn() };
 
   let service: RegisterService;
@@ -38,7 +38,7 @@ describe("RegisterService", () => {
         { provide: GetUsersService, useValue: getUsersService },
         { provide: CreateUserService, useValue: createUserService },
         { provide: UpdateUserService, useValue: updateUserService },
-        { provide: MemberProfilesService, useValue: memberProfilesService },
+        { provide: UpdateMemberProfileService, useValue: updateMemberProfileService },
         {
           provide: EmailVerificationService,
           useValue: emailVerification,
@@ -52,7 +52,7 @@ describe("RegisterService", () => {
     getUsersService.findByEmail.mockResolvedValue(null);
     createUserService.create.mockResolvedValue(buildUserEntity());
     updateUserService.update.mockResolvedValue(buildUserEntity());
-    memberProfilesService.assignTeamForUser.mockResolvedValue(undefined);
+    updateMemberProfileService.assignTeamForUser.mockResolvedValue(undefined);
     emailVerification.requestFor.mockResolvedValue({
       verificationEmailSent: true,
       message: "Enviamos um link de confirmação para o seu e-mail.",
@@ -92,7 +92,7 @@ describe("RegisterService", () => {
     it("links the member to the chosen team", async () => {
       await service.register(buildRegisterDto({ teamId: "team-id" }));
 
-      expect(memberProfilesService.assignTeamForUser).toHaveBeenCalledWith(
+      expect(updateMemberProfileService.assignTeamForUser).toHaveBeenCalledWith(
         "user-id",
         "team-id",
       );
@@ -107,17 +107,17 @@ describe("RegisterService", () => {
         buildRegisterDto({ role: UserRole.LEADER, teamId: "team-id" }),
       );
 
-      expect(memberProfilesService.assignTeamForUser).not.toHaveBeenCalled();
+      expect(updateMemberProfileService.assignTeamForUser).not.toHaveBeenCalled();
     });
 
     it("does not link a team when none was chosen", async () => {
       await service.register(buildRegisterDto());
 
-      expect(memberProfilesService.assignTeamForUser).not.toHaveBeenCalled();
+      expect(updateMemberProfileService.assignTeamForUser).not.toHaveBeenCalled();
     });
 
     it("keeps the account when linking the team fails", async () => {
-      memberProfilesService.assignTeamForUser.mockRejectedValue(
+      updateMemberProfileService.assignTeamForUser.mockRejectedValue(
         new Error("Team not found"),
       );
 
@@ -184,7 +184,7 @@ describe("RegisterService", () => {
         buildCompleteRegisterDto({ role: undefined, teamId: "team-id" }),
       );
 
-      expect(memberProfilesService.assignTeamForUser).toHaveBeenCalledWith(
+      expect(updateMemberProfileService.assignTeamForUser).toHaveBeenCalledWith(
         "user-id",
         "team-id",
       );

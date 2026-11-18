@@ -1,16 +1,17 @@
 import { Test } from "@nestjs/testing";
 import { RuleException } from "src/common/exceptions";
-import { TeamsService } from "src/shelter/team/services/teams.service";
+import { CreateTeamService } from "src/shelter/team/services/create-team.service";
+import { GetTeamsService } from "src/shelter/team/services/get-teams.service";
+import { UpdateTeamService } from "src/shelter/team/services/update-team.service";
+import { DeleteTeamService } from "src/shelter/team/services/delete-team.service";
 import { ShelterTeamsService } from "./shelter-teams.service";
 import { SHELTER_MESSAGES } from "../constants";
 
 describe("ShelterTeamsService", () => {
-  const teamsService = {
-    create: jest.fn(),
-    update: jest.fn(),
-    remove: jest.fn(),
-    findByShelter: jest.fn(),
-  };
+  const createTeamService = { execute: jest.fn() };
+  const getTeamsService = { findByShelter: jest.fn() };
+  const updateTeamService = { execute: jest.fn() };
+  const deleteTeamService = { execute: jest.fn() };
 
   let service: ShelterTeamsService;
 
@@ -20,25 +21,28 @@ describe("ShelterTeamsService", () => {
     const moduleRef = await Test.createTestingModule({
       providers: [
         ShelterTeamsService,
-        { provide: TeamsService, useValue: teamsService },
+        { provide: CreateTeamService, useValue: createTeamService },
+        { provide: GetTeamsService, useValue: getTeamsService },
+        { provide: UpdateTeamService, useValue: updateTeamService },
+        { provide: DeleteTeamService, useValue: deleteTeamService },
       ],
     }).compile();
 
     service = moduleRef.get(ShelterTeamsService);
 
-    teamsService.create.mockResolvedValue(undefined);
-    teamsService.update.mockResolvedValue(undefined);
-    teamsService.remove.mockResolvedValue(undefined);
-    teamsService.findByShelter.mockResolvedValue([]);
+    createTeamService.execute.mockResolvedValue(undefined);
+    updateTeamService.execute.mockResolvedValue(undefined);
+    deleteTeamService.execute.mockResolvedValue(undefined);
+    getTeamsService.findByShelter.mockResolvedValue([]);
   });
 
   describe("createForShelter", () => {
     it("creates exactly the teams 1..N", async () => {
       await service.createForShelter("shelter-id", 3, undefined);
 
-      expect(teamsService.create).toHaveBeenCalledTimes(3);
+      expect(createTeamService.execute).toHaveBeenCalledTimes(3);
       expect(
-        teamsService.create.mock.calls.map(
+        createTeamService.execute.mock.calls.map(
           ([dto]: [{ numberTeam: number }]) => dto.numberTeam,
         ),
       ).toEqual([1, 2, 3]);
@@ -54,14 +58,14 @@ describe("ShelterTeamsService", () => {
         },
       ]);
 
-      expect(teamsService.create).toHaveBeenNthCalledWith(1, {
+      expect(createTeamService.execute).toHaveBeenNthCalledWith(1, {
         numberTeam: 1,
         description: undefined,
         shelterId: "shelter-id",
         leaderProfileIds: undefined,
         memberProfileIds: undefined,
       });
-      expect(teamsService.create).toHaveBeenNthCalledWith(2, {
+      expect(createTeamService.execute).toHaveBeenNthCalledWith(2, {
         numberTeam: 2,
         description: "Equipe dois",
         shelterId: "shelter-id",
@@ -73,7 +77,7 @@ describe("ShelterTeamsService", () => {
     it("creates nothing when the shelter has no teams", async () => {
       await service.createForShelter("shelter-id", 0, undefined);
 
-      expect(teamsService.create).not.toHaveBeenCalled();
+      expect(createTeamService.execute).not.toHaveBeenCalled();
     });
 
     it.each([[0], [3]])(
@@ -84,7 +88,7 @@ describe("ShelterTeamsService", () => {
         ).rejects.toThrow(
           new RuleException(SHELTER_MESSAGES.TEAM_OUT_OF_RANGE(numberTeam, 2)),
         );
-        expect(teamsService.create).not.toHaveBeenCalled();
+        expect(createTeamService.execute).not.toHaveBeenCalled();
       },
     );
 
@@ -113,7 +117,7 @@ describe("ShelterTeamsService", () => {
 
   describe("syncForShelter", () => {
     it("removes the teams above the new quantity", async () => {
-      teamsService.findByShelter.mockResolvedValue([
+      getTeamsService.findByShelter.mockResolvedValue([
         { id: "team-1", numberTeam: 1 },
         { id: "team-2", numberTeam: 2 },
         { id: "team-3", numberTeam: 3 },
@@ -121,24 +125,24 @@ describe("ShelterTeamsService", () => {
 
       await service.syncForShelter("shelter-id", 1, undefined, 3);
 
-      expect(teamsService.remove).toHaveBeenCalledTimes(2);
-      expect(teamsService.remove).toHaveBeenCalledWith("team-2");
-      expect(teamsService.remove).toHaveBeenCalledWith("team-3");
-      expect(teamsService.create).not.toHaveBeenCalled();
+      expect(deleteTeamService.execute).toHaveBeenCalledTimes(2);
+      expect(deleteTeamService.execute).toHaveBeenCalledWith("team-2");
+      expect(deleteTeamService.execute).toHaveBeenCalledWith("team-3");
+      expect(createTeamService.execute).not.toHaveBeenCalled();
     });
 
     it("skips a team that is already gone from the database", async () => {
-      teamsService.findByShelter.mockResolvedValue([
+      getTeamsService.findByShelter.mockResolvedValue([
         { id: "team-1", numberTeam: 1 },
       ]);
 
       await service.syncForShelter("shelter-id", 1, undefined, 3);
 
-      expect(teamsService.remove).not.toHaveBeenCalled();
+      expect(deleteTeamService.execute).not.toHaveBeenCalled();
     });
 
     it("updates the teams that exist and creates the ones that are missing", async () => {
-      teamsService.findByShelter.mockResolvedValue([
+      getTeamsService.findByShelter.mockResolvedValue([
         { id: "team-1", numberTeam: 1 },
       ]);
 
@@ -152,12 +156,12 @@ describe("ShelterTeamsService", () => {
         1,
       );
 
-      expect(teamsService.update).toHaveBeenCalledWith("team-1", {
+      expect(updateTeamService.execute).toHaveBeenCalledWith("team-1", {
         description: "Renomeada",
         leaderProfileIds: ["l1"],
         memberProfileIds: [],
       });
-      expect(teamsService.create).toHaveBeenCalledWith({
+      expect(createTeamService.execute).toHaveBeenCalledWith({
         numberTeam: 2,
         description: undefined,
         shelterId: "shelter-id",
@@ -167,13 +171,13 @@ describe("ShelterTeamsService", () => {
     });
 
     it("clears the people of a team the payload does not describe", async () => {
-      teamsService.findByShelter.mockResolvedValue([
+      getTeamsService.findByShelter.mockResolvedValue([
         { id: "team-1", numberTeam: 1 },
       ]);
 
       await service.syncForShelter("shelter-id", 1, undefined, 1);
 
-      expect(teamsService.update).toHaveBeenCalledWith("team-1", {
+      expect(updateTeamService.execute).toHaveBeenCalledWith("team-1", {
         description: undefined,
         leaderProfileIds: [],
         memberProfileIds: [],
@@ -181,7 +185,7 @@ describe("ShelterTeamsService", () => {
     });
 
     it("allows the same member in two teams on an update, unlike on creation", async () => {
-      teamsService.findByShelter.mockResolvedValue([]);
+      getTeamsService.findByShelter.mockResolvedValue([]);
 
       await expect(
         service.syncForShelter(
@@ -201,7 +205,7 @@ describe("ShelterTeamsService", () => {
         service.syncForShelter("shelter-id", 1, [{ numberTeam: 5 }], 1),
       ).rejects.toThrow(RuleException);
 
-      expect(teamsService.findByShelter).not.toHaveBeenCalled();
+      expect(getTeamsService.findByShelter).not.toHaveBeenCalled();
     });
   });
 });

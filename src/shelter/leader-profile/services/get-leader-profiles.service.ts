@@ -128,7 +128,9 @@ export class GetLeaderProfilesService {
     if (!leaders.length) return;
 
     const userIds = leaders
-      .filter((l): l is LeaderProfileEntity & { user: UserEntity } => !!l.user?.id)
+      .filter(
+        (l): l is LeaderProfileEntity & { user: UserEntity } => !!l.user?.id,
+      )
       .map((l) => l.user.id);
 
     if (!userIds.length) return;
