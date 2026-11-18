@@ -65,14 +65,11 @@ describe("AuthContextService", () => {
 
   it("refuses to verify when no secret is configured", async () => {
     config.get.mockReturnValue(undefined);
-    const previous = process.env.JWT_SECRET;
-    delete process.env.JWT_SECRET;
 
     await expect(service.verifyToken("abc")).rejects.toThrow(
       new UnauthenticatedException(AuthErrorMessages.JWT_SECRET_MISSING),
     );
 
-    if (previous !== undefined) process.env.JWT_SECRET = previous;
   });
 
   it("decodes without verifying, normalizing the role", () => {
@@ -115,18 +112,15 @@ describe("AuthContextService", () => {
   });
 
   it.each([
-    [UserRole.ADMIN, { admin: true, member: false, coordinator: false }],
-    [UserRole.MEMBER, { admin: false, member: true, coordinator: false }],
-    [UserRole.LEADER, { admin: false, member: false, coordinator: true }],
+    [UserRole.ADMIN, { admin: true, member: false }],
+    [UserRole.MEMBER, { admin: false, member: true }],
+    [UserRole.LEADER, { admin: false, member: false }],
   ])("answers the role questions for %s", async (role, expected) => {
     jwt.verifyAsync.mockResolvedValue({ sub: "user-id", role });
     const request = authenticated();
 
     await expect(service.isAdmin(request)).resolves.toBe(expected.admin);
     await expect(service.isMember(request)).resolves.toBe(expected.member);
-    await expect(service.isCoordinator(request)).resolves.toBe(
-      expected.coordinator,
-    );
   });
 
   it("isLoggedIn follows whether the token verifies", async () => {

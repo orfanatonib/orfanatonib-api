@@ -27,8 +27,7 @@ export class AuthContextService {
   }
 
   async verifyToken(token: string): Promise<JwtPayload> {
-    const secret =
-      this.config.get<string>("JWT_SECRET") ?? process.env.JWT_SECRET;
+    const secret = this.config.get<string>("JWT_SECRET");
     if (!secret) {
       throw new UnauthenticatedException(AuthErrorMessages.JWT_SECRET_MISSING);
     }
@@ -78,10 +77,6 @@ export class AuthContextService {
 
   async isMember(req: Request): Promise<boolean> {
     return (await this.getRole(req)) === UserRole.MEMBER;
-  }
-
-  async isCoordinator(req: Request): Promise<boolean> {
-    return (await this.getRole(req)) === UserRole.LEADER;
   }
 
   async isLoggedIn(req: Request): Promise<boolean> {
