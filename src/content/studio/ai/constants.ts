@@ -21,7 +21,9 @@ export const CONTENT_STUDIO_SENSITIVE_INSTRUCTION_PATTERNS: readonly RegExp[] =
     /\b(?:nome|telefone|e-?mail|endereço|documento)\s+(?:da|do|de)\s+(?:criança|adolescente|acolhid[oa]|beneficiário)/iu,
     /\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/u,
     /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/iu,
-    /\b(?:\+?55\s?)?(?:\(?\d{2}\)?\s?)?(?:9\d{4}|\d{4})-?\d{4}\b/u,
+    // Telefone BR: DDD + número com separador, celular com hífen, ou 10–11 dígitos seguidos.
+    // (O padrão antigo casava qualquer sequência de 8 dígitos: versículos, anos, códigos.)
+    /(?:\+?55[\s.-]?)?(?:\(\d{2}\)|\b\d{2})[\s.-]?9?\d{4}[\s.-]\d{4}\b|\b9\d{4}-\d{4}\b|\b\d{2}9?\d{8}\b/u,
   ];
 
 export const REDACTED_AI_ERROR_MESSAGE =
