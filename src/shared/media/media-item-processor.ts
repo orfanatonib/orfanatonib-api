@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
 import {
   MediaItemEntity,
   MediaType,
@@ -156,7 +156,8 @@ export class MediaItemProcessor {
 
         if (item.uploadType === UploadType.UPLOAD) {
           const file = filesDict[item.fileField ?? ""];
-          if (!file) throw new Error(`File missing for "${item.title}"`);
+          if (!file)
+            throw new BadRequestException(`File missing for "${item.title}"`);
 
           media.url = await uploadFn(file);
           uploadedUrls.push(media.url);
@@ -248,7 +249,8 @@ export class MediaItemProcessor {
             media.size = previous.size;
           } else {
             const file = filesDict[item.fileField ?? ""];
-            if (!file) throw new Error(`File missing for "${item.title}"`);
+            if (!file)
+              throw new BadRequestException(`File missing for "${item.title}"`);
 
             media.url = await uploadFn(file);
             uploadedUrls.push(media.url);

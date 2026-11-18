@@ -7,7 +7,10 @@ import { AddressesRepository } from "../repositories/addresses.repository";
 export class GetAddressService {
   constructor(private readonly repo: AddressesRepository) {}
 
-  async findById(id: string, _em?: EntityManager): Promise<AddressEntity | null> {
+  async findById(
+    id: string,
+    _em?: EntityManager,
+  ): Promise<AddressEntity | null> {
     return this.repo.findById(id);
   }
 }

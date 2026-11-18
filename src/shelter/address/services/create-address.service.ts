@@ -11,7 +11,10 @@ export class CreateAddressService {
     return this.repo.create(partial);
   }
 
-  async save(entity: AddressEntity, _em?: EntityManager): Promise<AddressEntity> {
+  async save(
+    entity: AddressEntity,
+    _em?: EntityManager,
+  ): Promise<AddressEntity> {
     return this.repo.save(entity);
   }
 }
