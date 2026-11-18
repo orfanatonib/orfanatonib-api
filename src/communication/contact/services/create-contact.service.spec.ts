@@ -27,7 +27,13 @@ describe("CreateContactService", () => {
   });
 
   it("creates contact and dispatches notification to admins", async () => {
-    const contactData = { id: "1", name: "João", email: "joao@test.com", phone: "999", message: "Ola" };
+    const contactData = {
+      id: "1",
+      name: "João",
+      email: "joao@test.com",
+      phone: "999",
+      message: "Ola",
+    };
     repository.saveContact.mockResolvedValue(contactData);
     getUsersService.findAdminEmails.mockResolvedValue(["admin@test.com"]);
     notificationService.sendContactNotification.mockResolvedValue(undefined);

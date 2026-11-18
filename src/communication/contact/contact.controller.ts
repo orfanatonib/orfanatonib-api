@@ -14,6 +14,7 @@ import { GetContactService } from "./services/get-contact.service";
 import { UpdateContactService } from "./services/update-contact.service";
 import { DeleteContactService } from "./services/delete-contact.service";
 import { ContactEntity } from "./contact.entity";
+import { CreateContactDto } from "./dto/create-contact.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 
@@ -29,17 +30,15 @@ export class ContactController {
   ) {}
 
   @Post()
-  async create(
-    @Body()
-    body: {
-      name: string;
-      email: string;
-      phone: string;
-      message: string;
-    },
-  ): Promise<ContactEntity> {
+  async create(@Body() body: CreateContactDto): Promise<ContactEntity> {
     this.logger.log("Creating new contact message");
-    const result = await this.createContactService.execute(body);
+    // Só os campos do DTO chegam ao serviço: `read`, `id` etc. nunca vêm do cliente.
+    const result = await this.createContactService.execute({
+      name: body.name,
+      email: body.email,
+      phone: body.phone,
+      message: body.message,
+    });
     this.logger.log(`Contact message created successfully: ${result.id}`);
     return result;
   }
