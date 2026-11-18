@@ -34,3 +34,14 @@ export const REQUIRED_WHEN_DEPLOYED = [
 export const PORT_VARIABLES = ["PORT", "DB_PORT"] as const;
 
 export const CORS_ALLOWED_ORIGINS_VARIABLE = "CORS_ALLOWED_ORIGINS";
+
+/**
+ * Modo do provedor de IA: `fake` usa o gateway simulado (E2E e desenvolvimento,
+ * sem custo). Nunca pode estar ligado em ambiente de produção.
+ */
+export const AI_PROVIDER_MODE_VARIABLE = "AI_PROVIDER_MODE";
+export const AI_PROVIDER_MODES = ["live", "fake"] as const;
+export const PRODUCTION_ENVIRONMENTS: readonly string[] = [
+  "prod",
+  "production",
+];

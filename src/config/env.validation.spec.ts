@@ -80,4 +80,34 @@ describe("validateEnv", () => {
       validateEnv({ ...base, CORS_ALLOWED_ORIGINS: "app.exemplo.com" }),
     ).toThrow("origem(ns) inválida(s)");
   });
+
+  describe("AI_PROVIDER_MODE", () => {
+    it.each(["live", "fake"])("aceita %s fora de produção", (mode) => {
+      expect(() =>
+        validateEnv({ ...base, AI_PROVIDER_MODE: mode }),
+      ).not.toThrow();
+    });
+
+    it("recusa valor desconhecido", () => {
+      expect(() => validateEnv({ ...base, AI_PROVIDER_MODE: "mock" })).toThrow(
+        "AI_PROVIDER_MODE deve ser um de",
+      );
+    });
+
+    it.each(["prod", "production"])("recusa fake em %s", (environment) => {
+      expect(() =>
+        validateEnv({
+          ...deployed,
+          ENVIRONMENT: environment,
+          AI_PROVIDER_MODE: "fake",
+        }),
+      ).toThrow("proibido em produção");
+    });
+
+    it("permite live em produção", () => {
+      expect(() =>
+        validateEnv({ ...deployed, AI_PROVIDER_MODE: "live" }),
+      ).not.toThrow();
+    });
+  });
 });

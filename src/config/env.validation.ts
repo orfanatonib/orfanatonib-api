@@ -1,8 +1,11 @@
 import {
+  AI_PROVIDER_MODES,
+  AI_PROVIDER_MODE_VARIABLE,
   ALLOWED_ENVIRONMENTS,
   CORS_ALLOWED_ORIGINS_VARIABLE,
   DEPLOYED_ENVIRONMENTS,
   PORT_VARIABLES,
+  PRODUCTION_ENVIRONMENTS,
   REQUIRED_ALWAYS,
   REQUIRED_WHEN_DEPLOYED,
 } from "./env.constants";
@@ -68,6 +71,20 @@ export function validateEnv(
       errors.push(
         `${CORS_ALLOWED_ORIGINS_VARIABLE} tem ${invalid.length} origem(ns) inválida(s): use URLs absolutas http(s) separadas por vírgula`,
       );
+    }
+  }
+
+  if (!isBlank(config[AI_PROVIDER_MODE_VARIABLE])) {
+    const mode = asText(config[AI_PROVIDER_MODE_VARIABLE]);
+    if (!(AI_PROVIDER_MODES as readonly string[]).includes(mode)) {
+      errors.push(
+        `${AI_PROVIDER_MODE_VARIABLE} deve ser um de: ${AI_PROVIDER_MODES.join(", ")}`,
+      );
+    } else if (
+      mode === "fake" &&
+      PRODUCTION_ENVIRONMENTS.includes(environment)
+    ) {
+      errors.push(`${AI_PROVIDER_MODE_VARIABLE}=fake é proibido em produção`);
     }
   }
 
