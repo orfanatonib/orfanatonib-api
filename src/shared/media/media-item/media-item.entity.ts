@@ -60,6 +60,10 @@ export class MediaItemEntity extends BaseEntity {
   @Column({ nullable: true })
   size?: number;
 
+  /** Chave do objeto no S3 (nula em registros antigos: extrair da URL). */
+  @Column({ type: "varchar", length: 512, nullable: true })
+  storageKey?: string | null;
+
   @Column()
   targetId: string;
 

@@ -1,9 +1,11 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
+import { randomUUID } from "node:crypto";
 import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 
 @Injectable()
@@ -52,7 +54,7 @@ export class AwsS3Service {
       "_",
     );
 
-    const key = `${this.environment}/uploads/${Date.now()}_${sanitizedFilename}`;
+    const key = `${this.environment}/uploads/${randomUUID()}_${sanitizedFilename}`;
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
       Key: key,
@@ -95,5 +97,72 @@ export class AwsS3Service {
       const message = err instanceof Error ? err.message : String(err);
       this.logger.error(`Error deleting from S3: ${message}`);
     }
+  }
+
+  getEnvironment(): string {
+    return this.environment;
+  }
+
+  getBucketName(): string {
+    return this.bucketName;
+  }
+
+  buildUrl(key: string): string {
+    return this.endpoint
+      ? `${this.endpoint}/${this.bucketName}/${key}`
+      : `https://${this.bucketName}.s3.amazonaws.com/${key}`;
+  }
+
+  /** Envia com chave e ContentType já validados pelo chamador. */
+  async putObject(
+    key: string,
+    body: Buffer,
+    contentType: string,
+  ): Promise<string> {
+    try {
+      await this.s3Client.send(
+        new PutObjectCommand({
+          Bucket: this.bucketName,
+          Key: key,
+          Body: body,
+          ContentType: contentType,
+        }),
+      );
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.error(`Error uploading to S3: ${message}`);
+      throw new Error("Error uploading to S3");
+    }
+    return this.buildUrl(key);
+  }
+
+  /** Remove por chave e PROPAGA a falha (quem chama decide: fila de limpeza). */
+  async deleteKey(key: string): Promise<void> {
+    await this.s3Client.send(
+      new DeleteObjectCommand({ Bucket: this.bucketName, Key: key }),
+    );
+  }
+
+  /** Lista todas as chaves sob o prefixo, com a data da última modificação. */
+  async listKeys(
+    prefix: string,
+  ): Promise<Array<{ key: string; lastModified: Date | undefined }>> {
+    const found: Array<{ key: string; lastModified: Date | undefined }> = [];
+    let token: string | undefined;
+    do {
+      const page = await this.s3Client.send(
+        new ListObjectsV2Command({
+          Bucket: this.bucketName,
+          Prefix: prefix,
+          ContinuationToken: token,
+        }),
+      );
+      for (const obj of page.Contents ?? []) {
+        if (obj.Key)
+          found.push({ key: obj.Key, lastModified: obj.LastModified });
+      }
+      token = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (token);
+    return found;
   }
 }

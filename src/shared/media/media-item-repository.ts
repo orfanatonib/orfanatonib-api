@@ -59,4 +59,13 @@ export class MediaItemRepository {
   async removeOne(item: MediaItemEntity): Promise<void> {
     await this.mediaRepo.remove(item);
   }
+
+  /** URLs de todos os arquivos locais (S3) referenciados — base da reconciliação. */
+  async findLocalFileUrls(): Promise<string[]> {
+    const rows = await this.mediaRepo.find({
+      where: { isLocalFile: true },
+      select: { id: true, url: true, storageKey: true },
+    });
+    return rows.map((r) => r.storageKey ?? r.url);
+  }
 }

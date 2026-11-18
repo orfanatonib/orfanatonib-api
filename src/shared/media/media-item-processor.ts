@@ -1,6 +1,30 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { MediaItemEntity, UploadType } from "./media-item/media-item.entity";
+import {
+  MediaItemEntity,
+  MediaType,
+  PlatformType,
+  UploadType,
+} from "./media-item/media-item.entity";
 import { MediaItemRepository } from "./media-item-repository";
+
+/** Item de mídia vindo do DTO (link ou upload referenciado por `fileField`). */
+export interface MediaItemInput {
+  id?: string;
+  title?: string;
+  description?: string;
+  mediaType: MediaType;
+  uploadType?: UploadType;
+  platformType?: PlatformType | null;
+  url?: string;
+  originalName?: string;
+  size?: number | string;
+  isLocalFile?: boolean;
+  fileField?: string;
+  /** Aceito e ignorado aqui: alguns chamadores montam o literal com `public`. */
+  public?: boolean;
+  type?: UploadType;
+  fieldKey?: string;
+}
 
 @Injectable()
 export class MediaItemProcessor {
@@ -31,20 +55,20 @@ export class MediaItemProcessor {
   }
 
   buildBaseMediaItem(
-    item: any,
+    item: MediaItemInput,
     targetId: string,
     targetType: string,
   ): MediaItemEntity {
     const media = new MediaItemEntity();
-    media.title = item.title;
-    media.description = item.description;
+    media.title = item.title ?? "";
+    media.description = item.description ?? "";
     media.mediaType = item.mediaType;
-    media.uploadType = item.uploadType;
-    media.platformType = item.platformType;
-    media.url = item.url;
+    media.uploadType = item.uploadType ?? UploadType.LINK;
+    media.platformType = item.platformType ?? undefined;
+    media.url = item.url ?? "";
     media.originalName = item.originalName;
-    media.size = item.size;
-    media.isLocalFile = item.isLocalFile;
+    media.size = item.size === undefined ? undefined : Number(item.size);
+    media.isLocalFile = item.isLocalFile ?? false;
     media.targetId = targetId;
     media.targetType = targetType;
     return media;
@@ -97,40 +121,63 @@ export class MediaItemProcessor {
     await this.mediaRepo.removeOne(item);
   }
 
+  /**
+   * Se um item falhar, o que já subiu nesta chamada é apagado (via `discardFn`)
+   * e as linhas já gravadas são removidas — não sobra objeto órfão.
+   */
   async processMediaItemsPolymorphic(
-    items: any[],
+    items: MediaItemInput[],
     targetId: string,
     targetType: string,
     filesDict: Record<string, Express.Multer.File>,
     uploadFn: (file: Express.Multer.File) => Promise<string>,
+    discardFn?: (url: string) => Promise<void>,
   ): Promise<MediaItemEntity[]> {
     const results: MediaItemEntity[] = [];
+    const uploadedUrls: string[] = [];
 
-    for (const item of items) {
-      const media = this.buildBaseMediaItem(item, targetId, targetType);
+    try {
+      for (const item of items) {
+        const media = this.buildBaseMediaItem(item, targetId, targetType);
 
-      if (item.uploadType === UploadType.UPLOAD) {
-        const file = filesDict[item.fileField];
-        if (!file) throw new Error(`File missing for "${item.title}"`);
+        if (item.uploadType === UploadType.UPLOAD) {
+          const file = filesDict[item.fileField ?? ""];
+          if (!file) throw new Error(`File missing for "${item.title}"`);
 
-        media.url = await uploadFn(file);
-        media.isLocalFile = true;
-        media.originalName = file.originalname;
-        media.size = file.size;
-      } else {
-        media.url = item.url?.trim() || "";
-        media.isLocalFile = false;
+          media.url = await uploadFn(file);
+          uploadedUrls.push(media.url);
+          media.isLocalFile = true;
+          media.originalName = file.originalname;
+          media.size = file.size;
+        } else {
+          media.url = item.url?.trim() || "";
+          media.isLocalFile = false;
+        }
+
+        results.push(await this.saveMediaItem(media));
       }
-
-      const saved = await this.saveMediaItem(media);
-      results.push(saved);
+    } catch (error) {
+      await this.compensate(results, uploadedUrls, discardFn);
+      throw error;
     }
 
     return results;
   }
 
+  private async compensate(
+    saved: MediaItemEntity[],
+    uploadedUrls: string[],
+    discardFn?: (url: string) => Promise<void>,
+  ): Promise<void> {
+    if (saved.length) await this.mediaRepo.removeMany(saved);
+    if (!discardFn) return;
+    for (const url of uploadedUrls) {
+      await discardFn(url);
+    }
+  }
+
   async cleanAndReplaceMediaItems(
-    items: any[],
+    items: MediaItemInput[],
     targetId: string,
     targetType: string,
     filesDict: Record<string, Express.Multer.File>,
@@ -143,7 +190,7 @@ export class MediaItemProcessor {
 
       const fileRef = item.url || item.fileField;
       const exists = oldItems.some((old) => old.url === fileRef);
-      const hasFile = !!filesDict[item.fileField];
+      const hasFile = !!filesDict[item.fileField ?? ""];
 
       return exists || hasFile;
     });
@@ -181,7 +228,7 @@ export class MediaItemProcessor {
           media.originalName = previous.originalName;
           media.size = previous.size;
         } else {
-          const file = filesDict[item.fileField];
+          const file = filesDict[item.fileField ?? ""];
           if (!file) throw new Error(`File missing for "${item.title}"`);
 
           media.url = await uploadFn(file);
