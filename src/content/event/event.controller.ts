@@ -28,7 +28,6 @@ import { CreateEventService } from "./services/create-event.service";
 import { UpdateEventService } from "./services/update-event.service";
 import { DeleteEventService } from "./services/delete-event.service";
 import { GetEventService } from "./services/get-event.service";
-import { EventEntity } from "./entities/event.entity";
 import { EventResponseDto } from "./dto/event-response.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
 import { QueryEventDto } from "./dto/query-event.dto";
@@ -73,7 +72,7 @@ export class EventController {
   async create(
     @UploadedFile() file: Express.Multer.File,
     @Body("eventData") eventDataRaw: string,
-  ): Promise<EventEntity> {
+  ): Promise<EventResponseDto> {
     try {
       const parsed = parseEventData(eventDataRaw);
       const dto = plainToInstance(CreateEventDto, parsed);
@@ -85,7 +84,7 @@ export class EventController {
       this.logger.log("Creating new event");
       const result = await this.createService.create(dto, file);
       this.logger.log(`Event created successfully: ${result.id}`);
-      return result;
+      return EventResponseDto.fromEntity(result);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -128,7 +127,7 @@ export class EventController {
     @Param("id") id: string,
     @UploadedFile() file: Express.Multer.File,
     @Body("eventData") eventDataRaw: string,
-  ): Promise<EventEntity> {
+  ): Promise<EventResponseDto> {
     try {
       const parsed = parseEventData(eventDataRaw);
       const dto = plainToInstance(UpdateEventDto, parsed);
@@ -140,7 +139,7 @@ export class EventController {
       this.logger.log(`Updating event ID=${id}`);
       const result = await this.updateService.update(id, dto, file);
       this.logger.log(`Event updated successfully: ${result.id}`);
-      return result;
+      return EventResponseDto.fromEntity(result);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

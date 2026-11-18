@@ -9,7 +9,12 @@ export class EventResponseDto {
   location?: string;
   audience?: string;
 
-  static fromEntity(entity: EventEntity, media?: MediaItemEntity | null) {
+  media?: MediaItemEntity | null;
+
+  static fromEntity(
+    entity: EventEntity,
+    media?: MediaItemEntity | null,
+  ): EventResponseDto {
     return {
       id: entity.id,
       title: entity.title,
