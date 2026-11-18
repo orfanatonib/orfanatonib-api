@@ -16,6 +16,11 @@ import {
   Query,
 } from "@nestjs/common";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
+
+/** Documentos: 1 arquivo de até 25 MB (MIME validado ao migrar para MediaStorageService). */
+const DOCUMENT_UPLOAD_OPTIONS = {
+  limits: { fileSize: 25 * 1024 * 1024, files: 5 },
+} as const;
 import { plainToInstance } from "class-transformer";
 import { validateOrReject } from "class-validator";
 
@@ -44,7 +49,7 @@ export class DocumentsController {
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(DOCUMENT_UPLOAD_OPTIONS))
   async create(
     @UploadedFiles() files: Express.Multer.File[],
     @Body("documentData") documentDataRaw?: string,
@@ -76,11 +81,14 @@ export class DocumentsController {
     return result;
   }
 
+  /** Documentos são do material interno (área do membro): exigem sessão. */
+  @UseGuards(JwtAuthGuard)
   @Get()
   async findAll(@Query() query: QueryDocumentDto) {
     return this.getService.findAll(query);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(":id")
   async findOne(@Param("id", ParseUUIDPipe) id: string) {
     return this.getService.findOne(id);
@@ -88,7 +96,7 @@ export class DocumentsController {
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(DOCUMENT_UPLOAD_OPTIONS))
   async update(
     @Param("id", ParseUUIDPipe) id: string,
     @UploadedFiles() files: Express.Multer.File[],
