@@ -36,7 +36,8 @@ export class UpdateSiteFeedbackService {
       }
 
       feedback.read = true;
-      return this.siteFeedbackRepo.save(feedback);
+      // `await` dentro do try: sem ele a falha do banco escapa do catch e vaza como erro cru.
+      return await this.siteFeedbackRepo.save(feedback);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
