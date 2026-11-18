@@ -13,6 +13,7 @@ import { ProcessGenerationJobService } from "./services/process-generation-job.s
 import { ConfigService } from "@nestjs/config";
 import { AiGenerationGateway } from "./ai/ai-generation.gateway";
 import { FakeAiGenerationGateway } from "./ai/fake-ai-generation.gateway";
+import { GeminiGenerationGateway } from "./ai/gemini-generation.gateway";
 import { OpenAiGenerationGateway } from "./ai/openai-generation.gateway";
 import { ContentStudioDashboardRepository } from "./dashboard/content-studio-dashboard.repository";
 import { AiManagementController } from "./ai-management/ai-management.controller";
@@ -79,13 +80,15 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
     SubmitPackageReviewService,
     GetAiProvidersService,
     OpenAiGenerationGateway,
+    GeminiGenerationGateway,
     {
       // `AI_PROVIDER_MODE=fake` (fora de produção) troca o provedor por um simulado: E2E nunca chama LLM real.
       provide: AiGenerationGateway,
-      inject: [ConfigService, OpenAiGenerationGateway],
+      inject: [ConfigService, OpenAiGenerationGateway, GeminiGenerationGateway],
       useFactory: (
         config: ConfigService,
         openai: OpenAiGenerationGateway,
+        gemini: GeminiGenerationGateway,
       ): AiGenerationGateway =>
         config.get<string>("AI_PROVIDER_MODE") === "fake"
           ? new FakeAiGenerationGateway(
@@ -93,7 +96,10 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
               config.get<string>("ENVIRONMENT"),
               Number(config.get<string>("FAKE_AI_QUOTA_TOKENS") ?? 20000),
             )
-          : openai,
+          : config.get<string>("CONTENT_STUDIO_AI_PROVIDER")?.toLowerCase() ===
+              "gemini"
+            ? gemini
+            : openai,
     },
   ],
   exports: [GetContentStudioCatalogService, GetContentPackagesService],
