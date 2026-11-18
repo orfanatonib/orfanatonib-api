@@ -11,7 +11,7 @@ import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
 import { EventResponseDto } from "../dto/event-response.dto";
 import { EventRepository } from "../event.repository";
 import { AuthContextService } from "src/core/auth/services/auth-context.service";
-import { EventAudience } from "../entities/event.entity";
+import { allowedAudiencesFor } from "../utils/event-audience.util";
 import { QueryEventDto } from "../dto/query-event.dto";
 
 @Injectable()
@@ -35,21 +35,7 @@ export class GetEventService {
   ): Promise<EventResponseDto[]> {
     const ctx = await this.getCtx(req);
 
-    let allowed: string[] = [EventAudience.ALL];
-    if (ctx.role === "member")
-      allowed = [EventAudience.ALL, EventAudience.MEMBERS];
-    if (ctx.role === "leader")
-      allowed = [
-        EventAudience.ALL,
-        EventAudience.MEMBERS,
-        EventAudience.LEADERS,
-      ];
-    if (ctx.role === "admin")
-      allowed = [
-        EventAudience.ALL,
-        EventAudience.MEMBERS,
-        EventAudience.LEADERS,
-      ];
+    const allowed: string[] = allowedAudiencesFor(ctx.role);
 
     const events = await this.eventRepo.findAll(allowed, query);
 
@@ -78,21 +64,7 @@ export class GetEventService {
     }
 
     const ctx = await this.getCtx(req);
-    let allowed: string[] = [EventAudience.ALL];
-    if (ctx.role === "member")
-      allowed = [EventAudience.ALL, EventAudience.MEMBERS];
-    if (ctx.role === "leader")
-      allowed = [
-        EventAudience.ALL,
-        EventAudience.MEMBERS,
-        EventAudience.LEADERS,
-      ];
-    if (ctx.role === "admin")
-      allowed = [
-        EventAudience.ALL,
-        EventAudience.MEMBERS,
-        EventAudience.LEADERS,
-      ];
+    const allowed: string[] = allowedAudiencesFor(ctx.role);
 
     if (!allowed.includes(event.audience)) {
       this.logger.warn(`Event not accessible by role=${ctx.role}: ID=${id}`);
@@ -110,21 +82,7 @@ export class GetEventService {
   async getUpcomingOrTodayEvents(req: Request): Promise<EventResponseDto[]> {
     const ctx = await this.getCtx(req);
 
-    let allowed: string[] = [EventAudience.ALL];
-    if (ctx.role === "member")
-      allowed = [EventAudience.ALL, EventAudience.MEMBERS];
-    if (ctx.role === "leader")
-      allowed = [
-        EventAudience.ALL,
-        EventAudience.MEMBERS,
-        EventAudience.LEADERS,
-      ];
-    if (ctx.role === "admin")
-      allowed = [
-        EventAudience.ALL,
-        EventAudience.MEMBERS,
-        EventAudience.LEADERS,
-      ];
+    const allowed: string[] = allowedAudiencesFor(ctx.role);
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
