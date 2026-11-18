@@ -2,10 +2,65 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { TeamsRepository } from "../repositories/teams.repository";
 import { TeamResponseDto } from "../dto/team-response.dto";
 import { TeamEntity } from "../entities/team.entity";
+import type { ShelterAccessContext } from "src/shelter/shelter/types";
+import { UserRole } from "src/core/auth/auth.types";
+import {
+  assertCanAttemptTeamRead,
+  assertCanReadTeamsIn,
+} from "../utils/team-access.util";
 
 @Injectable()
 export class GetTeamsService {
   constructor(private readonly repository: TeamsRepository) {}
+
+  /** Abrigos que o ator pode ler: admin todos (`null`); líder os que lidera. */
+  private async readableShelterIds(
+    actor: ShelterAccessContext,
+  ): Promise<Set<string> | null> {
+    if (actor.role === UserRole.ADMIN) return null;
+    return actor.userId
+      ? this.findLedShelterIds(actor.userId)
+      : new Set<string>();
+  }
+
+  /** Entrada HTTP: admin lê todas; líder, só as equipes dos abrigos que lidera. */
+  async findAllAs(actor: ShelterAccessContext): Promise<TeamResponseDto[]> {
+    assertCanAttemptTeamRead(actor);
+    const [teams, readable] = await Promise.all([
+      this.findAll(),
+      this.readableShelterIds(actor),
+    ]);
+    return readable ? teams.filter((t) => readable.has(t.shelterId)) : teams;
+  }
+
+  /** Entrada HTTP: o abrigo precisa estar no escopo do ator. */
+  async findByShelterAs(
+    actor: ShelterAccessContext,
+    shelterId: string,
+  ): Promise<TeamResponseDto[]> {
+    assertCanAttemptTeamRead(actor);
+    assertCanReadTeamsIn(
+      actor,
+      shelterId,
+      (await this.readableShelterIds(actor)) ?? new Set<string>(),
+    );
+    return this.findByShelter(shelterId);
+  }
+
+  /** Entrada HTTP: 404 se não existe; 403 se o abrigo da equipe está fora do escopo. */
+  async findOneAs(
+    actor: ShelterAccessContext,
+    id: string,
+  ): Promise<TeamResponseDto> {
+    assertCanAttemptTeamRead(actor);
+    const team = await this.findOne(id);
+    assertCanReadTeamsIn(
+      actor,
+      team.shelterId,
+      (await this.readableShelterIds(actor)) ?? new Set<string>(),
+    );
+    return team;
+  }
 
   async findAll(): Promise<TeamResponseDto[]> {
     const teams = await this.repository.findAll();

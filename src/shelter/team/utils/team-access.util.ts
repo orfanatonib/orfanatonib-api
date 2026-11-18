@@ -26,3 +26,12 @@ export const assertCanAttemptTeamWrite = (
     throw new AccessDeniedException(TEAM_ACCESS_DENIED);
   }
 };
+
+/**
+ * Leitura de equipes (nomes, e-mails e telefones dos integrantes): mesma fronteira
+ * da escrita — admin em qualquer abrigo; líder só nos abrigos em que lidera.
+ */
+export const assertCanReadTeamsIn = assertCanManageTeamsIn;
+
+/** Falha cedo para quem nunca poderia ler a visão administrativa (membro e sem papel). */
+export const assertCanAttemptTeamRead = assertCanAttemptTeamWrite;

@@ -54,9 +54,10 @@ export class TeamsController {
   }
 
   @Get()
-  async findAll(): Promise<TeamResponseDto[]> {
-    this.logger.log("Fetching all teams");
-    return this.getTeamsService.findAll();
+  @UseGuards(AdminOrLeaderRoleGuard)
+  async findAll(@Req() req: AuthenticatedRequest): Promise<TeamResponseDto[]> {
+    this.logger.log("Fetching teams in the actor scope");
+    return this.getTeamsService.findAllAs(toShelterAccessContext(req));
   }
 
   @Get("my-teams")
@@ -74,19 +75,26 @@ export class TeamsController {
   }
 
   @Get("by-shelter/:shelterId")
+  @UseGuards(AdminOrLeaderRoleGuard)
   async findByShelter(
+    @Req() req: AuthenticatedRequest,
     @Param("shelterId", new ParseUUIDPipe()) shelterId: string,
   ): Promise<TeamResponseDto[]> {
     this.logger.log(`Fetching teams for shelter ${shelterId}`);
-    return this.getTeamsService.findByShelter(shelterId);
+    return this.getTeamsService.findByShelterAs(
+      toShelterAccessContext(req),
+      shelterId,
+    );
   }
 
   @Get(":id")
+  @UseGuards(AdminOrLeaderRoleGuard)
   async findOne(
+    @Req() req: AuthenticatedRequest,
     @Param("id", new ParseUUIDPipe()) id: string,
   ): Promise<TeamResponseDto> {
     this.logger.log(`Fetching team ${id}`);
-    return this.getTeamsService.findOne(id);
+    return this.getTeamsService.findOneAs(toShelterAccessContext(req), id);
   }
 
   @Put(":id")

@@ -7,7 +7,7 @@ import { TeamsController } from "./teams.controller";
 const guardsOf = (target: object): unknown[] =>
   (Reflect.getMetadata(GUARDS_METADATA, target) as unknown[] | undefined) ?? [];
 
-describe("TeamsController: guards de papel nas escritas", () => {
+describe("TeamsController: guards de papel (escritas e leituras administrativas)", () => {
   it("a classe exige sessão (JwtAuthGuard)", () => {
     expect(guardsOf(TeamsController)).toContain(JwtAuthGuard);
   });
@@ -21,8 +21,17 @@ describe("TeamsController: guards de papel nas escritas", () => {
     },
   );
 
-  it.each(["findAll", "findOne", "findByShelter", "findMyTeams"] as const)(
-    "%s segue só com sessão (leitura — escopo pendente, ver plano 14)",
+  it.each(["findAll", "findOne", "findByShelter"] as const)(
+    "%s exige admin ou líder (a leitura expõe nome, e-mail e telefone dos integrantes)",
+    (handler) => {
+      expect(guardsOf(TeamsController.prototype[handler])).toContain(
+        AdminOrLeaderRoleGuard,
+      );
+    },
+  );
+
+  it.each(["findMyTeams"] as const)(
+    "%s (my-teams) segue só com sessão: cada um lê as PRÓPRIAS equipes",
     (handler) => {
       expect(guardsOf(TeamsController.prototype[handler])).not.toContain(
         AdminOrLeaderRoleGuard,
