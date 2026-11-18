@@ -7,6 +7,21 @@ import { UserRole } from "../../../auth/auth.types";
 import { QueryProfilesDto } from "../../dto/query-profiles.dto";
 import { PaginatedProfilesResponseDto } from "../../dto/paginated-profiles-response.dto";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import {
+  likeParam,
+  resolveProfileSort,
+  type SqlParam,
+} from "../../utils/profile-query.util";
+import type { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
+
+/** Linha crua de `users` (+ joins) que esta listagem lê. */
+interface UserRow {
+  id: string;
+  email: string;
+  phone: string;
+  name: string;
+  role: UserRole;
+}
 
 @Injectable()
 export class GetAllProfilesService {
@@ -23,7 +38,7 @@ export class GetAllProfilesService {
     requestingUserRole: UserRole,
     queryDto: QueryProfilesDto,
   ): Promise<PaginatedProfilesResponseDto> {
-    const { page = 1, limit = 10, sortBy = "name", order = "ASC" } = queryDto;
+    const { page = 1, limit = 10 } = queryDto;
 
     const offset = (page - 1) * limit;
 
@@ -41,7 +56,7 @@ export class GetAllProfilesService {
         userIds,
         "UserEntity",
       );
-    const mediaMap = new Map();
+    const mediaMap = new Map<string, MediaItemEntity>();
     mediaItems.forEach((item) => {
       mediaMap.set(item.targetId, item);
     });
@@ -121,7 +136,7 @@ export class GetAllProfilesService {
     queryDto: QueryProfilesDto,
     limit: number,
     offset: number,
-  ): Promise<{ users: any[]; total: number }> {
+  ): Promise<{ users: UserRow[]; total: number }> {
     const {
       q,
       name,
@@ -136,8 +151,8 @@ export class GetAllProfilesService {
 
     let baseQuery = "";
     let countQuery = "";
-    const params: any[] = [];
-    const countParams: any[] = [];
+    const params: SqlParam[] = [];
+    const countParams: SqlParam[] = [];
 
     if (requestingUserRole === UserRole.ADMIN) {
       baseQuery = `
@@ -187,22 +202,22 @@ export class GetAllProfilesService {
     if (q) {
       baseQuery += ` AND (u.name LIKE ? OR u.email LIKE ?)`;
       countQuery += ` AND (u.name LIKE ? OR u.email LIKE ?)`;
-      params.push(`%${q}%`, `%${q}%`);
-      countParams.push(`%${q}%`, `%${q}%`);
+      params.push(likeParam(q), likeParam(q));
+      countParams.push(likeParam(q), likeParam(q));
     }
 
     if (name) {
       baseQuery += ` AND u.name LIKE ?`;
       countQuery += ` AND u.name LIKE ?`;
-      params.push(`%${name}%`);
-      countParams.push(`%${name}%`);
+      params.push(likeParam(name));
+      countParams.push(likeParam(name));
     }
 
     if (email) {
       baseQuery += ` AND u.email LIKE ?`;
       countQuery += ` AND u.email LIKE ?`;
-      params.push(`%${email}%`);
-      countParams.push(`%${email}%`);
+      params.push(likeParam(email));
+      countParams.push(likeParam(email));
     }
 
     if (role) {
@@ -215,33 +230,37 @@ export class GetAllProfilesService {
     if (loveLanguages) {
       baseQuery += ` AND up.loveLanguages LIKE ?`;
       countQuery += ` AND up.loveLanguages LIKE ?`;
-      params.push(`%${loveLanguages}%`);
-      countParams.push(`%${loveLanguages}%`);
+      params.push(likeParam(loveLanguages));
+      countParams.push(likeParam(loveLanguages));
     }
 
     if (temperaments) {
       baseQuery += ` AND up.temperaments LIKE ?`;
       countQuery += ` AND up.temperaments LIKE ?`;
-      params.push(`%${temperaments}%`);
-      countParams.push(`%${temperaments}%`);
+      params.push(likeParam(temperaments));
+      countParams.push(likeParam(temperaments));
     }
 
     if (favoriteColor) {
       baseQuery += ` AND up.favoriteColor LIKE ?`;
       countQuery += ` AND up.favoriteColor LIKE ?`;
-      params.push(`%${favoriteColor}%`);
-      countParams.push(`%${favoriteColor}%`);
+      params.push(likeParam(favoriteColor));
+      countParams.push(likeParam(favoriteColor));
     }
 
-    const sortColumn = sortBy === "birthDate" ? "pd.birthDate" : `u.${sortBy}`;
-    baseQuery += ` ORDER BY ${sortColumn} ${order}`;
+    // Coluna e direção vêm de listas fixas (nunca do texto recebido).
+    const { column, direction } = resolveProfileSort(sortBy, order);
+    baseQuery += ` ORDER BY ${column} ${direction}`;
 
     baseQuery += ` LIMIT ? OFFSET ?`;
     params.push(limit, offset);
 
-    const users = await this.dataSource.query(baseQuery, params);
-    const countResult = await this.dataSource.query(countQuery, countParams);
-    const total = parseInt(countResult[0]?.total || "0", 10);
+    const users = await this.dataSource.query<UserRow[]>(baseQuery, params);
+    const countResult = await this.dataSource.query<Array<{ total?: string }>>(
+      countQuery,
+      countParams,
+    );
+    const total = parseInt(countResult[0]?.total ?? "0", 10);
 
     return { users, total };
   }
