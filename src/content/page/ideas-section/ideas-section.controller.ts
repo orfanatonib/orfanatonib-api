@@ -110,13 +110,18 @@ export class IdeasSectionController {
     return { message: "Seção de ideias removida com sucesso." };
   }
 
-  /** As ideias ainda não publicadas em nenhuma página. */
+  /**
+   * As ideias ainda não publicadas em nenhuma página — fila de moderação do admin.
+   * A resposta traz nome, e-mail e telefone do autor: nunca para outros membros.
+   */
   @Get()
+  @UseGuards(AdminRoleGuard)
   async findUnattached(): Promise<IdeasSectionResponseDto[]> {
     return this.getService.findUnattached();
   }
 
   @Get(":id")
+  @UseGuards(AdminRoleGuard)
   async findOne(
     @Param("id", new ParseUUIDPipe()) id: string,
   ): Promise<IdeasSectionResponseDto> {
