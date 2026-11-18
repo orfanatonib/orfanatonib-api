@@ -2,11 +2,16 @@ import { Injectable } from "@nestjs/common";
 import { PagelasRepository } from "../pagelas.repository";
 import { UpdatePagelaDto } from "../dto/update-pagela.dto";
 import { PagelaResponseDto } from "../dto/pagela-response.dto";
+import type { ShelterAccessContext } from "src/shelter/shelter/types";
+import { PagelaAccessService } from "./pagela-access.service";
 import { MemberProfileEntity } from "src/shelter/member-profile/entities/member-profile.entity/member-profile.entity";
 
 @Injectable()
 export class UpdatePagelaService {
-  constructor(private readonly repo: PagelasRepository) {}
+  constructor(
+    private readonly repo: PagelasRepository,
+    private readonly access: PagelaAccessService,
+  ) {}
 
   async execute(id: string, dto: UpdatePagelaDto): Promise<PagelaResponseDto> {
     const memberUpdate = dto.memberProfileId
@@ -23,5 +28,14 @@ export class UpdatePagelaService {
     });
 
     return PagelaResponseDto.fromEntity(updated);
+  }
+
+  async executeAs(
+    actor: ShelterAccessContext,
+    id: string,
+    dto: UpdatePagelaDto,
+  ): Promise<PagelaResponseDto> {
+    await this.access.assertCanAccessPagela(id, actor);
+    return this.execute(id, dto);
   }
 }

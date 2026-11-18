@@ -8,6 +8,8 @@ import { GetPagelasService } from "./services/get-pagelas.service";
 import { CreatePagelaService } from "./services/create-pagela.service";
 import { UpdatePagelaService } from "./services/update-pagela.service";
 import { DeletePagelaService } from "./services/delete-pagela.service";
+import { PagelaAccessService } from "./services/pagela-access.service";
+import { SheltersModule } from "src/shelter/shelter/shelters.module";
 import { PagelasController } from "./pagelas.controller";
 
 @Module({
@@ -17,10 +19,12 @@ import { PagelasController } from "./pagelas.controller";
       ShelteredEntity,
       MemberProfileEntity,
     ]),
+    SheltersModule,
   ],
   controllers: [PagelasController],
   providers: [
     PagelasRepository,
+    PagelaAccessService,
     GetPagelasService,
     CreatePagelaService,
     UpdatePagelaService,

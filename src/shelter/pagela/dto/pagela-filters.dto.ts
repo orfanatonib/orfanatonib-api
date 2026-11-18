@@ -10,24 +10,32 @@ import {
 import { Transform, Type } from "class-transformer";
 
 const BooleanQuery = () => {
-  return Transform(({ value, key, obj }) => {
-    const originalValue = obj[key];
+  return Transform(
+    ({ key, obj }: { key: string; obj: Record<string, unknown> }) => {
+      const originalValue = obj[key];
 
-    if (
-      originalValue === undefined ||
-      originalValue === null ||
-      originalValue === ""
-    )
+      if (
+        originalValue === undefined ||
+        originalValue === null ||
+        originalValue === ""
+      )
+        return undefined;
+
+      if (typeof originalValue === "boolean") return originalValue;
+
+      if (
+        typeof originalValue !== "string" &&
+        typeof originalValue !== "number"
+      )
+        return undefined;
+
+      const s = String(originalValue).trim().toLowerCase();
+      if (["true", "1", "yes", "y"].includes(s)) return true;
+      if (["false", "0", "no", "n"].includes(s)) return false;
+
       return undefined;
-
-    if (typeof originalValue === "boolean") return originalValue;
-
-    const s = String(originalValue).trim().toLowerCase();
-    if (["true", "1", "yes", "y"].includes(s)) return true;
-    if (["false", "0", "no", "n"].includes(s)) return false;
-
-    return undefined;
-  });
+    },
+  );
 };
 
 export class PagelaFiltersDto {
