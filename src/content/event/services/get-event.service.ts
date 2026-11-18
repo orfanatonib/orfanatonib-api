@@ -29,7 +29,10 @@ export class GetEventService {
     return { role: p?.role?.toLowerCase() };
   }
 
-  async findAll(req: Request, query?: QueryEventDto): Promise<EventResponseDto[]> {
+  async findAll(
+    req: Request,
+    query?: QueryEventDto,
+  ): Promise<EventResponseDto[]> {
     const ctx = await this.getCtx(req);
 
     let allowed: string[] = [EventAudience.ALL];

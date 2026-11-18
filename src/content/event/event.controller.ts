@@ -19,7 +19,7 @@ import {
 import { Request } from "express";
 import { FileInterceptor } from "@nestjs/platform-express";
 import { plainToInstance } from "class-transformer";
-import { validateOrReject } from "class-validator";
+import { validateOrReject, ValidationError } from "class-validator";
 import { CreateEventDto } from "./dto/create-event.dto";
 
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
@@ -32,6 +32,29 @@ import { EventEntity } from "./entities/event.entity";
 import { EventResponseDto } from "./dto/event-response.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
 import { QueryEventDto } from "./dto/query-event.dto";
+
+/** Imagem do evento: um arquivo de até 10 MB (MIME validado no MediaStorageService). */
+export const EVENT_UPLOAD_OPTIONS = {
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+} as const;
+
+const parseEventData = (raw: string): unknown => {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new BadRequestException("eventData deve ser um JSON válido.");
+  }
+};
+
+/** Mensagem de falha de validação/parse sem vazar stack. */
+const validationMessage = (error: unknown, fallback: string): string => {
+  if (Array.isArray(error)) {
+    return (error as ValidationError[])
+      .flatMap((e) => Object.values(e.constraints ?? {}))
+      .join("; ");
+  }
+  return error instanceof Error && error.message ? error.message : fallback;
+};
 
 @Controller("events")
 export class EventController {
@@ -46,13 +69,13 @@ export class EventController {
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", EVENT_UPLOAD_OPTIONS))
   async create(
     @UploadedFile() file: Express.Multer.File,
     @Body("eventData") eventDataRaw: string,
   ): Promise<EventEntity> {
     try {
-      const parsed = JSON.parse(eventDataRaw);
+      const parsed = parseEventData(eventDataRaw);
       const dto = plainToInstance(CreateEventDto, parsed);
       await validateOrReject(dto, {
         whitelist: true,
@@ -67,14 +90,13 @@ export class EventController {
       if (error instanceof HttpException) {
         throw error;
       }
-      this.logger.error("Error creating event", error.stack);
-      const message = Array.isArray(error)
-        ? error
-            .map((e) => Object.values(e.constraints || {}))
-            .flat()
-            .join("; ")
-        : error?.message || "Erro ao criar evento.";
-      throw new BadRequestException(message);
+      this.logger.error(
+        "Error creating event",
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new BadRequestException(
+        validationMessage(error, "Erro ao criar evento."),
+      );
     }
   }
 
@@ -101,14 +123,14 @@ export class EventController {
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
-  @UseInterceptors(FileInterceptor("file"))
+  @UseInterceptors(FileInterceptor("file", EVENT_UPLOAD_OPTIONS))
   async update(
     @Param("id") id: string,
     @UploadedFile() file: Express.Multer.File,
     @Body("eventData") eventDataRaw: string,
   ): Promise<EventEntity> {
     try {
-      const parsed = JSON.parse(eventDataRaw);
+      const parsed = parseEventData(eventDataRaw);
       const dto = plainToInstance(UpdateEventDto, parsed);
       await validateOrReject(dto, {
         whitelist: true,
@@ -123,14 +145,13 @@ export class EventController {
       if (error instanceof HttpException) {
         throw error;
       }
-      this.logger.error(`Error updating event ID=${id}`, error.stack);
-      const message = Array.isArray(error)
-        ? error
-            .map((e) => Object.values(e.constraints || {}))
-            .flat()
-            .join("; ")
-        : error?.message || "Erro ao atualizar evento.";
-      throw new BadRequestException(message);
+      this.logger.error(
+        `Error updating event ID=${id}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new BadRequestException(
+        validationMessage(error, "Erro ao atualizar evento."),
+      );
     }
   }
 

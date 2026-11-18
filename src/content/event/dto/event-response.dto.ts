@@ -1,3 +1,6 @@
+import type { EventEntity } from "../entities/event.entity";
+import type { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
+
 export class EventResponseDto {
   id!: string;
   title!: string;
@@ -6,7 +9,7 @@ export class EventResponseDto {
   location?: string;
   audience?: string;
 
-  static fromEntity(entity: any, media?: any) {
+  static fromEntity(entity: EventEntity, media?: MediaItemEntity | null) {
     return {
       id: entity.id,
       title: entity.title,

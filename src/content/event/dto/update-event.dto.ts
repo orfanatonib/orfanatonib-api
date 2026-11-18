@@ -1,3 +1,4 @@
+import type { EventMediaInput } from "./event-media-input";
 import { EventAudience } from "../entities/event.entity";
 import { IsEnum, IsOptional } from "class-validator";
 
@@ -22,5 +23,5 @@ export class UpdateEventDto {
   audience?: EventAudience;
 
   @IsOptional()
-  media?: Record<string, any>;
+  media?: EventMediaInput;
 }

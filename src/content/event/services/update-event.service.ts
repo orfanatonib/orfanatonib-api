@@ -6,13 +6,17 @@ import {
 } from "@nestjs/common";
 import { EventRepository } from "../event.repository";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import {
+  MediaItemEntity,
   MediaType,
   UploadType,
 } from "src/shared/media/media-item/media-item.entity";
 import { EventEntity } from "../entities/event.entity";
+import { UpdateEventDto } from "../dto/update-event.dto";
+import type { EventMediaInput } from "../dto/event-media-input";
 import { EventNotificationHelper } from "./event-notification.helper";
+import { EVENT_MEDIA_TARGET } from "./create-event.service";
 
 @Injectable()
 export class UpdateEventService {
@@ -21,13 +25,13 @@ export class UpdateEventService {
   constructor(
     private readonly eventRepo: EventRepository,
     private readonly mediaItemProcessor: MediaItemProcessor,
-    private readonly s3Service: AwsS3Service,
+    private readonly mediaStorage: MediaStorageService,
     private readonly eventNotificationHelper: EventNotificationHelper,
   ) {}
 
   async update(
     id: string,
-    dto: any,
+    dto: UpdateEventDto,
     file?: Express.Multer.File,
   ): Promise<EventEntity> {
     const originalEvent = await this.eventRepo.findById(id);
@@ -35,7 +39,7 @@ export class UpdateEventService {
 
     const originalEventSnapshot = { ...originalEvent } as EventEntity;
 
-    const { media, isLocalFile, ...eventData } = dto;
+    const { media, ...eventData } = dto;
 
     await this.eventRepo.update(id, eventData);
 
@@ -48,124 +52,94 @@ export class UpdateEventService {
 
     this.eventNotificationHelper
       .notifyEventUpdated(originalEventSnapshot, updated)
-      .catch((error) => {
+      .catch((error: unknown) => {
         this.logger.error(
-          `Failed to send event update notification: ${error.message}`,
+          `Failed to send event update notification: ${error instanceof Error ? error.message : String(error)}`,
         );
       });
 
     return updated;
   }
 
+  /**
+   * Ordem segura: envia o novo → grava a linha → só então apaga o arquivo
+   * antigo. Falha antes disso descarta o novo e mantém o antigo referenciado.
+   */
   private async updateEventMedia(
     eventId: string,
-    mediaInput: any,
+    mediaInput: EventMediaInput | undefined,
     file?: Express.Multer.File,
   ): Promise<void> {
+    const batch = this.mediaStorage.newBatch();
     try {
-      const existingMedia = await this.mediaItemProcessor.findMediaItemByTarget(
+      const existing = await this.mediaItemProcessor.findMediaItemByTarget(
         eventId,
-        "Event",
+        EVENT_MEDIA_TARGET,
       );
 
+      let media: MediaItemEntity | null = null;
       if (file) {
-        if (existingMedia) {
-          if (existingMedia.isLocalFile && existingMedia.url) {
-            try {
-              await this.s3Service.delete(existingMedia.url);
-            } catch (error) {
-              this.logger.warn(
-                `Could not delete old file: ${existingMedia.url}`,
-              );
-            }
-          }
+        await this.mediaStorage.uploadAll(
+          [
+            {
+              file,
+              mediaType: MediaType.IMAGE,
+              entity: EVENT_MEDIA_TARGET,
+              ownerId: eventId,
+            },
+          ],
+          batch,
+        );
+        const [uploaded] = batch.objects;
+        media = this.mediaItemProcessor.buildBaseMediaItem(
+          {
+            title: mediaInput?.title || "Event image",
+            description: mediaInput?.description || "",
+            mediaType: MediaType.IMAGE,
+            uploadType: UploadType.UPLOAD,
+            url: uploaded.url,
+            isLocalFile: true,
+            originalName: file.originalname,
+            size: file.size,
+          },
+          eventId,
+          EVENT_MEDIA_TARGET,
+        );
+        media.storageKey = uploaded.key;
+      } else if (mediaInput?.url && !mediaInput.isLocalFile) {
+        media = this.mediaItemProcessor.buildBaseMediaItem(
+          {
+            title: mediaInput.title || "Event image",
+            description: mediaInput.description || "",
+            mediaType: MediaType.IMAGE,
+            uploadType: UploadType.LINK,
+            url: mediaInput.url,
+            isLocalFile: false,
+          },
+          eventId,
+          EVENT_MEDIA_TARGET,
+        );
+      }
 
-          const fileUrl = await this.s3Service.upload(file);
-          const media = this.mediaItemProcessor.buildBaseMediaItem(
-            {
-              title: mediaInput?.title || "Event image",
-              description: mediaInput?.description || "",
-              mediaType: MediaType.IMAGE,
-              uploadType: UploadType.UPLOAD,
-              url: fileUrl,
-              isLocalFile: true,
-              originalName: file.originalname,
-              size: file.size,
-            },
-            eventId,
-            "Event",
-          );
-          await this.mediaItemProcessor.upsertMediaItem(
-            existingMedia.id,
-            media,
-          );
-        } else {
-          const fileUrl = await this.s3Service.upload(file);
-          const media = this.mediaItemProcessor.buildBaseMediaItem(
-            {
-              title: mediaInput?.title || "Event image",
-              description: mediaInput?.description || "",
-              mediaType: MediaType.IMAGE,
-              uploadType: UploadType.UPLOAD,
-              url: fileUrl,
-              isLocalFile: true,
-              originalName: file.originalname,
-              size: file.size,
-            },
-            eventId,
-            "Event",
-          );
-          await this.mediaItemProcessor.saveMediaItem(media);
-        }
-      } else if (mediaInput && mediaInput.url && !mediaInput.isLocalFile) {
-        if (existingMedia) {
-          if (existingMedia.isLocalFile && existingMedia.url) {
-            try {
-              await this.s3Service.delete(existingMedia.url);
-              this.logger.log(
-                `Deleted old file when switching to link: ${existingMedia.url}`,
-              );
-            } catch (error) {
-              this.logger.warn(
-                `Could not delete old file when switching to link: ${existingMedia.url}`,
-              );
-            }
-          }
+      if (!media) return;
 
-          const media = this.mediaItemProcessor.buildBaseMediaItem(
-            {
-              title: mediaInput.title || "Event image",
-              description: mediaInput.description || "",
-              mediaType: MediaType.IMAGE,
-              uploadType: UploadType.LINK,
-              url: mediaInput.url,
-              isLocalFile: false,
-            },
-            eventId,
-            "Event",
-          );
-          await this.mediaItemProcessor.upsertMediaItem(
-            existingMedia.id,
-            media,
-          );
-        } else {
-          const media = this.mediaItemProcessor.buildBaseMediaItem(
-            {
-              title: mediaInput.title || "Event image",
-              description: mediaInput.description || "",
-              mediaType: MediaType.IMAGE,
-              uploadType: UploadType.LINK,
-              url: mediaInput.url,
-              isLocalFile: false,
-            },
-            eventId,
-            "Event",
-          );
-          await this.mediaItemProcessor.saveMediaItem(media);
-        }
+      if (existing) {
+        await this.mediaItemProcessor.upsertMediaItem(existing.id, media);
+      } else {
+        await this.mediaItemProcessor.saveMediaItem(media);
+      }
+      batch.commit();
+
+      if (existing?.isLocalFile && existing.url) {
+        await this.mediaStorage.deleteAfterCommit([existing.url]);
       }
     } catch (error) {
-      this.logger.error(`Error updating event media`, error.stack);
+      await batch.discard();
+      this.logger.error(
+        "Error updating event media",
+        error instanceof Error ? error.stack : undefined,
+      );
+      if (error instanceof Error && "getStatus" in error) throw error;
       throw new InternalServerErrorException("Error updating event media");
     }
   }

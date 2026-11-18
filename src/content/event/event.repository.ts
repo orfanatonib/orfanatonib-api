@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { DeepPartial, Repository } from "typeorm";
+import type { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import { EventEntity } from "./entities/event.entity";
 import { QueryEventDto } from "./dto/query-event.dto";
 
@@ -11,7 +12,10 @@ export class EventRepository {
     private readonly repo: Repository<EventEntity>,
   ) {}
 
-  async findAll(audiences?: string[], query?: QueryEventDto): Promise<EventEntity[]> {
+  async findAll(
+    audiences?: string[],
+    query?: QueryEventDto,
+  ): Promise<EventEntity[]> {
     const qb = this.repo.createQueryBuilder("event");
 
     if (audiences && audiences.length > 0) {
@@ -47,13 +51,15 @@ export class EventRepository {
     return this.repo.find({ where: { shelterSchedule: { id: scheduleId } } });
   }
 
-  async create(dto: any): Promise<EventEntity> {
+  async create(dto: DeepPartial<EventEntity>): Promise<EventEntity> {
     const entity = this.repo.create(dto);
-    const saved = await this.repo.save(entity);
-    return saved as unknown as EventEntity;
+    return this.repo.save(entity);
   }
 
-  async update(id: string, dto: any): Promise<void> {
+  async update(
+    id: string,
+    dto: QueryDeepPartialEntity<EventEntity>,
+  ): Promise<void> {
     await this.repo.update(id, dto);
   }
 
