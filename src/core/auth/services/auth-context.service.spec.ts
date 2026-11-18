@@ -69,7 +69,6 @@ describe("AuthContextService", () => {
     await expect(service.verifyToken("abc")).rejects.toThrow(
       new UnauthenticatedException(AuthErrorMessages.JWT_SECRET_MISSING),
     );
-
   });
 
   it("decodes without verifying, normalizing the role", () => {
