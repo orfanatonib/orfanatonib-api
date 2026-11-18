@@ -1,7 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { RuleException } from "src/common/exceptions";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import {
   MediaItemEntity,
   MediaType,
@@ -23,13 +23,13 @@ import { ShelterMediaInput } from "../utils/shelter-payload.util";
  * quem está nas equipes. Antes essa lógica estava duplicada entre os serviços
  * de leitura e de atualização, com comportamentos que já divergiam.
  */
+const SHELTER_STORAGE_ENTITY = "Shelter";
+
 @Injectable()
 export class ShelterMediaService {
-  private readonly logger = new Logger(ShelterMediaService.name);
-
   constructor(
     private readonly mediaItemProcessor: MediaItemProcessor,
-    private readonly s3: AwsS3Service,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   /** Dentre várias mídias do mesmo alvo, a mais recente vence. */
@@ -115,8 +115,9 @@ export class ShelterMediaService {
 
   /**
    * Grava a foto principal do abrigo — criando ou substituindo — e devolve a
-   * URL resultante. Um arquivo que substitui outro upload apaga o anterior do
-   * bucket; falhar nessa limpeza não aborta a operação que o usuário pediu.
+   * URL resultante. Ordem segura para o bucket: envia o novo → grava no banco
+   * → só então apaga o antigo. Se algo falha antes do commit, o novo é
+   * descartado e o antigo segue referenciado (sem órfão nem referência quebrada).
    */
   async upsertMainPhoto(
     shelterId: string,
@@ -136,38 +137,61 @@ export class ShelterMediaService {
       SHELTER_MEDIA_TARGET,
     );
 
-    if (input.uploadType === UploadType.UPLOAD && input.isLocalFile) {
-      const file = files[input.fieldKey ?? ""];
-      if (!file) {
-        throw new RuleException(
-          SHELTER_MESSAGES.MEDIA_FILE_MISSING(
-            input.fieldKey,
-            Object.keys(files),
-          ),
+    const batch = this.mediaStorage.newBatch();
+    let saved: MediaItemEntity;
+    try {
+      if (input.uploadType === UploadType.UPLOAD && input.isLocalFile) {
+        const file = files[input.fieldKey ?? ""];
+        if (!file) {
+          throw new RuleException(
+            SHELTER_MESSAGES.MEDIA_FILE_MISSING(
+              input.fieldKey,
+              Object.keys(files),
+            ),
+          );
+        }
+
+        await this.mediaStorage.uploadAll(
+          [
+            {
+              file,
+              mediaType: MediaType.IMAGE,
+              entity: SHELTER_STORAGE_ENTITY,
+              ownerId: shelterId,
+            },
+          ],
+          batch,
         );
+        const [uploaded] = batch.objects;
+        media.url = uploaded.url;
+        media.storageKey = uploaded.key;
+        media.isLocalFile = true;
+        media.originalName = file.originalname;
+        media.size = file.size;
+      } else if (input.url) {
+        media.url = input.url;
+        media.isLocalFile = false;
+      } else {
+        throw new RuleException(SHELTER_MESSAGES.MEDIA_SOURCE_REQUIRED);
       }
 
-      await this.discardStoredFile(existing);
-      media.url = await this.s3.upload(file);
-      media.isLocalFile = true;
-      media.originalName = file.originalname;
-      media.size = file.size;
-    } else if (input.url) {
-      await this.discardStoredFile(existing);
-      media.url = input.url;
-      media.isLocalFile = false;
-    } else {
-      throw new RuleException(SHELTER_MESSAGES.MEDIA_SOURCE_REQUIRED);
+      saved = existing
+        ? await this.mediaItemProcessor.upsertMediaItem(existing.id, media)
+        : await this.mediaItemProcessor.saveMediaItem(media);
+    } catch (error) {
+      await batch.discard();
+      throw error;
     }
+    batch.commit();
 
-    const saved = existing
-      ? await this.mediaItemProcessor.upsertMediaItem(existing.id, media)
-      : await this.mediaItemProcessor.saveMediaItem(media);
+    if (existing?.isLocalFile && existing.url) {
+      await this.mediaStorage.deleteAfterCommit([existing.url]);
+    }
 
     return saved.url;
   }
 
-  /** Remove do bucket e do banco toda a mídia do abrigo. */
+  /** Remove do banco a mídia do abrigo e, depois, os objetos do bucket (falha vai para a fila de limpeza). */
   async removeAllForShelter(shelterId: string): Promise<number> {
     const items = await this.mediaItemProcessor.findMediaItemsByTarget(
       shelterId,
@@ -175,21 +199,9 @@ export class ShelterMediaService {
     );
     if (items.length === 0) return 0;
 
-    await this.mediaItemProcessor.deleteMediaItems(items, (url) =>
-      this.s3.delete(url),
-    );
+    const urls =
+      await this.mediaItemProcessor.removeMediaItemsKeepingFiles(items);
+    await this.mediaStorage.deleteAfterCommit(urls);
     return items.length;
-  }
-
-  private async discardStoredFile(
-    existing: MediaItemEntity | null,
-  ): Promise<void> {
-    if (!existing?.isLocalFile || !existing.url) return;
-
-    try {
-      await this.s3.delete(existing.url);
-    } catch {
-      this.logger.warn("Não foi possível apagar o arquivo anterior do bucket");
-    }
   }
 }

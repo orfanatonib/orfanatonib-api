@@ -111,6 +111,19 @@ export class MediaItemProcessor {
     await this.mediaRepo.removeMany(items);
   }
 
+  /**
+   * Remove só as linhas e devolve as URLs dos arquivos locais, para o chamador
+   * apagá-las do bucket DEPOIS (MediaStorageService.deleteAfterCommit): se o
+   * banco falhar, nenhum objeto foi apagado (sem referência quebrada).
+   */
+  async removeMediaItemsKeepingFiles(
+    items: MediaItemEntity[],
+  ): Promise<string[]> {
+    if (items.length === 0) return [];
+    await this.mediaRepo.removeMany(items);
+    return items.filter((i) => i.isLocalFile && i.url).map((i) => i.url);
+  }
+
   async removeMediaItem(
     item: MediaItemEntity,
     deleteFn?: (url: string) => Promise<void>,

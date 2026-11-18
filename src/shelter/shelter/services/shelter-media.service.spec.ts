@@ -1,6 +1,6 @@
 import { Test } from "@nestjs/testing";
 import { RuleException } from "src/common/exceptions";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import {
   MediaItemEntity,
@@ -32,9 +32,18 @@ describe("ShelterMediaService", () => {
     buildBaseMediaItem: jest.fn(),
     saveMediaItem: jest.fn(),
     upsertMediaItem: jest.fn(),
-    deleteMediaItems: jest.fn(),
+    removeMediaItemsKeepingFiles: jest.fn(),
   };
-  const s3 = { upload: jest.fn(), delete: jest.fn() };
+  const batch = {
+    objects: [] as Array<{ key: string; url: string }>,
+    discard: jest.fn(),
+    commit: jest.fn(),
+  };
+  const mediaStorage = {
+    newBatch: jest.fn(() => batch),
+    uploadAll: jest.fn(),
+    deleteAfterCommit: jest.fn(),
+  };
 
   let service: ShelterMediaService;
 
@@ -45,7 +54,7 @@ describe("ShelterMediaService", () => {
       providers: [
         ShelterMediaService,
         { provide: MediaItemProcessor, useValue: mediaItemProcessor },
-        { provide: AwsS3Service, useValue: s3 },
+        { provide: MediaStorageService, useValue: mediaStorage },
       ],
     }).compile();
     moduleRef.useLogger(false);
@@ -65,8 +74,20 @@ describe("ShelterMediaService", () => {
     mediaItemProcessor.upsertMediaItem.mockImplementation(
       (_id: string, media: MediaItemEntity) => Promise.resolve(media),
     );
-    s3.upload.mockResolvedValue("https://bucket/novo.png");
-    s3.delete.mockResolvedValue(undefined);
+    batch.objects = [];
+    batch.discard.mockResolvedValue(undefined);
+    mediaStorage.deleteAfterCommit.mockResolvedValue(undefined);
+    mediaItemProcessor.removeMediaItemsKeepingFiles.mockImplementation(
+      (items: MediaItemEntity[]) =>
+        Promise.resolve(items.filter((i) => i.isLocalFile).map((i) => i.url)),
+    );
+    mediaStorage.uploadAll.mockImplementation(() => {
+      batch.objects.push({
+        key: "local/Shelter/shelter-id/novo.png",
+        url: "https://bucket/novo.png",
+      });
+      return Promise.resolve(batch);
+    });
   });
 
   describe("attachShelterPhotos", () => {
@@ -208,23 +229,27 @@ describe("ShelterMediaService", () => {
 
   describe("upsertMainPhoto", () => {
     const file = buildUploadedFile({ fieldname: "cover" });
+    const upload = {
+      uploadType: UploadType.UPLOAD,
+      isLocalFile: true,
+      fieldKey: "cover",
+    };
 
     it("uploads the file, records its metadata and creates the media", async () => {
       const url = await service.upsertMainPhoto(
         "shelter-id",
-        {
-          title: "Foto",
-          uploadType: UploadType.UPLOAD,
-          isLocalFile: true,
-          fieldKey: "cover",
-        },
+        { title: "Foto", ...upload },
         { cover: file },
       );
 
-      expect(s3.upload).toHaveBeenCalledWith(file);
+      expect(mediaStorage.uploadAll).toHaveBeenCalledWith(
+        [expect.objectContaining({ file, ownerId: "shelter-id" })],
+        batch,
+      );
       expect(mediaItemProcessor.saveMediaItem).toHaveBeenCalledWith(
         expect.objectContaining({
           url: "https://bucket/novo.png",
+          storageKey: "local/Shelter/shelter-id/novo.png",
           isLocalFile: true,
           originalName: "abrigo.png",
           size: 2048,
@@ -232,6 +257,7 @@ describe("ShelterMediaService", () => {
           targetType: SHELTER_MEDIA_TARGET,
         }),
       );
+      expect(batch.commit).toHaveBeenCalledTimes(1);
       expect(url).toBe("https://bucket/novo.png");
     });
 
@@ -273,27 +299,58 @@ describe("ShelterMediaService", () => {
       );
     });
 
-    it("replaces the existing photo and drops the old file from the bucket", async () => {
+    it("replaces the photo: saves the new one FIRST, then drops the old file", async () => {
       mediaItemProcessor.findMediaItemByTarget.mockResolvedValue(
         buildMediaItem({ id: "media-old", url: "https://bucket/antigo.png" }),
       );
-
-      await service.upsertMainPhoto(
-        "shelter-id",
-        {
-          uploadType: UploadType.UPLOAD,
-          isLocalFile: true,
-          fieldKey: "cover",
+      const order: string[] = [];
+      mediaItemProcessor.upsertMediaItem.mockImplementation(
+        (_id: string, media: MediaItemEntity) => {
+          order.push("save");
+          return Promise.resolve(media);
         },
-        { cover: file },
       );
+      mediaStorage.deleteAfterCommit.mockImplementation(() => {
+        order.push("delete-old");
+        return Promise.resolve();
+      });
 
-      expect(s3.delete).toHaveBeenCalledWith("https://bucket/antigo.png");
-      expect(mediaItemProcessor.upsertMediaItem).toHaveBeenCalledWith(
-        "media-old",
-        expect.any(MediaItemEntity),
-      );
+      await service.upsertMainPhoto("shelter-id", upload, { cover: file });
+
+      expect(order).toEqual(["save", "delete-old"]);
+      expect(mediaStorage.deleteAfterCommit).toHaveBeenCalledWith([
+        "https://bucket/antigo.png",
+      ]);
       expect(mediaItemProcessor.saveMediaItem).not.toHaveBeenCalled();
+    });
+
+    it("database failure discards the new upload and keeps the old file", async () => {
+      mediaItemProcessor.findMediaItemByTarget.mockResolvedValue(
+        buildMediaItem({ id: "media-old" }),
+      );
+      mediaItemProcessor.upsertMediaItem.mockRejectedValue(new Error("db"));
+
+      await expect(
+        service.upsertMainPhoto("shelter-id", upload, { cover: file }),
+      ).rejects.toThrow("db");
+
+      expect(batch.discard).toHaveBeenCalledTimes(1);
+      expect(batch.commit).not.toHaveBeenCalled();
+      expect(mediaStorage.deleteAfterCommit).not.toHaveBeenCalled();
+    });
+
+    it("rejected upload (policy) keeps the old file untouched", async () => {
+      mediaItemProcessor.findMediaItemByTarget.mockResolvedValue(
+        buildMediaItem({ id: "media-old" }),
+      );
+      mediaStorage.uploadAll.mockRejectedValue(new Error("MIME"));
+
+      await expect(
+        service.upsertMainPhoto("shelter-id", upload, { cover: file }),
+      ).rejects.toThrow("MIME");
+
+      expect(mediaItemProcessor.upsertMediaItem).not.toHaveBeenCalled();
+      expect(mediaStorage.deleteAfterCommit).not.toHaveBeenCalled();
     });
 
     it("does not touch the bucket when the previous photo was a link", async () => {
@@ -307,22 +364,7 @@ describe("ShelterMediaService", () => {
         {},
       );
 
-      expect(s3.delete).not.toHaveBeenCalled();
-    });
-
-    it("keeps going when the bucket cleanup fails", async () => {
-      mediaItemProcessor.findMediaItemByTarget.mockResolvedValue(
-        buildMediaItem(),
-      );
-      s3.delete.mockRejectedValue(new Error("bucket fora do ar"));
-
-      await expect(
-        service.upsertMainPhoto(
-          "shelter-id",
-          { url: "https://cdn/foto.png" },
-          {},
-        ),
-      ).resolves.toBe("https://cdn/foto.png");
+      expect(mediaStorage.deleteAfterCommit).not.toHaveBeenCalled();
     });
 
     it("records a link without uploading anything", async () => {
@@ -332,7 +374,7 @@ describe("ShelterMediaService", () => {
         {},
       );
 
-      expect(s3.upload).not.toHaveBeenCalled();
+      expect(mediaStorage.uploadAll).not.toHaveBeenCalled();
       expect(url).toBe("https://cdn/foto.png");
       expect(mediaItemProcessor.saveMediaItem).toHaveBeenCalledWith(
         expect.objectContaining({ isLocalFile: false }),
@@ -341,21 +383,13 @@ describe("ShelterMediaService", () => {
 
     it("refuses an upload whose file did not arrive, naming what did", async () => {
       await expect(
-        service.upsertMainPhoto(
-          "shelter-id",
-          {
-            uploadType: UploadType.UPLOAD,
-            isLocalFile: true,
-            fieldKey: "cover",
-          },
-          { outro: file },
-        ),
+        service.upsertMainPhoto("shelter-id", upload, { outro: file }),
       ).rejects.toThrow(
         new RuleException(
           SHELTER_MESSAGES.MEDIA_FILE_MISSING("cover", ["outro"]),
         ),
       );
-      expect(s3.upload).not.toHaveBeenCalled();
+      expect(mediaStorage.uploadAll).not.toHaveBeenCalled();
     });
 
     it("refuses a payload with neither file nor url", async () => {
@@ -370,31 +404,40 @@ describe("ShelterMediaService", () => {
   describe("removeAllForShelter", () => {
     it("reports zero and deletes nothing when there is no media", async () => {
       await expect(service.removeAllForShelter("shelter-id")).resolves.toBe(0);
-      expect(mediaItemProcessor.deleteMediaItems).not.toHaveBeenCalled();
+      expect(
+        mediaItemProcessor.removeMediaItemsKeepingFiles,
+      ).not.toHaveBeenCalled();
     });
 
-    it("removes every media item of the shelter from bucket and database", async () => {
+    it("removes the rows first and the bucket objects after (local files only)", async () => {
       const items = [
-        buildMediaItem({ id: "m1" }),
-        buildMediaItem({ id: "m2" }),
+        buildMediaItem({ id: "m1", url: "https://bucket/a.png" }),
+        buildMediaItem({ id: "m2", isLocalFile: false, url: "https://cdn/b" }),
       ];
       mediaItemProcessor.findMediaItemsByTarget.mockResolvedValue(items);
 
       await expect(service.removeAllForShelter("shelter-id")).resolves.toBe(2);
 
-      expect(mediaItemProcessor.findMediaItemsByTarget).toHaveBeenCalledWith(
-        "shelter-id",
-        SHELTER_MEDIA_TARGET,
-      );
-      expect(mediaItemProcessor.deleteMediaItems).toHaveBeenCalledWith(
-        items,
-        expect.any(Function),
+      expect(
+        mediaItemProcessor.removeMediaItemsKeepingFiles,
+      ).toHaveBeenCalledWith(items);
+      expect(mediaStorage.deleteAfterCommit).toHaveBeenCalledWith([
+        "https://bucket/a.png",
+      ]);
+    });
+
+    it("database failure leaves the bucket untouched (no broken reference)", async () => {
+      mediaItemProcessor.findMediaItemsByTarget.mockResolvedValue([
+        buildMediaItem({ id: "m1" }),
+      ]);
+      mediaItemProcessor.removeMediaItemsKeepingFiles.mockRejectedValue(
+        new Error("db"),
       );
 
-      const [, deleteFn] = mediaItemProcessor.deleteMediaItems.mock
-        .calls[0] as [MediaItemEntity[], (url: string) => Promise<void>];
-      await deleteFn("https://bucket/x.png");
-      expect(s3.delete).toHaveBeenCalledWith("https://bucket/x.png");
+      await expect(service.removeAllForShelter("shelter-id")).rejects.toThrow(
+        "db",
+      );
+      expect(mediaStorage.deleteAfterCommit).not.toHaveBeenCalled();
     });
   });
 
