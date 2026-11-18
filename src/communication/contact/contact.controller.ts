@@ -13,7 +13,10 @@ import { CreateContactService } from "./services/create-contact.service";
 import { GetContactService } from "./services/get-contact.service";
 import { UpdateContactService } from "./services/update-contact.service";
 import { DeleteContactService } from "./services/delete-contact.service";
-import { ContactEntity } from "./contact.entity";
+import {
+  ContactReceiptDto,
+  ContactResponseDto,
+} from "./dto/contact-response.dto";
 import { CreateContactDto } from "./dto/create-contact.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
@@ -30,7 +33,7 @@ export class ContactController {
   ) {}
 
   @Post()
-  async create(@Body() body: CreateContactDto): Promise<ContactEntity> {
+  async create(@Body() body: CreateContactDto): Promise<ContactReceiptDto> {
     this.logger.log("Creating new contact message");
     // Só os campos do DTO chegam ao serviço: `read`, `id` etc. nunca vêm do cliente.
     const result = await this.createContactService.execute({
@@ -40,22 +43,23 @@ export class ContactController {
       message: body.message,
     });
     this.logger.log(`Contact message created successfully: ${result.id}`);
-    return result;
+    return ContactReceiptDto.fromEntity(result);
   }
 
   @Get()
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async getAll(): Promise<ContactEntity[]> {
-    return this.getContactService.getAllContacts();
+  async getAll(): Promise<ContactResponseDto[]> {
+    const contacts = await this.getContactService.getAllContacts();
+    return contacts.map((contact) => ContactResponseDto.fromEntity(contact));
   }
 
   @Patch(":id/read")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async setRead(@Param("id") id: string): Promise<ContactEntity> {
+  async setRead(@Param("id") id: string): Promise<ContactResponseDto> {
     this.logger.log(`Marking contact as read: ${id}`);
     const result = await this.updateContactService.setReadOnContact(id);
     this.logger.log(`Contact marked as read successfully: ${id}`);
-    return result;
+    return ContactResponseDto.fromEntity(result);
   }
 
   @Delete(":id")
