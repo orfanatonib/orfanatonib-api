@@ -103,9 +103,20 @@ export class RouteService {
     return this.routeRepo.save(route);
   }
 
-  async findAllRoutes(): Promise<RouteEntity[]> {
+  /**
+   * Visitante anônimo só enxerga rotas públicas; com sessão válida, tudo
+   * (comportamento anterior). Os dias de meditação são sempre não públicos.
+   */
+  async findAllRoutes(
+    options: { includeNonPublic: boolean } = { includeNonPublic: true },
+  ): Promise<RouteEntity[]> {
+    const all = await this.routeRepo.find();
+    const routes = options.includeNonPublic
+      ? all
+      : all.filter((route) => route.public);
+    if (!options.includeNonPublic) return routes;
+
     const meditation = await this.getMeditationService.getThisWeekMeditation();
-    const routes = await this.routeRepo.find();
 
     const meditationData = meditation.meditation;
     if (!meditationData) return routes;
@@ -134,8 +145,13 @@ export class RouteService {
     return routes;
   }
 
-  async findById(id: string): Promise<RouteEntity | null> {
-    return this.routeRepo.findOne({ where: { id } });
+  async findById(
+    id: string,
+    options: { includeNonPublic: boolean } = { includeNonPublic: true },
+  ): Promise<RouteEntity | null> {
+    const route = await this.routeRepo.findOne({ where: { id } });
+    if (route && !options.includeNonPublic && !route.public) return null;
+    return route;
   }
 
   async findRouteByEntityId(entityId: string): Promise<RouteEntity | null> {

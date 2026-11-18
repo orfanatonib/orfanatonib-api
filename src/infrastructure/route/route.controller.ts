@@ -1,13 +1,15 @@
 import {
   Controller,
   Get,
-  Delete,
   Param,
   Logger,
   UseGuards,
   NotFoundException,
   Post,
+  Req,
 } from "@nestjs/common";
+import { Request } from "express";
+import { AuthContextService } from "src/core/auth/services/auth-context.service";
 import { RouteService } from "./services/route.service";
 import { RouteEntity } from "./route-page.entity";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
@@ -21,11 +23,15 @@ export class RouteController {
   constructor(
     private readonly routeService: RouteService,
     private readonly cleanupService: CleanupOrphanRoutesService,
+    private readonly authContext: AuthContextService,
   ) {}
 
+  /** Anônimo recebe só rotas públicas; sessão válida recebe todas. */
   @Get()
-  async findAll(): Promise<RouteEntity[]> {
-    return this.routeService.findAllRoutes();
+  async findAll(@Req() req: Request): Promise<RouteEntity[]> {
+    return this.routeService.findAllRoutes({
+      includeNonPublic: await this.authContext.isLoggedIn(req),
+    });
   }
 
   @Get("orphans/check")
@@ -44,8 +50,13 @@ export class RouteController {
   }
 
   @Get(":id")
-  async findOne(@Param("id") id: string): Promise<RouteEntity> {
-    const route = await this.routeService.findById(id);
+  async findOne(
+    @Param("id") id: string,
+    @Req() req: Request,
+  ): Promise<RouteEntity> {
+    const route = await this.routeService.findById(id, {
+      includeNonPublic: await this.authContext.isLoggedIn(req),
+    });
     if (!route) {
       throw new NotFoundException("Route not found");
     }
