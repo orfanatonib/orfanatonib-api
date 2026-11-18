@@ -1,3 +1,4 @@
+import type { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { UserEntity } from "../entities/user.entity";
 import { GetUsersQueryDto } from "../dto/get-users-query.dto";
@@ -79,7 +80,7 @@ export class GetUsersService {
     return this.buildProfileResponse(user, imageMedia || undefined);
   }
 
-  private buildProfileResponse(user: UserEntity, imageMedia?: any) {
+  private buildProfileResponse(user: UserEntity, imageMedia?: MediaItemEntity) {
     return {
       id: user.id,
       email: user.email,

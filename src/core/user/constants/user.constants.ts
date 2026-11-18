@@ -29,3 +29,8 @@ export const UserLogs = {
   ERROR: (operation: string, error: string) =>
     `Error during ${operation}: ${error}`,
 } as const;
+
+/** Foto de perfil: um arquivo de até 10 MB (a política de MIME fica no MediaStorageService). */
+export const USER_IMAGE_UPLOAD_OPTIONS = {
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+} as const;

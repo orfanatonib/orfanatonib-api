@@ -15,6 +15,8 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
+import type { UserImageBody } from "./services/update-user-image.service";
+import { USER_IMAGE_UPLOAD_OPTIONS } from "./constants/user.constants";
 import { CreateUserService } from "./services/create-user.service";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
@@ -105,12 +107,12 @@ export class UserController {
 
   @Patch(":id/image")
   @UseGuards(AdminRoleGuard)
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(USER_IMAGE_UPLOAD_OPTIONS))
   async updateImage(
     @Param("id", new ParseUUIDPipe()) id: string,
     @UploadedFiles() files: Express.Multer.File[] = [],
     @Body("imageData") imageDataRaw?: string,
-    @Body() body?: any,
+    @Body() body?: UserImageBody,
   ): Promise<UserEntity> {
     this.logger.log(`Updating user image: ${id}`);
     const bodyToProcess = imageDataRaw

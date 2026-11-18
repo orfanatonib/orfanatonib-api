@@ -10,6 +10,8 @@ import {
   UseInterceptors,
 } from "@nestjs/common";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
+import type { UserImageBody } from "./services/update-user-image.service";
+import { USER_IMAGE_UPLOAD_OPTIONS } from "./constants/user.constants";
 import { Request } from "express";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AuthContextService } from "src/core/auth/services/auth-context.service";
@@ -70,12 +72,12 @@ export class ProfileController {
   }
 
   @Patch("image")
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(USER_IMAGE_UPLOAD_OPTIONS))
   async updateOwnImage(
     @Req() req: Request,
     @UploadedFiles() files: Express.Multer.File[] = [],
     @Body("imageData") imageDataRaw?: string,
-    @Body() body?: any,
+    @Body() body?: UserImageBody,
   ) {
     const payload = await this.authContextService.getPayloadFromRequest(req);
     const userId = payload.sub;
