@@ -32,6 +32,7 @@ import { PagelasController } from "./pagelas.controller";
   ],
   exports: [
     PagelasRepository,
+    PagelaAccessService,
     GetPagelasService,
     CreatePagelaService,
     UpdatePagelaService,

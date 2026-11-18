@@ -4,6 +4,7 @@ import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { UserRole } from "src/core/auth/auth.types";
 import { AcceptedChristController } from "./controllers/accepted-christ.controller";
 import { CreateAcceptedChristDto } from "./dto/create-accepted-christ.dto";
 import { CreateAcceptedChristService } from "./services/create-accepted-christ.service";
@@ -58,7 +59,7 @@ describe("POST /accepted-christs", () => {
         create: jest.fn(),
         save: jest.fn(),
       };
-      const svc = new CreateAcceptedChristService(repo as never);
+      const svc = new CreateAcceptedChristService(repo as never, {} as never);
       await expect(svc.create({ shelteredId: UUID })).rejects.toBeInstanceOf(
         NotFoundException,
       );
@@ -79,11 +80,61 @@ describe("POST /accepted-christs", () => {
         create: jest.fn().mockReturnValue(entity),
         save: jest.fn().mockResolvedValue(entity),
       };
-      const svc = new CreateAcceptedChristService(repo as never);
+      const svc = new CreateAcceptedChristService(repo as never, {} as never);
       await svc.create({ shelteredId: UUID, notes: "n" });
       expect(repo.create).toHaveBeenCalledWith(
         expect.objectContaining({ notes: "n", decision: null }),
       );
+      expect(repo.save).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe("escopo por abrigo (createAs)", () => {
+    const entity = {
+      id: "a1",
+      decision: null,
+      notes: null,
+      sheltered: { id: UUID },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const build = (access: { assertCanAccessSheltered: jest.Mock }) => {
+      const repo = {
+        findShelteredById: jest.fn().mockResolvedValue({ id: UUID }),
+        create: jest.fn().mockReturnValue(entity),
+        save: jest.fn().mockResolvedValue(entity),
+      };
+      return {
+        repo,
+        svc: new CreateAcceptedChristService(repo as never, access as never),
+      };
+    };
+    const actor = { userId: "u1", role: UserRole.MEMBER };
+
+    it("fora do escopo: o acesso é negado e NADA é gravado (nem consultado)", async () => {
+      const access = {
+        assertCanAccessSheltered: jest
+          .fn()
+          .mockRejectedValue(new NotFoundException("Acolhido não encontrado")),
+      };
+      const { svc, repo } = build(access);
+
+      await expect(
+        svc.createAs(actor, { shelteredId: UUID }),
+      ).rejects.toBeInstanceOf(NotFoundException);
+      expect(access.assertCanAccessSheltered).toHaveBeenCalledWith(UUID, actor);
+      expect(repo.findShelteredById).not.toHaveBeenCalled();
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it("dentro do escopo: grava a decisão", async () => {
+      const access = {
+        assertCanAccessSheltered: jest.fn().mockResolvedValue(undefined),
+      };
+      const { svc, repo } = build(access);
+
+      await svc.createAs(actor, { shelteredId: UUID });
+
       expect(repo.save).toHaveBeenCalledTimes(1);
     });
   });
