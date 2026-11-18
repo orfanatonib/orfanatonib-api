@@ -16,6 +16,11 @@ import {
   HttpException,
 } from "@nestjs/common";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
+
+/** Fotos da integração: até 10 arquivos de 10 MB (MIME validado no MediaStorageService). */
+const INTEGRATION_UPLOAD_OPTIONS = {
+  limits: { fileSize: 10 * 1024 * 1024, files: 10 },
+} as const;
 import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 import { CreateIntegrationService } from "./services/create-integration.service";
@@ -45,7 +50,7 @@ export class IntegrationController {
   ) {}
 
   @Post()
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(INTEGRATION_UPLOAD_OPTIONS))
   async create(
     @UploadedFiles() uploadedFiles: Express.Multer.File[],
     @Body("integrationData") integrationDataRaw?: string,
@@ -55,7 +60,7 @@ export class IntegrationController {
         throw new BadRequestException('Field "integrationData" is required.');
       }
 
-      const parsed = JSON.parse(integrationDataRaw);
+      const parsed: unknown = JSON.parse(integrationDataRaw);
       const dto = plainToInstance(CreateIntegrationDto, parsed);
 
       const errors = await validate(dto);
@@ -117,7 +122,7 @@ export class IntegrationController {
   }
 
   @Put(":id")
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(INTEGRATION_UPLOAD_OPTIONS))
   async update(
     @Param("id", ParseUUIDPipe) id: string,
     @UploadedFiles() uploadedFiles: Express.Multer.File[],
@@ -128,7 +133,7 @@ export class IntegrationController {
         throw new BadRequestException('Field "integrationData" is required.');
       }
 
-      const parsed = JSON.parse(integrationDataRaw);
+      const parsed: unknown = JSON.parse(integrationDataRaw);
       const dto = plainToInstance(UpdateIntegrationDto, parsed);
 
       const errors = await validate(dto);

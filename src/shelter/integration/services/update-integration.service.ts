@@ -18,7 +18,8 @@ import {
   UploadType,
   MediaItemEntity,
 } from "src/shared/media/media-item/media-item.entity";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
+import type { UploadBatch } from "src/shared/media/storage/upload-batch";
 
 @Injectable()
 export class UpdateIntegrationService {
@@ -27,7 +28,7 @@ export class UpdateIntegrationService {
   constructor(
     private readonly repository: IntegrationRepository,
     private readonly mediaProcessor: MediaItemProcessor,
-    private readonly s3Service: AwsS3Service,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   async execute(
@@ -76,8 +77,37 @@ export class UpdateIntegrationService {
     }
   }
 
+  /**
+   * Ordem segura: sobe os novos → grava as linhas → só no fim apaga os objetos
+   * antigos. Falha no meio descarta os novos e mantém os antigos referenciados.
+   */
   private async processImages(
     integrationId: string,
+    imagesInput?: MediaItemDto[],
+    files?: Express.Multer.File[],
+  ): Promise<void> {
+    const batch = this.mediaStorage.newBatch();
+    const obsoleteUrls: string[] = [];
+    try {
+      await this.syncImages(
+        integrationId,
+        batch,
+        obsoleteUrls,
+        imagesInput,
+        files,
+      );
+    } catch (error) {
+      await batch.discard();
+      throw error;
+    }
+    batch.commit();
+    await this.mediaStorage.deleteAfterCommit(obsoleteUrls);
+  }
+
+  private async syncImages(
+    integrationId: string,
+    batch: UploadBatch,
+    obsoleteUrls: string[],
     imagesInput?: MediaItemDto[],
     files?: Express.Multer.File[],
   ): Promise<void> {
@@ -107,6 +137,8 @@ export class UpdateIntegrationService {
         imageInput,
         existingImages,
         filesDict,
+        batch,
+        obsoleteUrls,
       );
       processedIds.push(result.id);
     }
@@ -116,6 +148,7 @@ export class UpdateIntegrationService {
         imageInput,
         integrationId,
         filesDict,
+        batch,
       );
       processedIds.push(result.id);
     }
@@ -126,7 +159,7 @@ export class UpdateIntegrationService {
     );
 
     for (const imageToDelete of imagesToDelete) {
-      await this.deleteImage(imageToDelete);
+      await this.deleteImage(imageToDelete, obsoleteUrls);
     }
   }
 
@@ -134,6 +167,8 @@ export class UpdateIntegrationService {
     imageInput: MediaItemDto,
     existingImages: MediaItemEntity[],
     filesDict: Record<string, Express.Multer.File>,
+    batch: UploadBatch,
+    obsoleteUrls: string[],
   ): Promise<MediaItemEntity> {
     const existingImage = existingImages.find(
       (img) => img.id === imageInput.id,
@@ -155,18 +190,17 @@ export class UpdateIntegrationService {
     if (hasNewFile) {
       const file = filesDict[fieldKey];
 
+      const uploaded = await this.uploadImage(
+        file,
+        existingImage.targetId,
+        batch,
+      );
       if (existingImage.isLocalFile && existingImage.url) {
-        try {
-          await this.s3Service.delete(existingImage.url);
-        } catch (error) {
-          this.logger.warn(
-            `Failed to delete old S3 file: ${existingImage.url}`,
-            error,
-          );
-        }
+        obsoleteUrls.push(existingImage.url);
       }
 
-      updatedData.url = await this.s3Service.upload(file);
+      updatedData.url = uploaded.url;
+      updatedData.storageKey = uploaded.key;
       updatedData.originalName = file.originalname;
       updatedData.size = file.size;
       updatedData.isLocalFile = true;
@@ -184,6 +218,7 @@ export class UpdateIntegrationService {
     imageInput: MediaItemDto,
     integrationId: string,
     filesDict: Record<string, Express.Multer.File>,
+    batch: UploadBatch,
   ): Promise<MediaItemEntity> {
     const fieldKey = imageInput.fieldKey;
 
@@ -196,7 +231,7 @@ export class UpdateIntegrationService {
       throw new BadRequestException(`File not found for fieldKey: ${fieldKey}`);
     }
 
-    const url = await this.s3Service.upload(file);
+    const uploaded = await this.uploadImage(file, integrationId, batch);
 
     const media = this.mediaProcessor.buildBaseMediaItem(
       {
@@ -209,7 +244,8 @@ export class UpdateIntegrationService {
       MediaTargetType.Integration,
     );
 
-    media.url = url;
+    media.url = uploaded.url;
+    media.storageKey = uploaded.key;
     media.originalName = file.originalname;
     media.size = file.size;
     media.isLocalFile = true;
@@ -217,15 +253,31 @@ export class UpdateIntegrationService {
     return await this.mediaProcessor.saveMediaItem(media);
   }
 
-  private async deleteImage(image: MediaItemEntity): Promise<void> {
-    if (image.isLocalFile && image.url) {
-      try {
-        await this.s3Service.delete(image.url);
-      } catch (error) {
-        this.logger.warn(`Failed to delete S3 file: ${image.url}`, error);
-      }
-    }
-
+  /** Remove a linha agora; o objeto só sai do bucket depois (obsoleteUrls). */
+  private async deleteImage(
+    image: MediaItemEntity,
+    obsoleteUrls: string[],
+  ): Promise<void> {
+    if (image.isLocalFile && image.url) obsoleteUrls.push(image.url);
     await this.mediaProcessor.removeMediaItem(image);
+  }
+
+  private async uploadImage(
+    file: Express.Multer.File,
+    ownerId: string,
+    batch: UploadBatch,
+  ): Promise<{ url: string; key: string }> {
+    await this.mediaStorage.uploadAll(
+      [
+        {
+          file,
+          mediaType: MediaType.IMAGE,
+          entity: MediaTargetType.Integration,
+          ownerId,
+        },
+      ],
+      batch,
+    );
+    return batch.objects[batch.objects.length - 1];
   }
 }

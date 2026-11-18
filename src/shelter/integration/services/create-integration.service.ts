@@ -9,7 +9,8 @@ import {
   UploadType,
   MediaItemEntity,
 } from "src/shared/media/media-item/media-item.entity";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
+import type { UploadBatch } from "src/shared/media/storage/upload-batch";
 
 @Injectable()
 export class CreateIntegrationService {
@@ -18,7 +19,7 @@ export class CreateIntegrationService {
   constructor(
     private readonly repository: IntegrationRepository,
     private readonly mediaProcessor: MediaItemProcessor,
-    private readonly s3Service: AwsS3Service,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   async execute(
@@ -36,78 +37,112 @@ export class CreateIntegrationService {
     });
 
     const media: MediaItemEntity[] = [];
+    const batch = this.mediaStorage.newBatch();
 
-    if (dto.images && dto.images.length > 0) {
-      const uploadedFiles: { [key: string]: string } = {};
+    try {
+      if (dto.images && dto.images.length > 0) {
+        const uploadedFiles: { [key: string]: { url: string; key: string } } =
+          {};
 
-      for (let i = 0; i < dto.images.length; i++) {
-        const imageDto = dto.images[i];
-        let mediaUrl = imageDto.url?.trim() || "";
-        let uploadType = UploadType.LINK;
-        let isLocalFile = imageDto.isLocalFile || false;
-        let originalName: string | undefined;
-        let size: number | undefined;
+        for (let i = 0; i < dto.images.length; i++) {
+          const imageDto = dto.images[i];
+          let mediaUrl = imageDto.url?.trim() || "";
+          let storageKey: string | undefined;
+          let uploadType = UploadType.LINK;
+          let isLocalFile = imageDto.isLocalFile || false;
+          let originalName: string | undefined;
+          let size: number | undefined;
 
-        if (files && files.length > 0 && !mediaUrl) {
-          const fileIndex = Math.min(i, files.length - 1);
-          const file = files[fileIndex];
+          if (files && files.length > 0 && !mediaUrl) {
+            const fileIndex = Math.min(i, files.length - 1);
+            const file = files[fileIndex];
 
-          if (!uploadedFiles[file.originalname]) {
-            uploadedFiles[file.originalname] =
-              await this.s3Service.upload(file);
+            if (!uploadedFiles[file.originalname]) {
+              uploadedFiles[file.originalname] = await this.uploadImage(
+                file,
+                integration.id,
+                batch,
+              );
+            }
+
+            mediaUrl = uploadedFiles[file.originalname].url;
+            storageKey = uploadedFiles[file.originalname].key;
+            uploadType = UploadType.UPLOAD;
+            isLocalFile = true;
+            originalName = file.originalname;
+            size = file.size;
           }
 
-          mediaUrl = uploadedFiles[file.originalname];
-          uploadType = UploadType.UPLOAD;
-          isLocalFile = true;
-          originalName = file.originalname;
-          size = file.size;
-        }
+          if (mediaUrl) {
+            const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
+              {
+                title: imageDto.title || dto.name || "Integration image",
+                description: imageDto.description || "",
+                mediaType: MediaType.IMAGE,
+                uploadType,
+                url: mediaUrl,
+                isLocalFile,
+                originalName,
+                size,
+              },
+              integration.id,
+              MediaTargetType.Integration,
+            );
+            mediaEntity.storageKey = storageKey;
 
-        if (mediaUrl) {
+            media.push(await this.mediaProcessor.saveMediaItem(mediaEntity));
+          }
+        }
+      } else if (files && files.length > 0) {
+        for (const file of files) {
+          const uploaded = await this.uploadImage(file, integration.id, batch);
           const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
             {
-              title: imageDto.title || dto.name || "Integration image",
-              description: imageDto.description || "",
+              title: dto.name || "Integration image",
+              description: "",
               mediaType: MediaType.IMAGE,
-              uploadType,
-              url: mediaUrl,
-              isLocalFile,
-              originalName,
-              size,
+              uploadType: UploadType.UPLOAD,
+              url: uploaded.url,
+              isLocalFile: true,
+              originalName: file.originalname,
+              size: file.size,
             },
             integration.id,
             MediaTargetType.Integration,
           );
+          mediaEntity.storageKey = uploaded.key;
 
-          const savedMedia =
-            await this.mediaProcessor.saveMediaItem(mediaEntity);
-          media.push(savedMedia);
+          media.push(await this.mediaProcessor.saveMediaItem(mediaEntity));
         }
       }
-    } else if (files && files.length > 0) {
-      for (const file of files) {
-        const mediaUrl = await this.s3Service.upload(file);
-        const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
-          {
-            title: dto.name || "Integration image",
-            description: "",
-            mediaType: MediaType.IMAGE,
-            uploadType: UploadType.UPLOAD,
-            url: mediaUrl,
-            isLocalFile: true,
-            originalName: file.originalname,
-            size: file.size,
-          },
-          integration.id,
-          MediaTargetType.Integration,
-        );
-
-        const savedMedia = await this.mediaProcessor.saveMediaItem(mediaEntity);
-        media.push(savedMedia);
-      }
+    } catch (error) {
+      // Criação que falha não deixa nada: objetos enviados, linhas de mídia e a integração.
+      await batch.discard();
+      await this.mediaProcessor.removeMediaItemsKeepingFiles(media);
+      await this.repository.remove(integration.id);
+      throw error;
     }
+    batch.commit();
 
     return IntegrationResponseDto.fromEntity(integration, media);
+  }
+
+  private async uploadImage(
+    file: Express.Multer.File,
+    ownerId: string,
+    batch: UploadBatch,
+  ): Promise<{ url: string; key: string }> {
+    await this.mediaStorage.uploadAll(
+      [
+        {
+          file,
+          mediaType: MediaType.IMAGE,
+          entity: MediaTargetType.Integration,
+          ownerId,
+        },
+      ],
+      batch,
+    );
+    return batch.objects[batch.objects.length - 1];
   }
 }

@@ -7,7 +7,7 @@ import {
 import { IntegrationRepository } from "../integration.repository";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 
 @Injectable()
 export class DeleteIntegrationService {
@@ -16,7 +16,7 @@ export class DeleteIntegrationService {
   constructor(
     private readonly repository: IntegrationRepository,
     private readonly mediaProcessor: MediaItemProcessor,
-    private readonly s3Service: AwsS3Service,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   async execute(id: string): Promise<void> {
@@ -31,23 +31,23 @@ export class DeleteIntegrationService {
         MediaTargetType.Integration,
       );
 
-      if (mediaItems.length > 0) {
-        await this.mediaProcessor.deleteMediaItems(
-          mediaItems,
-          this.s3Service.delete.bind(this.s3Service),
-        );
-        this.logger.log(
-          `Deleted ${mediaItems.length} media items for integration ${id}`,
-        );
-      }
-
+      // Integração e linhas primeiro; objetos do bucket só depois (falha vai para a fila).
       await this.repository.remove(id);
+      const fileUrls =
+        await this.mediaProcessor.removeMediaItemsKeepingFiles(mediaItems);
+      await this.mediaStorage.deleteAfterCommit(fileUrls);
+      this.logger.log(
+        `Deleted ${mediaItems.length} media items for integration ${id}`,
+      );
       this.logger.log(`Integration ${id} deleted successfully`);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Error deleting integration ${id}`, error.stack);
+      this.logger.error(
+        `Error deleting integration ${id}`,
+        error instanceof Error ? error.stack : undefined,
+      );
       throw new InternalServerErrorException("Error deleting integration");
     }
   }
