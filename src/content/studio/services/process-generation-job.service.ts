@@ -9,8 +9,12 @@ import { AiProviderRequestError } from "../ai/openai-generation.gateway";
 import {
   GENERATION_LEASE_MS,
   GENERATION_WORKER_PREFIX,
-  STAGE_OUTPUT_SCHEMA,
 } from "../ai/stage-generation.constants";
+import { buildStageRequest } from "../ai/generation/stage-prompt.builder";
+import {
+  StageOutputError,
+  validateStageOutput,
+} from "../ai/generation/stage-output.validator";
 import { validateStructuredContent } from "../ai/utils/structured-content-policy.util";
 import { CONTENT_STUDIO_CATALOG_VERSION } from "../constants";
 import { AiJobOutcome, AiQueueJob } from "../queue/ai-job-queue.port";
@@ -57,25 +61,31 @@ export class ProcessGenerationJobService {
         throw new AiProviderRequestError(AiProviderErrorKind.SCHEMA);
       }
 
+      const context = await this.packages.loadStageGenerationContext(
+        job.stageId,
+      );
+      if (!context)
+        throw new AiProviderRequestError(AiProviderErrorKind.SCHEMA);
+
+      // Prompt e esquema por etapa E por público (bebê, criança, adolescente, adulto).
+      const built = buildStageRequest(context);
       const result = await this.gateway.generateStructuredText({
         correlationId: job.jobId,
-        instructions: [
-          `Gere o conteúdo estruturado da etapa ${job.stageType}.`,
-          "Não inclua dados pessoais de pessoas acolhidas.",
-        ],
-        input: {
-          stageType: job.stageType,
-          packageId: job.packageId,
-          theme: job.theme,
-        },
-        outputSchema: STAGE_OUTPUT_SCHEMA,
+        instructions: built.instructions,
+        input: built.input,
+        outputSchema: built.outputSchema,
       });
 
-      const serialized = validateStructuredContent(result.output);
+      const { content, internal } = validateStageOutput(
+        context.stageType,
+        context.audience,
+        result.output,
+      );
+      const serialized = validateStructuredContent(content);
       await this.packages.saveStageContent({
         packageId: job.packageId,
         stageId: job.stageId,
-        structuredContent: result.output,
+        structuredContent: content,
         contentChecksum: createHash("sha256").update(serialized).digest("hex"),
         templateVersion: CONTENT_STUDIO_CATALOG_VERSION,
         generationSnapshot: {
@@ -85,6 +95,12 @@ export class ProcessGenerationJobService {
           durationMs: result.durationMs,
           attempts: job.attempts,
           jobId: job.jobId,
+          stageType: context.stageType,
+          audience: context.audience,
+          promptVersion: built.promptVersion,
+          // Notas internas do modelo (conferência humana): ficam aqui, fora do conteúdo editável.
+          reviewerNotes: internal.reviewerNotes ?? "",
+          centralMessage: internal.centralMessage ?? "",
         },
         createdById: job.requestedById,
         completedJobId: job.jobId,
@@ -104,8 +120,10 @@ export class ProcessGenerationJobService {
       error instanceof AiProviderRequestError
         ? error.kind
         : AiProviderErrorKind.UNKNOWN;
+    // Saída fora do esquema/regras do público pode ser variação do modelo: vale tentar de novo.
     const retry =
-      RETRYABLE_KINDS.has(kind) && attempts < this.policy.maxAttempts;
+      (RETRYABLE_KINDS.has(kind) || error instanceof StageOutputError) &&
+      attempts < this.policy.maxAttempts;
     this.logger.warn(
       `Geração ${jobId} falhou (${kind}), tentativa ${attempts}, retry=${retry}`,
     );

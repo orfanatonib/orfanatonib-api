@@ -15,6 +15,7 @@ import {
 } from "src/common/exceptions";
 
 import { CONTENT_STUDIO_CATALOG_VERSION } from "../constants";
+import type { StageGenerationContext } from "../ai/generation/stage-prompt.builder";
 import { ContentGenerationJobEntity } from "../entities/content-generation-job.entity";
 import { ContentPackageEntity } from "../entities/content-package.entity";
 import { ContentReviewCommentEntity } from "../entities/content-review-comment.entity";
@@ -291,6 +292,63 @@ export class ContentPackagesRepository {
 
       return job;
     });
+  }
+
+  /**
+   * Tudo de que o gerador precisa para UMA etapa: pacote, público (trilha), conteúdo atual das
+   * etapas das quais ela depende e rótulos das versões anteriores (para regeneração).
+   */
+  async loadStageGenerationContext(
+    stageId: string,
+  ): Promise<StageGenerationContext | null> {
+    const stage = await this.dataSource
+      .getRepository(ContentStageEntity)
+      .findOne({
+        where: { id: stageId },
+        relations: { track: { contentPackage: true, stages: true } },
+      });
+    if (!stage?.track?.contentPackage) return null;
+
+    const versionRepo = this.dataSource.getRepository(ContentVersionEntity);
+    const upstream: Partial<Record<ContentStageType, Record<string, unknown>>> =
+      {};
+    const dependencies = (stage.track.stages ?? [])
+      .filter(
+        (s) => stage.dependencies.includes(s.stageType) && s.currentVersionId,
+      )
+      .sort((a, b) => a.position - b.position);
+    for (const dependency of dependencies) {
+      const version = await versionRepo.findOne({
+        where: { id: dependency.currentVersionId ?? "" },
+      });
+      if (version) upstream[dependency.stageType] = version.structuredContent;
+    }
+
+    const previous = await versionRepo.find({
+      where: { stageId },
+      order: { versionNumber: "DESC" },
+      take: 8,
+    });
+    const previousVariants = previous
+      .reverse()
+      .map((version) => {
+        const content = version.structuredContent;
+        const label = content.name ?? content.title;
+        return typeof label === "string" ? label : "";
+      })
+      .filter(Boolean);
+
+    const pkg = stage.track.contentPackage;
+    return {
+      stageType: stage.stageType,
+      audience: stage.track.audience,
+      theme: pkg.theme,
+      biblicalReferences: pkg.biblicalReferences,
+      canonicalObjective: pkg.canonicalObjective,
+      canonicalNotes: pkg.canonicalNotes,
+      upstream,
+      previousVariants,
+    };
   }
 
   /** Jobs que precisam voltar para a fila (boot/reconciliação): pendentes, reagendados e RUNNING com lease vencido. */

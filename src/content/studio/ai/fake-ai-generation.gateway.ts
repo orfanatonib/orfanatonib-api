@@ -8,6 +8,9 @@ import {
   isFakeModeAllowed,
   parseFakeDirective,
 } from "../ai-fake/fake-ai-limits.util";
+import { ContentAudience } from "../enums/content-audience.enum";
+import { ContentStageType } from "../enums/content-stage-type.enum";
+import { fakeStageContent } from "./generation/fake-stage-content";
 import { sampleFromSchema } from "../ai-fake/schema-sample.util";
 import { AiGenerationGateway } from "./ai-generation.gateway";
 import { AiProviderRequestError } from "./openai-generation.gateway";
@@ -102,7 +105,8 @@ export class FakeAiGenerationGateway extends AiGenerationGateway {
         error instanceof Error ? error : new Error(String(error)),
       );
     }
-    const output = sampleFromSchema(request.outputSchema);
+    const output =
+      this.stageOutputFor(request) ?? sampleFromSchema(request.outputSchema);
     const outputTokens = estimateTokens(JSON.stringify(output));
     return Promise.resolve({
       provider: FAKE_PROVIDER,
@@ -115,6 +119,29 @@ export class FakeAiGenerationGateway extends AiGenerationGateway {
       },
       durationMs: 1,
     });
+  }
+
+  /** Conteúdo realista por etapa e público quando o pedido vem do worker do Estúdio. */
+  private stageOutputFor(
+    request: StructuredTextGenerationRequest,
+  ): Record<string, unknown> | null {
+    const { stage, audience, theme } = request.input as {
+      stage?: unknown;
+      audience?: { key?: unknown };
+      theme?: unknown;
+    };
+    const stageType = Object.values(ContentStageType).find(
+      (t) => String(t) === stage,
+    );
+    const audienceKey = Object.values(ContentAudience).find(
+      (a) => String(a) === audience?.key,
+    );
+    if (!stageType || !audienceKey) return null;
+    return fakeStageContent(
+      stageType,
+      audienceKey,
+      typeof theme === "string" ? theme : "Tema",
+    );
   }
 
   generateImage(
