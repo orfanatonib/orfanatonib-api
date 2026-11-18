@@ -262,3 +262,46 @@ describe("MediaItemProcessor: ordem linhas → objetos e compensação em cleanA
     expect(del).toHaveBeenCalledWith("u/new");
   });
 });
+
+describe("MediaItemProcessor.discardUnreferencedUploads", () => {
+  function build(referenced: string[]) {
+    const repo = {
+      findReferencedUrls: jest.fn(async () => new Set(referenced)),
+    };
+    return { repo, proc: new MediaItemProcessor(repo as never) };
+  }
+
+  it("apaga só o que nenhuma mídia referencia e preserva o resto", async () => {
+    const { proc } = build(["u/kept"]);
+    const del = jest.fn(async () => undefined);
+
+    await proc.discardUnreferencedUploads(["u/kept", "u/orphan"], del);
+
+    expect(del).toHaveBeenCalledTimes(1);
+    expect(del).toHaveBeenCalledWith("u/orphan");
+  });
+
+  it("ignora vazios e duplicados e não consulta o banco sem URLs", async () => {
+    const { proc, repo } = build([]);
+    const del = jest.fn(async () => undefined);
+
+    await proc.discardUnreferencedUploads(["", "u/a", "u/a"], del);
+    await proc.discardUnreferencedUploads([], del);
+
+    expect(del).toHaveBeenCalledTimes(1);
+    expect(repo.findReferencedUrls).toHaveBeenCalledTimes(1);
+  });
+
+  it("tenta apagar todos e propaga o primeiro erro depois", async () => {
+    const { proc } = build([]);
+    const del = jest
+      .fn<Promise<void>, [string]>()
+      .mockRejectedValueOnce(new Error("s3 caiu"))
+      .mockResolvedValue(undefined);
+
+    await expect(
+      proc.discardUnreferencedUploads(["u/1", "u/2"], del),
+    ).rejects.toThrow("s3 caiu");
+    expect(del).toHaveBeenCalledTimes(2);
+  });
+});

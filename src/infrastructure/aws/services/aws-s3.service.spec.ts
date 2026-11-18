@@ -12,6 +12,7 @@ jest.mock("@aws-sdk/client-s3", () => ({
   PutObjectCommand: jest.fn((input: unknown) => ({ kind: "put", input })),
   DeleteObjectCommand: jest.fn((input: unknown) => ({ kind: "delete", input })),
   ListObjectsV2Command: jest.fn((input: unknown) => ({ kind: "list", input })),
+  GetObjectCommand: jest.fn((input: unknown) => ({ kind: "get", input })),
 }));
 
 function make(env: Record<string, string> = {}) {
@@ -129,5 +130,57 @@ describe("AwsS3Service", () => {
       .mockResolvedValueOnce({ Contents: [{ Key: "b" }], IsTruncated: false });
     const keys = await make().listKeys("local/");
     expect(keys.map((k) => k.key)).toEqual(["a", "b"]);
+  });
+
+  describe("downloadOwned", () => {
+    const owned = "http://ls:4566/b/local/uploads/a.png";
+
+    it("lê o objeto do próprio bucket pela chave extraída da URL", async () => {
+      send.mockResolvedValue({
+        ContentLength: 3,
+        Body: (async function* () {
+          yield Buffer.from("abc");
+        })(),
+      });
+
+      const buffer = await make().downloadOwned(owned, 10);
+
+      expect(buffer.toString()).toBe("abc");
+      expect(send).toHaveBeenCalledWith({
+        kind: "get",
+        input: { Bucket: "b", Key: "local/uploads/a.png" },
+      });
+    });
+
+    it("recusa URL de outra origem sem chamar o S3 (SSRF)", async () => {
+      await expect(
+        make().downloadOwned("https://evil.example/x.png", 10),
+      ).rejects.toThrow("não pertence ao bucket");
+      expect(send).not.toHaveBeenCalled();
+    });
+
+    it("recusa objeto maior que o limite pelo ContentLength, sem ler o corpo", async () => {
+      const body = (async function* () {
+        yield Buffer.from("x");
+      })();
+      send.mockResolvedValue({ ContentLength: 11, Body: body });
+
+      await expect(make().downloadOwned(owned, 10)).rejects.toThrow(
+        "excede o limite",
+      );
+    });
+
+    it("recusa corpo que passa do limite mesmo sem ContentLength", async () => {
+      send.mockResolvedValue({
+        Body: (async function* () {
+          yield Buffer.from("123456");
+          yield Buffer.from("78901");
+        })(),
+      });
+
+      await expect(make().downloadOwned(owned, 10)).rejects.toThrow(
+        "excede o limite",
+      );
+    });
   });
 });

@@ -282,4 +282,30 @@ export class MediaItemProcessor {
 
     return results;
   }
+
+  /**
+   * Apaga os uploads recém-enviados que NENHUMA mídia referencia (ex.: a geração
+   * falhou depois do envio). Os que já viraram mídia são preservados. Tenta todos
+   * e, se algum apagamento falhar, propaga o primeiro erro depois de tentar os demais.
+   */
+  async discardUnreferencedUploads(
+    urls: readonly string[],
+    deleteFn: (url: string) => Promise<void>,
+  ): Promise<void> {
+    const unique = [...new Set(urls.filter(Boolean))];
+    if (unique.length === 0) return;
+
+    const referenced = await this.mediaRepo.findReferencedUrls(unique);
+    let firstError: unknown;
+    for (const url of unique) {
+      if (referenced.has(url)) continue;
+      try {
+        await deleteFn(url);
+      } catch (error: unknown) {
+        this.logger.warn(`Falha ao descartar upload sem referência: ${url}`);
+        firstError ??= error;
+      }
+    }
+    if (firstError !== undefined) throw firstError;
+  }
 }

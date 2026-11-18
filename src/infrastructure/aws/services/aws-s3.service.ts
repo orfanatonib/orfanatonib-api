@@ -8,8 +8,10 @@ import {
   S3Client,
   PutObjectCommand,
   DeleteObjectCommand,
+  GetObjectCommand,
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
+import type { Readable } from "node:stream";
 
 @Injectable()
 export class AwsS3Service {
@@ -135,6 +137,51 @@ export class AwsS3Service {
       this.logger.error(`Error deleting from S3: ${message}`);
       await this.deleteFailureHandler?.(key, message);
     }
+  }
+
+  /** Chave do objeto quando a URL aponta para o NOSSO bucket; `null` para qualquer outra origem. */
+  keyFromOwnedUrl(url: string): string | null {
+    const virtualHosted = url.split(`${this.bucketName}.s3.amazonaws.com/`)[1];
+    const pathStyle = url.includes(`/${this.bucketName}/`)
+      ? url.split(`/${this.bucketName}/`)[1]
+      : undefined;
+    const key = virtualHosted ?? pathStyle;
+    return key ? decodeURIComponent(key.split("?")[0]) : null;
+  }
+
+  /**
+   * Lê um objeto do NOSSO bucket pelo SDK (funciona com bucket privado e sem DNS).
+   * Recusa URL de outra origem (SSRF) e objeto maior que `maxBytes`, sem baixá-lo inteiro.
+   */
+  async downloadOwned(url: string, maxBytes: number): Promise<Buffer> {
+    const key = this.keyFromOwnedUrl(url);
+    if (!key) {
+      throw new BadRequestException("A URL não pertence ao bucket da aplicação.");
+    }
+    const response = await this.s3Client.send(
+      new GetObjectCommand({ Bucket: this.bucketName, Key: key }),
+    );
+    if (
+      typeof response.ContentLength === "number" &&
+      response.ContentLength > maxBytes
+    ) {
+      throw new BadRequestException(
+        `O objeto excede o limite de ${maxBytes} bytes.`,
+      );
+    }
+    const chunks: Buffer[] = [];
+    let total = 0;
+    for await (const chunk of response.Body as Readable) {
+      const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+      total += buffer.length;
+      if (total > maxBytes) {
+        throw new BadRequestException(
+          `O objeto excede o limite de ${maxBytes} bytes.`,
+        );
+      }
+      chunks.push(buffer);
+    }
+    return Buffer.concat(chunks);
   }
 
   getEnvironment(): string {

@@ -60,6 +60,16 @@ export class MediaItemRepository {
     await this.mediaRepo.remove(item);
   }
 
+  /** Dentre as URLs informadas, as que alguma mídia ainda referencia (pela URL ou pela chave). */
+  async findReferencedUrls(urls: readonly string[]): Promise<Set<string>> {
+    if (urls.length === 0) return new Set();
+    const rows = await this.mediaRepo.find({
+      where: { url: In([...urls]) },
+      select: { id: true, url: true },
+    });
+    return new Set(rows.map((row) => row.url));
+  }
+
   /** URLs de todos os arquivos locais (S3) referenciados — base da reconciliação. */
   async findLocalFileUrls(): Promise<string[]> {
     const rows = await this.mediaRepo.find({
