@@ -1,9 +1,12 @@
-import { Body, Controller, Post, Logger } from "@nestjs/common";
+import { Body, Controller, Post, Logger, UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { CreateAcceptedChristService } from "../services/create-accepted-christ.service";
 import { CreateAcceptedChristDto } from "../dto/create-accepted-christ.dto";
 import { AcceptedChristResponseDto } from "../dto/accepted-christ-response.dto";
 
+/** Registro de decisão por pessoa logada (a tela de pagela); nunca público. */
 @Controller("accepted-christs")
+@UseGuards(JwtAuthGuard)
 export class AcceptedChristController {
   private readonly logger = new Logger(AcceptedChristController.name);
 

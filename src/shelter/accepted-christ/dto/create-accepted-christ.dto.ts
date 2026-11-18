@@ -1,4 +1,11 @@
-import { IsEnum, IsNotEmpty, IsUUID, IsOptional } from "class-validator";
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsUUID,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from "class-validator";
 import { DecisionType } from "../enums/decision-type.enum";
 
 export class CreateAcceptedChristDto {
@@ -11,5 +18,7 @@ export class CreateAcceptedChristDto {
   shelteredId: string;
 
   @IsOptional()
+  @IsString()
+  @MaxLength(2000)
   notes?: string | null;
 }

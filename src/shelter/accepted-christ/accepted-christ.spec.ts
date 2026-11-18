@@ -1,0 +1,90 @@
+import { GUARDS_METADATA } from "@nestjs/common/constants";
+import { NotFoundException } from "@nestjs/common";
+import { plainToInstance } from "class-transformer";
+import { validate } from "class-validator";
+
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { AcceptedChristController } from "./controllers/accepted-christ.controller";
+import { CreateAcceptedChristDto } from "./dto/create-accepted-christ.dto";
+import { CreateAcceptedChristService } from "./services/create-accepted-christ.service";
+
+const UUID = "3f2b8a52-1c3e-4d6f-9a1b-0e5c7d9f1a22";
+
+describe("POST /accepted-christs", () => {
+  it("não é público: a classe exige JwtAuthGuard", () => {
+    const guards = Reflect.getMetadata(
+      GUARDS_METADATA,
+      AcceptedChristController,
+    ) as unknown[];
+    expect(guards).toContain(JwtAuthGuard);
+  });
+
+  describe("DTO", () => {
+    const check = (payload: object) =>
+      validate(plainToInstance(CreateAcceptedChristDto, payload));
+
+    it("aceita payload mínimo e notes nulo", async () => {
+      expect(await check({ shelteredId: UUID })).toHaveLength(0);
+      expect(await check({ shelteredId: UUID, notes: null })).toHaveLength(0);
+    });
+
+    it("recusa shelteredId inválido", async () => {
+      expect(await check({ shelteredId: "x" })).not.toHaveLength(0);
+    });
+
+    it("recusa notes que não é texto ou passa de 2000 caracteres", async () => {
+      expect(
+        await check({ shelteredId: UUID, notes: { a: 1 } }),
+      ).not.toHaveLength(0);
+      expect(
+        await check({ shelteredId: UUID, notes: "x".repeat(2001) }),
+      ).not.toHaveLength(0);
+      expect(
+        await check({ shelteredId: UUID, notes: "x".repeat(2000) }),
+      ).toHaveLength(0);
+    });
+
+    it("recusa decisão fora do enum", async () => {
+      expect(
+        await check({ shelteredId: UUID, decision: "qualquer" }),
+      ).not.toHaveLength(0);
+    });
+  });
+
+  describe("serviço", () => {
+    it("acolhido inexistente: 404 e nada gravado", async () => {
+      const repo = {
+        findShelteredById: jest.fn().mockResolvedValue(null),
+        create: jest.fn(),
+        save: jest.fn(),
+      };
+      const svc = new CreateAcceptedChristService(repo as never);
+      await expect(svc.create({ shelteredId: UUID })).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
+      expect(repo.save).not.toHaveBeenCalled();
+    });
+
+    it("grava decisão e notas ligadas ao acolhido", async () => {
+      const entity = {
+        id: "a1",
+        decision: null,
+        notes: "n",
+        sheltered: { id: UUID },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const repo = {
+        findShelteredById: jest.fn().mockResolvedValue({ id: UUID }),
+        create: jest.fn().mockReturnValue(entity),
+        save: jest.fn().mockResolvedValue(entity),
+      };
+      const svc = new CreateAcceptedChristService(repo as never);
+      await svc.create({ shelteredId: UUID, notes: "n" });
+      expect(repo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ notes: "n", decision: null }),
+      );
+      expect(repo.save).toHaveBeenCalledTimes(1);
+    });
+  });
+});
