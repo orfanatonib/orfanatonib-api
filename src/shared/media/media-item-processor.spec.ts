@@ -145,9 +145,17 @@ describe("MediaItemProcessor.cleanAndReplaceMediaItems", () => {
 describe("MediaItemProcessor.removeMediaItemsKeepingFiles", () => {
   it("remove só as linhas e devolve as URLs dos arquivos locais (objeto só sai depois)", async () => {
     const { proc, repo } = setup();
-    const local = Object.assign(new MediaItemEntity(), { url: "u/a", isLocalFile: true });
-    const link = Object.assign(new MediaItemEntity(), { url: "https://y", isLocalFile: false });
-    expect(await proc.removeMediaItemsKeepingFiles([local, link])).toEqual(["u/a"]);
+    const local = Object.assign(new MediaItemEntity(), {
+      url: "u/a",
+      isLocalFile: true,
+    });
+    const link = Object.assign(new MediaItemEntity(), {
+      url: "https://y",
+      isLocalFile: false,
+    });
+    expect(await proc.removeMediaItemsKeepingFiles([local, link])).toEqual([
+      "u/a",
+    ]);
     expect(repo.removeMany).toHaveBeenCalledWith([local, link]);
     expect(await proc.removeMediaItemsKeepingFiles([])).toEqual([]);
   });
