@@ -12,7 +12,10 @@ import {
   Logger,
   BadRequestException,
   NotFoundException,
+  Req,
 } from "@nestjs/common";
+import type { AuthenticatedRequest } from "src/core/auth/auth.types";
+import { UserRole } from "src/core/auth/auth.types";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
@@ -26,7 +29,14 @@ import { ImageSectionResponseDto } from "./dto/image-section-response.dto";
 import { CreateImageSectionDto } from "./dto/create-image-section.dto";
 import { UpdateImageSectionDto } from "./dto/update-image-section.dto";
 
+/** Imagens da seção: até 10 arquivos de 10 MB (MIME validado no armazenamento). */
+export const IMAGE_SECTION_UPLOAD_OPTIONS = {
+  limits: { fileSize: 10 * 1024 * 1024, files: 10 },
+} as const;
+
+/** Qualquer sessão envia (membro propõe); só admin lê a fila, edita e apaga. */
 @Controller("image-sections")
+@UseGuards(JwtAuthGuard)
 export class ImageSectionController {
   private readonly logger = new Logger(ImageSectionController.name);
 
@@ -38,8 +48,9 @@ export class ImageSectionController {
   ) {}
 
   @Post()
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(IMAGE_SECTION_UPLOAD_OPTIONS))
   async create(
+    @Req() req: AuthenticatedRequest,
     @UploadedFiles() files: Express.Multer.File[],
     @Body("sectionData") raw: string,
   ): Promise<ImageSectionResponseDto> {
@@ -48,6 +59,8 @@ export class ImageSectionController {
       CreateImageSectionDto,
     );
     await this.validateDto(dto);
+    // Quem não é admin não publica direto: a seção entra como pendente.
+    if (req.user?.role?.toLowerCase() !== UserRole.ADMIN) dto.public = false;
 
     const filesDict = this.mapFiles(files);
     this.logger.log("Creating new image section");
@@ -58,7 +71,8 @@ export class ImageSectionController {
   }
 
   @Patch(":id")
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseGuards(AdminRoleGuard)
+  @UseInterceptors(AnyFilesInterceptor(IMAGE_SECTION_UPLOAD_OPTIONS))
   async update(
     @Param("id") id: string,
     @UploadedFiles() files: Express.Multer.File[],
@@ -79,6 +93,7 @@ export class ImageSectionController {
   }
 
   @Delete(":id")
+  @UseGuards(AdminRoleGuard)
   async delete(@Param("id") id: string) {
     this.logger.log(`Deleting image section: ${id}`);
     await this.deleteService.deleteSection(id);
@@ -88,6 +103,7 @@ export class ImageSectionController {
   }
 
   @Get(":id")
+  @UseGuards(AdminRoleGuard)
   async getById(@Param("id") id: string): Promise<ImageSectionResponseDto> {
     const result = await this.getService.findOne(id);
     if (!result) {
@@ -98,6 +114,7 @@ export class ImageSectionController {
   }
 
   @Get()
+  @UseGuards(AdminRoleGuard)
   async getAll(): Promise<ImageSectionResponseDto[]> {
     const result = await this.getService.findAll();
     return result;
@@ -105,7 +122,7 @@ export class ImageSectionController {
 
   private parseDto<T>(raw: string, dtoClass: new () => T): T {
     try {
-      const obj = JSON.parse(raw);
+      const obj: unknown = JSON.parse(raw);
       return plainToInstance(dtoClass, obj);
     } catch (error) {
       this.logger.error("Error parsing received JSON.", error);

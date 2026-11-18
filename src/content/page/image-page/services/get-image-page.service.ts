@@ -6,6 +6,8 @@ import { ImagePageResponseDto } from "../dto/image-page-response.dto";
 import { PaginatedImageSectionResponseDto } from "../dto/paginated-image-section.dto";
 import { ImageSectionRepository } from "src/content/page/image-section/repositories/image-section.repository";
 import { Request } from "express";
+import type { FindOptionsWhere } from "typeorm";
+import { ImageSectionEntity } from "../entities/image-section.entity";
 import { AuthContextService } from "src/core/auth/services/auth-context.service";
 
 @Injectable()
@@ -19,8 +21,16 @@ export class GetImagePageService {
     private readonly authContext: AuthContextService,
   ) {}
 
-  async findAll(): Promise<ImagePageResponseDto[]> {
-    const pages = await this.imagePageRepository.findAllWithSections();
+  /** Galerias não públicas só aparecem com sessão válida. */
+  canSeeNonPublic(req: Request): Promise<boolean> {
+    return this.authContext.isLoggedIn(req);
+  }
+
+  async findAll(includeNonPublic = true): Promise<ImagePageResponseDto[]> {
+    const allPages = await this.imagePageRepository.findAllWithSections();
+    const pages = includeNonPublic
+      ? allPages
+      : allPages.filter((page) => page.public);
 
     const sectionIds = pages.flatMap((page) => page.sections.map((s) => s.id));
     const mediaItems =
@@ -41,9 +51,12 @@ export class GetImagePageService {
     return result;
   }
 
-  async findOne(id: string): Promise<ImagePageResponseDto> {
+  async findOne(
+    id: string,
+    includeNonPublic = true,
+  ): Promise<ImagePageResponseDto> {
     const page = await this.imagePageRepository.findByIdWithSections(id);
-    if (!page) {
+    if (!page || (!includeNonPublic && !page.public)) {
       this.logger.warn(`Page with ID ${id} not found`);
       throw new NotFoundException("Gallery page not found.");
     }
@@ -82,18 +95,17 @@ export class GetImagePageService {
     const loggedIn = await this.authContext.isLoggedIn(req);
 
     const imagePage = await this.imagePageRepository.findById(pageId);
-    if (!imagePage) {
+    if (!imagePage || (!loggedIn && !imagePage.public)) {
       this.logger.warn(`Page with ID ${pageId} not found`);
       throw new NotFoundException(
         `Página de galeria com ID ${pageId} não encontrada.`,
       );
     }
 
-    const where: any = { page: { id: pageId } };
-
-    if (!loggedIn) {
-      where.public = true;
-    }
+    const where: FindOptionsWhere<ImageSectionEntity> = {
+      page: { id: pageId },
+      ...(loggedIn ? {} : { public: true }),
+    };
 
     const [sections, total] = await this.sectionRepository.findAndCount({
       where,

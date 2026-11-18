@@ -30,6 +30,13 @@ import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 import { PaginatedImageSectionResponseDto } from "./dto/paginated-image-section.dto";
 import { Request } from "express";
 
+interface RawImagePageData {
+  sections?: Array<{ mediaItems?: Array<{ file?: unknown }> }>;
+}
+
+const DEFAULT_SECTIONS_PAGE_SIZE = 2;
+const MAX_SECTIONS_PAGE_SIZE = 50;
+
 @Controller("image-pages")
 export class ImageController {
   private readonly logger = new Logger(ImageController.name);
@@ -74,7 +81,7 @@ export class ImageController {
     @Body("imageData") raw: string,
   ): Promise<ImagePageResponseDto> {
     try {
-      const rawObject = JSON.parse(raw);
+      const rawObject = JSON.parse(raw) as RawImagePageData;
       this.cleanMediaFiles(rawObject);
 
       const dto = plainToInstance(UpdateImagePageDto, rawObject);
@@ -96,9 +103,10 @@ export class ImageController {
     }
   }
 
+  /** Anônimo recebe só galerias públicas; com sessão, todas. */
   @Get()
-  async findAll(): Promise<ImagePageResponseDto[]> {
-    return this.getService.findAll();
+  async findAll(@Req() req: Request): Promise<ImagePageResponseDto[]> {
+    return this.getService.findAll(await this.getService.canSeeNonPublic(req));
   }
 
   @Get(":id/sections")
@@ -108,8 +116,12 @@ export class ImageController {
     @Query("limit") limit: string = "2",
     @Req() req: Request,
   ): Promise<PaginatedImageSectionResponseDto> {
-    const pageNumber = Number(page);
-    const limitNumber = Number(limit);
+    // Entrada de query é texto livre: sem NaN, sem página < 1, com teto de limite.
+    const pageNumber = Math.max(1, Math.floor(Number(page)) || 1);
+    const limitNumber = Math.min(
+      MAX_SECTIONS_PAGE_SIZE,
+      Math.max(1, Math.floor(Number(limit)) || DEFAULT_SECTIONS_PAGE_SIZE),
+    );
 
     return this.getService.findSectionsPaginated(
       pageId,
@@ -120,9 +132,15 @@ export class ImageController {
   }
 
   @Get(":id")
-  async findOne(@Param("id") id: string): Promise<ImagePageResponseDto> {
+  async findOne(
+    @Param("id") id: string,
+    @Req() req: Request,
+  ): Promise<ImagePageResponseDto> {
     try {
-      return await this.getService.findOne(id);
+      return await this.getService.findOne(
+        id,
+        await this.getService.canSeeNonPublic(req),
+      );
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
       throw new BadRequestException("Error fetching gallery.");
@@ -161,7 +179,8 @@ export class ImageController {
     );
   }
 
-  private cleanMediaFiles(rawObject: any) {
+  /** O cliente pode mandar o `File` dentro do JSON; ele chega por multipart, não no corpo. */
+  private cleanMediaFiles(rawObject: RawImagePageData): void {
     rawObject.sections?.forEach((section) =>
       section.mediaItems?.forEach((media) => {
         delete media.file;
