@@ -16,6 +16,11 @@ import {
   HttpException,
 } from "@nestjs/common";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
+
+/** PDFs de antecedentes: 1 por campo (estadual/federal), até 25 MB cada. */
+const ATENDENTE_UPLOAD_OPTIONS = {
+  limits: { fileSize: 25 * 1024 * 1024, files: 2 },
+} as const;
 import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
@@ -60,7 +65,9 @@ export class AtendenteController {
   ) {}
 
   @Post()
-  @UseInterceptors(FileFieldsInterceptor([...PDF_FIELDS]))
+  @UseInterceptors(
+    FileFieldsInterceptor([...PDF_FIELDS], ATENDENTE_UPLOAD_OPTIONS),
+  )
   async create(
     @UploadedFiles()
     uploadedFiles: {
@@ -73,7 +80,7 @@ export class AtendenteController {
       if (!atendenteDataRaw) {
         throw new BadRequestException('Field "atendenteData" is required.');
       }
-      const parsed = JSON.parse(atendenteDataRaw);
+      const parsed: unknown = JSON.parse(atendenteDataRaw);
       const dto = plainToInstance(CreateAtendenteDto, parsed);
       const errors = await validate(dto);
       if (errors.length > 0) {
@@ -112,7 +119,9 @@ export class AtendenteController {
   }
 
   @Put(":id")
-  @UseInterceptors(FileFieldsInterceptor([...PDF_FIELDS]))
+  @UseInterceptors(
+    FileFieldsInterceptor([...PDF_FIELDS], ATENDENTE_UPLOAD_OPTIONS),
+  )
   async update(
     @Param("id", ParseUUIDPipe) id: string,
     @UploadedFiles()
@@ -126,7 +135,7 @@ export class AtendenteController {
       if (!atendenteDataRaw) {
         throw new BadRequestException('Field "atendenteData" is required.');
       }
-      const parsed = JSON.parse(atendenteDataRaw);
+      const parsed: unknown = JSON.parse(atendenteDataRaw);
       const dto = plainToInstance(UpdateAtendenteDto, parsed);
       const errors = await validate(dto);
       if (errors.length > 0) {

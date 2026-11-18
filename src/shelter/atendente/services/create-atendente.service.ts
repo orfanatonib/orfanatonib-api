@@ -4,9 +4,11 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import type { UploadBatch } from "src/shared/media/storage/upload-batch";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import {
+  MediaItemEntity,
   MediaType,
   UploadType,
 } from "src/shared/media/media-item/media-item.entity";
@@ -28,7 +30,7 @@ export class CreateAtendenteService {
   constructor(
     private readonly atendenteRepo: AtendenteRepository,
     private readonly mediaProcessor: MediaItemProcessor,
-    private readonly s3Service: AwsS3Service,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   async execute(
@@ -69,24 +71,41 @@ export class CreateAtendenteService {
       attendableId: dto.attendableId ?? null,
     });
 
-    if (hasEstadual) {
-      await this.uploadAndSavePdf(
-        files.estadual!,
-        atendente.id,
-        MediaTargetType.AtendenteEstadual,
-        dto.pdfEstadual?.title,
-        dto.pdfEstadual?.description,
-      );
+    // Criação que falha em qualquer PDF não deixa nada: objetos enviados, linhas e o cadastro.
+    const batch = this.mediaStorage.newBatch();
+    const savedRows: MediaItemEntity[] = [];
+    try {
+      if (hasEstadual) {
+        savedRows.push(
+          await this.uploadAndSavePdf(
+            files.estadual!,
+            atendente.id,
+            MediaTargetType.AtendenteEstadual,
+            batch,
+            dto.pdfEstadual?.title,
+            dto.pdfEstadual?.description,
+          ),
+        );
+      }
+      if (hasFederal) {
+        savedRows.push(
+          await this.uploadAndSavePdf(
+            files.federal!,
+            atendente.id,
+            MediaTargetType.AtendenteFederal,
+            batch,
+            dto.pdfFederal?.title,
+            dto.pdfFederal?.description,
+          ),
+        );
+      }
+    } catch (error) {
+      await batch.discard();
+      await this.mediaProcessor.removeMediaItemsKeepingFiles(savedRows);
+      await this.atendenteRepo.remove(atendente.id);
+      throw error;
     }
-    if (hasFederal) {
-      await this.uploadAndSavePdf(
-        files.federal!,
-        atendente.id,
-        MediaTargetType.AtendenteFederal,
-        dto.pdfFederal?.title,
-        dto.pdfFederal?.description,
-      );
-    }
+    batch.commit();
 
     const [pdfEstadual, pdfFederal] = await Promise.all([
       this.mediaProcessor.findMediaItemByTarget(
@@ -114,26 +133,29 @@ export class CreateAtendenteService {
     file: Express.Multer.File,
     atendenteId: string,
     targetType: MediaTargetType,
+    batch: UploadBatch,
     title?: string,
     description?: string,
-  ): Promise<void> {
-    let mediaUrl: string;
-    try {
-      mediaUrl = await this.s3Service.upload(file);
-    } catch (error) {
-      this.logger.error(
-        `Error uploading PDF: ${file.originalname}`,
-        (error as Error).stack,
-      );
-      throw new BadRequestException("Falha no upload do arquivo.");
-    }
+  ): Promise<MediaItemEntity> {
+    await this.mediaStorage.uploadAll(
+      [
+        {
+          file,
+          mediaType: MediaType.DOCUMENT,
+          entity: targetType,
+          ownerId: atendenteId,
+        },
+      ],
+      batch,
+    );
+    const uploaded = batch.objects[batch.objects.length - 1];
     const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
       {
         title: title || file.originalname,
         description: description || "",
         mediaType: MediaType.DOCUMENT,
         uploadType: UploadType.UPLOAD,
-        url: mediaUrl,
+        url: uploaded.url,
         isLocalFile: true,
         originalName: file.originalname,
         size: file.size,
@@ -141,12 +163,8 @@ export class CreateAtendenteService {
       atendenteId,
       targetType,
     );
-    try {
-      await this.mediaProcessor.saveMediaItem(mediaEntity);
-    } catch (error) {
-      await this.s3Service.delete(mediaUrl);
-      throw error;
-    }
+    mediaEntity.storageKey = uploaded.key;
+    return this.mediaProcessor.saveMediaItem(mediaEntity);
   }
 
   private async validateAttendable(
@@ -165,7 +183,9 @@ export class CreateAtendenteService {
       );
     }
     if (attendableType === AttendableType.INTEGRATION) {
-      const exists = await this.atendenteRepo.findIntegrationById(attendableId!);
+      const exists = await this.atendenteRepo.findIntegrationById(
+        attendableId!,
+      );
       if (!exists)
         throw new NotFoundException(
           `Integration with id ${attendableId} not found.`,
@@ -183,7 +203,8 @@ export class CreateAtendenteService {
   ): Promise<string | undefined> {
     if (!attendableType || !attendableId) return undefined;
     if (attendableType === AttendableType.INTEGRATION) {
-      const integration = await this.atendenteRepo.findIntegrationById(attendableId);
+      const integration =
+        await this.atendenteRepo.findIntegrationById(attendableId);
       return integration?.name ?? undefined;
     }
     if (attendableType === AttendableType.USER) {

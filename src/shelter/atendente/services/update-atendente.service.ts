@@ -5,7 +5,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
 } from "@nestjs/common";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import {
   MediaType,
@@ -25,7 +25,7 @@ export class UpdateAtendenteService {
   constructor(
     private readonly atendenteRepo: AtendenteRepository,
     private readonly mediaProcessor: MediaItemProcessor,
-    private readonly s3Service: AwsS3Service,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   async execute(
@@ -130,10 +130,10 @@ export class UpdateAtendenteService {
     existing: Awaited<ReturnType<MediaItemProcessor["findMediaItemByTarget"]>>,
   ): Promise<void> {
     if (!existing) return;
-    await this.mediaProcessor.deleteMediaItems(
-      [existing],
-      this.s3Service.delete.bind(this.s3Service),
-    );
+    const urls = await this.mediaProcessor.removeMediaItemsKeepingFiles([
+      existing,
+    ]);
+    await this.mediaStorage.deleteAfterCommit(urls);
   }
   private async replacePdf(
     atendenteId: string,
@@ -147,45 +147,50 @@ export class UpdateAtendenteService {
       targetType,
     );
 
-    let mediaUrl: string;
+    // novo → banco → só então apaga o antigo; falha descarta o novo e mantém o antigo.
+    const batch = this.mediaStorage.newBatch();
     try {
-      mediaUrl = await this.s3Service.upload(file);
-    } catch (error) {
-      this.logger.error(
-        `Error uploading PDF: ${file.originalname}`,
-        (error as Error).stack,
+      await this.mediaStorage.uploadAll(
+        [
+          {
+            file,
+            mediaType: MediaType.DOCUMENT,
+            entity: targetType,
+            ownerId: atendenteId,
+          },
+        ],
+        batch,
       );
-      throw new BadRequestException("Falha no upload do arquivo.");
-    }
-
-    const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
-      {
-        title: title || file.originalname,
-        description: description || "",
-        mediaType: MediaType.DOCUMENT,
-        uploadType: UploadType.UPLOAD,
-        url: mediaUrl,
-        isLocalFile: true,
-        originalName: file.originalname,
-        size: file.size,
-      },
-      atendenteId,
-      targetType,
-    );
-    try {
+      const uploaded = batch.objects[batch.objects.length - 1];
+      const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
+        {
+          title: title || file.originalname,
+          description: description || "",
+          mediaType: MediaType.DOCUMENT,
+          uploadType: UploadType.UPLOAD,
+          url: uploaded.url,
+          isLocalFile: true,
+          originalName: file.originalname,
+          size: file.size,
+        },
+        atendenteId,
+        targetType,
+      );
+      mediaEntity.storageKey = uploaded.key;
       await this.mediaProcessor.saveMediaItem(mediaEntity);
     } catch (error) {
-      await this.s3Service.delete(mediaUrl);
+      await batch.discard();
       throw error;
     }
+    batch.commit();
 
     if (existing) {
-      await this.mediaProcessor.deleteMediaItems(
-        [existing],
-        this.s3Service.delete.bind(this.s3Service),
-      );
+      const urls = await this.mediaProcessor.removeMediaItemsKeepingFiles([
+        existing,
+      ]);
+      await this.mediaStorage.deleteAfterCommit(urls);
       this.logger.log(
-        `Removed old PDF from S3 for antecedente ${atendenteId} (${targetType}) to avoid orphan file`,
+        `Replaced PDF for antecedente ${atendenteId} (${targetType}); old object queued for removal`,
       );
     }
   }
@@ -219,7 +224,8 @@ export class UpdateAtendenteService {
   ): Promise<string | undefined> {
     if (!attendableType || !attendableId) return undefined;
     if (attendableType === AttendableType.INTEGRATION) {
-      const integration = await this.atendenteRepo.findIntegrationById(attendableId);
+      const integration =
+        await this.atendenteRepo.findIntegrationById(attendableId);
       return integration?.name ?? undefined;
     }
     if (attendableType === AttendableType.USER) {

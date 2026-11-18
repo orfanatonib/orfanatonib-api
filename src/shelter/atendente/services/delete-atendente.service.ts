@@ -6,7 +6,7 @@ import {
 } from "@nestjs/common";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { AtendenteRepository } from "../atendente.repository";
 
 @Injectable()
@@ -16,7 +16,7 @@ export class DeleteAtendenteService {
   constructor(
     private readonly atendenteRepo: AtendenteRepository,
     private readonly mediaProcessor: MediaItemProcessor,
-    private readonly s3Service: AwsS3Service,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   async execute(id: string): Promise<void> {
@@ -43,16 +43,14 @@ export class DeleteAtendenteService {
         ),
       ]);
       const allMedia = [...estadualItems, ...federalItems, ...legacyItems];
-      if (allMedia.length > 0) {
-        await this.mediaProcessor.deleteMediaItems(
-          allMedia,
-          this.s3Service.delete.bind(this.s3Service),
-        );
-        this.logger.log(
-          `Deleted ${allMedia.length} media item(s) and S3 file(s) for antecedente criminal ${id}`,
-        );
-      }
+      // Cadastro e linhas primeiro; PDFs (dado sensível) saem do bucket depois, com fila de limpeza se falhar.
       await this.atendenteRepo.remove(id);
+      const fileUrls =
+        await this.mediaProcessor.removeMediaItemsKeepingFiles(allMedia);
+      await this.mediaStorage.deleteAfterCommit(fileUrls);
+      this.logger.log(
+        `Deleted ${allMedia.length} media item(s) for antecedente criminal ${id}`,
+      );
       this.logger.log(`Antecedente criminal ${id} deleted successfully`);
     } catch (error) {
       if (error instanceof NotFoundException) throw error;

@@ -109,7 +109,8 @@ export class GetAtendenteService {
     let integrations: IntegrationEntity[] = [];
     let users: UserEntity[] = [];
     if (integrationIds.length > 0) {
-      integrations = await this.atendenteRepo.findIntegrationsByIds(integrationIds);
+      integrations =
+        await this.atendenteRepo.findIntegrationsByIds(integrationIds);
     }
     if (userIds.length > 0) {
       users = await this.atendenteRepo.findUsersByIds(userIds);
@@ -151,7 +152,8 @@ export class GetAtendenteService {
   ): Promise<string | undefined> {
     if (!attendableType || !attendableId) return undefined;
     if (attendableType === AttendableType.INTEGRATION) {
-      const integration = await this.atendenteRepo.findIntegrationById(attendableId);
+      const integration =
+        await this.atendenteRepo.findIntegrationById(attendableId);
       return integration?.name ?? undefined;
     }
     if (attendableType === AttendableType.USER) {
