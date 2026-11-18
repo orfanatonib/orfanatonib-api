@@ -23,7 +23,9 @@ describe("CompleteProductionStageService", () => {
       ],
     }).compile();
 
-    service = module.get<CompleteProductionStageService>(CompleteProductionStageService);
+    service = module.get<CompleteProductionStageService>(
+      CompleteProductionStageService,
+    );
     repository = module.get(ContentPackagesRepository);
   });
 

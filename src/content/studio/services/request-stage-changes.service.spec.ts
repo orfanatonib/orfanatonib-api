@@ -24,7 +24,9 @@ describe("RequestStageChangesService", () => {
       ],
     }).compile();
 
-    service = module.get<RequestStageChangesService>(RequestStageChangesService);
+    service = module.get<RequestStageChangesService>(
+      RequestStageChangesService,
+    );
     repository = module.get(ContentPackagesRepository);
   });
 

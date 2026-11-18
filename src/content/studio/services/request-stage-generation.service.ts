@@ -1,18 +1,39 @@
-import { Injectable, ServiceUnavailableException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 
 import { RequestStageGenerationDto } from "../dto/request-stage-generation.dto";
 import { ContentGenerationJobEntity } from "../entities/content-generation-job.entity";
+import { ContentGenerationJobStatus } from "../enums/content-generation-job-status.enum";
+import { AiJobQueuePort } from "../queue/ai-job-queue.port";
+import { ContentPackagesRepository } from "../repositories/content-packages.repository";
 
 @Injectable()
 export class RequestStageGenerationService {
+  constructor(
+    private readonly packages: ContentPackagesRepository,
+    private readonly queue: AiJobQueuePort,
+  ) {}
+
+  /**
+   * Cria o job (PENDING, idempotente) numa transação e SÓ DEPOIS do commit
+   * enfileira o id. Repetir a mesma chave devolve o job existente sem enfileirar de novo.
+   */
   async execute(
-    _packageId: string,
-    _stageId: string,
-    _dto: RequestStageGenerationDto,
-    _requestedById: string,
+    packageId: string,
+    stageId: string,
+    dto: RequestStageGenerationDto,
+    requestedById: string,
   ): Promise<ContentGenerationJobEntity> {
-    throw new ServiceUnavailableException(
-      "A geração automática ainda não está operacional. Salve o conteúdo manualmente enquanto o worker e o provedor não estiverem habilitados.",
-    );
+    const job = await this.packages.requestStageGeneration({
+      packageId,
+      stageId,
+      capability: dto.capability,
+      idempotencyKey: dto.idempotencyKey,
+      requestedById,
+    });
+
+    if (job.status === ContentGenerationJobStatus.PENDING) {
+      await this.queue.enqueue({ jobId: job.id });
+    }
+    return job;
   }
 }

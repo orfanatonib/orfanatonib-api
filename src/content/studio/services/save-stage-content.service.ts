@@ -28,7 +28,8 @@ export class SaveStageContentService {
       stageId,
       structuredContent: dto.structuredContent,
       contentChecksum,
-      templateVersion: dto.templateVersion?.trim() || CONTENT_STUDIO_CATALOG_VERSION,
+      templateVersion:
+        dto.templateVersion?.trim() || CONTENT_STUDIO_CATALOG_VERSION,
       generationSnapshot: null,
       createdById,
     });

@@ -15,7 +15,6 @@ import {
 } from "src/common/exceptions";
 
 import { CONTENT_STUDIO_CATALOG_VERSION } from "../constants";
-import { AiGenerationCapability } from "../ai/enums/ai-generation-capability.enum";
 import { ContentGenerationJobEntity } from "../entities/content-generation-job.entity";
 import { ContentPackageEntity } from "../entities/content-package.entity";
 import { ContentReviewCommentEntity } from "../entities/content-review-comment.entity";
@@ -37,7 +36,9 @@ import {
   QueryContentPackagesInput,
   RequestContentStageGenerationInput,
   RequestContentStageChangesInput,
+  FailGenerationJobInput,
   SaveContentStageVersionInput,
+  StartedGenerationJob,
 } from "../types";
 import {
   canTransitionContentPackage,
@@ -270,6 +271,7 @@ export class ContentPackagesRepository {
             stageId: stage.id,
             stageType: stage.stageType,
             capability: input.capability,
+            theme: contentPackage.theme,
           },
           configurationSnapshot: {
             catalogVersion: CONTENT_STUDIO_CATALOG_VERSION,
@@ -287,6 +289,150 @@ export class ContentPackagesRepository {
       await stageRepo.save(stage);
       await this.movePackageToInProgress(packageRepo, contentPackage);
 
+      return job;
+    });
+  }
+
+  /** Jobs que precisam voltar para a fila (boot/reconciliação): pendentes, reagendados e RUNNING com lease vencido. */
+  async findRecoverableGenerationJobs(
+    now: Date,
+    limit = 100,
+  ): Promise<ContentGenerationJobEntity[]> {
+    const repo = this.dataSource.getRepository(ContentGenerationJobEntity);
+    return repo
+      .createQueryBuilder("job")
+      .where("job.status IN (:...open)", {
+        open: [
+          ContentGenerationJobStatus.PENDING,
+          ContentGenerationJobStatus.RETRY_SCHEDULED,
+        ],
+      })
+      .orWhere("job.status = :running AND job.leaseExpiresAt < :now", {
+        running: ContentGenerationJobStatus.RUNNING,
+        now,
+      })
+      .orderBy("job.createdAt", "ASC")
+      .take(limit)
+      .getMany();
+  }
+
+  /** Pega o job para executar (lease). `null` se já concluído/cancelado ou em execução por outro worker. */
+  async startGenerationJob(
+    jobId: string,
+    workerId: string,
+    leaseMs: number,
+    now: Date = new Date(),
+  ): Promise<StartedGenerationJob | null> {
+    return this.dataSource.transaction(async (manager) => {
+      const jobRepo = manager.getRepository(ContentGenerationJobEntity);
+      const job = await jobRepo.findOne({
+        where: { id: jobId },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!job) return null;
+
+      const runnable =
+        job.status === ContentGenerationJobStatus.PENDING ||
+        job.status === ContentGenerationJobStatus.RETRY_SCHEDULED ||
+        (job.status === ContentGenerationJobStatus.RUNNING &&
+          !!job.leaseExpiresAt &&
+          job.leaseExpiresAt < now);
+      if (!runnable) return null;
+
+      job.status = ContentGenerationJobStatus.RUNNING;
+      job.attempts += 1;
+      job.workerId = workerId;
+      job.heartbeatAt = now;
+      job.leaseExpiresAt = new Date(now.getTime() + leaseMs);
+      await jobRepo.save(job);
+
+      const request = job.normalizedRequest as {
+        packageId?: string;
+        stageType?: string;
+        theme?: string;
+      };
+      return {
+        jobId: job.id,
+        packageId: request.packageId ?? "",
+        stageId: job.stageId,
+        stageType: request.stageType ?? "",
+        theme: request.theme ?? "",
+        capability: job.capability,
+        requestedById: job.requestedById,
+        attempts: job.attempts,
+      };
+    });
+  }
+
+  /** Falha transitória (RETRY_SCHEDULED) ou definitiva (FAILED + etapa FAILED). Ignora job já cancelado. */
+  async failGenerationJob(input: FailGenerationJobInput): Promise<void> {
+    await this.dataSource.transaction(async (manager) => {
+      const jobRepo = manager.getRepository(ContentGenerationJobEntity);
+      const job = await jobRepo.findOne({
+        where: { id: input.jobId },
+        lock: { mode: "pessimistic_write" },
+      });
+      if (!job || job.status !== ContentGenerationJobStatus.RUNNING) return;
+
+      job.status = input.retry
+        ? ContentGenerationJobStatus.RETRY_SCHEDULED
+        : ContentGenerationJobStatus.FAILED;
+      job.errorCode = input.errorCode.slice(0, 80);
+      job.errorMessage = input.errorMessage.slice(0, 500);
+      job.workerId = null;
+      job.leaseExpiresAt = null;
+      job.heartbeatAt = null;
+      if (input.retry && input.availableAt) job.availableAt = input.availableAt;
+      await jobRepo.save(job);
+
+      if (!input.retry) {
+        const stageRepo = manager.getRepository(ContentStageEntity);
+        const stage = await stageRepo.findOne({ where: { id: job.stageId } });
+        if (
+          stage &&
+          canTransitionContentStage(stage.status, ContentStageStatus.FAILED)
+        ) {
+          stage.status = ContentStageStatus.FAILED;
+          await stageRepo.save(stage);
+        }
+      }
+    });
+  }
+
+  /** Cancela a geração ativa da etapa (ação do usuário). Devolve o job cancelado ou null. */
+  async cancelGenerationJob(
+    packageId: string,
+    stageId: string,
+  ): Promise<ContentGenerationJobEntity | null> {
+    return this.dataSource.transaction(async (manager) => {
+      const { stage } = await this.findStageContextOrFail(
+        manager,
+        packageId,
+        stageId,
+      );
+      const jobRepo = manager.getRepository(ContentGenerationJobEntity);
+      const job = await jobRepo.findOne({
+        where: {
+          stageId,
+          status: In([...ACTIVE_CONTENT_GENERATION_JOB_STATUSES]),
+        },
+      });
+      if (!job) return null;
+
+      job.status = ContentGenerationJobStatus.CANCELLED;
+      job.workerId = null;
+      job.leaseExpiresAt = null;
+      job.heartbeatAt = null;
+      await jobRepo.save(job);
+
+      if (
+        stage.status === ContentStageStatus.GENERATING &&
+        canTransitionContentStage(stage.status, ContentStageStatus.FAILED)
+      ) {
+        const stageRepo = manager.getRepository(ContentStageEntity);
+        stage.status = ContentStageStatus.FAILED;
+        await stageRepo.save(stage);
+      }
       return job;
     });
   }
@@ -334,6 +480,29 @@ export class ContentPackagesRepository {
           createdById: input.createdById,
         }),
       );
+
+      if (input.completedJobId) {
+        // Job concluído: vira SUCCEEDED aqui (não é cancelado pelo update abaixo).
+        const completed = await jobRepo.update(
+          {
+            id: input.completedJobId,
+            status: ContentGenerationJobStatus.RUNNING,
+          },
+          {
+            status: ContentGenerationJobStatus.SUCCEEDED,
+            workerId: null,
+            leaseExpiresAt: null,
+            heartbeatAt: null,
+            errorCode: null,
+            errorMessage: null,
+          },
+        );
+        if (!completed.affected) {
+          throw new ResourceConflictException(
+            "A geração foi cancelada antes de concluir",
+          );
+        }
+      }
 
       await jobRepo.update(
         {

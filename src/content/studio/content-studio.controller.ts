@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -43,6 +44,7 @@ import { GetContentPackagesService } from "./services/get-content-packages.servi
 import { GetContentStudioDashboardService } from "./services/get-content-studio-dashboard.service";
 import { RequestStageChangesService } from "./services/request-stage-changes.service";
 import { ResolveReviewCommentService } from "./services/resolve-review-comment.service";
+import { CancelStageGenerationService } from "./services/cancel-stage-generation.service";
 import { RequestStageGenerationService } from "./services/request-stage-generation.service";
 import { SaveStageContentService } from "./services/save-stage-content.service";
 import { SubmitPackageReviewService } from "./services/submit-package-review.service";
@@ -63,6 +65,7 @@ export class ContentStudioController {
     private readonly resolveReviewComment: ResolveReviewCommentService,
     private readonly getDashboard: GetContentStudioDashboardService,
     private readonly archivePackage: ArchiveContentPackageService,
+    private readonly cancelGeneration: CancelStageGenerationService,
   ) {}
 
   @Get("catalog")
@@ -152,6 +155,21 @@ export class ContentStudioController {
       this.authenticatedUserId(request),
     );
     return ContentGenerationJobResponseDto.fromEntity(job);
+  }
+
+  @Delete("packages/:packageId/stages/:stageId/generations")
+  @FeatureFlag([
+    FeatureFlagKeys.CONTENT_STUDIO,
+    FeatureFlagKeys.CONTENT_STUDIO_GENERATION,
+  ])
+  @UseGuards(FeatureFlagGuard)
+  async cancelStageGeneration(
+    @Param("packageId", new ParseUUIDPipe()) packageId: string,
+    @Param("stageId", new ParseUUIDPipe()) stageId: string,
+  ): Promise<ContentGenerationJobResponseDto> {
+    return ContentGenerationJobResponseDto.fromEntity(
+      await this.cancelGeneration.execute(packageId, stageId),
+    );
   }
 
   @Patch("packages/:packageId/stages/:stageId/content")

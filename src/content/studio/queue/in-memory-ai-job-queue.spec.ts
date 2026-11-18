@@ -17,7 +17,13 @@ describe("InMemoryAiJobQueue", () => {
     clock = 0;
   });
 
-  const make = () => new InMemoryAiJobQueue(policy, now, () => 0.5);
+  const make = () =>
+    new InMemoryAiJobQueue(
+      policy,
+      now,
+      () => 0.5,
+      () => undefined,
+    );
   const flush = () => new Promise((resolve) => setImmediate(resolve));
 
   it("processa o job e registra como concluído", async () => {

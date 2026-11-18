@@ -67,7 +67,7 @@ describe("FakeAiGenerationGateway", () => {
 
   it("[[fake:429:2]] falha 2 vezes por job e depois funciona", async () => {
     const g = make();
-    const kinds = [];
+    const kinds: Array<AiProviderErrorKind | null> = [];
     for (let i = 0; i < 3; i++)
       kinds.push(await kindOf(g.generateStructuredText(req("[[fake:429:2]]"))));
     expect(kinds).toEqual([
@@ -81,7 +81,7 @@ describe("FakeAiGenerationGateway", () => {
     const g = make(60);
     expect(await kindOf(g.generateStructuredText(req("a")))).toBeNull();
     let last: AiProviderErrorKind | null = null;
-    for (let i = 0; i < 10 && last === null; i++)
+    for (let i = 0; i < 60 && last === null; i++)
       last = await kindOf(g.generateStructuredText(req("b", `j${i}`)));
     expect(last).toBe(AiProviderErrorKind.QUOTA);
   });

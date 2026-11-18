@@ -15,12 +15,12 @@ export class GetContentStudioCatalogService {
 
   async execute(): Promise<ContentStudioCatalogResponseDto> {
     const [review, publication, providerAdministration] = await Promise.all([
-        this.featureFlags.isEnabled(FeatureFlagKeys.CONTENT_STUDIO_REVIEW),
-        this.featureFlags.isEnabled(FeatureFlagKeys.CONTENT_STUDIO_PUBLICATION),
-        this.featureFlags.isEnabled(
-          FeatureFlagKeys.CONTENT_STUDIO_PROVIDER_ADMIN,
-        ),
-      ]);
+      this.featureFlags.isEnabled(FeatureFlagKeys.CONTENT_STUDIO_REVIEW),
+      this.featureFlags.isEnabled(FeatureFlagKeys.CONTENT_STUDIO_PUBLICATION),
+      this.featureFlags.isEnabled(
+        FeatureFlagKeys.CONTENT_STUDIO_PROVIDER_ADMIN,
+      ),
+    ]);
 
     return {
       version: CONTENT_STUDIO_CATALOG_VERSION,

@@ -23,7 +23,9 @@ describe("SubmitPackageReviewService", () => {
       ],
     }).compile();
 
-    service = module.get<SubmitPackageReviewService>(SubmitPackageReviewService);
+    service = module.get<SubmitPackageReviewService>(
+      SubmitPackageReviewService,
+    );
     repository = module.get(ContentPackagesRepository);
   });
 

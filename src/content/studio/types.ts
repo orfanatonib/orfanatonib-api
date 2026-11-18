@@ -66,6 +66,27 @@ export interface SaveContentStageVersionInput {
   readonly templateVersion: string;
   readonly generationSnapshot: Record<string, unknown> | null;
   readonly createdById: string;
+  /** Job de geração que está concluindo: vira SUCCEEDED na mesma transação (não é cancelado). */
+  readonly completedJobId?: string;
+}
+
+export interface StartedGenerationJob {
+  readonly jobId: string;
+  readonly packageId: string;
+  readonly stageId: string;
+  readonly stageType: string;
+  readonly theme: string;
+  readonly capability: AiGenerationCapability;
+  readonly requestedById: string;
+  readonly attempts: number;
+}
+
+export interface FailGenerationJobInput {
+  readonly jobId: string;
+  readonly retry: boolean;
+  readonly availableAt?: Date;
+  readonly errorCode: string;
+  readonly errorMessage: string;
 }
 
 export interface CompleteContentStageProductionInput {

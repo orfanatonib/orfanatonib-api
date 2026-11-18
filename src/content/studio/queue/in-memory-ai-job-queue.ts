@@ -34,6 +34,13 @@ export class InMemoryAiJobQueue extends AiJobQueuePort {
     private readonly policy: RetryPolicy = DEFAULT_RETRY_POLICY,
     private readonly now: () => number = Date.now,
     private readonly random: () => number = () => 0.5,
+    /** Agenda o próximo `pump` para quando o retry vencer (os testes injetam um no-op e avançam o relógio à mão). */
+    private readonly schedule: (fn: () => void, delayMs: number) => void = (
+      fn,
+      delayMs,
+    ) => {
+      setTimeout(fn, delayMs).unref();
+    },
   ) {
     super();
   }
@@ -104,6 +111,7 @@ export class InMemoryAiJobQueue extends AiJobQueuePort {
             attempt: entry.attempt + 1,
             notBefore: this.now() + decision.delayMs,
           });
+          this.schedule(() => this.pump(), decision.delayMs);
         } else {
           this.deadLetters.push({
             job: entry.job,

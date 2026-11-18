@@ -7,7 +7,10 @@ import { ContentPackagesRepository } from "../repositories/content-packages.repo
 export class CompleteProductionStageService {
   constructor(private readonly packages: ContentPackagesRepository) {}
 
-  async execute(packageId: string, stageId: string): Promise<ContentPackageEntity> {
+  async execute(
+    packageId: string,
+    stageId: string,
+  ): Promise<ContentPackageEntity> {
     return this.packages.completeProductionStage({ packageId, stageId });
   }
 }
