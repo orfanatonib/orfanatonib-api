@@ -73,7 +73,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       error: errorDetails.error,
       category: errorDetails.category,
       timestamp: new Date().toISOString(),
-      path: request.url,
+      path: (request.originalUrl ?? request.url ?? "").split("?")[0],
       requestId,
       correlationId,
       ...(errorDetails.details && { details: errorDetails.details }),

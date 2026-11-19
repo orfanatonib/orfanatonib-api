@@ -217,4 +217,15 @@ describe("GlobalExceptionFilter — registro (log) sem dado pessoal", () => {
     expect(error).toHaveBeenCalledTimes(1);
     expect(warn).toHaveBeenCalledTimes(1);
   });
+
+  it("o `path` da resposta não ecoa a query string (pode carregar token ou nome buscado)", () => {
+    const { body } = run(
+      new GlobalExceptionFilter(),
+      new BadRequestException("x"),
+      "/auth/reset?token=segredo&searchString=Maria",
+    );
+    expect(body?.path).toBe("/auth/reset");
+    expect(JSON.stringify(body)).not.toContain("segredo");
+    expect(JSON.stringify(body)).not.toContain("Maria");
+  });
 });
