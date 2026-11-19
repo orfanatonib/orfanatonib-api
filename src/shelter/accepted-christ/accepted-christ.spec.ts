@@ -89,6 +89,40 @@ describe("POST /accepted-christs", () => {
     });
   });
 
+  describe("falha do colaborador", () => {
+    it("erro ao gravar propaga e nenhuma resposta é montada", async () => {
+      const repo = {
+        findShelteredById: jest.fn().mockResolvedValue({ id: UUID }),
+        create: jest.fn().mockReturnValue({}),
+        save: jest.fn().mockRejectedValue(new Error("db down")),
+      };
+      const svc = new CreateAcceptedChristService(repo as never, {} as never);
+      await expect(svc.create({ shelteredId: UUID })).rejects.toThrow(
+        "db down",
+      );
+    });
+
+    it("decisões repetidas para o mesmo acolhido são permitidas (sem regra de unicidade)", async () => {
+      const entity = {
+        id: "a",
+        decision: null,
+        notes: null,
+        sheltered: { id: UUID },
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const repo = {
+        findShelteredById: jest.fn().mockResolvedValue({ id: UUID }),
+        create: jest.fn().mockReturnValue(entity),
+        save: jest.fn().mockResolvedValue(entity),
+      };
+      const svc = new CreateAcceptedChristService(repo as never, {} as never);
+      await svc.create({ shelteredId: UUID });
+      await svc.create({ shelteredId: UUID });
+      expect(repo.save).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe("escopo por abrigo (createAs)", () => {
     const entity = {
       id: "a1",
