@@ -54,6 +54,28 @@ export class GetLeaderProfilesService {
     }
   }
 
+  /**
+   * Admin lê todos os líderes (`undefined`); o líder só os que atuam nos
+   * abrigos que ele lidera — e-mail e telefone dos demais não são dele.
+   */
+  private async shelterScopeOf(
+    ctx: AccessCtx,
+  ): Promise<readonly string[] | undefined> {
+    if (ctx.role === "admin") return undefined;
+    if (!ctx.userId) return [];
+    return this.getSheltersService.findShelterIdsForLeader(ctx.userId);
+  }
+
+  private inScope(
+    leader: LeaderProfileEntity,
+    scope: readonly string[] | undefined,
+  ): boolean {
+    if (!scope) return true;
+    return (leader.teams ?? []).some(
+      (team) => team.shelter && scope.includes(team.shelter.id),
+    );
+  }
+
   async findPage(
     req: Request,
     query: LeaderProfilesQueryDto,
@@ -61,8 +83,10 @@ export class GetLeaderProfilesService {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    const { items, total, page, limit } =
-      await this.repo.findPageWithFilters(query);
+    const { items, total, page, limit } = await this.repo.findPageWithFilters(
+      query,
+      await this.shelterScopeOf(ctx),
+    );
 
     await this.populateUserImages(items);
 
@@ -78,7 +102,10 @@ export class GetLeaderProfilesService {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    const items = await this.repo.listEntities();
+    const scope = await this.shelterScopeOf(ctx);
+    const items = (await this.repo.listEntities()).filter((leader) =>
+      this.inScope(leader, scope),
+    );
     await this.populateUserImages(items);
 
     return items.map(toLeaderSimple);
@@ -89,6 +116,10 @@ export class GetLeaderProfilesService {
     this.assertAllowed(ctx);
 
     const leader = await this.repo.findOneWithSheltersAndMembersOrFail(id);
+    // Fora do escopo = inexistente (404), sem revelar que o líder existe.
+    if (!this.inScope(leader, await this.shelterScopeOf(ctx))) {
+      throw new NotFoundException("LeaderProfile not found");
+    }
     await this.populateUserImages([leader]);
     return toLeaderDto(leader);
   }

@@ -211,7 +211,27 @@ export class LeaderProfilesRepository {
     return qb;
   }
 
-  async findPageWithFilters(query: LeaderProfilesQueryDto): Promise<{
+  /**
+   * Escopo do líder: só líderes com equipe em algum dos abrigos informados.
+   * `undefined` = sem escopo (admin).
+   */
+  private applyShelterScope(
+    qb: SelectQueryBuilder<LeaderProfileEntity>,
+    shelterScope?: readonly string[],
+  ): SelectQueryBuilder<LeaderProfileEntity> {
+    if (!shelterScope) return qb;
+    return qb
+      .innerJoin("leader.teams", "scope_team")
+      .innerJoin("scope_team.shelter", "scope_shelter")
+      .andWhere("scope_shelter.id IN (:...scopeShelterIds)", {
+        scopeShelterIds: shelterScope.length ? shelterScope : [""],
+      });
+  }
+
+  async findPageWithFilters(
+    query: LeaderProfilesQueryDto,
+    shelterScope?: readonly string[],
+  ): Promise<{
     items: LeaderProfileEntity[];
     total: number;
     page: number;
@@ -224,12 +244,15 @@ export class LeaderProfilesRepository {
       (order || "desc").toUpperCase() === "ASC" ? "ASC" : "DESC";
     const offset = (page - 1) * limit;
 
-    const total = await this.applyFilters(this.baseIdsQuery(), query)
-      .select("leader.id")
-      .distinct(true)
-      .getCount();
+    const scoped = () =>
+      this.applyShelterScope(
+        this.applyFilters(this.baseIdsQuery(), query),
+        shelterScope,
+      );
 
-    const pageIdsRaw = await this.applyFilters(this.baseIdsQuery(), query)
+    const total = await scoped().select("leader.id").distinct(true).getCount();
+
+    const pageIdsRaw = await scoped()
       .select("leader.id", "id")
       .addSelect(sortColumn, "ord")
       .distinct(true)

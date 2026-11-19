@@ -93,3 +93,60 @@ describe("GetLeaderProfilesService.findMyShelters", () => {
     expect(repo.findSheltersByIds).not.toHaveBeenCalled();
   });
 });
+
+describe("GetLeaderProfilesService: escopo de leitura do líder (e-mail e telefone)", () => {
+  const leaderIn = (id: string, shelterId: string) => ({
+    id,
+    teams: [{ shelter: { id: shelterId } }],
+    user: { id: "u-" + id, name: "N", email: "e@x.com", phone: "1" },
+  });
+
+  it("admin lê sem escopo de abrigo", async () => {
+    const { svc, repo } = setup("admin");
+    await svc.findPage(req, {} as never);
+    expect(repo.findPageWithFilters).toHaveBeenCalledWith({}, undefined);
+  });
+
+  it("líder lê a página só dos abrigos que lidera", async () => {
+    const { svc, repo, shelters } = setup("leader");
+    shelters.findShelterIdsForLeader.mockResolvedValue(["s-own"]);
+    await svc.findPage(req, {} as never);
+    expect(repo.findPageWithFilters).toHaveBeenCalledWith({}, ["s-own"]);
+  });
+
+  it("líder sem abrigo não lê nenhum líder (escopo vazio)", async () => {
+    const { svc, repo } = setup("leader");
+    await svc.findPage(req, {} as never);
+    expect(repo.findPageWithFilters).toHaveBeenCalledWith({}, []);
+  });
+
+  it("a lista simples do líder omite líderes de outros abrigos", async () => {
+    const { svc, repo, shelters } = setup("leader");
+    shelters.findShelterIdsForLeader.mockResolvedValue(["s-own"]);
+    repo.listEntities.mockResolvedValue([
+      leaderIn("a", "s-own"),
+      leaderIn("b", "s-other"),
+    ]);
+    const out = await svc.list(req);
+    expect(out.map((l) => l.leaderProfileId)).toEqual(["a"]);
+  });
+
+  it("líder de outro abrigo é 404 no findOne (sem revelar que existe)", async () => {
+    const { svc, repo, shelters } = setup("leader");
+    shelters.findShelterIdsForLeader.mockResolvedValue(["s-own"]);
+    repo.findOneWithSheltersAndMembersOrFail.mockResolvedValue(
+      leaderIn("b", "s-other"),
+    );
+    await expect(svc.findOne("b", req)).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
+  });
+
+  it("admin lê qualquer líder no findOne", async () => {
+    const { svc, repo } = setup("admin");
+    repo.findOneWithSheltersAndMembersOrFail.mockResolvedValue(
+      leaderIn("b", "s-other"),
+    );
+    await expect(svc.findOne("b", req)).resolves.toMatchObject({ id: "b" });
+  });
+});
