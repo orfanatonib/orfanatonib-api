@@ -63,6 +63,8 @@ export interface SaveContentStageVersionInput {
   readonly packageId: string;
   readonly stageId: string;
   readonly structuredContent: Record<string, unknown>;
+  /** Documento rico editado à mão (ou `null`). */
+  readonly contentDocument?: Record<string, unknown> | null;
   readonly contentChecksum: string;
   readonly templateVersion: string;
   readonly generationSnapshot: Record<string, unknown> | null;

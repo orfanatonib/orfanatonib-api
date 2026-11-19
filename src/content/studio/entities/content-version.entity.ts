@@ -15,6 +15,13 @@ export class ContentVersionEntity extends BaseEntity {
   @Column({ type: "json" })
   structuredContent: Record<string, unknown>;
 
+  /**
+   * Documento rico (TipTap/ProseMirror) editado à mão no Estúdio. `null` = ninguém editou o documento:
+   * o exportador e a prévia montam o documento a partir de `structuredContent`.
+   */
+  @Column({ type: "json", nullable: true })
+  contentDocument: Record<string, unknown> | null;
+
   @Column({ type: "char", length: 64 })
   contentChecksum: string;
 

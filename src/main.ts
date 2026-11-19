@@ -1,3 +1,4 @@
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import { NestFactory } from "@nestjs/core";
 import type { NextFunction, Request, Response } from "express";
 import { ValidationPipe, Logger } from "@nestjs/common";
@@ -12,11 +13,13 @@ async function bootstrap() {
   const logger = new Logger("Bootstrap");
 
   try {
-    const app = await NestFactory.create(AppModule, {
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
       logger: ["error", "warn", "log", "debug", "verbose"],
       bufferLogs: true,
     });
     app.useLogger(app.get(StructuredLoggerService));
+    // O documento rico do Estúdio (TipTap) pode passar dos 100 KB padrão do Express.
+    app.useBodyParser("json", { limit: "4mb" });
 
     const { origins } = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS);
     const environment =

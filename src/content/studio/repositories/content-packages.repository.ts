@@ -576,6 +576,7 @@ export class ContentPackagesRepository {
           stageId: stage.id,
           versionNumber,
           structuredContent: input.structuredContent,
+          contentDocument: input.contentDocument ?? null,
           contentChecksum: input.contentChecksum,
           templateVersion: input.templateVersion,
           generationSnapshot: input.generationSnapshot,

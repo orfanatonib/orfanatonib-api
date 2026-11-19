@@ -110,6 +110,8 @@ export class ContentVersionResponseDto {
   stageId: string;
   versionNumber: number;
   structuredContent: Record<string, unknown>;
+  /** Documento rico editado à mão; `null` quando a prévia/exportação são montadas dos campos. */
+  contentDocument: Record<string, unknown> | null;
   contentChecksum: string;
   templateVersion: string;
   generationSnapshot: Record<string, unknown> | null;
@@ -123,6 +125,7 @@ export class ContentVersionResponseDto {
       stageId: entity.stageId,
       versionNumber: entity.versionNumber,
       structuredContent: entity.structuredContent,
+      contentDocument: entity.contentDocument ?? null,
       contentChecksum: entity.contentChecksum,
       templateVersion: entity.templateVersion,
       generationSnapshot: entity.generationSnapshot,

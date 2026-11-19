@@ -15,6 +15,10 @@ import { ConfigService } from "@nestjs/config";
 import { AiGenerationGateway } from "./ai/ai-generation.gateway";
 import { FakeAiGenerationGateway } from "./ai/fake-ai-generation.gateway";
 import { GeminiGenerationGateway } from "./ai/gemini-generation.gateway";
+import { ContentStudioExportController } from "./content-studio-export.controller";
+import { PdfLibreOfficeService } from "./export/pdf-libreoffice.service";
+import { StudioDocxService } from "./export/studio-docx.service";
+import { StudioExportService } from "./export/studio-export.service";
 import { ConfiguredAiGenerationGateway } from "./ai/configured-ai-generation.gateway";
 import { StudioProviderOverrides } from "./ai/provider-overrides.service";
 import { AiProviderSettingsModule } from "../ai-lessons/ai-provider-settings.module";
@@ -62,7 +66,11 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
       ContentVersionEntity,
     ]),
   ],
-  controllers: [ContentStudioController, AiManagementController],
+  controllers: [
+    ContentStudioController,
+    AiManagementController,
+    ContentStudioExportController,
+  ],
   providers: [
     ContentPackagesRepository,
     ContentStudioDashboardRepository,
@@ -88,6 +96,9 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
     OpenAiGenerationGateway,
     GeminiGenerationGateway,
     StudioProviderOverrides,
+    StudioDocxService,
+    PdfLibreOfficeService,
+    StudioExportService,
     {
       // Escolhe o provedor a cada chamada: simulado (`AI_PROVIDER_MODE=fake`, fora de produção), o ativo no
       // painel "Provedores e Modelos IA" (se tiver chave salva) ou o do ambiente. Ver `ConfiguredAiGenerationGateway`.
