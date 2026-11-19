@@ -24,4 +24,18 @@ export abstract class AiJobQueuePort {
 
   /** Espera os jobs em andamento terminarem e para de aceitar novos. */
   abstract close(): Promise<void>;
+
+  /** Qual implementação está em uso e se ela está saudável (aparece no painel do Estúdio). */
+  abstract health(): Promise<AiQueueHealth>;
+}
+
+export interface AiQueueHealth {
+  driver: "bullmq" | "memory";
+  healthy: boolean;
+  /** Jobs esperando (fila compartilhada no BullMQ; só desta instância na memória). */
+  waiting: number;
+  /** Jobs sendo processados agora. */
+  active: number;
+  /** Motivo quando `healthy` é falso. */
+  reason?: string;
 }

@@ -1,4 +1,9 @@
-import { AiJobHandler, AiJobQueuePort, AiQueueJob } from "./ai-job-queue.port";
+import {
+  AiJobHandler,
+  AiJobQueuePort,
+  AiQueueHealth,
+  AiQueueJob,
+} from "./ai-job-queue.port";
 import {
   DEFAULT_RETRY_POLICY,
   decideRetry,
@@ -62,6 +67,15 @@ export class InMemoryAiJobQueue extends AiJobQueuePort {
     this.closed = true;
     if (this.running === 0) return;
     await new Promise<void>((resolve) => this.idleWaiters.push(resolve));
+  }
+
+  health(): Promise<AiQueueHealth> {
+    return Promise.resolve({
+      driver: "memory",
+      healthy: !this.closed,
+      waiting: this.waiting.length,
+      active: this.running,
+    });
   }
 
   /** Avança o relógio lógico: processa o que já pode rodar. Útil com relógio injetado. */

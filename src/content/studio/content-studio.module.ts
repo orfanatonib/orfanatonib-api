@@ -6,6 +6,7 @@ import { FeatureFlagsModule } from "src/core/feature-flags/feature-flags.module"
 
 import { ContentStudioController } from "./content-studio.controller";
 import { AiJobQueuePort } from "./queue/ai-job-queue.port";
+import { BullMqAiJobQueue } from "./queue/bullmq-ai-job-queue";
 import { InMemoryAiJobQueue } from "./queue/in-memory-ai-job-queue";
 import { GetLatestStageGenerationService } from "./services/get-latest-stage-generation.service";
 import { CancelStageGenerationService } from "./services/cancel-stage-generation.service";
@@ -87,7 +88,21 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
     ProcessGenerationJobService,
     GenerationWorkerService,
     // Fila em processo (id do job apenas; o banco é a verdade). Um adaptador BullMQ/Redis entra por esta porta.
-    { provide: AiJobQueuePort, useFactory: () => new InMemoryAiJobQueue() },
+    {
+      // Redis (BullMQ) quando `REDIS_URL` existe — fila compartilhada entre instâncias e jobs que sobrevivem a deploy.
+      // Sem Redis (ou `CS_QUEUE_DRIVER=memory`) a fila é em processo: o reconciliador recupera o que ficou para trás.
+      provide: AiJobQueuePort,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService): AiJobQueuePort => {
+        const redisUrl = config.get<string>("REDIS_URL")?.trim();
+        const driver = (
+          config.get<string>("CS_QUEUE_DRIVER") ?? ""
+        ).toLowerCase();
+        return redisUrl && driver !== "memory"
+          ? new BullMqAiJobQueue({ redisUrl })
+          : new InMemoryAiJobQueue();
+      },
+    },
     RequestStageChangesService,
     ResolveReviewCommentService,
     SaveStageContentService,
