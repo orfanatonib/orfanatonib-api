@@ -17,6 +17,9 @@ import {
 import type { AuthenticatedRequest } from "src/core/auth/auth.types";
 import { UserRole } from "src/core/auth/auth.types";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 import { plainToInstance } from "class-transformer";
@@ -47,6 +50,13 @@ export class ImageSectionController {
     private readonly deleteService: DeleteImageSectionService,
   ) {}
 
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.SHELTER_PHOTO_UPLOAD,
+      FeatureFlagKeys.PHOTO_MODERATION,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
   @Post()
   @UseInterceptors(AnyFilesInterceptor(IMAGE_SECTION_UPLOAD_OPTIONS))
   async create(
@@ -70,6 +80,8 @@ export class ImageSectionController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.PHOTO_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Patch(":id")
   @UseGuards(AdminRoleGuard)
   @UseInterceptors(AnyFilesInterceptor(IMAGE_SECTION_UPLOAD_OPTIONS))
@@ -92,6 +104,8 @@ export class ImageSectionController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.PHOTO_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   @UseGuards(AdminRoleGuard)
   async delete(@Param("id") id: string) {
@@ -102,6 +116,8 @@ export class ImageSectionController {
     return { message: "Section removida com sucesso." };
   }
 
+  @FeatureFlag(FeatureFlagKeys.PHOTO_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   @UseGuards(AdminRoleGuard)
   async getById(@Param("id") id: string): Promise<ImageSectionResponseDto> {
@@ -113,6 +129,8 @@ export class ImageSectionController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.PHOTO_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(AdminRoleGuard)
   async getAll(): Promise<ImageSectionResponseDto[]> {

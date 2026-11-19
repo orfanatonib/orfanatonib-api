@@ -87,12 +87,26 @@ export class DocumentsController {
   }
 
   /** Documentos são do material interno (área do membro): exigem sessão. */
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.DOCUMENTS_LIBRARY,
+      FeatureFlagKeys.DOCUMENT_MANAGEMENT,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard)
   @Get()
   async findAll(@Query() query: QueryDocumentDto) {
     return this.getService.findAll(query);
   }
 
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.DOCUMENTS_LIBRARY,
+      FeatureFlagKeys.DOCUMENT_MANAGEMENT,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard)
   @Get(":id")
   async findOne(@Param("id", ParseUUIDPipe) id: string) {
