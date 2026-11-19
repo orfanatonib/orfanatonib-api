@@ -155,3 +155,16 @@ A fila do Estúdio é `InMemoryAiJobQueue` atrás de `AiJobQueuePort`; **não h�
 
 ## Tipos de erro do provedor
 `TIMEOUT`, `RATE_LIMIT`, `SERVER`, `NETWORK` (tentam de novo); `AUTHENTICATION`, `QUOTA`, `SAFETY`, `SCHEMA`, `NOT_FOUND_MODEL`, `CONTEXT_LENGTH`, `INVALID_REQUEST`, `CANCELLED`, `UNKNOWN`. A tradução de resposta HTTP é única (`ai/utils/provider-http-error.util.ts`), usada por OpenAI e Gemini.
+
+## Painel "Provedores e Modelos IA" (ChatGPT/OpenAI e Gemini)
+Tela `/adm/config-provedores-ia` (link no sidebar do Estúdio e no rodapé, só admin, flags `content_studio` + `content_studio_provider_admin`), igual à do Clubinho.
+
+| Rota (só admin) | O que faz |
+|---|---|
+| `GET /api/v1/lessons/providers/settings` | provedor ativo, modelos e `hasApiKey` por provedor (nunca a chave) |
+| `PUT /api/v1/lessons/providers/settings` | salva provedor ativo + blocos; `apiKey` omitida mantém, `""` remove, valor cifrado (`enc:`) é recusado; o provedor ATIVO precisa ter chave |
+| `GET/PUT /api/v1/lessons/providers/{openai,gemini}/settings` | um provedor só (é por aqui que se remove a chave de um provedor) |
+| `GET /api/v1/lessons/providers/{openai,gemini}/models` | lista de modelos ao vivo com a chave salva; sem chave ou com falha, lista padrão com o motivo |
+
+Chave cifrada no banco (AES-256-GCM) com `AI_PROVIDER_SETTINGS_ENCRYPTION_KEY` (obrigatória fora do `local`). Ver `docs/decisions/AI_PROVIDER_SECRETS_ADR.md` (revisão de 2026-11-19).
+O Estúdio usa o provedor, a chave e os modelos salvos na **próxima geração** (`ConfiguredAiGenerationGateway`); sem chave salva, vale o ambiente.

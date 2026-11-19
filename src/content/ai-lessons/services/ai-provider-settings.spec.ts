@@ -472,7 +472,11 @@ describe('Configurações de IA salvas no banco', () => {
           updater.saveOpenAiSettings({ apiKey: raw }),
         ).rejects.toThrow(masterKeyEnv);
         expect(rows.has(AiProviderSettingsKey.OPENAI)).toBe(false);
-        // Outside production the plaintext fallback keeps local setups working.
+        // Em staging também é recusado; só o ambiente local grava em texto puro.
+        environment.value = 'staging';
+        await expect(
+          updater.saveOpenAiSettings({ apiKey: raw }),
+        ).rejects.toThrow(masterKeyEnv);
         environment.value = 'local';
         await updater.saveOpenAiSettings({ apiKey: raw });
         expect(storedKey(AiProviderSettingsKey.OPENAI)).toBe(raw);

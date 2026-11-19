@@ -96,6 +96,7 @@ jobs:
             JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
             JWT_REFRESH_EXPIRES_IN=${{ secrets.JWT_REFRESH_EXPIRES_IN }}
             FEED_ORFANATO_PAGE_ID=${{ secrets.FEED_ORFANATO_PAGE_ID }}
+            AI_PROVIDER_SETTINGS_ENCRYPTION_KEY=${{ secrets.AI_PROVIDER_SETTINGS_ENCRYPTION_KEY }}
             GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
             OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
 

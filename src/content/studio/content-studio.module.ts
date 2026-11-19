@@ -15,6 +15,9 @@ import { ConfigService } from "@nestjs/config";
 import { AiGenerationGateway } from "./ai/ai-generation.gateway";
 import { FakeAiGenerationGateway } from "./ai/fake-ai-generation.gateway";
 import { GeminiGenerationGateway } from "./ai/gemini-generation.gateway";
+import { ConfiguredAiGenerationGateway } from "./ai/configured-ai-generation.gateway";
+import { StudioProviderOverrides } from "./ai/provider-overrides.service";
+import { AiProviderSettingsModule } from "../ai-lessons/ai-provider-settings.module";
 import { OpenAiGenerationGateway } from "./ai/openai-generation.gateway";
 import { ContentStudioDashboardRepository } from "./dashboard/content-studio-dashboard.repository";
 import { AiManagementController } from "./ai-management/ai-management.controller";
@@ -46,6 +49,7 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
   imports: [
     AuthModule,
     FeatureFlagsModule,
+    AiProviderSettingsModule,
     TypeOrmModule.forFeature([
       ContentAssetEntity,
       ContentGenerationJobEntity,
@@ -83,25 +87,36 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
     GetAiProvidersService,
     OpenAiGenerationGateway,
     GeminiGenerationGateway,
+    StudioProviderOverrides,
     {
-      // `AI_PROVIDER_MODE=fake` (fora de produção) troca o provedor por um simulado: E2E nunca chama LLM real.
+      // Escolhe o provedor a cada chamada: simulado (`AI_PROVIDER_MODE=fake`, fora de produção), o ativo no
+      // painel "Provedores e Modelos IA" (se tiver chave salva) ou o do ambiente. Ver `ConfiguredAiGenerationGateway`.
       provide: AiGenerationGateway,
-      inject: [ConfigService, OpenAiGenerationGateway, GeminiGenerationGateway],
+      inject: [
+        ConfigService,
+        StudioProviderOverrides,
+        OpenAiGenerationGateway,
+        GeminiGenerationGateway,
+      ],
       useFactory: (
         config: ConfigService,
+        overrides: StudioProviderOverrides,
         openai: OpenAiGenerationGateway,
         gemini: GeminiGenerationGateway,
       ): AiGenerationGateway =>
-        config.get<string>("AI_PROVIDER_MODE") === "fake"
-          ? new FakeAiGenerationGateway(
-              "fake",
-              config.get<string>("ENVIRONMENT"),
-              Number(config.get<string>("FAKE_AI_QUOTA_TOKENS") ?? 20000),
-            )
-          : config.get<string>("CONTENT_STUDIO_AI_PROVIDER")?.toLowerCase() ===
-              "gemini"
-            ? gemini
-            : openai,
+        new ConfiguredAiGenerationGateway(
+          config.get<string>("CONTENT_STUDIO_AI_PROVIDER"),
+          overrides,
+          openai,
+          gemini,
+          config.get<string>("AI_PROVIDER_MODE") === "fake"
+            ? new FakeAiGenerationGateway(
+                "fake",
+                config.get<string>("ENVIRONMENT"),
+                Number(config.get<string>("FAKE_AI_QUOTA_TOKENS") ?? 20000),
+              )
+            : undefined,
+        ),
     },
   ],
   exports: [GetContentStudioCatalogService, GetContentPackagesService],

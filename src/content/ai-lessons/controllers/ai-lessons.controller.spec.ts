@@ -79,12 +79,12 @@ describe('AiLessonsController', () => {
     );
   });
 
-  it('protege o controller com JwtAuthGuard e AdminRoleGuard', () => {
+  it('protege o controller com JwtAuthGuard, AdminRoleGuard e FeatureFlagGuard', () => {
     const guards = Reflect.getMetadata(
       '__guards__',
       AiLessonsController,
     ) as unknown[];
-    expect(guards).toEqual([JwtAuthGuard, AdminRoleGuard]);
+    expect(guards).toEqual([JwtAuthGuard, AdminRoleGuard, FeatureFlagGuard]);
   });
 
   it('encaminha lockVersion em resetPrompt, completeProduction, approve, requestChanges e previewStage', async () => {

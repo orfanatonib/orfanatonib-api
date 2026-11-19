@@ -1,30 +1,33 @@
-import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { AppValidationException, ErrorCode } from 'src/content/ai-lessons/compat/exceptions';
-import { AiProviderSettingRepository } from '../repositories/ai-provider-setting.repository';
+import { Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import {
+  AppValidationException,
+  ErrorCode,
+} from "src/content/ai-lessons/compat/exceptions";
+import { AiProviderSettingRepository } from "../repositories/ai-provider-setting.repository";
 import {
   AI_PROVIDER_SECRET,
   AiProviderSettingsKey,
-} from '../constants/ai-provider-settings.constants';
-import { GetAiProviderSettingsService } from './get-ai-provider-settings.service';
+} from "../constants/ai-provider-settings.constants";
+import { GetAiProviderSettingsService } from "./get-ai-provider-settings.service";
 import {
   SaveAiProviderSettingsDto,
   SaveGeminiSettingsDto,
   SaveOpenAiSettingsDto,
-} from '../dto/ai-provider-settings.dto';
+} from "../dto/ai-provider-settings.dto";
 import {
   AiProviderSettingsResponseDto,
   GeminiSettingsResponseDto,
   OpenAiSettingsResponseDto,
-} from '../dto/ai-provider-settings-response.dto';
+} from "../dto/ai-provider-settings-response.dto";
 import {
   decryptProviderSecret,
   encryptProviderSecret,
   isEncryptedProviderSecret,
   providerSecretKeysFromEnv,
   providerSecretNeedsRotation,
-} from '../aiProviderSettings.utils';
-import { LessonLlmProvider } from '../providers/lesson-llm.types';
+} from "../aiProviderSettings.utils";
+import { LessonLlmProvider } from "../providers/lesson-llm.types";
 
 @Injectable()
 export class UpdateAiProviderSettingsService {
@@ -43,9 +46,9 @@ export class UpdateAiProviderSettingsService {
     incoming: unknown,
     stored: unknown,
   ): string {
-    const raw = typeof stored === 'string' ? stored.trim() : '';
+    const raw = typeof stored === "string" ? stored.trim() : "";
     if (incoming === undefined) {
-      if (!raw) return '';
+      if (!raw) return "";
       try {
         // Legacy plaintext, enc:v1 and previous-key values migrate on save.
         return providerSecretNeedsRotation(raw)
@@ -60,19 +63,19 @@ export class UpdateAiProviderSettingsService {
         return raw;
       }
     }
-    if (typeof incoming !== 'string')
+    if (typeof incoming !== "string")
       throw new AppValidationException(
         ErrorCode.VALIDATION_ERROR,
-        'O campo apiKey deve ser uma string válida ou omitido.',
+        "O campo apiKey deve ser uma string válida ou omitido.",
       );
     const trimmed = incoming.trim();
-    if (!trimmed) return '';
+    if (!trimmed) return "";
     if (isEncryptedProviderSecret(trimmed))
       throw new AppValidationException(
         ErrorCode.VALIDATION_ERROR,
-        'A chave de API informada não é válida.',
+        "A chave de API informada não é válida.",
       );
-    if (this.isProduction() && !providerSecretKeysFromEnv().current)
+    if (this.requiresMasterKey() && !providerSecretKeysFromEnv().current)
       throw new AppValidationException(
         ErrorCode.VALIDATION_ERROR,
         `Não é possível salvar uma nova chave de API: ${AI_PROVIDER_SECRET.currentKeyEnv} não está configurada no servidor.`,
@@ -80,13 +83,15 @@ export class UpdateAiProviderSettingsService {
     return encryptProviderSecret(trimmed, provider);
   }
 
-  private isProduction(): boolean {
-    const environment = (this.config.get<string>('ENVIRONMENT') ?? '')
+  /**
+   * Fora do ambiente local, guardar chave sem a chave-mestra seria gravar o segredo em texto puro no banco.
+   * (O Clubinho só recusa em produção; aqui dev e staging também, porque o dump desses bancos circula.)
+   */
+  private requiresMasterKey(): boolean {
+    const environment = (this.config.get<string>("ENVIRONMENT") ?? "")
       .trim()
       .toLowerCase();
-    return (
-      AI_PROVIDER_SECRET.productionEnvironments as readonly string[]
-    ).includes(environment);
+    return environment !== "" && environment !== "local";
   }
 
   private mergeOpenAi(
@@ -174,12 +179,12 @@ export class UpdateAiProviderSettingsService {
         if (selected.apiKeyUnreadable)
           throw new AppValidationException(
             ErrorCode.VALIDATION_ERROR,
-            'A chave salva do provedor selecionado não pôde ser lida pelo servidor. Digite a chave novamente antes de ativá-lo.',
+            "A chave salva do provedor selecionado não pôde ser lida pelo servidor. Digite a chave novamente antes de ativá-lo.",
           );
         if (!selected.apiKey)
           throw new AppValidationException(
             ErrorCode.VALIDATION_ERROR,
-            'Informe a chave de API do provedor selecionado antes de ativá-lo.',
+            "Informe a chave de API do provedor selecionado antes de ativá-lo.",
           );
         return {
           [AiProviderSettingsKey.OPENAI]: openai,

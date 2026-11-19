@@ -38,6 +38,7 @@ import { FeatureFlagsModule } from "./core/feature-flags/feature-flags.module";
 import { IntegrationModule } from "./shelter/integration/integration.module";
 import { AtendenteModule } from "./shelter/atendente/atendente.module";
 import { RemindersModule } from "./shelter/reminders/reminders.module";
+import { AiProviderAdminModule } from "./content/ai-lessons/ai-provider-admin.module";
 import { ContentStudioModule } from "./content/studio/content-studio.module";
 import { GlobalExceptionFilter } from "./common/filters";
 import { RateLimitingMiddleware } from "./common/middlewares/rate-limiting.middleware";
@@ -110,6 +111,7 @@ function getEnvFilePath(): string {
     AtendenteModule,
     RemindersModule,
     ContentStudioModule,
+    AiProviderAdminModule,
     HealthModule,
     RequestContextModule,
     LogStorageModule,

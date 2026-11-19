@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Optional } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 import { REDACTED_AI_ERROR_MESSAGE } from "./constants";
@@ -21,6 +21,7 @@ import {
   parseModelAllowlist,
 } from "../ai-management/utils/ai-provider-config.util";
 import { AiProvider } from "./enums/ai-provider.enum";
+import { StudioProviderOverrides } from "./provider-overrides.service";
 import { validateStructuredContent } from "./utils/structured-content-policy.util";
 import { containsSensitiveContentInstruction } from "./utils/ai-provider-policy.util";
 
@@ -59,7 +60,10 @@ export class AiProviderRequestError extends Error {
 export class OpenAiGenerationGateway extends AiGenerationGateway {
   private readonly providerConfig = AI_PROVIDER_CONFIG_KEYS[AiProvider.OPENAI];
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    @Optional() private readonly overrides?: StudioProviderOverrides,
+  ) {
     super();
   }
 
@@ -67,29 +71,35 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
     request: StructuredTextGenerationRequest,
   ): Promise<StructuredTextGenerationResult> {
     this.assertSafeRequest(request.instructions, request.input);
-    const model = this.firstModel(AiGenerationCapability.TEXT_STRUCTURED);
+    const { model, apiKey } = await this.runtime(
+      AiGenerationCapability.TEXT_STRUCTURED,
+    );
     const startedAt = Date.now();
-    const payload = await this.request<OpenAiResponseBody>("/responses", {
-      method: "POST",
-      body: JSON.stringify({
-        model,
-        max_output_tokens: 4_000,
-        instructions: [
-          "Crie material pastoral seguro, sem dados pessoais ou identificação de pessoas reais.",
-          ...request.instructions,
-        ].join("\n\n"),
-        input: JSON.stringify(request.input),
-        store: false,
-        text: {
-          format: {
-            type: "json_schema",
-            name: "content_stage",
-            strict: true,
-            schema: request.outputSchema,
+    const payload = await this.request<OpenAiResponseBody>(
+      "/responses",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          model,
+          max_output_tokens: 4_000,
+          instructions: [
+            "Crie material pastoral seguro, sem dados pessoais ou identificação de pessoas reais.",
+            ...request.instructions,
+          ].join("\n\n"),
+          input: JSON.stringify(request.input),
+          store: false,
+          text: {
+            format: {
+              type: "json_schema",
+              name: "content_stage",
+              strict: true,
+              schema: request.outputSchema,
+            },
           },
-        },
-      }),
-    });
+        }),
+      },
+      apiKey,
+    );
     const contentItems =
       payload.output?.flatMap((item) => item.content ?? []) ?? [];
     if (contentItems.some((item) => item.type === "refusal"))
@@ -136,23 +146,29 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
     request: ImageGenerationRequest,
   ): Promise<ImageGenerationResult> {
     this.assertSafeRequest(request.instructions, request.input);
-    const model = this.firstModel(AiGenerationCapability.IMAGE_GENERATION);
+    const { model, apiKey } = await this.runtime(
+      AiGenerationCapability.IMAGE_GENERATION,
+    );
     const startedAt = Date.now();
-    const payload = await this.request<OpenAiImageBody>("/images/generations", {
-      method: "POST",
-      body: JSON.stringify({
-        model,
-        prompt: [
-          "Crie somente ilustração genérica, sem rostos, sem pessoas reais ou identificáveis e sem texto incorporado.",
-          ...request.instructions,
-          JSON.stringify(request.input),
-        ].join("\n\n"),
-        size: "1024x1024",
-        quality: "low",
-        output_format: "png",
-        n: 1,
-      }),
-    });
+    const payload = await this.request<OpenAiImageBody>(
+      "/images/generations",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          model,
+          prompt: [
+            "Crie somente ilustração genérica, sem rostos, sem pessoas reais ou identificáveis e sem texto incorporado.",
+            ...request.instructions,
+            JSON.stringify(request.input),
+          ].join("\n\n"),
+          size: "1024x1024",
+          quality: "low",
+          output_format: "png",
+          n: 1,
+        }),
+      },
+      apiKey,
+    );
     const encoded = payload.data?.[0]?.b64_json;
     if (!encoded) throw new AiProviderRequestError(AiProviderErrorKind.SCHEMA);
     const bytes = new Uint8Array(Buffer.from(encoded, "base64"));
@@ -206,7 +222,36 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
     };
   }
 
-  private firstModel(capability: AiGenerationCapability): string {
+  /**
+   * Chave e modelo desta chamada: o que o painel salvou (se houver chave) ou, senão, o ambiente.
+   * Com o painel, o modelo é o padrão salvo para a capacidade; sem ele, o primeiro da lista permitida.
+   */
+  private async runtime(
+    capability: AiGenerationCapability,
+  ): Promise<{ model: string; apiKey: string }> {
+    const saved = await this.overrides?.forProvider(AiProvider.OPENAI);
+    if (saved) {
+      const model =
+        capability === AiGenerationCapability.IMAGE_GENERATION
+          ? saved.imageModel
+          : saved.textModel;
+      if (!model)
+        throw new AiProviderRequestError(AiProviderErrorKind.NOT_FOUND_MODEL);
+      return { model, apiKey: saved.apiKey };
+    }
+    return { model: this.envModel(capability), apiKey: this.envApiKey() };
+  }
+
+  private envApiKey(): string {
+    const apiKey = this.config
+      .get<string>(this.providerConfig.credential)
+      ?.trim();
+    if (!apiKey)
+      throw new AiProviderRequestError(AiProviderErrorKind.AUTHENTICATION);
+    return apiKey;
+  }
+
+  private envModel(capability: AiGenerationCapability): string {
     if (
       !parseEnabledConfig(this.config.get<string>(this.providerConfig.enabled))
     ) {
@@ -242,12 +287,11 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
     }
   }
 
-  private async request<T>(path: string, init: RequestInit): Promise<T> {
-    const apiKey = this.config
-      .get<string>(this.providerConfig.credential)
-      ?.trim();
-    if (!apiKey)
-      throw new AiProviderRequestError(AiProviderErrorKind.AUTHENTICATION);
+  private async request<T>(
+    path: string,
+    init: RequestInit,
+    apiKey: string,
+  ): Promise<T> {
     const abortController = new AbortController();
     const configuredTimeout = Number(
       this.config.get<string>("CONTENT_STUDIO_PROVIDER_TIMEOUT_MS") ?? 60_000,

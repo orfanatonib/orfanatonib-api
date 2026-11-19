@@ -35,6 +35,7 @@ import { UserPreferences } from "../src/core/profile/entities/user-preferences.e
 import { VideosPage } from "../src/content/page/video-page/entities/video-page.entity";
 import { VisitMaterialsPageEntity } from "../src/content/page/visit-material-page/entities/visit-material-page.entity";
 import { VisitReportEntity } from "../src/shelter/visit-report/entities/visit-report.entity";
+import { AiProviderSettingEntity } from "../src/content/ai-lessons/entities/ai-provider-setting.entity";
 import { ContentPackageEntity } from "../src/content/studio/entities/content-package.entity";
 import { ContentTrackEntity } from "../src/content/studio/entities/content-track.entity";
 import { ContentStageEntity } from "../src/content/studio/entities/content-stage.entity";
@@ -83,6 +84,7 @@ export const DATABASE_ENTITIES = [
   AtendenteEntity,
   EmailOutboxEntity,
   EmailVerificationTokenEntity,
+  AiProviderSettingEntity,
   ContentPackageEntity,
   ContentTrackEntity,
   ContentStageEntity,

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Optional } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 import { AI_PROVIDER_CONFIG_KEYS } from "../ai-management/constants";
@@ -12,6 +12,7 @@ import { classifyProviderHttpError } from "./utils/provider-http-error.util";
 import { AiProviderErrorKind } from "./enums/ai-provider-error-kind.enum";
 import { AiProviderHealth } from "./enums/ai-provider-health.enum";
 import { AiProvider } from "./enums/ai-provider.enum";
+import { StudioProviderOverrides } from "./provider-overrides.service";
 import { AiProviderRequestError } from "./openai-generation.gateway";
 import {
   AiModelDescriptor,
@@ -48,7 +49,10 @@ const BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 export class GeminiGenerationGateway extends AiGenerationGateway {
   private readonly providerConfig = AI_PROVIDER_CONFIG_KEYS[AiProvider.GEMINI];
 
-  constructor(private readonly config: ConfigService) {
+  constructor(
+    private readonly config: ConfigService,
+    @Optional() private readonly overrides?: StudioProviderOverrides,
+  ) {
     super();
   }
 
@@ -56,7 +60,9 @@ export class GeminiGenerationGateway extends AiGenerationGateway {
     request: StructuredTextGenerationRequest,
   ): Promise<StructuredTextGenerationResult> {
     this.assertSafeRequest(request.instructions, request.input);
-    const model = this.firstModel(AiGenerationCapability.TEXT_STRUCTURED);
+    const { model, apiKey } = await this.runtime(
+      AiGenerationCapability.TEXT_STRUCTURED,
+    );
     const startedAt = Date.now();
     const payload = await this.request<GeminiResponseBody>(
       `/models/${encodeURIComponent(model)}:generateContent`,
@@ -83,6 +89,7 @@ export class GeminiGenerationGateway extends AiGenerationGateway {
           },
         }),
       },
+      apiKey,
     );
 
     if (payload.promptFeedback?.blockReason)
@@ -175,7 +182,36 @@ export class GeminiGenerationGateway extends AiGenerationGateway {
     });
   }
 
-  private firstModel(capability: AiGenerationCapability): string {
+  /**
+   * Chave e modelo desta chamada: o que o painel salvou (se houver chave) ou, senão, o ambiente.
+   * Com o painel, o modelo é o padrão salvo para a capacidade; sem ele, o primeiro da lista permitida.
+   */
+  private async runtime(
+    capability: AiGenerationCapability,
+  ): Promise<{ model: string; apiKey: string }> {
+    const saved = await this.overrides?.forProvider(AiProvider.GEMINI);
+    if (saved) {
+      const model =
+        capability === AiGenerationCapability.IMAGE_GENERATION
+          ? saved.imageModel
+          : saved.textModel;
+      if (!model)
+        throw new AiProviderRequestError(AiProviderErrorKind.NOT_FOUND_MODEL);
+      return { model, apiKey: saved.apiKey };
+    }
+    return { model: this.envModel(capability), apiKey: this.envApiKey() };
+  }
+
+  private envApiKey(): string {
+    const apiKey = this.config
+      .get<string>(this.providerConfig.credential)
+      ?.trim();
+    if (!apiKey)
+      throw new AiProviderRequestError(AiProviderErrorKind.AUTHENTICATION);
+    return apiKey;
+  }
+
+  private envModel(capability: AiGenerationCapability): string {
     if (
       !parseEnabledConfig(this.config.get<string>(this.providerConfig.enabled))
     )
@@ -208,12 +244,11 @@ export class GeminiGenerationGateway extends AiGenerationGateway {
       throw new AiProviderRequestError(AiProviderErrorKind.SCHEMA);
   }
 
-  private async request<T>(path: string, init: RequestInit): Promise<T> {
-    const apiKey = this.config
-      .get<string>(this.providerConfig.credential)
-      ?.trim();
-    if (!apiKey)
-      throw new AiProviderRequestError(AiProviderErrorKind.AUTHENTICATION);
+  private async request<T>(
+    path: string,
+    init: RequestInit,
+    apiKey: string,
+  ): Promise<T> {
     const abortController = new AbortController();
     const configured = Number(
       this.config.get<string>("CONTENT_STUDIO_PROVIDER_TIMEOUT_MS") ?? 60_000,

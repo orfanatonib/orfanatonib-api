@@ -39,12 +39,12 @@ describe('AiProvidersController', () => {
     );
   });
 
-  it('protege o controller com JwtAuthGuard e AdminRoleGuard', () => {
+  it('protege o controller com JwtAuthGuard, AdminRoleGuard e FeatureFlagGuard', () => {
     const guards = Reflect.getMetadata(
       '__guards__',
       AiProvidersController,
     ) as unknown[];
-    expect(guards).toEqual([JwtAuthGuard, AdminRoleGuard]);
+    expect(guards).toEqual([JwtAuthGuard, AdminRoleGuard, FeatureFlagGuard]);
   });
 
   it('consulta modelos da OpenAI e do Gemini sem aceitar chave via query string e preservando proveniência', async () => {
