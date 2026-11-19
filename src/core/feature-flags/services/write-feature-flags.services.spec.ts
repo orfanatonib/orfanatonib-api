@@ -136,4 +136,68 @@ describe("feature flag write services", () => {
     ).rejects.toThrow("não pode ser renomeada");
     expect(repository.remove).not.toHaveBeenCalled();
   });
+
+  it("create invalida o cache da chave criada", async () => {
+    repository.findByKey.mockResolvedValue(null);
+    await createService.create({ key: "nova", name: "Nova" });
+    expect(getService.invalidate).toHaveBeenCalledWith("nova");
+  });
+
+  it("create nasce desligada quando enabled não é informado", async () => {
+    repository.findByKey.mockResolvedValue(null);
+    const created = await createService.create({ key: "nova", name: "Nova" });
+    expect(created.enabled).toBe(false);
+  });
+
+  it("update renomeia flag personalizada e invalida as duas chaves", async () => {
+    getService.findEntityOrFail.mockResolvedValue(buildFlag("custom_flag"));
+    repository.findByKey.mockResolvedValue(null);
+
+    const updated = await updateService.update("custom_flag", {
+      key: "custom_flag_2",
+    });
+
+    expect(updated.key).toBe("custom_flag_2");
+    expect(getService.invalidate).toHaveBeenCalledWith("custom_flag");
+    expect(getService.invalidate).toHaveBeenCalledWith("custom_flag_2");
+  });
+
+  it("update recusa renomear para uma chave já existente", async () => {
+    getService.findEntityOrFail.mockResolvedValue(buildFlag("custom_flag"));
+    repository.findByKey.mockResolvedValue(buildFlag("ocupada"));
+
+    await expect(
+      updateService.update("custom_flag", { key: "ocupada" }),
+    ).rejects.toBeInstanceOf(ResourceConflictException);
+    expect(repository.save).not.toHaveBeenCalled();
+  });
+
+  it("update troca o público sem perder o metadata público", async () => {
+    const updated = await updateService.update("shelter_management", {
+      targetRoles: [UserRole.ADMIN],
+    });
+    expect(updated.targetRoles).toEqual(["admin"]);
+    expect(updated.metadata).toEqual({ rollout: 50 });
+  });
+
+  it("toggle religa uma flag desligada e invalida o cache", async () => {
+    const off = buildFlag();
+    off.enabled = false;
+    getService.findEntityOrFail.mockResolvedValue(off);
+
+    await expect(
+      updateService.toggle("shelter_management"),
+    ).resolves.toMatchObject({ enabled: true });
+    expect(getService.invalidate).toHaveBeenCalledWith("shelter_management");
+  });
+
+  it("remove apaga flag personalizada e invalida o cache", async () => {
+    const custom = buildFlag("custom_flag");
+    getService.findEntityOrFail.mockResolvedValue(custom);
+
+    await deleteService.remove("custom_flag");
+
+    expect(repository.remove).toHaveBeenCalledWith(custom);
+    expect(getService.invalidate).toHaveBeenCalledWith("custom_flag");
+  });
 });
