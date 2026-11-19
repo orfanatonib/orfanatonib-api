@@ -112,8 +112,13 @@ que responde `403` com o nome da funcionalidade.
 
 Uma falha de banco na conferência não impede a aplicação de subir.
 
-Hoje o catálogo tem 15 flags: 3 de interface (`shelter-*`) e 12 de e-mail
-(`email-delivery` + uma por tipo de template).
+Hoje o catálogo tem **53 flags de interface** (`snake_case`, uma por recurso) e as de e-mail (`email_delivery` + `email_<tipo>`, uma por template). O público de cada flag está em `targetRoles` (vazio = todos, inclusive visitante). As chaves antigas em kebab-case (`shelter-*`, `content-studio*`) ficam no banco só durante o rollout em dois passos (`FEATURE_FLAG_RENAMES` copia o estado para a chave nova; a versão N+1 as move para `RETIRED_FEATURE_FLAGS`).
+
+### Garantias testadas
+- `feature-flags.architecture.spec.ts`: **todo handler HTTP tem `@FeatureFlag` ou está em `CORE_UNFLAGGED` com motivo**; entrada obsoleta derruba o teste; todo `EmailTemplateKey` tem flag.
+- `flag-audience-sweep.api.spec.ts` (E2E): nenhum `GET` do líder/membro recebe `FEATURE_DISABLED` fora da lista esperada — evita pôr flag de público estreito num handler que o perfil também atende.
+- Flag de público estreito em handler compartilhado usa `anyOf` (ex.: `GET /shelter-schedules`: `shelter_schedule` **ou** `member_area`).
+- Falha de rede no front mantém o último mapa do servidor; sem resposta anterior vale o padrão do catálogo (a API segue autoridade: 403 `FEATURE_DISABLED`).
 
 ### Aposentada
 

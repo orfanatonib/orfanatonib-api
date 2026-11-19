@@ -6,6 +6,8 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ## [Unreleased] - 2026-10-02 - ESTÚDIO ORFANATO
 
+- **ADD**: catálogo de **53 flags de interface** em `snake_case` com público por flag, `FeatureFlagGuard` ciente do perfil (`anyOf`, padrão do catálogo, `403 FEATURE_DISABLED`), `@FeatureFlag` nos handlers e teste de arquitetura (`feature-flags.architecture.spec.ts`).
+- **REMOVE**: flag `special_family_day` (recurso inexistente) e o conceito de `environment` das flags (entidade, DTOs, rota `GET /feature-flags/environment/:environment`; a coluna segue no banco até a migration).
 - **ADD**: upload valida a **assinatura dos bytes** contra o MIME declarado (PNG, JPEG, GIF, WebP, PDF); conteúdo que não bate é recusado (`MEDIA_CONTENT`).
 - **ADD**: teste de arquitetura da cascata de mídia (todo `delete-*.service`), spec do `AwsS3Service` e diagrama de fluxo da mídia.
 - **CHANGE**: imagem Docker com `npm ci`, `USER node`, `HEALTHCHECK` e `.dockerignore`; `DockerFile` virou `Dockerfile` (workflows e script de deploy local atualizados).
