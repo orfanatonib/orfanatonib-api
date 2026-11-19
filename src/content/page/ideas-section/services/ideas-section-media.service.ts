@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { RuleException } from "src/common/exceptions";
 import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
@@ -27,6 +27,8 @@ const TARGET_TYPE = MediaTargetType.IdeasSection;
  */
 @Injectable()
 export class IdeasSectionMediaService {
+  private readonly logger = new Logger(IdeasSectionMediaService.name);
+
   constructor(
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly s3: AwsS3Service,
@@ -83,12 +85,23 @@ export class IdeasSectionMediaService {
     files: UploadedFilesDict,
   ): Promise<MediaItemEntity[]> {
     const stored = await this.findBySection(sectionId);
-    await this.removeMissing(stored, incoming);
 
+    // Ordem segura (plano 30, P0): objeto novo → linha no banco → só então some o antigo.
+    // Apagar antes deixava a linha antiga apontando para um objeto inexistente se o
+    // upload ou o `upsert` seguinte falhasse.
+    const tracking: FileTracking = { uploaded: [], replaced: [] };
     const saved: MediaItemEntity[] = [];
-    for (const input of incoming) {
-      saved.push(await this.save(input, sectionId, files));
+    try {
+      for (const input of incoming) {
+        saved.push(await this.save(input, sectionId, files, tracking));
+      }
+    } catch (error: unknown) {
+      await this.discardObjects(tracking.uploaded);
+      throw error;
     }
+
+    await this.removeMissing(stored, incoming);
+    await this.discardObjects(tracking.replaced);
 
     return saved;
   }
@@ -125,6 +138,7 @@ export class IdeasSectionMediaService {
     input: IdeasSectionMediaItemDto,
     sectionId: string,
     files: UploadedFilesDict,
+    tracking: FileTracking,
   ): Promise<MediaItemEntity> {
     const media = this.buildBase(input, sectionId);
     const stored = input.id
@@ -133,8 +147,9 @@ export class IdeasSectionMediaService {
     const file = input.fieldKey ? files[input.fieldKey] : undefined;
 
     if (this.isUpload(input) && file) {
-      await this.discardStoredFile(stored);
+      this.markReplaced(stored, tracking);
       await this.applyUpload(media, file);
+      tracking.uploaded.push(media.url);
     } else if (this.isUpload(input) && stored) {
       // Upload sem arquivo novo: o item já existe e só mudou o texto.
       this.keepStoredFile(media, stored);
@@ -145,7 +160,7 @@ export class IdeasSectionMediaService {
           : IDEAS_SECTION_MESSAGES.MISSING_FIELD_KEY(media.title),
       );
     } else {
-      await this.discardStoredFile(stored);
+      this.markReplaced(stored, tracking);
       this.applyLink(media, input);
     }
 
@@ -211,12 +226,30 @@ export class IdeasSectionMediaService {
     media.size = input.size;
   }
 
-  /** O arquivo antigo só é apagado quando de fato deixa de ser referenciado. */
-  private async discardStoredFile(
+  /** O arquivo antigo é só anotado aqui; quem apaga é `replaceAll`, depois de gravar o novo. */
+  private markReplaced(
     stored: MediaItemEntity | null,
-  ): Promise<void> {
-    if (stored?.isLocalFile && stored.url) {
-      await this.s3.delete(stored.url);
+    tracking: FileTracking,
+  ): void {
+    if (stored?.isLocalFile && stored.url) tracking.replaced.push(stored.url);
+  }
+
+  /** Melhor esforço: um objeto que não pôde ser apagado vira registro, não falha da requisição. */
+  private async discardObjects(urls: readonly string[]): Promise<void> {
+    for (const url of urls) {
+      try {
+        await this.s3.delete(url);
+      } catch (error: unknown) {
+        // O objeto fica para a conciliação de mídia órfã.
+        const reason = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Objeto não apagado do bucket (${url}): ${reason}`);
+      }
     }
   }
+}
+
+/** Objetos tocados numa passada: o que subiu agora e o que foi substituído. */
+interface FileTracking {
+  uploaded: string[];
+  replaced: string[];
 }

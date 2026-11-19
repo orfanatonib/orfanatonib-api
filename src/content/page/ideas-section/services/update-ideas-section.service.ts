@@ -28,18 +28,33 @@ export class UpdateIdeasSectionService {
       );
     }
 
+    // Falha previsível antes de gravar: upload declarado sem arquivo/campo.
+    this.mediaService.assertUploadsResolvable(dto.medias ?? [], files);
+
     const section = await this.repository.updateData(id, {
       title: dto.title,
       description: dto.description,
       public: dto.public ?? false,
     });
 
-    const medias = await this.mediaService.replaceAll(
-      id,
-      dto.medias ?? [],
-      files,
-    );
-
-    return toIdeasSectionDto(section, medias);
+    try {
+      const medias = await this.mediaService.replaceAll(
+        id,
+        dto.medias ?? [],
+        files,
+      );
+      return toIdeasSectionDto(section, medias);
+    } catch (error: unknown) {
+      // Sem transação entre seção e mídia: devolve os dados antigos para a seção
+      // não ficar com o texto novo e as mídias velhas.
+      await this.repository
+        .updateData(id, {
+          title: existing.title,
+          description: existing.description,
+          public: existing.public,
+        })
+        .catch(() => undefined);
+      throw error;
+    }
   }
 }
