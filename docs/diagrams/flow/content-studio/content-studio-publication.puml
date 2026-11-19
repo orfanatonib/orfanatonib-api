@@ -1,0 +1,48 @@
+@startuml
+title Content Studio - publication as a visit material page
+
+actor Administrator
+participant "Frontend" as Frontend
+participant "Guards\n(JWT, admin, flags)" as Guards
+participant "PublishContentPackageService" as Publish
+participant "ContentPublicationRepository" as Repo
+participant "BuildPublicationDocumentsService" as Docs
+participant "CreateVisitMaterialPageService\n(visit-material-page module)" as Page
+database "MySQL" as Db
+participant "S3" as S3
+
+Administrator -> Frontend: Publish approved material (testament)
+Frontend -> Guards: POST /content-studio/packages/:id/publish\n{ idempotencyKey, testament }
+Guards -> Publish: content_studio + content_studio_publication on
+Publish -> Repo: find by idempotencyKey
+alt key already used
+  Repo --> Publish: existing publication
+  Publish --> Frontend: same publication (reconciled if UNCERTAIN/stale)
+else new key
+  Publish -> Repo: begin (transaction)
+  Repo -> Db: lock package; require READY_FOR_PUBLICATION\nand all required stages APPROVED
+  Repo -> Db: package PUBLISHING + publication PUBLISHING
+  note right: other state => 409
+  Publish -> Page: find page by sourceLessonId = packageId
+  alt page already exists
+    Page --> Publish: reuse it (no duplicate)
+  else no page
+    Publish -> Docs: DOCX + PDF per track (+ full material)
+    Publish -> Page: create page (title, subtitle, description,\ntestament, documents)
+    Page -> Db: page + route + media (own transaction)
+    Page -> S3: upload documents (rolled back on failure)
+  end
+  alt page ready
+    Publish -> Repo: complete (transaction)
+    Repo -> Db: package PUBLISHED + publication PUBLISHED
+  else render/page failed
+    Publish -> Repo: fail (transaction)
+    Repo -> Db: publication FAILED + package READY_FOR_PUBLICATION
+  else page created but final write failed
+    Publish -> Repo: markUncertain
+    Repo -> Db: publication UNCERTAIN (package stays PUBLISHING)
+    note right: next call reconciles by sourceLessonId
+  end
+  Publish --> Frontend: publication DTO (never the entity)
+end
+@enduml

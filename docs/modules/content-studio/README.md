@@ -32,6 +32,9 @@ safe provider metadata:
   by JWT, admin role, `content-studio` and `content-studio-review`;
 - `POST /content-studio/packages/:packageId/review-comments/:commentId/resolve`,
   guarded by JWT, admin role, `content-studio` and `content-studio-review`;
+- `POST /content-studio/packages/:packageId/publish` and
+  `GET /content-studio/packages/:packageId/publication`, guarded by JWT, admin
+  role, `content_studio` and `content_studio_publication` (see "Publicação");
 - `GET /ai-management/providers`, guarded by JWT, admin role and
   `content-studio-provider-admin`.
 
@@ -178,3 +181,17 @@ Núcleo portado do Clubinho, adaptado ao Estúdio (`src/content/studio/export/`)
 - **Exportar** (sempre a versão atual SALVA; rascunho local não entra): `GET .../stages/:stageId/export/{pdf|docx}`, `GET .../tracks/:audience/export/{pdf|docx}`, `GET .../export/{pdf|docx}` (todas as faixas). PDF abre inline; DOCX baixa. Sem conteúdo salvo ⇒ 422.
 - **DOCX:** `tiptap-docx.renderer.ts` converte o documento (títulos, listas, citações, tabelas, marcas, links) com a biblioteca `docx`; `studio-docx.service.ts` monta capa, cabeçalho "Orfanatos NIB · Material para visita", rodapé com paginação e uma seção por etapa.
 - **PDF:** `pdf-libreoffice.service.ts` roda `soffice --headless` num processo isolado (perfil temporário próprio, grupo de processos morto no timeout), com fila (2 conversões simultâneas por padrão, `PDF_CONVERSION_MAX_CONCURRENCY`), cache por versões (as versões são imutáveis) e verificação da assinatura `%PDF-`. **Requer `libreoffice-writer` e as fontes `font-carlito`/`font-liberation` na imagem** (já no `Dockerfile`).
+
+## Publicação como página de materiais para visita
+"Publicar" um material aprovado cria uma **página de Materiais para Visita** (`visit_material_pages`, rota pública `/<route.path>`, ex.: `/materiais_visita_esperanca`) com `sourceLessonId = packageId` (índice único: o mesmo material nunca gera duas páginas).
+
+- **`POST /content-studio/packages/:packageId/publish`** — admin, flags `content_studio` + `content_studio_publication` (um só `@UseGuards(JwtAuthGuard, AdminRoleGuard, FeatureFlagGuard)`). Corpo: `{ idempotencyKey: string (<=191), testament?: OLD_TESTAMENT | NEW_TESTAMENT (padrão OLD_TESTAMENT) }`. Resposta (sempre DTO, nunca a entidade): `id, packageId, status, targetType, visitMaterialPageId, visitMaterialPagePath, publishedAt, errorCode, errorMessage, createdAt`.
+- **`GET .../publication`** — última publicação do material (200) ou **204** se nunca houve.
+- **Pré-condição:** pacote em `READY_FOR_PUBLICATION` com todas as etapas obrigatórias `APPROVED` e com versão atual; qualquer outro estado => **409**. Material inexistente => 404; corpo inválido => 400.
+- **Página:** título = tema, subtítulo = referências bíblicas, descrição = objetivo canônico (sem dados pessoais), testamento do corpo. Documentos (mídia `document`, upload): PDF + DOCX de cada faixa e, havendo mais de uma faixa, PDF + DOCX do material completo, gerados por `StudioExportService` das versões atuais (as aprovadas: salvar de novo tira a etapa de `APPROVED`). PDF exige LibreOffice.
+- **Fluxo (3 fases):** (1) transação: `READY_FOR_PUBLICATION -> PUBLISHING` + linha em `content_publications` (`PUBLISHING`, `idempotencyKey` única, `approvedVersions` {etapa: versão}); (2) fora de transação de banco: renderizar documentos e criar a página via `CreateVisitMaterialPageService` (que faz o upload ao S3 dentro da sua própria transação e desfaz em caso de falha); (3) transação: `PUBLISHING -> PUBLISHED` + publicação `PUBLISHED` com `visit_material_page_id`.
+- **Idempotência:** a mesma `idempotencyKey` devolve a mesma publicação (de outro material => 409); a corrida na chave é resolvida pelo índice único. Já existindo página com o mesmo `sourceLessonId` (publicação anterior interrompida), ela é **reaproveitada**, não atualizada nem duplicada.
+- **Falha:** erro ao renderizar/criar a página => publicação `FAILED` (com `errorCode` estável) e o pacote volta a `READY_FOR_PUBLICATION`; tentar de novo exige **outra chave**. Página criada mas estado final não gravado => `UNCERTAIN` (pacote segue `PUBLISHING`); a próxima chamada (mesma chave ou outra) **reconcilia por `sourceLessonId`**: página existe => `PUBLISHED`; não existe => `FAILED(INTERRUPTED)` e o pacote volta a `READY`. Uma publicação `PUBLISHING` parada há mais de 10 min é tratada como interrompida. Sem lease/Interval: o banco é a verdade.
+- **Banco:** migration `AddContentPublicationVisitMaterialPage` (coluna `visit_material_page_id`; valor `VISIT_MATERIAL_PAGE` em `targetType`).
+- **Front:** botão "Publicar no site" no detalhe do material (`READY_FOR_PUBLICATION` + flag), diálogo com escolha do testamento, "Publicando…", link da página publicada e badge "Publicado".
+- **Limites conhecidos:** a rota pública da página é a dinâmica `/<route.path>` (as páginas dinâmicas ficam na raiz); despublicar/atualizar a página a partir do Estúdio não existe (apagar a página em Materiais para Visita não devolve o material a `READY`).

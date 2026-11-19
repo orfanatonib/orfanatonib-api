@@ -2,12 +2,16 @@ import {
   Body,
   Controller,
   Get,
+  HttpStatus,
   Param,
   ParseUUIDPipe,
   Post,
   Req,
+  Res,
   UseGuards,
 } from "@nestjs/common";
+
+import type { Response } from "express";
 
 import { UnauthenticatedException } from "src/common/exceptions";
 import { AuthenticatedRequest } from "src/core/auth/auth.types";
@@ -56,7 +60,10 @@ export class ContentStudioPublicationController {
   @UseGuards(JwtAuthGuard, AdminRoleGuard, FeatureFlagGuard)
   async latestPublication(
     @Param("packageId", new ParseUUIDPipe()) packageId: string,
+    @Res({ passthrough: true }) response: Response,
   ): Promise<ContentPublicationResponseDto | null> {
-    return this.getPublication.findLatest(packageId);
+    const latest = await this.getPublication.findLatest(packageId);
+    if (!latest) response.status(HttpStatus.NO_CONTENT);
+    return latest;
   }
 }
