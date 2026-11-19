@@ -26,9 +26,8 @@ import {
  * Sempre a partir da versão ATUAL SALVA: o que está só no rascunho local não entra.
  */
 @Controller("content-studio/packages/:packageId")
-@UseGuards(JwtAuthGuard, AdminRoleGuard)
 @FeatureFlag(FeatureFlagKeys.CONTENT_STUDIO)
-@UseGuards(FeatureFlagGuard)
+@UseGuards(JwtAuthGuard, AdminRoleGuard, FeatureFlagGuard)
 export class ContentStudioExportController {
   constructor(private readonly exports: StudioExportService) {}
 
