@@ -9,9 +9,10 @@ todas. Nada disso foi relaxado.
 - `image_sections.authorId` (FK nula para `users`, `ON DELETE SET NULL`).
 - Gravada em `POST /image-sections` a partir da **sessão** (nunca do corpo).
 - Seções antigas ficam sem autor: o app mostra "Autor não informado".
-- Nome exibido = primeiro nome + inicial do último sobrenome ("Maria L."),
-  `toPublicDisplayName` (`src/common/utils/display-name.util.ts`). Nunca e-mail
-  nem telefone. **Visitante não recebe autoria** (privacidade).
+- Quem publicou aparece para **todos, visitante inclusive**, com o **nome completo**
+  (como no feed do Clubinho): `toFullDisplayName` (`src/common/utils/display-name.util.ts`),
+  só o nome — nunca e-mail nem telefone. (Decisão do usuário; a primeira versão
+  mostrava "Maria L." só para logados.)
 - Moderação por autor: `GET /image-sections?authorId=<uuid>` (admin) e o DTO
   administrativo traz `authorId`.
 - `PATCH /image-sections/:id` aceita `pageId` opcional (galeria de destino);
