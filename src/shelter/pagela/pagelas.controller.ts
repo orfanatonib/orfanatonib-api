@@ -40,7 +40,9 @@ export class PagelasController {
     private readonly deletePagelaService: DeletePagelaService,
   ) {}
 
-  @FeatureFlag(FeatureFlagKeys.PAGELAS)
+  @FeatureFlag({
+    anyOf: [FeatureFlagKeys.PAGELAS, FeatureFlagKeys.SHELTERED_AREA],
+  })
   @UseGuards(FeatureFlagGuard)
   @Post()
   async create(
@@ -56,7 +58,9 @@ export class PagelasController {
     return result;
   }
 
-  @FeatureFlag(FeatureFlagKeys.PAGELAS)
+  @FeatureFlag({
+    anyOf: [FeatureFlagKeys.PAGELAS, FeatureFlagKeys.SHELTERED_AREA],
+  })
   @UseGuards(FeatureFlagGuard)
   @Get()
   async findAllSimple(
@@ -69,7 +73,9 @@ export class PagelasController {
     );
   }
 
-  @FeatureFlag(FeatureFlagKeys.PAGELAS)
+  @FeatureFlag({
+    anyOf: [FeatureFlagKeys.PAGELAS, FeatureFlagKeys.SHELTERED_AREA],
+  })
   @UseGuards(FeatureFlagGuard)
   @Get("paginated")
   async findAllPaginated(
@@ -85,7 +91,9 @@ export class PagelasController {
     );
   }
 
-  @FeatureFlag(FeatureFlagKeys.PAGELAS)
+  @FeatureFlag({
+    anyOf: [FeatureFlagKeys.PAGELAS, FeatureFlagKeys.SHELTERED_AREA],
+  })
   @UseGuards(FeatureFlagGuard)
   @Get(":id")
   async findOne(
@@ -95,7 +103,9 @@ export class PagelasController {
     return this.getPagelasService.findOneAs(toShelterAccessContext(req), id);
   }
 
-  @FeatureFlag(FeatureFlagKeys.PAGELAS)
+  @FeatureFlag({
+    anyOf: [FeatureFlagKeys.PAGELAS, FeatureFlagKeys.SHELTERED_AREA],
+  })
   @UseGuards(FeatureFlagGuard)
   @Patch(":id")
   async update(
@@ -113,7 +123,9 @@ export class PagelasController {
     return result;
   }
 
-  @FeatureFlag(FeatureFlagKeys.PAGELAS)
+  @FeatureFlag({
+    anyOf: [FeatureFlagKeys.PAGELAS, FeatureFlagKeys.SHELTERED_AREA],
+  })
   @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   async remove(
