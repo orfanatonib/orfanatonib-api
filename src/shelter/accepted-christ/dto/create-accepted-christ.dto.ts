@@ -19,6 +19,6 @@ export class CreateAcceptedChristDto {
 
   @IsOptional()
   @IsString()
-  @MaxLength(2000)
+  @MaxLength(500)
   notes?: string | null;
 }

@@ -33,15 +33,15 @@ describe("POST /accepted-christs", () => {
       expect(await check({ shelteredId: "x" })).not.toHaveLength(0);
     });
 
-    it("recusa notes que não é texto ou passa de 2000 caracteres", async () => {
+    it("recusa notes que não é texto ou passa de 500 caracteres (tamanho da coluna varchar(500))", async () => {
       expect(
         await check({ shelteredId: UUID, notes: { a: 1 } }),
       ).not.toHaveLength(0);
       expect(
-        await check({ shelteredId: UUID, notes: "x".repeat(2001) }),
+        await check({ shelteredId: UUID, notes: "x".repeat(501) }),
       ).not.toHaveLength(0);
       expect(
-        await check({ shelteredId: UUID, notes: "x".repeat(2000) }),
+        await check({ shelteredId: UUID, notes: "x".repeat(500) }),
       ).toHaveLength(0);
     });
 
