@@ -6,6 +6,7 @@ import { RouteType } from "src/infrastructure/route/route-page.entity";
 import {
   PlatformType,
   MediaType,
+  MediaItemEntity,
 } from "src/shared/media/media-item/media-item.entity";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { VideosPageRepository } from "../repositories/video-page.repository";
@@ -35,6 +36,9 @@ export class CreateVideosPageService {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+    // O processador grava as mídias fora desta transação: se um passo seguinte
+    // falhar, as linhas e os objetos precisam sair junto com o rollback.
+    let createdMedia: MediaItemEntity[] = [];
 
     try {
       const newPage = queryRunner.manager.create(VideosPage, {
@@ -67,7 +71,7 @@ export class CreateVideosPageService {
 
       savedPage.route = route;
 
-      const mediaItems =
+      const mediaItems = (createdMedia =
         await this.mediaItemProcessor.processMediaItemsPolymorphic(
           videos.map((video) => ({
             ...video,
@@ -81,13 +85,14 @@ export class CreateVideosPageService {
           filesDict,
           this.awsS3Service.upload.bind(this.awsS3Service),
           this.awsS3Service.delete.bind(this.awsS3Service),
-        );
+        ));
 
       const finalPage = await queryRunner.manager.save(savedPage);
       await queryRunner.commitTransaction();
       return VideosPageResponseDto.fromEntity(finalPage, mediaItems);
     } catch (error) {
       await queryRunner.rollbackTransaction();
+      await this.discardCreatedMedia(createdMedia);
       this.logger.error(
         "Error creating videos page. Rollback executed.",
         error,
@@ -95,6 +100,19 @@ export class CreateVideosPageService {
       throw new BadRequestException("Error creating videos page.");
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  /** Melhor esforço: remove linhas e objetos de mídia que ficaram sem página após o rollback. */
+  private async discardCreatedMedia(items: MediaItemEntity[]): Promise<void> {
+    if (items.length === 0) return;
+    try {
+      await this.mediaItemProcessor.deleteMediaItems(items, (url: string) =>
+        this.awsS3Service.delete(url),
+      );
+    } catch (error: unknown) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Mídia órfã após rollback da galeria: ${reason}`);
     }
   }
 }
