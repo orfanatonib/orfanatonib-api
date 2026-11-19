@@ -8,6 +8,9 @@ import { ContentStudioController } from "./content-studio.controller";
 import { AiJobQueuePort } from "./queue/ai-job-queue.port";
 import { AiUsageRepository } from "./ai-management/ai-usage.repository";
 import { GetAiUsageService } from "./ai-management/services/get-ai-usage.service";
+import { ContentStudioGenerationStreamController } from "./content-studio-generation-stream.controller";
+import { GenerationStreamRepository } from "./repositories/generation-stream.repository";
+import { GenerationStreamService } from "./services/generation-stream.service";
 import { BullMqAiJobQueue } from "./queue/bullmq-ai-job-queue";
 import { InMemoryAiJobQueue } from "./queue/in-memory-ai-job-queue";
 import { GetLatestStageGenerationService } from "./services/get-latest-stage-generation.service";
@@ -73,9 +76,12 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
     ContentStudioController,
     AiManagementController,
     ContentStudioExportController,
+    ContentStudioGenerationStreamController,
   ],
   providers: [
     ContentPackagesRepository,
+    GenerationStreamRepository,
+    GenerationStreamService,
     AiUsageRepository,
     GetAiUsageService,
     ContentStudioDashboardRepository,

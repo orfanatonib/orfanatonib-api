@@ -180,3 +180,14 @@ export const CONTENT_AUDIENCE_CATALOG: readonly ContentAudienceDefinition[] = [
     ],
   },
 ] as const;
+
+/** Acompanhamento da geração por SSE. */
+export const GENERATION_STREAM = {
+  /** Intervalo de leitura do banco (a fonte da verdade; funciona com várias instâncias da API). */
+  pollMs: 1_500,
+  heartbeatMs: 15_000,
+  /** O cliente reconecta se ainda houver geração ativa. */
+  maxDurationMs: 4 * 60_000,
+  /** Sem geração ativa por este tempo, a conexão é encerrada. */
+  idleMs: 30_000,
+} as const;
