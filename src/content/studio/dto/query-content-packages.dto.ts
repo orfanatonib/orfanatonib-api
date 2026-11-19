@@ -2,6 +2,8 @@ import { Transform, Type } from "class-transformer";
 import {
   IsBoolean,
   IsDateString,
+  ArrayMaxSize,
+  IsArray,
   IsEnum,
   IsIn,
   IsInt,
@@ -38,6 +40,21 @@ export class QueryContentPackagesDto {
   @IsOptional()
   @IsEnum(ContentPackageStatus)
   status?: ContentPackageStatus;
+
+  /** Várias situações de uma vez (`statuses=IN_REVIEW,PACKAGE_READY`); soma-se a `status`. */
+  @IsOptional()
+  @Transform(({ value }) =>
+    typeof value === "string"
+      ? value
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean)
+      : value,
+  )
+  @IsArray()
+  @ArrayMaxSize(9)
+  @IsEnum(ContentPackageStatus, { each: true })
+  statuses?: ContentPackageStatus[];
 
   @IsOptional()
   @IsEnum(ContentAudience)

@@ -52,6 +52,7 @@ export interface QueryContentPackagesInput {
   readonly limit?: number;
   readonly search?: string;
   readonly status?: ContentPackageStatus;
+  readonly statuses?: readonly ContentPackageStatus[];
   readonly reviewQueue?: boolean;
   readonly audience?: ContentAudience;
   readonly startDate?: string;
