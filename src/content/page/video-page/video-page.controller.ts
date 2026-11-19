@@ -133,11 +133,27 @@ export class VideosPageController {
   }
 
   /** Anônimo recebe só páginas públicas; com sessão, todas. */
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.PUBLIC_VIDEOS,
+      FeatureFlagKeys.TRAINING_VIDEOS,
+      FeatureFlagKeys.PAGE_MANAGEMENT,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
   @Get()
   async findAll(@Req() req: Request): Promise<VideosPageResponseDto[]> {
     return this.getService.findAll(await this.getService.canSeeNonPublic(req));
   }
 
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.PUBLIC_VIDEOS,
+      FeatureFlagKeys.TRAINING_VIDEOS,
+      FeatureFlagKeys.PAGE_MANAGEMENT,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   async findOne(
     @Param("id") id: string,

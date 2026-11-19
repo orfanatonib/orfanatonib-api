@@ -1,3 +1,6 @@
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { Body, Controller, Post, Logger, Req, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { CreateAcceptedChristService } from "../services/create-accepted-christ.service";
@@ -16,6 +19,8 @@ export class AcceptedChristController {
     private readonly createAcceptedChristService: CreateAcceptedChristService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.ACCEPTED_CHRISTS)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   async create(
     @Req() req: AuthenticatedRequest,
