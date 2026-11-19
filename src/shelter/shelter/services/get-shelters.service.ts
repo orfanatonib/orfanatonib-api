@@ -36,6 +36,11 @@ export class GetSheltersService {
     return this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
   }
 
+  /** Resposta de um abrigo já carregado (create/update), com a mesma regra de endereço das leituras. */
+  async toResponse(shelter: ShelterEntity): Promise<ShelterResponseDto> {
+    return toShelterDto(shelter, await this.showAddress());
+  }
+
   async findAllPaginated(
     query: QuerySheltersDto,
     actor: ShelterAccessContext,

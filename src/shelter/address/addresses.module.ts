@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { AddressesController } from "./addresses.controller";
 import { AddressesService } from "./services/addresses.service";
 import { CreateAddressService } from "./services/create-address.service";
 import { GetAddressService } from "./services/get-address.service";
@@ -10,7 +9,6 @@ import { AddressesRepository } from "./repositories/addresses.repository";
 
 @Module({
   imports: [TypeOrmModule.forFeature([AddressEntity])],
-  controllers: [AddressesController],
   providers: [
     AddressesRepository,
     AddressesService,

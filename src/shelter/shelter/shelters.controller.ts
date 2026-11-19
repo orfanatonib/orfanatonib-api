@@ -17,7 +17,6 @@ import {
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AuthenticatedRequest } from "src/core/auth/auth.types";
-import { GetFeatureFlagsService } from "src/core/feature-flags/services/get-feature-flags.service";
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 import { CreateSheltersService } from "./services/create-shelters.service";
@@ -36,7 +35,6 @@ import { ShelterPaginatedResponseDto } from "./dto/shelter-paginated-response.dt
 import { ShelterSelectOptionDto } from "./dto/shelter-select-option.dto";
 import { ShelterTeamSelectOptionDto } from "./dto/shelter-team-select-option.dto";
 import { ShelterTeamsQuantityResponseDto } from "./dto/shelter-teams-quantity-response.dto";
-import { toShelterDto } from "./mappers/shelter.mapper";
 import { toShelterAccessContext } from "./utils/shelter-access.util";
 import {
   parseShelterMediaPayload,
@@ -56,13 +54,7 @@ export class SheltersController {
     private readonly getService: GetSheltersService,
     private readonly updateService: UpdateSheltersService,
     private readonly deleteService: DeleteSheltersService,
-    private readonly featureFlagsService: GetFeatureFlagsService,
   ) {}
-
-  /** O endereço é exposto conforme a feature flag do abrigo. */
-  private showAddress(): Promise<boolean> {
-    return this.featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS);
-  }
 
   @UseGuards(JwtAuthGuard)
   @Get()
@@ -138,7 +130,7 @@ export class SheltersController {
       toFilesDict(files),
     );
 
-    return toShelterDto(shelter, await this.showAddress());
+    return this.getService.toResponse(shelter);
   }
 
   @FeatureFlag(FeatureFlagKeys.SHELTER_MANAGEMENT)
@@ -160,7 +152,7 @@ export class SheltersController {
       toFilesDict(files),
     );
 
-    return toShelterDto(shelter, await this.showAddress());
+    return this.getService.toResponse(shelter);
   }
 
   @FeatureFlag(FeatureFlagKeys.SHELTER_MANAGEMENT)
@@ -182,7 +174,7 @@ export class SheltersController {
       toFilesDict(files),
     );
 
-    return toShelterDto(shelter, await this.showAddress());
+    return this.getService.toResponse(shelter);
   }
 
   @FeatureFlag(FeatureFlagKeys.SHELTER_MANAGEMENT)

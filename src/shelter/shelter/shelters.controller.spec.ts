@@ -1,7 +1,7 @@
 import { Test } from "@nestjs/testing";
 import { AuthenticatedRequest, UserRole } from "src/core/auth/auth.types";
 import { RuleException } from "src/common/exceptions";
-import { GetFeatureFlagsService } from "src/core/feature-flags/services/get-feature-flags.service";
+import { toShelterDto } from "./mappers/shelter.mapper";
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 import { SheltersController } from "./shelters.controller";
 import { CreateSheltersService } from "./services/create-shelters.service";
@@ -25,6 +25,7 @@ import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.gua
 
 describe("SheltersController", () => {
   const createService = { execute: jest.fn() };
+  const featureFlagsService = { isEnabled: jest.fn() };
   const getService = {
     findAllPaginated: jest.fn(),
     findAllSimple: jest.fn(),
@@ -32,10 +33,16 @@ describe("SheltersController", () => {
     list: jest.fn(),
     listTeamsForPublic: jest.fn(),
     getTeamsQuantity: jest.fn(),
+    // Mesma regra do serviço real: o endereço segue a flag `shelter_address`.
+    toResponse: jest.fn(async (shelter: Parameters<typeof toShelterDto>[0]) =>
+      toShelterDto(
+        shelter,
+        await featureFlagsService.isEnabled(FeatureFlagKeys.SHELTER_ADDRESS),
+      ),
+    ),
   };
   const updateService = { execute: jest.fn(), updateMedia: jest.fn() };
   const deleteService = { execute: jest.fn() };
-  const featureFlagsService = { isEnabled: jest.fn() };
 
   const request = {
     user: { userId: "admin-user-id", role: UserRole.ADMIN },
@@ -54,7 +61,6 @@ describe("SheltersController", () => {
         { provide: GetSheltersService, useValue: getService },
         { provide: UpdateSheltersService, useValue: updateService },
         { provide: DeleteSheltersService, useValue: deleteService },
-        { provide: GetFeatureFlagsService, useValue: featureFlagsService },
       ],
     })
       .overrideGuard(FeatureFlagGuard)
