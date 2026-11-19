@@ -40,6 +40,7 @@ Somente administrador **e** com a flag `observability_audit` ligada (desligada p
 
 - `GET /log-records/observability` e `GET /log-records/audit`: `from`/`to` obrigatórios (≤ **31 dias**, senão `400`), `page`, `limit` (1–100) e filtros allowlisted. Resposta `{ data, meta: { page, limit, totalItems, totalPages } }`.
 - `DELETE /log-records/{observability,audit}/:eventId?occurredAt=` e por intervalo; **a exclusão também é auditada**.
+- **Auditoria com menos de 90 dias não é apagável** pelo painel (item nem intervalo): `409` com `details.code = LOG_9102`. Erro técnico pode ser apagado a qualquer momento.
 - Com storage `file`: **`409`** com `details.code = LOG_9101` (os JSONL existem para análise fora da aplicação). Datas inválidas: `400` com `details.code = VAL_4005`.
 
 ## Painel

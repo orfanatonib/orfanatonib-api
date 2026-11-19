@@ -1,7 +1,11 @@
-import { Injectable } from "@nestjs/common";
+import { Inject, Injectable } from "@nestjs/common";
 
-import { ResourceNotFoundException } from "src/common/exceptions";
+import {
+  ResourceConflictException,
+  ResourceNotFoundException,
+} from "src/common/exceptions";
 import { LOG_ERROR_CODES } from "src/core/observability/utils/error-code.utils";
+import { LOG_STORAGE_CLOCK } from "src/shared/providers/log-storage/constants";
 import {
   LogRecordType,
   LogStorageKind,
@@ -10,8 +14,12 @@ import {
   AuditStoragePort,
   ObservabilityStoragePort,
 } from "src/shared/providers/log-storage/ports/log-storage.port";
-import { QueryableRecordType } from "src/shared/providers/log-storage/types";
+import {
+  Clock,
+  QueryableRecordType,
+} from "src/shared/providers/log-storage/types";
 
+import { LOG_RECORDS_AUDIT_MIN_RETENTION_DAYS } from "../constants";
 import { DeleteLogRecordsResponseDto } from "../dto/delete-log-record.dto";
 import { assertQueryable, validateRange } from "../utils";
 
@@ -28,7 +36,28 @@ export class DeleteLogRecordsService {
   constructor(
     private readonly observability: ObservabilityStoragePort,
     private readonly audit: AuditStoragePort,
+    @Inject(LOG_STORAGE_CLOCK) private readonly clock: Clock,
   ) {}
+
+  /** Recusa apagar auditoria dentro da retenção mínima (`LOG_9102`). */
+  private assertDeletableAudit(
+    recordType: QueryableRecordType,
+    upTo: Date,
+  ): void {
+    if (recordType !== LogRecordType.Audit) return;
+    const limit =
+      this.clock().getTime() -
+      LOG_RECORDS_AUDIT_MIN_RETENTION_DAYS * 86_400_000;
+    if (upTo.getTime() > limit) {
+      throw new ResourceConflictException(
+        `Auditoria com menos de ${LOG_RECORDS_AUDIT_MIN_RETENTION_DAYS} dias não pode ser apagada`,
+        {
+          code: LOG_ERROR_CODES.AUDIT_RETENTION_ACTIVE,
+          minRetentionDays: LOG_RECORDS_AUDIT_MIN_RETENTION_DAYS,
+        },
+      );
+    }
+  }
 
   deleteObservability(
     eventId: string,
@@ -75,6 +104,7 @@ export class DeleteLogRecordsService {
         code: LOG_ERROR_CODES.RESOURCE_NOT_FOUND,
       });
     }
+    this.assertDeletableAudit(recordType, instant);
     const removed = await storage.delete({
       recordType,
       eventId,
@@ -97,6 +127,7 @@ export class DeleteLogRecordsService {
     const storage = this.storageOf(recordType);
     assertQueryable(storage, LogStorageKind.File);
     const range = validateRange(from, to);
+    this.assertDeletableAudit(recordType, range.to);
     const deleted = await storage.deleteRange({
       recordType,
       from: range.from,

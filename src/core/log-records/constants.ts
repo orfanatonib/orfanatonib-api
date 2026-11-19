@@ -11,6 +11,11 @@ export const LOG_RECORDS_MAX_LIMIT = 100;
 /** Intervalo máximo por consulta; acima disso a API recusa (FE-BE-005). */
 export const LOG_RECORDS_MAX_RANGE_DAYS = 31;
 export const LOG_RECORDS_TEXT_FILTER_MAX_LENGTH = 200;
+/**
+ * Auditoria mais nova que isto não é apagável pelo painel (plano 12, T5.1):
+ * apagar o rastro de uma ação recente é justamente o que a auditoria impede.
+ */
+export const LOG_RECORDS_AUDIT_MIN_RETENTION_DAYS = 90;
 
 /** Textos devolvidos à tela são cortados de novo, mesmo já redigidos. */
 export const LOG_RECORDS_MESSAGE_MAX_LENGTH = 512;

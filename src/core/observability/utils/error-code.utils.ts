@@ -10,6 +10,7 @@ export const LOG_ERROR_CODES = {
   RESOURCE_NOT_FOUND: "RES_5001",
   INTERNAL_ERROR: "INT_9001",
   LOG_QUERY_UNAVAILABLE: "LOG_9101",
+  AUDIT_RETENTION_ACTIVE: "LOG_9102",
 } as const;
 
 /** `details.code` de uma exceção HTTP do domínio, quando houver. */
