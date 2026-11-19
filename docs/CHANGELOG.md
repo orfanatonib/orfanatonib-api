@@ -6,6 +6,14 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ## [Unreleased] - 2026-10-02 - ESTÚDIO ORFANATO
 
+- **ADD**: observabilidade e auditoria (plano 12): `requestId` do servidor em
+  `X-Request-Id`, logger estruturado com redação, auditoria automática das
+  mutações e dos jobs agendados (só `actorId`, sem nome/corpo/query/IP), storage
+  `file`/`dynamodb` e `GET/DELETE /log-records/*` (admin + flag
+  `observability_audit`). Detalhes em `docs/modules/observability-audit`.
+- **CHANGE**: o `GlobalExceptionFilter` passa a registrar a falha na auditoria e
+  no log técnico; erro 5xx chega ao logger como `Error` (código e status reais).
+- **ADD**: variáveis `OBS_*` e `AUDIT_*` (`env/example.env`).
 - **ADD**: `DataSource` compartilhado pela aplicação e pela CLI do TypeORM.
 - **ADD**: comandos locais para gerar, aplicar, reverter e consultar migrations.
 - **ADD**: baseline inicial gerado pelo TypeORM; aplicada por adoção verificada
