@@ -1,8 +1,10 @@
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
+import type { Request } from "express";
 
 import { AccessDeniedException } from "src/common/exceptions";
+import { AuthContextService } from "src/core/auth/services/auth-context.service";
 import { normalizeRole } from "src/core/auth/utils/auth-token.util";
 
 import {
@@ -19,6 +21,7 @@ export class FeatureFlagGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly featureFlags: GetFeatureFlagsService,
     private readonly configService: ConfigService,
+    private readonly authContext: AuthContextService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -30,8 +33,13 @@ export class FeatureFlagGuard implements CanActivate {
 
     const request = context
       .switchToHttp()
-      .getRequest<{ user?: { role?: string } }>();
-    const role = normalizeRole(request?.user?.role);
+      .getRequest<Request & { user?: { role?: string } }>();
+    // `request.user` só existe depois do JwtAuthGuard; em rota pública (ou se
+    // este guard rodar antes) o perfil vem do próprio token, para a decisão não
+    // depender da ordem dos guards.
+    const role = request?.user
+      ? normalizeRole(request.user.role)
+      : await this.authContext.getRole(request);
 
     const anyOf = isFeatureFlagAnyOf(metadata);
     const keys: readonly string[] = anyOf

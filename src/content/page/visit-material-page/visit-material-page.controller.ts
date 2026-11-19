@@ -33,6 +33,9 @@ import {
 } from "./utils/visit-material-payload.util";
 import { VISIT_MATERIAL_PAYLOAD_FIELD } from "./constants";
 import { MEDIA_PAGE_UPLOAD_OPTIONS } from "src/shared/media/storage/upload-limits.constants";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("visit-material-pages")
 @UseGuards(JwtAuthGuard)
@@ -45,6 +48,8 @@ export class VisitMaterialsPageController {
     private readonly setCurrentService: SetCurrentVisitMaterialPageService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   @UseGuards(AdminRoleGuard)
   @UseInterceptors(AnyFilesInterceptor(MEDIA_PAGE_UPLOAD_OPTIONS))
@@ -58,6 +63,8 @@ export class VisitMaterialsPageController {
     return this.createService.execute(dto, toFilesDict(files));
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Patch(":id")
   @UseGuards(AdminRoleGuard)
   @UseInterceptors(AnyFilesInterceptor(MEDIA_PAGE_UPLOAD_OPTIONS))
@@ -70,6 +77,8 @@ export class VisitMaterialsPageController {
     return this.updateService.execute(id, dto, toFilesDict(files));
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(AdminRoleGuard)
@@ -77,6 +86,8 @@ export class VisitMaterialsPageController {
     await this.deleteService.execute(id);
   }
 
+  @FeatureFlag(FeatureFlagKeys.VISIT_MATERIALS)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   async findAll(
     @Query() query: QueryVisitMaterialsPageDto,
@@ -84,11 +95,15 @@ export class VisitMaterialsPageController {
     return this.getService.findAll(query);
   }
 
+  @FeatureFlag(FeatureFlagKeys.VISIT_MATERIALS)
+  @UseGuards(FeatureFlagGuard)
   @Get("current-material")
   async findCurrentMaterial(): Promise<VisitMaterialsPageResponseDTO | null> {
     return this.getService.findCurrentWeek();
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Post("current-material/:id")
   @UseGuards(AdminRoleGuard)
   async setCurrentMaterial(
@@ -97,6 +112,8 @@ export class VisitMaterialsPageController {
     return this.setCurrentService.execute(id);
   }
 
+  @FeatureFlag(FeatureFlagKeys.VISIT_MATERIALS)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   async findOne(
     @Param("id", new ParseUUIDPipe()) id: string,

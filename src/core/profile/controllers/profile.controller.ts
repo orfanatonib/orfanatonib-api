@@ -26,6 +26,9 @@ import { GetOneProfileService } from "../services/profile/get-one-profile.servic
 import { UpdateProfileService } from "../services/profile/update-profile.service";
 import { DeleteProfileService } from "../services/profile/delete-profile.service";
 import { UserRole } from "../../auth/auth.types";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("profiles")
 @UseGuards(JwtAuthGuard)
@@ -41,6 +44,8 @@ export class ProfileController {
     private readonly deleteProfileService: DeleteProfileService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   async createProfile(
     @Request() req,
@@ -57,6 +62,8 @@ export class ProfileController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   async getAllProfiles(
     @Request() req,
@@ -82,6 +89,8 @@ export class ProfileController {
     return this.getOneProfileService.execute(userId);
   }
 
+  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   @UseGuards(AdminRoleGuard)
   async getProfileById(
@@ -123,6 +132,8 @@ export class ProfileController {
     throw new ForbiddenException("Insufficient permissions");
   }
 
+  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Put(":id")
   @UseGuards(AdminRoleGuard)
   async updateProfileById(
@@ -138,6 +149,8 @@ export class ProfileController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   @UseGuards(AdminRoleGuard)
   async deleteProfile(@Param("id") id: string): Promise<void> {

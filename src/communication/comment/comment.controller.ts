@@ -21,6 +21,9 @@ import { UpdateCommentService } from "./services/update-comment.service";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { CommentResponseDto } from "./dto/comment-response.dto";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("comments")
 export class CommentController {
@@ -33,6 +36,8 @@ export class CommentController {
     private readonly deleteCommentService: DeleteCommentService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.COMMENT_SUBMISSION)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
@@ -43,6 +48,8 @@ export class CommentController {
     return plainToInstance(CommentResponseDto, created);
   }
 
+  @FeatureFlag(FeatureFlagKeys.COMMENT_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async findAll(): Promise<CommentResponseDto[]> {
@@ -50,12 +57,16 @@ export class CommentController {
     return plainToInstance(CommentResponseDto, comments);
   }
 
+  @FeatureFlag(FeatureFlagKeys.HOME_COMMENTS)
+  @UseGuards(FeatureFlagGuard)
   @Get("/published")
   async findAllPublished(): Promise<CommentResponseDto[]> {
     const comments = await this.getCommentService.findAllPublished();
     return plainToInstance(CommentResponseDto, comments);
   }
 
+  @FeatureFlag(FeatureFlagKeys.COMMENT_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async findOne(@Param("id") id: string): Promise<CommentResponseDto> {
@@ -63,6 +74,8 @@ export class CommentController {
     return plainToInstance(CommentResponseDto, comment);
   }
 
+  @FeatureFlag(FeatureFlagKeys.COMMENT_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Put(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async update(
@@ -75,6 +88,8 @@ export class CommentController {
     return plainToInstance(CommentResponseDto, updated);
   }
 
+  @FeatureFlag(FeatureFlagKeys.COMMENT_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async remove(@Param("id") id: string): Promise<void> {

@@ -22,6 +22,9 @@ import { UpdateShelterScheduleService } from "./services/update-shelter-schedule
 import { DeleteShelterScheduleService } from "./services/delete-shelter-schedule.service";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminOrLeaderRoleGuard } from "src/core/auth/guards/role-guard";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("shelter-schedules")
 @UseGuards(JwtAuthGuard)
@@ -35,6 +38,8 @@ export class ShelterScheduleController {
     private readonly deleteService: DeleteShelterScheduleService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.SHELTER_SCHEDULE)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Post()
   async create(
@@ -46,6 +51,8 @@ export class ShelterScheduleController {
     return ShelterScheduleResponseDto.fromEntity(result);
   }
 
+  @FeatureFlag(FeatureFlagKeys.SHELTER_SCHEDULE)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   async findAll(@Req() req: Request): Promise<ShelterScheduleResponseDto[]> {
     this.logger.log("Listing shelter schedules");
@@ -55,6 +62,8 @@ export class ShelterScheduleController {
     );
   }
 
+  @FeatureFlag(FeatureFlagKeys.SHELTER_SCHEDULE)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Put(":id")
   async update(
@@ -67,6 +76,8 @@ export class ShelterScheduleController {
     return ShelterScheduleResponseDto.fromEntity(result);
   }
 
+  @FeatureFlag(FeatureFlagKeys.SHELTER_SCHEDULE)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Delete(":id")
   @HttpCode(204)

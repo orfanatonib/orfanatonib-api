@@ -5,6 +5,8 @@ import { Test } from "@nestjs/testing";
 
 import { AccessDeniedException } from "src/common/exceptions";
 
+import { AuthContextService } from "src/core/auth/services/auth-context.service";
+
 import { FeatureFlagGuard } from "./feature-flag.guard";
 import { GetFeatureFlagsService } from "../services/get-feature-flags.service";
 
@@ -22,6 +24,7 @@ describe("FeatureFlagGuard", () => {
   const reflector = { getAllAndOverride: jest.fn() };
   const featureFlags = { isEnabled: jest.fn(), isEnabledForRole: jest.fn() };
   const configService = { get: jest.fn() };
+  const authContext = { getRole: jest.fn() };
 
   let guard: FeatureFlagGuard;
 
@@ -34,6 +37,7 @@ describe("FeatureFlagGuard", () => {
         { provide: Reflector, useValue: reflector },
         { provide: GetFeatureFlagsService, useValue: featureFlags },
         { provide: ConfigService, useValue: configService },
+        { provide: AuthContextService, useValue: authContext },
       ],
     }).compile();
 
@@ -43,6 +47,7 @@ describe("FeatureFlagGuard", () => {
     featureFlags.isEnabled.mockResolvedValue(true);
     featureFlags.isEnabledForRole.mockResolvedValue(true);
     configService.get.mockReturnValue("local");
+    authContext.getRole.mockResolvedValue(null);
   });
 
   it("libera a rota quando a flag está ligada", async () => {
@@ -147,5 +152,14 @@ describe("FeatureFlagGuard", () => {
     expect(
       JSON.stringify((error as AccessDeniedException).getResponse()),
     ).toContain("FEATURE_DISABLED");
+  });
+
+  it("sem request.user (rota pública ou guard antes do JWT) o perfil vem do token", async () => {
+    authContext.getRole.mockResolvedValue("member");
+    await guard.canActivate(contextFor());
+    expect(featureFlags.isEnabledForRole).toHaveBeenCalledWith(
+      "shelter-pagelas",
+      "member",
+    );
   });
 });

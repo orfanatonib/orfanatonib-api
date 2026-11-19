@@ -20,6 +20,9 @@ import {
 import { CreateContactDto } from "./dto/create-contact.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("contact")
 export class ContactController {
@@ -32,6 +35,8 @@ export class ContactController {
     private readonly deleteContactService: DeleteContactService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.CONTACT_FORM)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   async create(@Body() body: CreateContactDto): Promise<ContactReceiptDto> {
     this.logger.log("Creating new contact message");
@@ -46,6 +51,8 @@ export class ContactController {
     return ContactReceiptDto.fromEntity(result);
   }
 
+  @FeatureFlag(FeatureFlagKeys.CONTACT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async getAll(): Promise<ContactResponseDto[]> {
@@ -53,6 +60,8 @@ export class ContactController {
     return contacts.map((contact) => ContactResponseDto.fromEntity(contact));
   }
 
+  @FeatureFlag(FeatureFlagKeys.CONTACT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Patch(":id/read")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async setRead(@Param("id") id: string): Promise<ContactResponseDto> {
@@ -62,6 +71,8 @@ export class ContactController {
     return ContactResponseDto.fromEntity(result);
   }
 
+  @FeatureFlag(FeatureFlagKeys.CONTACT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async delete(@Param("id") id: string): Promise<void> {

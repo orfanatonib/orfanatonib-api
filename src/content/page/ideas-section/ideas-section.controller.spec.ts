@@ -9,6 +9,7 @@ import { DeleteIdeasSectionService } from "./services/delete-ideas-section.servi
 import { GetIdeasSectionService } from "./services/get-ideas-section.service";
 import { UpdateIdeasSectionService } from "./services/update-ideas-section.service";
 import { buildFile } from "./ideas-section.fixtures";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 
 const payload = JSON.stringify({
   title: "Ideia",
@@ -52,7 +53,10 @@ describe("IdeasSectionController", () => {
           useValue: { execute: jest.fn() },
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(FeatureFlagGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = moduleRef.get(IdeasSectionController);
     createService = moduleRef.get(CreateIdeasSectionService);

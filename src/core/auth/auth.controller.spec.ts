@@ -15,6 +15,7 @@ import {
   buildRegisterDto,
   buildTokens,
 } from "./auth.fixtures";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 
 describe("AuthController", () => {
   const loginService = { execute: jest.fn() };
@@ -52,7 +53,10 @@ describe("AuthController", () => {
         },
         { provide: PasswordRecoveryService, useValue: passwordRecoveryService },
       ],
-    }).compile();
+    })
+      .overrideGuard(FeatureFlagGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
     moduleRef.useLogger(false);
 
     controller = moduleRef.get(AuthController);

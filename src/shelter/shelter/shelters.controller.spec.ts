@@ -21,6 +21,7 @@ import {
   buildShelterEntity,
   buildUploadedFile,
 } from "./shelter.fixtures";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 
 describe("SheltersController", () => {
   const createService = { execute: jest.fn() };
@@ -55,7 +56,10 @@ describe("SheltersController", () => {
         { provide: DeleteSheltersService, useValue: deleteService },
         { provide: GetFeatureFlagsService, useValue: featureFlagsService },
       ],
-    }).compile();
+    })
+      .overrideGuard(FeatureFlagGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = moduleRef.get(SheltersController);
 

@@ -39,6 +39,9 @@ import {
   parseIdeasSectionPayload,
   toFilesDict,
 } from "./utils/ideas-section-payload.util";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 /**
  * Ideias compartilhadas pelos membros.
@@ -58,6 +61,8 @@ export class IdeasSectionController {
   ) {}
 
   /** Qualquer usuário autenticado pode compartilhar uma ideia. */
+  @FeatureFlag(FeatureFlagKeys.IDEA_SUBMISSION)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   @UseInterceptors(AnyFilesInterceptor(IDEAS_UPLOAD_OPTIONS))
   async create(
@@ -76,6 +81,8 @@ export class IdeasSectionController {
     return this.createService.execute(dto, toFilesDict(files), userId);
   }
 
+  @FeatureFlag(FeatureFlagKeys.IDEA_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Patch(":id")
   @UseGuards(AdminRoleGuard)
   @UseInterceptors(AnyFilesInterceptor(IDEAS_UPLOAD_OPTIONS))
@@ -88,6 +95,8 @@ export class IdeasSectionController {
     return this.updateService.execute(id, dto, toFilesDict(files));
   }
 
+  @FeatureFlag(FeatureFlagKeys.IDEA_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Patch(":id/attach/:pageId")
   @UseGuards(AdminRoleGuard)
   @UseInterceptors(AnyFilesInterceptor(IDEAS_UPLOAD_OPTIONS))
@@ -101,6 +110,8 @@ export class IdeasSectionController {
     return this.attachService.execute(id, pageId, dto, toFilesDict(files));
   }
 
+  @FeatureFlag(FeatureFlagKeys.IDEA_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   @UseGuards(AdminRoleGuard)
   async remove(
@@ -114,12 +125,16 @@ export class IdeasSectionController {
    * As ideias ainda não publicadas em nenhuma página — fila de moderação do admin.
    * A resposta traz nome, e-mail e telefone do autor: nunca para outros membros.
    */
+  @FeatureFlag(FeatureFlagKeys.IDEA_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(AdminRoleGuard)
   async findUnattached(): Promise<IdeasSectionResponseDto[]> {
     return this.getService.findUnattached();
   }
 
+  @FeatureFlag(FeatureFlagKeys.IDEA_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   @UseGuards(AdminRoleGuard)
   async findOne(

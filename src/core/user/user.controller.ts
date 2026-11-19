@@ -31,6 +31,9 @@ import { UpdateUserService } from "./services/update-user.service";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UpdateUserImageService } from "./services/update-user-image.service";
 import { UserEntity } from "./entities/user.entity";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("users")
 @UseGuards(JwtAuthGuard)
@@ -45,6 +48,8 @@ export class UserController {
     private readonly updateUserImageService: UpdateUserImageService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   @UseGuards(AdminRoleGuard)
   async create(@Body() dto: CreateUserDto) {
@@ -54,12 +59,16 @@ export class UserController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(AdminRoleGuard)
   findAll(@Query() query: GetUsersQueryDto) {
     return this.getUsersService.findAllPaginated(query);
   }
 
+  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get("simple")
   @UseGuards(AdminRoleGuard)
   findAllSimple() {
@@ -72,18 +81,24 @@ export class UserController {
     return this.getUsersService.findAllSimple();
   }
 
+  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   @UseGuards(AdminRoleGuard)
   async findOne(@Param("id", new ParseUUIDPipe()) id: string) {
     return this.getUsersService.findOne(id);
   }
 
+  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id/profile")
   @UseGuards(AdminRoleGuard)
   async findOneProfile(@Param("id", new ParseUUIDPipe()) id: string) {
     return this.getUsersService.findOneForProfile(id);
   }
 
+  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Put(":id")
   @UseGuards(AdminRoleGuard)
   async update(
@@ -96,6 +111,8 @@ export class UserController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   @UseGuards(AdminRoleGuard)
   async remove(@Param("id", new ParseUUIDPipe()) id: string) {
@@ -105,6 +122,8 @@ export class UserController {
     return { message: "User removed successfully" };
   }
 
+  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Patch(":id/image")
   @UseGuards(AdminRoleGuard)
   @UseInterceptors(AnyFilesInterceptor(USER_IMAGE_UPLOAD_OPTIONS))

@@ -32,6 +32,9 @@ import { UpdateVideosPageService } from "./services/update-video-page.service";
 import { GetVideosPageService } from "./services/get-video-page.service";
 import { DeleteVideosPageService } from "./services/delete-video-page.service";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("video-pages")
 export class VideosPageController {
@@ -44,6 +47,8 @@ export class VideosPageController {
     private readonly deleteService: DeleteVideosPageService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
   @UseInterceptors(AnyFilesInterceptor(VIDEO_PAGE_UPLOAD_OPTIONS))
@@ -84,6 +89,8 @@ export class VideosPageController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
   @UseInterceptors(AnyFilesInterceptor(VIDEO_PAGE_UPLOAD_OPTIONS))
@@ -148,6 +155,8 @@ export class VideosPageController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(":id")
   async remove(@Param("id") id: string): Promise<{ message: string }> {

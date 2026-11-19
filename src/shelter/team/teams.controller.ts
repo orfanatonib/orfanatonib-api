@@ -24,6 +24,9 @@ import { AuthContextService } from "src/core/auth/services/auth-context.service"
 import { AdminOrLeaderRoleGuard } from "src/core/auth/guards/role-guard";
 import type { AuthenticatedRequest } from "src/core/auth/auth.types";
 import { toShelterAccessContext } from "src/shelter/shelter/utils/shelter-access.util";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("teams")
 @UseGuards(JwtAuthGuard)
@@ -38,6 +41,8 @@ export class TeamsController {
     private readonly authContext: AuthContextService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.SHELTER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   @UseGuards(AdminOrLeaderRoleGuard)
   async create(
@@ -97,6 +102,8 @@ export class TeamsController {
     return this.getTeamsService.findOneAs(toShelterAccessContext(req), id);
   }
 
+  @FeatureFlag(FeatureFlagKeys.SHELTER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Put(":id")
   @UseGuards(AdminOrLeaderRoleGuard)
   async update(
@@ -114,6 +121,8 @@ export class TeamsController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.SHELTER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   @UseGuards(AdminOrLeaderRoleGuard)
   async remove(

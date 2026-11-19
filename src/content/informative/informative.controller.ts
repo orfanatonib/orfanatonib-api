@@ -22,6 +22,9 @@ import { DeleteInformativeService } from "./services/delete-informative.service"
 
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("informatives")
 export class InformativeController {
@@ -34,6 +37,8 @@ export class InformativeController {
     private readonly deleteService: DeleteInformativeService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.INFORMATIVE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
   async create(
@@ -45,6 +50,8 @@ export class InformativeController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.INFORMATIVE_BANNERS)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   @UseGuards(JwtAuthGuard)
   async findOne(@Param("id") id: string): Promise<InformativeResponseDto> {
@@ -57,6 +64,8 @@ export class InformativeController {
     return found;
   }
 
+  @FeatureFlag(FeatureFlagKeys.INFORMATIVE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
   async update(
@@ -69,6 +78,8 @@ export class InformativeController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.INFORMATIVE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(":id")
   async delete(@Param("id") id: string): Promise<void> {
@@ -77,6 +88,8 @@ export class InformativeController {
     this.logger.log(`Informative banner deleted successfully: ${id}`);
   }
 
+  @FeatureFlag(FeatureFlagKeys.INFORMATIVE_BANNERS)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(JwtAuthGuard)
   async findAll(

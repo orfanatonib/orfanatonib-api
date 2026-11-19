@@ -24,6 +24,9 @@ import type { AuthenticatedRequest } from "src/core/auth/auth.types";
 import { toShelterAccessContext } from "src/shelter/shelter/utils/shelter-access.util";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminOrLeaderRoleGuard } from "src/core/auth/guards/role-guard";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("visit-reports")
 @UseGuards(JwtAuthGuard, AdminOrLeaderRoleGuard)
@@ -37,6 +40,8 @@ export class VisitReportController {
     private readonly deleteService: DeleteVisitReportService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.VISIT_REPORTS)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   async create(
     @Req() req: AuthenticatedRequest,
@@ -51,6 +56,8 @@ export class VisitReportController {
     return VisitReportResponseDto.fromEntity(result);
   }
 
+  @FeatureFlag(FeatureFlagKeys.VISIT_REPORTS)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   async findAll(@Req() req: Request): Promise<VisitReportResponseDto[]> {
     this.logger.log("Listing visit reports");
@@ -58,6 +65,8 @@ export class VisitReportController {
     return reports.map((report) => VisitReportResponseDto.fromEntity(report));
   }
 
+  @FeatureFlag(FeatureFlagKeys.VISIT_REPORTS)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   async findOne(
     @Req() req: AuthenticatedRequest,
@@ -71,6 +80,8 @@ export class VisitReportController {
     return VisitReportResponseDto.fromEntity(report);
   }
 
+  @FeatureFlag(FeatureFlagKeys.VISIT_REPORTS)
+  @UseGuards(FeatureFlagGuard)
   @Put(":id")
   async update(
     @Req() req: AuthenticatedRequest,
@@ -87,6 +98,8 @@ export class VisitReportController {
     return VisitReportResponseDto.fromEntity(result);
   }
 
+  @FeatureFlag(FeatureFlagKeys.VISIT_REPORTS)
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   @HttpCode(204)
   async remove(

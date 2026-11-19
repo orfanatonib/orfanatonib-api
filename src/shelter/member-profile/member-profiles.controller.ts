@@ -21,6 +21,9 @@ import {
 } from "./dto/member-profiles.query.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { ManageMemberTeamDto } from "./dto/assign-team.dto";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("member-profiles")
 @UseGuards(JwtAuthGuard)
@@ -32,6 +35,8 @@ export class MemberProfilesController {
     private readonly updateMemberProfileService: UpdateMemberProfileService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.MEMBER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   findPage(
     @Req() req: Request,
@@ -45,6 +50,8 @@ export class MemberProfilesController {
     return this.getMemberProfilesService.list(req);
   }
 
+  @FeatureFlag(FeatureFlagKeys.MEMBER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   findOne(
     @Param("id", new ParseUUIDPipe()) id: string,
@@ -53,6 +60,8 @@ export class MemberProfilesController {
     return this.getMemberProfilesService.findOne(id, req);
   }
 
+  @FeatureFlag(FeatureFlagKeys.MEMBER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Put(":memberId")
   async update(
     @Param("memberId", new ParseUUIDPipe()) memberId: string,

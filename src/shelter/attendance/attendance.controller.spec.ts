@@ -14,6 +14,7 @@ import {
   AttendanceCategory,
   AttendanceType,
 } from "./entities/attendance.entity";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 
 describe("AttendanceController", () => {
   const registerService = { registerOwn: jest.fn(), registerTeam: jest.fn() };
@@ -51,7 +52,10 @@ describe("AttendanceController", () => {
         { provide: GetRecordsService, useValue: recordsService },
         { provide: GetStatsService, useValue: statsService },
       ],
-    }).compile();
+    })
+      .overrideGuard(FeatureFlagGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = moduleRef.get(AttendanceController);
 

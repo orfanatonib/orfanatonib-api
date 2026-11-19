@@ -39,6 +39,9 @@ import { QueryMeditationDto } from "./dto/query-meditation.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 import { SINGLE_MEDIA_UPLOAD_OPTIONS } from "src/shared/media/storage/upload-limits.constants";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("meditations")
 export class MeditationController {
@@ -51,6 +54,8 @@ export class MeditationController {
     private readonly getService: GetMeditationService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.MEDITATION_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
   @UseInterceptors(FileInterceptor("file", SINGLE_MEDIA_UPLOAD_OPTIONS))
@@ -84,6 +89,8 @@ export class MeditationController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.WEEKLY_MEDITATION)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(JwtAuthGuard)
   async findAll(
@@ -92,18 +99,24 @@ export class MeditationController {
     return this.getService.findAll(query);
   }
 
+  @FeatureFlag(FeatureFlagKeys.WEEKLY_MEDITATION)
+  @UseGuards(FeatureFlagGuard)
   @Get("/this-week")
   @UseGuards(JwtAuthGuard)
   async getThisWeek(): Promise<WeekMeditationResponseDto> {
     return this.getService.getThisWeekMeditation();
   }
 
+  @FeatureFlag(FeatureFlagKeys.WEEKLY_MEDITATION)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   @UseGuards(JwtAuthGuard)
   async findOne(@Param("id") id: string): Promise<WeekMeditationResponseDto> {
     return this.getService.findOne(id);
   }
 
+  @FeatureFlag(FeatureFlagKeys.MEDITATION_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
   @UseInterceptors(FileInterceptor("file", SINGLE_MEDIA_UPLOAD_OPTIONS))
@@ -141,6 +154,8 @@ export class MeditationController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.MEDITATION_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(":id")
   @HttpCode(204)

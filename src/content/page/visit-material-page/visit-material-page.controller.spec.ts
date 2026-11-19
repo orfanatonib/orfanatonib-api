@@ -12,6 +12,7 @@ import { CreateVisitMaterialsPageDto } from "./dto/create-visit-material-page.dt
 import { UpdateVisitMaterialsPageDto } from "./dto/update-visit-material-page.dto";
 import { TestamentType } from "./enums/testament-type.enum";
 import { buildMulterFile } from "./visit-material-page.fixtures";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 
 /**
  * `@UseGuards` stores class guards on the constructor and method guards on the
@@ -62,7 +63,10 @@ describe("VisitMaterialsPageController", () => {
           useValue: setCurrentService,
         },
       ],
-    }).compile();
+    })
+      .overrideGuard(FeatureFlagGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = moduleRef.get(VisitMaterialsPageController);
   });

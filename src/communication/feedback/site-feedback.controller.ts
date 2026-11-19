@@ -22,6 +22,9 @@ import { SiteFeedbackResponseDto } from "./dto/site-feedback-response.dto";
 import { UpdateSiteFeedbackDto } from "./dto/update-site-feedback.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("site-feedbacks")
 export class SiteFeedbackController {
@@ -34,6 +37,8 @@ export class SiteFeedbackController {
     private readonly deleteFeedbackService: DeleteSiteFeedbackService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.SITE_FEEDBACK)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   @UseGuards(JwtAuthGuard)
   @UsePipes(new ValidationPipe({ whitelist: true }))
@@ -46,6 +51,8 @@ export class SiteFeedbackController {
     return plainToInstance(SiteFeedbackResponseDto, created);
   }
 
+  @FeatureFlag(FeatureFlagKeys.FEEDBACK_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async findAll(): Promise<SiteFeedbackResponseDto[]> {
@@ -53,6 +60,8 @@ export class SiteFeedbackController {
     return plainToInstance(SiteFeedbackResponseDto, feedbacks);
   }
 
+  @FeatureFlag(FeatureFlagKeys.FEEDBACK_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async findOne(@Param("id") id: string): Promise<SiteFeedbackResponseDto> {
@@ -60,6 +69,8 @@ export class SiteFeedbackController {
     return plainToInstance(SiteFeedbackResponseDto, feedback);
   }
 
+  @FeatureFlag(FeatureFlagKeys.FEEDBACK_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Put(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async update(
@@ -72,6 +83,8 @@ export class SiteFeedbackController {
     return plainToInstance(SiteFeedbackResponseDto, updated);
   }
 
+  @FeatureFlag(FeatureFlagKeys.FEEDBACK_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async remove(@Param("id") id: string): Promise<void> {
@@ -80,6 +93,8 @@ export class SiteFeedbackController {
     this.logger.log(`Site feedback deleted successfully: ${id}`);
   }
 
+  @FeatureFlag(FeatureFlagKeys.FEEDBACK_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Patch(":id/read")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async setRead(@Param("id") id: string): Promise<SiteFeedbackResponseDto> {

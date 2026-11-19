@@ -46,6 +46,8 @@ import {
   type ShelterRawBody,
 } from "./utils/shelter-payload.util";
 import { IMAGE_UPLOAD_OPTIONS } from "src/shared/media/storage/upload-limits.constants";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
 
 @Controller("shelters")
 export class SheltersController {
@@ -90,6 +92,8 @@ export class SheltersController {
     return this.getService.list(toShelterAccessContext(request));
   }
 
+  @FeatureFlag(FeatureFlagKeys.PUBLIC_REGISTRATION)
+  @UseGuards(FeatureFlagGuard)
   @Get("list-teams")
   listTeamsForPublic(): Promise<ShelterTeamSelectOptionDto[]> {
     return this.getService.listTeamsForPublic();
@@ -116,6 +120,8 @@ export class SheltersController {
     );
   }
 
+  @FeatureFlag(FeatureFlagKeys.SHELTER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard)
   @Post()
   @UseInterceptors(AnyFilesInterceptor(IMAGE_UPLOAD_OPTIONS))
@@ -135,6 +141,8 @@ export class SheltersController {
     return toShelterDto(shelter, await this.showAddress());
   }
 
+  @FeatureFlag(FeatureFlagKeys.SHELTER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard)
   @Put(":id")
   @UseInterceptors(AnyFilesInterceptor(IMAGE_UPLOAD_OPTIONS))
@@ -155,6 +163,8 @@ export class SheltersController {
     return toShelterDto(shelter, await this.showAddress());
   }
 
+  @FeatureFlag(FeatureFlagKeys.SHELTER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard)
   @Patch(":id/media")
   @UseInterceptors(AnyFilesInterceptor(IMAGE_UPLOAD_OPTIONS))
@@ -175,6 +185,8 @@ export class SheltersController {
     return toShelterDto(shelter, await this.showAddress());
   }
 
+  @FeatureFlag(FeatureFlagKeys.SHELTER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard)
   @Delete(":id")
   remove(

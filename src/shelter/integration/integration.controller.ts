@@ -36,6 +36,9 @@ import {
 import { QueryIntegrationDto } from "./dto/query-integration.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminOrLeaderRoleGuard } from "src/core/auth/guards/role-guard";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("integrations")
 @UseGuards(JwtAuthGuard, AdminOrLeaderRoleGuard)
@@ -49,6 +52,8 @@ export class IntegrationController {
     private readonly deleteService: DeleteIntegrationService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.INTEGRATION)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   @UseInterceptors(AnyFilesInterceptor(INTEGRATION_UPLOAD_OPTIONS))
   async create(
@@ -102,6 +107,8 @@ export class IntegrationController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.INTEGRATION)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   async findAllPaginated(
     @Query() query: QueryIntegrationDto,
@@ -109,11 +116,15 @@ export class IntegrationController {
     return this.getService.findAllPaginated(query);
   }
 
+  @FeatureFlag(FeatureFlagKeys.INTEGRATION)
+  @UseGuards(FeatureFlagGuard)
   @Get("simple")
   async findAll(): Promise<IntegrationResponseDto[]> {
     return this.getService.findAll();
   }
 
+  @FeatureFlag(FeatureFlagKeys.INTEGRATION)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   async findOne(
     @Param("id", ParseUUIDPipe) id: string,
@@ -121,6 +132,8 @@ export class IntegrationController {
     return this.getService.findOne(id);
   }
 
+  @FeatureFlag(FeatureFlagKeys.INTEGRATION)
+  @UseGuards(FeatureFlagGuard)
   @Put(":id")
   @UseInterceptors(AnyFilesInterceptor(INTEGRATION_UPLOAD_OPTIONS))
   async update(
@@ -175,6 +188,8 @@ export class IntegrationController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.INTEGRATION)
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   async remove(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     this.logger.log(`Deleting integration: ${id}`);

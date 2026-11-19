@@ -36,6 +36,9 @@ import {
   AtendenteResponseDto,
   PaginatedAtendenteResponseDto,
 } from "./dto/atendente-response.dto";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 const PDF_FIELDS = [
   { name: "estadual", maxCount: 1 },
@@ -64,6 +67,8 @@ export class AtendenteController {
     private readonly getService: GetAtendenteService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.CRIMINAL_RECORDS)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   @UseInterceptors(
     FileFieldsInterceptor([...PDF_FIELDS], ATENDENTE_UPLOAD_OPTIONS),
@@ -104,6 +109,8 @@ export class AtendenteController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.CRIMINAL_RECORDS)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   async findAllPaginated(
     @Query() query: QueryAtendenteDto,
@@ -111,6 +118,8 @@ export class AtendenteController {
     return this.getService.findAllPaginated(query);
   }
 
+  @FeatureFlag(FeatureFlagKeys.CRIMINAL_RECORDS)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   async findOne(
     @Param("id", ParseUUIDPipe) id: string,
@@ -118,6 +127,8 @@ export class AtendenteController {
     return this.getService.findOne(id);
   }
 
+  @FeatureFlag(FeatureFlagKeys.CRIMINAL_RECORDS)
+  @UseGuards(FeatureFlagGuard)
   @Put(":id")
   @UseInterceptors(
     FileFieldsInterceptor([...PDF_FIELDS], ATENDENTE_UPLOAD_OPTIONS),
@@ -157,6 +168,8 @@ export class AtendenteController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.CRIMINAL_RECORDS)
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   async remove(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     this.logger.log(`Deleting antecedente criminal: ${id}`);

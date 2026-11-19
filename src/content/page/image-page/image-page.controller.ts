@@ -30,6 +30,9 @@ import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 import { PaginatedImageSectionResponseDto } from "./dto/paginated-image-section.dto";
 import { Request } from "express";
 import { IMAGE_GALLERY_UPLOAD_OPTIONS } from "src/shared/media/storage/upload-limits.constants";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 interface RawImagePageData {
   sections?: Array<{ mediaItems?: Array<{ file?: unknown }> }>;
@@ -49,6 +52,8 @@ export class ImageController {
     private readonly updateService: UpdateImagePageService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
   @UseInterceptors(AnyFilesInterceptor(IMAGE_GALLERY_UPLOAD_OPTIONS))
@@ -73,6 +78,8 @@ export class ImageController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
   @UseInterceptors(AnyFilesInterceptor(IMAGE_GALLERY_UPLOAD_OPTIONS))
@@ -105,11 +112,15 @@ export class ImageController {
   }
 
   /** Anônimo recebe só galerias públicas; com sessão, todas. */
+  @FeatureFlag(FeatureFlagKeys.PUBLIC_GALLERIES)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   async findAll(@Req() req: Request): Promise<ImagePageResponseDto[]> {
     return this.getService.findAll(await this.getService.canSeeNonPublic(req));
   }
 
+  @FeatureFlag(FeatureFlagKeys.SHELTER_FEED)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id/sections")
   async getPaginatedSections(
     @Param("id") pageId: string,
@@ -132,6 +143,8 @@ export class ImageController {
     );
   }
 
+  @FeatureFlag(FeatureFlagKeys.PUBLIC_GALLERIES)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   async findOne(
     @Param("id") id: string,
@@ -148,6 +161,8 @@ export class ImageController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(":id")
   async remove(@Param("id") id: string) {

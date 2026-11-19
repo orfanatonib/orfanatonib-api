@@ -32,6 +32,9 @@ import { validationMessage } from "src/common/utils/validation-message.util";
 import { EventResponseDto } from "./dto/event-response.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
 import { QueryEventDto } from "./dto/query-event.dto";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 /** Imagem do evento: um arquivo de até 10 MB (MIME validado no MediaStorageService). */
 export const EVENT_UPLOAD_OPTIONS = {
@@ -57,6 +60,8 @@ export class EventController {
     private readonly getService: GetEventService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.EVENT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
   @UseInterceptors(FileInterceptor("file", EVENT_UPLOAD_OPTIONS))
@@ -90,6 +95,8 @@ export class EventController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.EVENTS_SECTION)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   async findAll(
     @Req() req: Request,
@@ -98,11 +105,15 @@ export class EventController {
     return this.getService.findAll(req, query);
   }
 
+  @FeatureFlag(FeatureFlagKeys.EVENTS_SECTION)
+  @UseGuards(FeatureFlagGuard)
   @Get("/upcoming")
   async getUpcoming(@Req() req: Request): Promise<EventResponseDto[]> {
     return this.getService.getUpcomingOrTodayEvents(req);
   }
 
+  @FeatureFlag(FeatureFlagKeys.EVENTS_SECTION)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   async findOne(
     @Param("id") id: string,
@@ -111,6 +122,8 @@ export class EventController {
     return this.getService.findOne(id, req);
   }
 
+  @FeatureFlag(FeatureFlagKeys.EVENT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
   @UseInterceptors(FileInterceptor("file", EVENT_UPLOAD_OPTIONS))
@@ -145,6 +158,8 @@ export class EventController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.EVENT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(":id")
   @HttpCode(204)

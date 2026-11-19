@@ -35,6 +35,9 @@ import { DeleteDocumentService } from "./services/delete-document.service";
 
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("documents")
 export class DocumentsController {
@@ -47,6 +50,8 @@ export class DocumentsController {
     private readonly deleteService: DeleteDocumentService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.DOCUMENT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
   @UseInterceptors(AnyFilesInterceptor(DOCUMENT_UPLOAD_OPTIONS))
@@ -94,6 +99,8 @@ export class DocumentsController {
     return this.getService.findOne(id);
   }
 
+  @FeatureFlag(FeatureFlagKeys.DOCUMENT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
   @UseInterceptors(AnyFilesInterceptor(DOCUMENT_UPLOAD_OPTIONS))
@@ -130,6 +137,8 @@ export class DocumentsController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.DOCUMENT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(":id")
   async remove(@Param("id", ParseUUIDPipe) id: string) {

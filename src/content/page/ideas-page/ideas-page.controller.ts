@@ -35,6 +35,9 @@ import { UpdateIdeasPageService } from "./services/update-ideas-page.service";
 
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("ideas-pages")
 export class IdeasPageController {
@@ -47,6 +50,8 @@ export class IdeasPageController {
     private readonly updateService: UpdateIdeasPageService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
   @UseInterceptors(AnyFilesInterceptor(IDEAS_UPLOAD_OPTIONS))
@@ -81,6 +86,8 @@ export class IdeasPageController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
   @UseInterceptors(AnyFilesInterceptor(IDEAS_UPLOAD_OPTIONS))
@@ -125,6 +132,8 @@ export class IdeasPageController {
     }
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(":id")
   async remove(@Param("id") id: string): Promise<void> {

@@ -23,6 +23,9 @@ import {
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { ShelterTeamDto } from "./dto/assign-team.dto";
 import { ShelterWithLeaderStatusDto } from "src/shelter/shelter/dto/shelter.response.dto";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("leader-profiles")
 @UseGuards(JwtAuthGuard)
@@ -34,6 +37,8 @@ export class LeaderProfilesController {
     private readonly updateLeaderProfileService: UpdateLeaderProfileService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.LEADER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   findPage(
     @Req() req: Request,
@@ -52,6 +57,8 @@ export class LeaderProfilesController {
     return this.getLeaderProfilesService.findMyShelters(req);
   }
 
+  @FeatureFlag(FeatureFlagKeys.LEADER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   findOne(
     @Param("id", new ParseUUIDPipe()) id: string,
@@ -60,6 +67,8 @@ export class LeaderProfilesController {
     return this.getLeaderProfilesService.findOne(id, req);
   }
 
+  @FeatureFlag(FeatureFlagKeys.LEADER_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Put(":leaderId")
   async update(
     @Param("leaderId", new ParseUUIDPipe()) leaderId: string,

@@ -45,6 +45,9 @@ import {
   ResetPasswordResponse,
   ValidateResetTokenResponse,
 } from "./types/password-recovery.types";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("auth")
 export class AuthController {
@@ -66,6 +69,8 @@ export class AuthController {
     return this.loginService.execute(dto);
   }
 
+  @FeatureFlag(FeatureFlagKeys.GOOGLE_LOGIN)
+  @UseGuards(FeatureFlagGuard)
   @Post("google")
   googleLogin(@Body() dto: GoogleLoginDto): Promise<GoogleLoginResult> {
     this.logger.log(AuthLogs.GOOGLE_LOGIN_ATTEMPT);
@@ -92,12 +97,16 @@ export class AuthController {
     return this.getMeService.execute(request.user!.userId);
   }
 
+  @FeatureFlag(FeatureFlagKeys.PUBLIC_REGISTRATION)
+  @UseGuards(FeatureFlagGuard)
   @Post("register")
   register(@Body() dto: RegisterUserDto): Promise<RegisterResponseDto> {
     this.logger.log(AuthLogs.REGISTRATION_ATTEMPT);
     return this.registerService.register(dto);
   }
 
+  @FeatureFlag(FeatureFlagKeys.PUBLIC_REGISTRATION)
+  @UseGuards(FeatureFlagGuard)
   @Post("complete-register")
   completeRegister(@Body() dto: CompleteUserDto) {
     this.logger.log(AuthLogs.COMPLETE_REGISTRATION_ATTEMPT);
@@ -121,6 +130,8 @@ export class AuthController {
     return this.emailVerificationService.resend(dto.email);
   }
 
+  @FeatureFlag(FeatureFlagKeys.PASSWORD_RECOVERY)
+  @UseGuards(FeatureFlagGuard)
   @Post("forgot-password")
   forgotPassword(
     @Body() dto: ForgotPasswordDto,
@@ -128,6 +139,8 @@ export class AuthController {
     return this.passwordRecoveryService.forgotPassword(dto);
   }
 
+  @FeatureFlag(FeatureFlagKeys.PASSWORD_RECOVERY)
+  @UseGuards(FeatureFlagGuard)
   @Get("reset-password/validate")
   validateResetToken(
     @Query("token") token: string,
@@ -135,6 +148,8 @@ export class AuthController {
     return this.passwordRecoveryService.validateResetToken(token);
   }
 
+  @FeatureFlag(FeatureFlagKeys.PASSWORD_RECOVERY)
+  @UseGuards(FeatureFlagGuard)
   @Post("reset-password")
   resetPassword(@Body() dto: ResetPasswordDto): Promise<ResetPasswordResponse> {
     return this.passwordRecoveryService.resetPassword(dto);

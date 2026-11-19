@@ -40,6 +40,9 @@ import { GetStatsService } from "./services/get-stats.service";
 import { GetTeamsService } from "./services/get-teams.service";
 import { RegisterAttendanceService } from "./services/register-attendance.service";
 import { toAttendanceActor } from "./utils/attendance-scope.util";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 @Controller("attendance")
 @UseGuards(JwtAuthGuard)
@@ -53,6 +56,8 @@ export class AttendanceController {
     private readonly statsService: GetStatsService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @UseGuards(FeatureFlagGuard)
   @Post("register")
   registerAttendance(
     @Req() request: AuthenticatedRequest,
@@ -61,6 +66,8 @@ export class AttendanceController {
     return this.registerService.registerOwn(toAttendanceActor(request), dto);
   }
 
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Post("register/team")
   registerTeamAttendance(
@@ -70,6 +77,8 @@ export class AttendanceController {
     return this.registerService.registerTeam(toAttendanceActor(request), dto);
   }
 
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @UseGuards(FeatureFlagGuard)
   @Get("pending/all")
   getAllPendings(
     @Req() request: AuthenticatedRequest,
@@ -77,6 +86,8 @@ export class AttendanceController {
     return this.pendingsService.execute(toAttendanceActor(request), new Date());
   }
 
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Get("team/:teamId/members")
   listTeamMembers(
@@ -89,6 +100,8 @@ export class AttendanceController {
     );
   }
 
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @UseGuards(FeatureFlagGuard)
   @Get("team/:teamId/schedules")
   listTeamSchedules(
     @Req() request: AuthenticatedRequest,
@@ -102,6 +115,8 @@ export class AttendanceController {
     );
   }
 
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Get("leader/teams")
   listLeaderTeams(
@@ -110,6 +125,8 @@ export class AttendanceController {
     return this.teamsService.listLeaderTeams(toAttendanceActor(request));
   }
 
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Get("leader/teams/members")
   listLeaderTeamsWithMembers(
@@ -120,6 +137,8 @@ export class AttendanceController {
     );
   }
 
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Get("sheets/hierarchical")
   listSheetsHierarchical(
@@ -132,6 +151,8 @@ export class AttendanceController {
     );
   }
 
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @UseGuards(FeatureFlagGuard)
   @Get("records")
   listAttendanceRecords(
     @Req() request: AuthenticatedRequest,
@@ -140,6 +161,8 @@ export class AttendanceController {
     return this.recordsService.execute(toAttendanceActor(request), filters);
   }
 
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @UseGuards(FeatureFlagGuard)
   @Get("stats")
   getAttendanceStats(
     @Req() request: AuthenticatedRequest,
@@ -152,6 +175,8 @@ export class AttendanceController {
     });
   }
 
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Get("leader/stats/team/:teamId")
   getTeamAttendanceStats(
