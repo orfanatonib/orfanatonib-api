@@ -39,6 +39,14 @@ export interface CreateContentPackageGraphInput {
   readonly audiences: readonly ContentAudienceDefinition[];
 }
 
+/** Campos de ordenação da listagem de materiais. */
+export type ContentPackageSort = "updatedAt" | "createdAt" | "theme";
+export const CONTENT_PACKAGE_SORTS: readonly ContentPackageSort[] = [
+  "updatedAt",
+  "createdAt",
+  "theme",
+];
+
 export interface QueryContentPackagesInput {
   readonly page?: number;
   readonly limit?: number;
@@ -48,6 +56,8 @@ export interface QueryContentPackagesInput {
   readonly audience?: ContentAudience;
   readonly startDate?: string;
   readonly endDate?: string;
+  readonly sort?: ContentPackageSort;
+  readonly order?: "ASC" | "DESC";
 }
 
 export interface RequestContentStageGenerationInput {

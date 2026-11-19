@@ -121,7 +121,10 @@ export class ContentPackagesRepository {
     this.applyFilters(idsQb, query);
     const pageIds = (
       await idsQb
-        .orderBy("contentPackage.createdAt", "DESC")
+        .orderBy(
+          `contentPackage.${query.sort ?? "createdAt"}`,
+          query.order ?? (query.sort === "theme" ? "ASC" : "DESC"),
+        )
         .addOrderBy("contentPackage.id", "ASC")
         .skip(skip)
         .take(limit)
@@ -234,6 +237,11 @@ export class ContentPackagesRepository {
 
     if (query.status) {
       qb.andWhere("contentPackage.status = :status", { status: query.status });
+    } else if (!query.reviewQueue) {
+      // Sem filtro de situação, os arquivados ficam de fora (aparecem escolhendo "Arquivados").
+      qb.andWhere("contentPackage.status <> :archived", {
+        archived: ContentPackageStatus.ARCHIVED,
+      });
     }
 
     if (query.reviewQueue) {

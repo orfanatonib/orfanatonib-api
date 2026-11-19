@@ -202,6 +202,12 @@ export class ContentPackageResponseDto {
   }
 }
 
+export class ContentStageSegmentDto {
+  audience: ContentAudience;
+  stageType: ContentStageType;
+  status: ContentStageStatus;
+}
+
 export class ContentPackageListItemResponseDto {
   id: string;
   theme: string;
@@ -215,6 +221,12 @@ export class ContentPackageListItemResponseDto {
   stagesCount: number;
   requiredStagesCount: number;
   approvedStagesCount: number;
+  /** Etapas com alguma versão salva (o PDF do material só existe a partir de uma). */
+  stagesWithContentCount: number;
+  generatingStagesCount: number;
+  failedStagesCount: number;
+  /** Uma etapa por segmento (faixa da mais nova à mais velha, etapas na ordem de produção). */
+  stageSegments: ContentStageSegmentDto[];
   createdAt: Date;
   updatedAt: Date;
 
@@ -241,6 +253,26 @@ export class ContentPackageListItemResponseDto {
         (stage) =>
           stage.required && stage.status === ContentStageStatus.APPROVED,
       ).length,
+      stagesWithContentCount: stages.filter(
+        (stage) => stage.currentVersionId !== null,
+      ).length,
+      generatingStagesCount: stages.filter(
+        (stage) => stage.status === ContentStageStatus.GENERATING,
+      ).length,
+      failedStagesCount: stages.filter(
+        (stage) => stage.status === ContentStageStatus.FAILED,
+      ).length,
+      stageSegments: [...tracks]
+        .sort((a, b) => a.minimumAge - b.minimumAge)
+        .flatMap((track) =>
+          [...(track.stages ?? [])]
+            .sort((a, b) => a.position - b.position)
+            .map((stage) => ({
+              audience: track.audience,
+              stageType: stage.stageType,
+              status: stage.status,
+            })),
+        ),
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
     };
