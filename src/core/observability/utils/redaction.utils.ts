@@ -1,112 +1,136 @@
-export const REDACTED = "[REDACTED]";
+import { JsonObject, JsonValue } from "src/shared/providers/log-storage/types";
 
-/** Chaves cujo valor nunca vai para log/auditoria (comparação sem caixa e sem separadores). */
-const SENSITIVE_KEYS = new Set(
-  [
-    "password",
-    "newpassword",
-    "currentpassword",
-    "token",
-    "accesstoken",
-    "refreshtoken",
-    "authorization",
-    "cookie",
-    "secret",
-    "apikey",
-    "idtoken",
-    "credential",
-    "cpf",
-    "phone",
-    "email",
-    "birthdate",
-    "address",
-  ].map(normalizeKey),
-);
+import {
+  METADATA_KEY_ALLOWLIST,
+  METADATA_MAX_ARRAY,
+  METADATA_MAX_DEPTH,
+  METADATA_MAX_KEYS,
+  REDACTED_MARKER,
+  SENSITIVE_KEYS,
+  SENSITIVE_KEY_FRAGMENTS,
+  STRING_MAX_LENGTH,
+  TRUNCATION_MARKER,
+} from "../constants";
+import { RedactionLimits } from "../types";
 
-function normalizeKey(key: string): string {
-  return key.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
+const DEFAULT_LIMITS: RedactionLimits = {
+  maxDepth: METADATA_MAX_DEPTH,
+  maxKeys: METADATA_MAX_KEYS,
+  maxArray: METADATA_MAX_ARRAY,
+  maxStringLength: STRING_MAX_LENGTH,
+};
 
+const BEARER_PATTERN = /bearer\s+[a-z0-9\-._~+/]+=*/gi;
 const JWT_PATTERN =
-  /\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]*\b/g;
-const BEARER_PATTERN = /\bBearer\s+[A-Za-z0-9._~+/=-]+/gi;
-const EMAIL_PATTERN = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+  /eyJ[a-zA-Z0-9_-]{4,}\.[a-zA-Z0-9_-]{4,}\.[a-zA-Z0-9_-]{4,}/g;
+const EMAIL_PATTERN = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/gi;
 const CPF_PATTERN = /\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g;
 const PHONE_PATTERN = /(?:\+?55\s?)?\(?\d{2}\)?\s?9?\d{4}-?\d{4}\b/g;
+const URL_QUERY_PATTERN = /(https?:\/\/[^\s?#]+)\?[^\s#]*/gi;
 
-/** Redige padrões sensíveis dentro de um texto livre (mensagem de erro, stack). */
-export function redactText(text: string): string {
-  return text
-    .replace(JWT_PATTERN, REDACTED)
-    .replace(BEARER_PATTERN, `Bearer ${REDACTED}`)
-    .replace(EMAIL_PATTERN, REDACTED)
-    .replace(CPF_PATTERN, REDACTED)
-    .replace(PHONE_PATTERN, REDACTED);
+/** A chave carrega segredo ou dado pessoal? */
+export function isSensitiveKey(key: string): boolean {
+  const lowered = key.toLowerCase();
+  return (
+    SENSITIVE_KEYS.has(lowered) ||
+    SENSITIVE_KEY_FRAGMENTS.some((fragment) => lowered.includes(fragment))
+  );
 }
 
-/** Caminho da requisição sem query string (que pode carregar token/e-mail). */
+/** Corta com marcador explícito; nunca em silêncio. */
+export function truncate(text: string, maxLength: number): string {
+  if (text.length <= maxLength) return text;
+  const keep = Math.max(0, maxLength - TRUNCATION_MARKER.length);
+  return `${text.slice(0, keep)}${TRUNCATION_MARKER}`;
+}
+
+/**
+ * Remove de um texto livre o que não pode ser persistido.
+ *
+ * Mensagens de vendors e de exceções carregam token, e-mail e URL com query;
+ * o texto continua útil para diagnóstico sem esses trechos.
+ */
+export function redactText(
+  text: string,
+  maxLength: number = STRING_MAX_LENGTH,
+): string {
+  const cleaned = text
+    .replace(URL_QUERY_PATTERN, "$1")
+    .replace(BEARER_PATTERN, `Bearer ${REDACTED_MARKER}`)
+    .replace(JWT_PATTERN, REDACTED_MARKER)
+    .replace(EMAIL_PATTERN, REDACTED_MARKER)
+    .replace(CPF_PATTERN, REDACTED_MARKER)
+    .replace(PHONE_PATTERN, REDACTED_MARKER);
+  return truncate(cleaned, maxLength);
+}
+
+/** Remove a query string de uma URL ou caminho; a rota template é o que vale. */
 export function stripQueryString(url: string): string {
   const index = url.indexOf("?");
   return index === -1 ? url : url.slice(0, index);
 }
 
-const MAX_DEPTH = 6;
-
-/** Cópia profunda com as chaves sensíveis mascaradas e os textos redigidos. */
-export function redactValue(value: unknown, depth = 0): unknown {
-  if (depth > MAX_DEPTH) return REDACTED;
-  if (typeof value === "string") return redactText(value);
-  if (Array.isArray(value))
-    return value.map((item) => redactValue(item, depth + 1));
-  if (value instanceof Error)
-    return { name: value.name, message: redactText(value.message) };
-  if (value && typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [key, inner] of Object.entries(
-      value as Record<string, unknown>,
-    )) {
-      out[key] = SENSITIVE_KEYS.has(normalizeKey(key))
-        ? REDACTED
-        : redactValue(inner, depth + 1);
-    }
-    return out;
+/**
+ * Converte um valor desconhecido em JSON seguro: chaves sensíveis redigidas,
+ * profundidade e quantidade limitadas, ciclos, `bigint`, símbolos e funções
+ * resolvidos.
+ */
+export function redactValue(
+  value: unknown,
+  limits: RedactionLimits = DEFAULT_LIMITS,
+  depth = 0,
+  seen: WeakSet<object> = new WeakSet(),
+): JsonValue {
+  if (value === null || value === undefined) return null;
+  if (typeof value === "string")
+    return redactText(value, limits.maxStringLength);
+  if (typeof value === "number")
+    return Number.isFinite(value) ? value : String(value);
+  if (typeof value === "boolean") return value;
+  if (typeof value === "bigint") return `${value.toString()}n`;
+  if (typeof value === "symbol") return "[symbol]";
+  if (typeof value === "function") return "[function]";
+  if (value instanceof Date) return value.toISOString();
+  if (Buffer.isBuffer(value)) return `[buffer:${value.byteLength}]`;
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: redactText(value.message, limits.maxStringLength),
+    };
   }
-  return value;
+  if (typeof value !== "object") return "[unknown]";
+  if (seen.has(value)) return "[circular]";
+  if (depth >= limits.maxDepth) return "[depth-limit]";
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    const items = value
+      .slice(0, limits.maxArray)
+      .map((item) => redactValue(item, limits, depth + 1, seen));
+    if (value.length > limits.maxArray) items.push(TRUNCATION_MARKER);
+    return items;
+  }
+
+  const result: JsonObject = {};
+  const entries = Object.entries(value as Record<string, unknown>);
+  for (const [key, entry] of entries.slice(0, limits.maxKeys)) {
+    result[key] = isSensitiveKey(key)
+      ? REDACTED_MARKER
+      : redactValue(entry, limits, depth + 1, seen);
+  }
+  if (entries.length > limits.maxKeys) result[TRUNCATION_MARKER] = true;
+  return result;
 }
 
-/** Parâmetros de rota que podem aparecer como `resourceId` na auditoria (UUIDs, nunca texto livre). */
-export const SAFE_RESOURCE_ID_PARAMS: readonly string[] = [
-  "id",
-  "shelterId",
-  "teamId",
-  "shelteredId",
-  "leaderId",
-  "memberId",
-  "pageId",
-  "key",
-  "eventId",
-  "packageId",
-  "stageId",
-  "jobId",
-];
-
-const UUID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const FLAG_KEY_PATTERN = /^[a-z0-9_-]{1,64}$/;
-
-/** `resourceId` seguro: só param permitido e só se for UUID (ou chave simples de flag). */
-export function pickResourceId(
-  params: Record<string, string | undefined>,
-): string | undefined {
-  for (const name of SAFE_RESOURCE_ID_PARAMS) {
-    const value = params[name];
-    if (
-      value &&
-      (UUID_PATTERN.test(value) ||
-        (name === "key" && FLAG_KEY_PATTERN.test(value)))
-    ) {
-      return value;
-    }
+/** Metadata do evento técnico: só chaves allowlisted, e ainda redigidas. */
+export function redactMetadata(
+  metadata: Record<string, unknown> | null | undefined,
+): JsonObject | null {
+  if (!metadata || typeof metadata !== "object") return null;
+  const result: JsonObject = {};
+  for (const [key, value] of Object.entries(metadata)) {
+    if (!METADATA_KEY_ALLOWLIST.has(key) || isSensitiveKey(key)) continue;
+    result[key] = redactValue(value);
   }
-  return undefined;
+  return Object.keys(result).length > 0 ? result : null;
 }

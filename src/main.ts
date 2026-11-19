@@ -2,6 +2,8 @@ import { NestFactory } from "@nestjs/core";
 import type { NextFunction, Request, Response } from "express";
 import { ValidationPipe, Logger } from "@nestjs/common";
 import { AppModule } from "./app.module";
+import { StructuredLoggerService } from "./core/observability/providers/structured-logger.service";
+import { writeBootstrapFailure } from "./core/observability/utils/bootstrap-failure.utils";
 import { RuleException } from "./common/exceptions";
 import { DEPLOYED_ENVIRONMENTS } from "./config/env.constants";
 import { createCorsOptions, parseAllowedOrigins } from "./config/cors.config";
@@ -12,7 +14,9 @@ async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule, {
       logger: ["error", "warn", "log", "debug", "verbose"],
+      bufferLogs: true,
     });
+    app.useLogger(app.get(StructuredLoggerService));
 
     const { origins } = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS);
     const environment =
@@ -88,6 +92,7 @@ async function bootstrap() {
     logger.log(`📊 Health check available at: http://localhost:${port}/health`);
   } catch (error) {
     logger.error("❌ Failed to start application", error);
+    writeBootstrapFailure(error);
     process.exit(1);
   }
 }

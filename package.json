@@ -32,7 +32,9 @@
     "seed:local": "dotenv -e env/local.env -- node scripts/seed-local-credentials.js"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1172.0",
     "@aws-sdk/client-s3": "^3.758.0",
+    "@aws-sdk/lib-dynamodb": "^3.1172.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.1",
     "@nestjs/core": "^11.0.1",
@@ -43,11 +45,15 @@
     "@nestjs/schedule": "^6.1.3",
     "@nestjs/typeorm": "^11.0.0",
     "@types/uuid": "^10.0.0",
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.2",
+    "bullmq": "^5.81.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
+    "docx": "^9.7.1",
     "express-rate-limit": "^8.2.1",
     "google-auth-library": "^10.2.0",
+    "ioredis": "^5.11.1",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.12.0",
     "nodemailer": "^10.0.3",
@@ -55,13 +61,9 @@
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
+    "sharp": "^0.35.5",
     "typeorm": "^0.3.21",
-    "uuid": "^13.0.0",
-    "axios": "^1.13.2",
-    "bullmq": "^5.81.5",
-    "docx": "^9.7.1",
-    "ioredis": "^5.11.1",
-    "sharp": "^0.35.5"
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",

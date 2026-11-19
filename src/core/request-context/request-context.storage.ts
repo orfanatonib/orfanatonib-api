@@ -1,8 +1,12 @@
 import { AsyncLocalStorage } from "node:async_hooks";
 
-export interface RequestContext {
-  /** Identificador gerado **pelo servidor** para esta requisição. */
-  readonly requestId: string;
-}
+import { RequestExecutionContext } from "./types";
 
-export const requestContextStorage = new AsyncLocalStorage<RequestContext>();
+/**
+ * A única instância de `AsyncLocalStorage` da aplicação.
+ *
+ * Fica fora do container para o middleware funcional, o logger e os hooks
+ * de processo enxergarem o mesmo contexto mesmo antes de a injeção existir.
+ */
+export const requestContextStorage =
+  new AsyncLocalStorage<RequestExecutionContext>();

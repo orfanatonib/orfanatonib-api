@@ -1,20 +1,25 @@
 import { Injectable, NestMiddleware } from "@nestjs/common";
-import { randomUUID } from "node:crypto";
-import type { NextFunction, Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 
-import { REQUEST_ID_HEADER } from "./request-context.constants";
+import { LogSourceType } from "src/shared/providers/log-storage/enums";
+
+import { REQUEST_ID_HEADER } from "./constants";
 import { requestContextStorage } from "./request-context.storage";
+import { createExecutionContext } from "./utils";
 
 /**
- * Abre o contexto da requisição: gera o `requestId` no servidor (o cabeçalho
- * enviado pelo cliente **não** é confiado), devolve-o em `X-Request-ID` e o
- * mantém disponível a todo o código assíncrono da requisição.
+ * Abre o contexto de cada request antes de qualquer guard ou handler.
+ *
+ * O `requestId` é gerado aqui, no servidor: um valor vindo do cliente não é
+ * confiável como chave de correlação e por isso é ignorado. O id volta no
+ * cabeçalho `X-Request-Id` para quem precisar reportar um erro.
  */
 @Injectable()
 export class RequestContextMiddleware implements NestMiddleware {
-  use(_request: Request, response: Response, next: NextFunction): void {
-    const requestId = randomUUID();
-    response.setHeader(REQUEST_ID_HEADER, requestId);
-    requestContextStorage.run({ requestId }, next);
+  use(request: Request, response: Response, next: NextFunction): void {
+    const context = createExecutionContext(LogSourceType.Http);
+    context.httpMethod = request.method;
+    response.setHeader(REQUEST_ID_HEADER, context.requestId);
+    requestContextStorage.run(context, () => next());
   }
 }

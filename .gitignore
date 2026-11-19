@@ -56,3 +56,6 @@ cloudformation/s3/params.json
 .env.*.local
 *.pem
 *.key
+
+# Auditoria em arquivo (OBS_/AUDIT_STORAGE=file; só local)
+/audit/

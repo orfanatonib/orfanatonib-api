@@ -42,6 +42,10 @@ import { ContentStudioModule } from "./content/studio/content-studio.module";
 import { GlobalExceptionFilter } from "./common/filters";
 import { RateLimitingMiddleware } from "./common/middlewares/rate-limiting.middleware";
 import { RequestContextModule } from "./core/request-context";
+import { ObservabilityModule } from "./core/observability/observability.module";
+import { AuditModule } from "./core/audit/audit.module";
+import { LogRecordsModule } from "./core/log-records/log-records.module";
+import { LogStorageModule } from "./shared/providers/log-storage/log-storage.module";
 import { HealthModule } from "./common/controllers/health.module";
 import { validateEnv } from "./config/env.validation";
 import { AppController } from "./app.controller";
@@ -108,6 +112,10 @@ function getEnvFilePath(): string {
     ContentStudioModule,
     HealthModule,
     RequestContextModule,
+    LogStorageModule,
+    ObservabilityModule,
+    AuditModule,
+    LogRecordsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -15,7 +15,10 @@ import { randomUUID } from "node:crypto";
 import { Response } from "express";
 import { EntityNotFoundError, QueryFailedError, TypeORMError } from "typeorm";
 
+import { WriteAuditEventService } from "src/core/audit/services/write-audit-event.service";
+import { WriteTechnicalLogService } from "src/core/observability/services/write-technical-log.service";
 import { RequestContextService } from "src/core/request-context/request-context.service";
+import { actorFromRequestUser } from "src/core/request-context/utils";
 import { ErrorCategory } from "../exceptions/error-category.enum";
 import {
   ERROR_ENVIRONMENTS_THAT_EXPOSE_INTERNALS,
@@ -44,6 +47,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     @Optional()
     @Inject(GLOBAL_EXCEPTION_FILTER_OPTIONS)
     options?: GlobalExceptionFilterOptions,
+    @Optional() private readonly audit?: WriteAuditEventService,
+    @Optional() private readonly technicalLog?: WriteTechnicalLogService,
   ) {
     const environment = config?.get<string>("ENVIRONMENT") ?? "local";
     this.exposeInternalErrors =
@@ -56,7 +61,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<RequestWithUser>();
 
-    const requestId = this.requestContext?.getRequestId() ?? "unknown";
+    const requestId = this.requestContext?.requestId() ?? "unknown";
     const correlationId = this.generateCorrelationId();
 
     const errorDetails = this.extractErrorDetails(exception);
@@ -74,7 +79,34 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       ...(errorDetails.details && { details: errorDetails.details }),
     };
 
+    this.requestContext?.assignActor(actorFromRequestUser(request.user));
+    this.requestContext?.assignOutcome(
+      errorDetails.statusCode,
+      this.errorCodeOf(errorDetails),
+    );
+    // Erro do cliente também é erro: vai à observabilidade como `warn`, menos o ruído.
+    if (errorDetails.statusCode < Number(HttpStatus.INTERNAL_SERVER_ERROR)) {
+      this.technicalLog?.reportClientError({
+        statusCode: errorDetails.statusCode,
+        context: GlobalExceptionFilter.name,
+        message: `[${errorDetails.category}] ${errorDetails.error}`,
+        error: exception,
+      });
+    }
+
     response.status(errorDetails.statusCode).json(errorResponse);
+
+    // O interceptor de auditoria não roda quando o handler lança: o filtro grava a falha.
+    this.audit?.recordHttpOutcome({
+      statusCode: errorDetails.statusCode,
+      errorCode: this.errorCodeOf(errorDetails),
+      requestUrl: request.originalUrl ?? request.url ?? null,
+    });
+  }
+
+  private errorCodeOf(details: ErrorDetails): string | null {
+    const code = (details.details as { code?: unknown } | undefined)?.code;
+    return typeof code === "string" ? code : null;
   }
 
   private extractErrorDetails(exception: unknown): ErrorDetails {
@@ -241,17 +273,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const logMessage = `[${requestId}] ${request.method} ${path} - ${errorDetails.statusCode} (${errorDetails.category})`;
 
     if (errorDetails.statusCode >= Number(HttpStatus.INTERNAL_SERVER_ERROR)) {
-      this.logger.error(logMessage, {
-        ...logContext,
-        error:
-          originalException instanceof Error
-            ? {
-                name: originalException.name,
-                message: originalException.message,
-                stack: originalException.stack,
-              }
-            : { name: "NonError" },
-      });
+      // A instância vai ao logger (não um objeto): é ela que dá ao registro
+      // técnico o status e o código reais e permite redigir stack e mensagem.
+      if (originalException instanceof Error) {
+        this.logger.error(logMessage, originalException);
+      } else {
+        this.logger.error(logMessage, { ...logContext, error: "NonError" });
+      }
     } else if (errorDetails.statusCode >= Number(HttpStatus.BAD_REQUEST)) {
       this.logger.warn(logMessage, {
         ...logContext,
