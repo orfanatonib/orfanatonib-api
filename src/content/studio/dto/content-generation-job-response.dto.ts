@@ -19,7 +19,9 @@ export class ContentGenerationJobResponseDto {
   createdAt: Date;
   updatedAt: Date;
 
-  static fromEntity(entity: ContentGenerationJobEntity): ContentGenerationJobResponseDto {
+  static fromEntity(
+    entity: ContentGenerationJobEntity,
+  ): ContentGenerationJobResponseDto {
     return {
       id: entity.id,
       stageId: entity.stageId,

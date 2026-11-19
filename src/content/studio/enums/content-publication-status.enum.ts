@@ -5,4 +5,3 @@ export enum ContentPublicationStatus {
   FAILED = "FAILED",
   UNCERTAIN = "UNCERTAIN",
 }
-

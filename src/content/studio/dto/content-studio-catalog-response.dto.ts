@@ -30,4 +30,3 @@ export class ContentStudioCatalogResponseDto {
   audiences: ContentAudienceDefinitionResponseDto[];
   capabilities: ContentStudioCapabilitiesResponseDto;
 }
-

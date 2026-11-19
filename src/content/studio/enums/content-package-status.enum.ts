@@ -9,4 +9,3 @@ export enum ContentPackageStatus {
   PUBLISHED = "PUBLISHED",
   ARCHIVED = "ARCHIVED",
 }
-

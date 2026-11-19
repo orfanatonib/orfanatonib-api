@@ -7,6 +7,7 @@ import { FeatureFlagsModule } from "src/core/feature-flags/feature-flags.module"
 import { ContentStudioController } from "./content-studio.controller";
 import { AiJobQueuePort } from "./queue/ai-job-queue.port";
 import { InMemoryAiJobQueue } from "./queue/in-memory-ai-job-queue";
+import { GetLatestStageGenerationService } from "./services/get-latest-stage-generation.service";
 import { CancelStageGenerationService } from "./services/cancel-stage-generation.service";
 import { GenerationWorkerService } from "./services/generation-worker.service";
 import { ProcessGenerationJobService } from "./services/process-generation-job.service";
@@ -70,6 +71,7 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
     GetContentStudioDashboardService,
     RequestStageGenerationService,
     CancelStageGenerationService,
+    GetLatestStageGenerationService,
     ProcessGenerationJobService,
     GenerationWorkerService,
     // Fila em processo (id do job apenas; o banco é a verdade). Um adaptador BullMQ/Redis entra por esta porta.

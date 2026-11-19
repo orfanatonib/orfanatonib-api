@@ -42,7 +42,10 @@ export class ContentAssetEntity extends BaseEntity {
   @JoinColumn({ name: "stage_id" })
   stage: ContentStageEntity | null;
 
-  @ManyToOne(() => ContentVersionEntity, { nullable: true, onDelete: "SET NULL" })
+  @ManyToOne(() => ContentVersionEntity, {
+    nullable: true,
+    onDelete: "SET NULL",
+  })
   @JoinColumn({ name: "version_id" })
   version: ContentVersionEntity | null;
 }

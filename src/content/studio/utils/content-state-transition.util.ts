@@ -22,4 +22,3 @@ export function canTransitionContentStage(
 export function isContentStagePublishable(status: ContentStageStatus): boolean {
   return status === ContentStageStatus.APPROVED;
 }
-

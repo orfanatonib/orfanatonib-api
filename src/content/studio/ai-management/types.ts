@@ -4,4 +4,3 @@ export interface AiConfiguredModel {
   readonly id: string;
   readonly capabilities: readonly AiGenerationCapability[];
 }
-

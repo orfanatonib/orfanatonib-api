@@ -28,9 +28,9 @@ function addModels(
   for (const model of rawModels?.split(",") ?? []) {
     const normalized = model.trim();
     if (!normalized) continue;
-    const capabilities = target.get(normalized) ?? new Set<AiGenerationCapability>();
+    const capabilities =
+      target.get(normalized) ?? new Set<AiGenerationCapability>();
     capabilities.add(capability);
     target.set(normalized, capabilities);
   }
 }
-

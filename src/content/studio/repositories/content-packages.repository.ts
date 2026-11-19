@@ -345,7 +345,9 @@ export class ContentPackagesRepository {
       const job = await this.dataSource
         .getRepository(ContentGenerationJobEntity)
         .findOne({ where: { id: jobId } });
-      const raw = (job?.normalizedRequest as { revisionInstructions?: unknown } | undefined)?.revisionInstructions;
+      const raw = (
+        job?.normalizedRequest as { revisionInstructions?: unknown } | undefined
+      )?.revisionInstructions;
       revisionInstructions = typeof raw === "string" && raw.trim() ? raw : null;
     }
 
@@ -466,6 +468,20 @@ export class ContentPackagesRepository {
           await stageRepo.save(stage);
         }
       }
+    });
+  }
+
+  /** Última geração pedida para a etapa (qualquer estado), para o front acompanhar o andamento. */
+  async findLatestGenerationJob(
+    packageId: string,
+    stageId: string,
+  ): Promise<ContentGenerationJobEntity | null> {
+    return this.dataSource.transaction(async (manager) => {
+      await this.findStageContextOrFail(manager, packageId, stageId);
+      return manager.getRepository(ContentGenerationJobEntity).findOne({
+        where: { stageId },
+        order: { createdAt: "DESC" },
+      });
     });
   }
 

@@ -19,7 +19,11 @@ export class ContentGenerationJobEntity extends BaseEntity {
   @Column({ type: "enum", enum: AiGenerationCapability })
   capability: AiGenerationCapability;
 
-  @Column({ type: "enum", enum: ContentGenerationJobStatus, default: ContentGenerationJobStatus.PENDING })
+  @Column({
+    type: "enum",
+    enum: ContentGenerationJobStatus,
+    default: ContentGenerationJobStatus.PENDING,
+  })
   status: ContentGenerationJobStatus;
 
   @Column({ type: "json" })
@@ -53,8 +57,9 @@ export class ContentGenerationJobEntity extends BaseEntity {
   @Column({ type: "varchar", length: 36 })
   requestedById: string;
 
-  @ManyToOne(() => ContentStageEntity, (stage) => stage.generationJobs, { onDelete: "CASCADE" })
+  @ManyToOne(() => ContentStageEntity, (stage) => stage.generationJobs, {
+    onDelete: "CASCADE",
+  })
   @JoinColumn({ name: "stage_id" })
   stage: ContentStageEntity;
 }
-

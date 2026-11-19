@@ -6,4 +6,3 @@ export enum ContentGenerationJobStatus {
   FAILED = "FAILED",
   CANCELLED = "CANCELLED",
 }
-

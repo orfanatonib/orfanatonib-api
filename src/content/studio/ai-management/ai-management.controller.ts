@@ -21,4 +21,3 @@ export class AiManagementController {
     return this.getProviders.execute();
   }
 }
-

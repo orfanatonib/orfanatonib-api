@@ -2,10 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 import { AiProviderHealth } from "../../ai/enums/ai-provider-health.enum";
-import {
-  AI_PROVIDER_CONFIG_KEYS,
-  AI_PROVIDERS,
-} from "../constants";
+import { AI_PROVIDER_CONFIG_KEYS, AI_PROVIDERS } from "../constants";
 import { AiProviderResponseDto } from "../dto/ai-provider-response.dto";
 import {
   parseEnabledConfig,

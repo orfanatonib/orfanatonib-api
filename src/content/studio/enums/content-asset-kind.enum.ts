@@ -4,4 +4,3 @@ export enum ContentAssetKind {
   PREVIEW_PDF = "PREVIEW_PDF",
   EXPORT_PDF = "EXPORT_PDF",
 }
-

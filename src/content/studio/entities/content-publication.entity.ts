@@ -1,5 +1,12 @@
 import { BaseEntity } from "src/shared/entity/base.entity";
-import { Column, Entity, Index, JoinColumn, ManyToOne, VersionColumn } from "typeorm";
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  VersionColumn,
+} from "typeorm";
 
 import { ContentPublicationStatus } from "../enums/content-publication-status.enum";
 import { ContentPublicationTargetType } from "../enums/content-publication-target-type.enum";
@@ -16,10 +23,18 @@ export class ContentPublicationEntity extends BaseEntity {
   @Column({ type: "varchar", length: 191 })
   idempotencyKey: string;
 
-  @Column({ type: "enum", enum: ContentPublicationTargetType, default: ContentPublicationTargetType.PDF_EXPORT })
+  @Column({
+    type: "enum",
+    enum: ContentPublicationTargetType,
+    default: ContentPublicationTargetType.PDF_EXPORT,
+  })
   targetType: ContentPublicationTargetType;
 
-  @Column({ type: "enum", enum: ContentPublicationStatus, default: ContentPublicationStatus.PENDING })
+  @Column({
+    type: "enum",
+    enum: ContentPublicationStatus,
+    default: ContentPublicationStatus.PENDING,
+  })
   status: ContentPublicationStatus;
 
   @Column({ type: "json" })

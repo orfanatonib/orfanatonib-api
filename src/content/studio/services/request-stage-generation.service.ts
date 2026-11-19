@@ -27,7 +27,10 @@ export class RequestStageGenerationService {
   ): Promise<ContentGenerationJobEntity> {
     const revisionInstructions = dto.revisionInstructions?.trim() || null;
     // Instrução do administrador também passa pela política de conteúdo sensível (dados de pessoas).
-    if (revisionInstructions && containsSensitiveContentInstruction(revisionInstructions)) {
+    if (
+      revisionInstructions &&
+      containsSensitiveContentInstruction(revisionInstructions)
+    ) {
       throw new RuleException(
         "As instruções não podem conter dados pessoais nem informações sensíveis de pessoas acolhidas",
         { field: "revisionInstructions" },

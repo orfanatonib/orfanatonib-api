@@ -15,4 +15,3 @@ export class AiProviderResponseDto {
   models: AiConfiguredModelResponseDto[];
   configurationSource: string;
 }
-

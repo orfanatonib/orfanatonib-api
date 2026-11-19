@@ -1,5 +1,12 @@
 import { BaseEntity } from "src/shared/entity/base.entity";
-import { Column, Entity, Index, JoinColumn, ManyToOne, OneToMany } from "typeorm";
+import {
+  Column,
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+} from "typeorm";
 
 import { ContentAudience } from "../enums/content-audience.enum";
 import { ContentPackageEntity } from "./content-package.entity";
@@ -23,13 +30,16 @@ export class ContentTrackEntity extends BaseEntity {
   @Column({ type: "smallint", unsigned: true, nullable: true })
   maximumAge: number | null;
 
-  @ManyToOne(() => ContentPackageEntity, (contentPackage) => contentPackage.tracks, {
-    onDelete: "CASCADE",
-  })
+  @ManyToOne(
+    () => ContentPackageEntity,
+    (contentPackage) => contentPackage.tracks,
+    {
+      onDelete: "CASCADE",
+    },
+  )
   @JoinColumn({ name: "package_id" })
   contentPackage: ContentPackageEntity;
 
   @OneToMany(() => ContentStageEntity, (stage) => stage.track)
   stages: ContentStageEntity[];
 }
-

@@ -24,7 +24,11 @@ export class ContentReviewCommentEntity extends BaseEntity {
   @Column({ type: "text" })
   message: string;
 
-  @Column({ type: "enum", enum: ContentReviewCommentStatus, default: ContentReviewCommentStatus.OPEN })
+  @Column({
+    type: "enum",
+    enum: ContentReviewCommentStatus,
+    default: ContentReviewCommentStatus.OPEN,
+  })
   status: ContentReviewCommentStatus;
 
   @Column({ type: "varchar", length: 36 })

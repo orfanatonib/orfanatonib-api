@@ -22,7 +22,11 @@ export class ContentPackageEntity extends BaseEntity {
   @Column({ type: "varchar", length: 64 })
   templateCatalogVersion: string;
 
-  @Column({ type: "enum", enum: ContentPackageStatus, default: ContentPackageStatus.DRAFT })
+  @Column({
+    type: "enum",
+    enum: ContentPackageStatus,
+    default: ContentPackageStatus.DRAFT,
+  })
   status: ContentPackageStatus;
 
   @Index()
@@ -38,4 +42,3 @@ export class ContentPackageEntity extends BaseEntity {
   @OneToMany(() => ContentTrackEntity, (track) => track.contentPackage)
   tracks: ContentTrackEntity[];
 }
-

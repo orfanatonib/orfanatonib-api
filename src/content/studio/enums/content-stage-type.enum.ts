@@ -6,4 +6,3 @@ export enum ContentStageType {
   VISUAL = "VISUAL",
   FACILITATOR_GUIDANCE = "FACILITATOR_GUIDANCE",
 }
-

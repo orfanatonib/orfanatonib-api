@@ -28,8 +28,9 @@ export class ContentVersionEntity extends BaseEntity {
   @Column({ type: "varchar", length: 36 })
   createdById: string;
 
-  @ManyToOne(() => ContentStageEntity, (stage) => stage.versions, { onDelete: "CASCADE" })
+  @ManyToOne(() => ContentStageEntity, (stage) => stage.versions, {
+    onDelete: "CASCADE",
+  })
   @JoinColumn({ name: "stage_id" })
   stage: ContentStageEntity;
 }
-

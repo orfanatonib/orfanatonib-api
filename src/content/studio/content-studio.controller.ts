@@ -46,6 +46,7 @@ import { GetContentPackagesService } from "./services/get-content-packages.servi
 import { GetContentStudioDashboardService } from "./services/get-content-studio-dashboard.service";
 import { RequestStageChangesService } from "./services/request-stage-changes.service";
 import { ResolveReviewCommentService } from "./services/resolve-review-comment.service";
+import { GetLatestStageGenerationService } from "./services/get-latest-stage-generation.service";
 import { CancelStageGenerationService } from "./services/cancel-stage-generation.service";
 import { RequestStageGenerationService } from "./services/request-stage-generation.service";
 import { SaveStageContentService } from "./services/save-stage-content.service";
@@ -68,6 +69,7 @@ export class ContentStudioController {
     private readonly getDashboard: GetContentStudioDashboardService,
     private readonly archivePackage: ArchiveContentPackageService,
     private readonly cancelGeneration: CancelStageGenerationService,
+    private readonly latestGeneration: GetLatestStageGenerationService,
   ) {}
 
   @Get("catalog")
@@ -159,6 +161,21 @@ export class ContentStudioController {
       this.authenticatedUserId(request),
     );
     return ContentGenerationJobResponseDto.fromEntity(job);
+  }
+
+  /** Andamento da última geração da etapa; `204` quando nunca houve. */
+  @Get("packages/:packageId/stages/:stageId/generations/latest")
+  @FeatureFlag([
+    FeatureFlagKeys.CONTENT_STUDIO,
+    FeatureFlagKeys.CONTENT_STUDIO_GENERATION,
+  ])
+  @UseGuards(FeatureFlagGuard)
+  async latestStageGeneration(
+    @Param("packageId", new ParseUUIDPipe()) packageId: string,
+    @Param("stageId", new ParseUUIDPipe()) stageId: string,
+  ): Promise<ContentGenerationJobResponseDto | null> {
+    const job = await this.latestGeneration.execute(packageId, stageId);
+    return job ? ContentGenerationJobResponseDto.fromEntity(job) : null;
   }
 
   @Delete("packages/:packageId/stages/:stageId/generations")

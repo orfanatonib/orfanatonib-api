@@ -1,4 +1,10 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from "class-validator";
 
 import { AiGenerationCapability } from "../ai/enums/ai-generation-capability.enum";
 

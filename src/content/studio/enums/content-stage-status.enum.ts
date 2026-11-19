@@ -10,4 +10,3 @@ export enum ContentStageStatus {
   CHANGES_REQUESTED = "CHANGES_REQUESTED",
   NOT_REQUIRED = "NOT_REQUIRED",
 }
-
