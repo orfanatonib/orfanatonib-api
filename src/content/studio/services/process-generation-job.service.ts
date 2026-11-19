@@ -22,7 +22,8 @@ import {
   DEFAULT_RETRY_POLICY,
   RetryPolicy,
 } from "../queue/provider-retry.utils";
-import { ContentPackagesRepository } from "../repositories/content-packages.repository";
+import { ContentGenerationRepository } from "../repositories/content-generation.repository";
+import { ContentStageContentRepository } from "../repositories/content-stage-content.repository";
 
 const RETRYABLE_KINDS: ReadonlySet<AiProviderErrorKind> = new Set([
   AiProviderErrorKind.RATE_LIMIT,
@@ -38,7 +39,8 @@ export class ProcessGenerationJobService {
   private readonly workerId = `${GENERATION_WORKER_PREFIX}-${randomUUID().slice(0, 8)}`;
 
   constructor(
-    private readonly packages: ContentPackagesRepository,
+    private readonly generations: ContentGenerationRepository,
+    private readonly stageContents: ContentStageContentRepository,
     private readonly gateway: AiGenerationGateway,
   ) {}
 
@@ -50,7 +52,7 @@ export class ProcessGenerationJobService {
    * ou cancelado é descartado sem custo (ack).
    */
   async handle(queued: AiQueueJob): Promise<AiJobOutcome> {
-    const job = await this.packages.startGenerationJob(
+    const job = await this.generations.startGenerationJob(
       queued.jobId,
       this.workerId,
       GENERATION_LEASE_MS,
@@ -62,7 +64,7 @@ export class ProcessGenerationJobService {
         throw new AiProviderRequestError(AiProviderErrorKind.SCHEMA);
       }
 
-      const context = await this.packages.loadStageGenerationContext(
+      const context = await this.generations.loadStageGenerationContext(
         job.stageId,
       );
       if (!context)
@@ -83,7 +85,7 @@ export class ProcessGenerationJobService {
         result.output,
       );
       const serialized = validateStructuredContent(content);
-      await this.packages.saveStageContent({
+      await this.stageContents.saveStageContent({
         packageId: job.packageId,
         stageId: job.stageId,
         structuredContent: content,
@@ -129,7 +131,7 @@ export class ProcessGenerationJobService {
       `Geração ${jobId} falhou (${kind}), tentativa ${attempts}, retry=${retry}`,
     );
 
-    await this.packages.failGenerationJob({
+    await this.generations.failGenerationJob({
       jobId,
       retry,
       errorCode: kind,

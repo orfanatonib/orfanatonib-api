@@ -2,11 +2,11 @@ import { Injectable } from "@nestjs/common";
 
 import { RequestStageChangesDto } from "../dto/request-stage-changes.dto";
 import { ContentPackageEntity } from "../entities/content-package.entity";
-import { ContentPackagesRepository } from "../repositories/content-packages.repository";
+import { ContentReviewRepository } from "../repositories/content-review.repository";
 
 @Injectable()
 export class RequestStageChangesService {
-  constructor(private readonly packages: ContentPackagesRepository) {}
+  constructor(private readonly packages: ContentReviewRepository) {}
 
   async execute(
     packageId: string,

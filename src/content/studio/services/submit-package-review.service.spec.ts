@@ -2,11 +2,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 
 import { SubmitPackageReviewService } from "./submit-package-review.service";
 import { ContentPackageEntity } from "../entities/content-package.entity";
-import { ContentPackagesRepository } from "../repositories/content-packages.repository";
+import { ContentReviewRepository } from "../repositories/content-review.repository";
 
 describe("SubmitPackageReviewService", () => {
   let service: SubmitPackageReviewService;
-  let repository: jest.Mocked<ContentPackagesRepository>;
+  let repository: jest.Mocked<ContentReviewRepository>;
 
   beforeEach(async () => {
     const mockRepository = {
@@ -17,7 +17,7 @@ describe("SubmitPackageReviewService", () => {
       providers: [
         SubmitPackageReviewService,
         {
-          provide: ContentPackagesRepository,
+          provide: ContentReviewRepository,
           useValue: mockRepository,
         },
       ],
@@ -26,7 +26,7 @@ describe("SubmitPackageReviewService", () => {
     service = module.get<SubmitPackageReviewService>(
       SubmitPackageReviewService,
     );
-    repository = module.get(ContentPackagesRepository);
+    repository = module.get(ContentReviewRepository);
   });
 
   it("should submit package for review via repository", async () => {

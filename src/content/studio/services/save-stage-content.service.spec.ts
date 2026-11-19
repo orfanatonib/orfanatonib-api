@@ -3,11 +3,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { SaveStageContentService } from "./save-stage-content.service";
 import { SaveStageContentDto } from "../dto/save-stage-content.dto";
 import { ContentPackageEntity } from "../entities/content-package.entity";
-import { ContentPackagesRepository } from "../repositories/content-packages.repository";
+import { ContentStageContentRepository } from "../repositories/content-stage-content.repository";
 
 describe("SaveStageContentService", () => {
   let service: SaveStageContentService;
-  let repository: jest.Mocked<ContentPackagesRepository>;
+  let repository: jest.Mocked<ContentStageContentRepository>;
 
   beforeEach(async () => {
     const mockRepository = {
@@ -18,14 +18,14 @@ describe("SaveStageContentService", () => {
       providers: [
         SaveStageContentService,
         {
-          provide: ContentPackagesRepository,
+          provide: ContentStageContentRepository,
           useValue: mockRepository,
         },
       ],
     }).compile();
 
     service = module.get<SaveStageContentService>(SaveStageContentService);
-    repository = module.get(ContentPackagesRepository);
+    repository = module.get(ContentStageContentRepository);
   });
 
   it("should save structured stage content", async () => {

@@ -2,11 +2,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 
 import { ApproveReviewStageService } from "./approve-review-stage.service";
 import { ContentPackageEntity } from "../entities/content-package.entity";
-import { ContentPackagesRepository } from "../repositories/content-packages.repository";
+import { ContentReviewRepository } from "../repositories/content-review.repository";
 
 describe("ApproveReviewStageService", () => {
   let service: ApproveReviewStageService;
-  let repository: jest.Mocked<ContentPackagesRepository>;
+  let repository: jest.Mocked<ContentReviewRepository>;
 
   beforeEach(async () => {
     const mockRepository = {
@@ -17,14 +17,14 @@ describe("ApproveReviewStageService", () => {
       providers: [
         ApproveReviewStageService,
         {
-          provide: ContentPackagesRepository,
+          provide: ContentReviewRepository,
           useValue: mockRepository,
         },
       ],
     }).compile();
 
     service = module.get<ApproveReviewStageService>(ApproveReviewStageService);
-    repository = module.get(ContentPackagesRepository);
+    repository = module.get(ContentReviewRepository);
   });
 
   it("should approve stage via repository", async () => {

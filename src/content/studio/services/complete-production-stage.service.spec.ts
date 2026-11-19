@@ -2,11 +2,11 @@ import { Test, TestingModule } from "@nestjs/testing";
 
 import { CompleteProductionStageService } from "./complete-production-stage.service";
 import { ContentPackageEntity } from "../entities/content-package.entity";
-import { ContentPackagesRepository } from "../repositories/content-packages.repository";
+import { ContentStageContentRepository } from "../repositories/content-stage-content.repository";
 
 describe("CompleteProductionStageService", () => {
   let service: CompleteProductionStageService;
-  let repository: jest.Mocked<ContentPackagesRepository>;
+  let repository: jest.Mocked<ContentStageContentRepository>;
 
   beforeEach(async () => {
     const mockRepository = {
@@ -17,7 +17,7 @@ describe("CompleteProductionStageService", () => {
       providers: [
         CompleteProductionStageService,
         {
-          provide: ContentPackagesRepository,
+          provide: ContentStageContentRepository,
           useValue: mockRepository,
         },
       ],
@@ -26,7 +26,7 @@ describe("CompleteProductionStageService", () => {
     service = module.get<CompleteProductionStageService>(
       CompleteProductionStageService,
     );
-    repository = module.get(ContentPackagesRepository);
+    repository = module.get(ContentStageContentRepository);
   });
 
   it("should complete stage production via repository", async () => {

@@ -7,7 +7,7 @@ import {
 import { ConfigService } from "@nestjs/config";
 
 import { AiJobQueuePort } from "../queue/ai-job-queue.port";
-import { ContentPackagesRepository } from "../repositories/content-packages.repository";
+import { ContentGenerationRepository } from "../repositories/content-generation.repository";
 import { ProcessGenerationJobService } from "./process-generation-job.service";
 
 const RECONCILE_INTERVAL_MS = 60_000;
@@ -25,7 +25,7 @@ export class GenerationWorkerService implements OnModuleInit, OnModuleDestroy {
   constructor(
     private readonly queue: AiJobQueuePort,
     private readonly processor: ProcessGenerationJobService,
-    private readonly packages: ContentPackagesRepository,
+    private readonly packages: ContentGenerationRepository,
     private readonly config: ConfigService,
   ) {}
 

@@ -42,6 +42,9 @@ import { ContentStageEntity } from "./entities/content-stage.entity";
 import { ContentTrackEntity } from "./entities/content-track.entity";
 import { ContentVersionEntity } from "./entities/content-version.entity";
 import { ContentPackagesRepository } from "./repositories/content-packages.repository";
+import { ContentGenerationRepository } from "./repositories/content-generation.repository";
+import { ContentReviewRepository } from "./repositories/content-review.repository";
+import { ContentStageContentRepository } from "./repositories/content-stage-content.repository";
 import { ApproveReviewStageService } from "./services/approve-review-stage.service";
 import { ArchiveContentPackageService } from "./services/archive-content-package.service";
 import { CompleteProductionStageService } from "./services/complete-production-stage.service";
@@ -80,6 +83,9 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
   ],
   providers: [
     ContentPackagesRepository,
+    ContentGenerationRepository,
+    ContentStageContentRepository,
+    ContentReviewRepository,
     GenerationStreamRepository,
     GenerationStreamService,
     AiUsageRepository,

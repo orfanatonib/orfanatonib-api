@@ -6,12 +6,12 @@ import { ContentGenerationJobStatus } from "../enums/content-generation-job-stat
 import { AiJobQueuePort } from "../queue/ai-job-queue.port";
 import { RuleException } from "src/common/exceptions";
 import { containsSensitiveContentInstruction } from "../ai/utils/ai-provider-policy.util";
-import { ContentPackagesRepository } from "../repositories/content-packages.repository";
+import { ContentGenerationRepository } from "../repositories/content-generation.repository";
 
 @Injectable()
 export class RequestStageGenerationService {
   constructor(
-    private readonly packages: ContentPackagesRepository,
+    private readonly packages: ContentGenerationRepository,
     private readonly queue: AiJobQueuePort,
   ) {}
 

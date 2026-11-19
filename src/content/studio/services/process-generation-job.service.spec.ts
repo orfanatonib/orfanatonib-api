@@ -48,7 +48,11 @@ function setup(gatewayDirective?: string, attempts = 1, quota?: number) {
   return {
     packages,
     gateway,
-    service: new ProcessGenerationJobService(packages as never, gateway),
+    service: new ProcessGenerationJobService(
+      packages as never,
+      packages as never,
+      gateway,
+    ),
   };
 }
 

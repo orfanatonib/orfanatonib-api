@@ -5,14 +5,14 @@ import { BadRequestException, Injectable } from "@nestjs/common";
 import { CONTENT_STUDIO_CATALOG_VERSION } from "../constants";
 import { SaveStageContentDto } from "../dto/save-stage-content.dto";
 import { ContentPackageEntity } from "../entities/content-package.entity";
-import { ContentPackagesRepository } from "../repositories/content-packages.repository";
+import { ContentStageContentRepository } from "../repositories/content-stage-content.repository";
 import { validateStructuredContent } from "../ai/utils/structured-content-policy.util";
 import { containsSensitiveContentInstruction } from "../ai/utils/ai-provider-policy.util";
 import { tiptapPlainText } from "../dto/tiptap-document.validator";
 
 @Injectable()
 export class SaveStageContentService {
-  constructor(private readonly packages: ContentPackagesRepository) {}
+  constructor(private readonly packages: ContentStageContentRepository) {}
 
   async execute(
     packageId: string,

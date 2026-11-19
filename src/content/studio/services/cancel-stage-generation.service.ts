@@ -3,11 +3,11 @@ import { Injectable } from "@nestjs/common";
 import { ResourceNotFoundException } from "src/common/exceptions";
 
 import { ContentGenerationJobEntity } from "../entities/content-generation-job.entity";
-import { ContentPackagesRepository } from "../repositories/content-packages.repository";
+import { ContentGenerationRepository } from "../repositories/content-generation.repository";
 
 @Injectable()
 export class CancelStageGenerationService {
-  constructor(private readonly packages: ContentPackagesRepository) {}
+  constructor(private readonly packages: ContentGenerationRepository) {}
 
   /** O worker vê o job CANCELLED e descarta o resultado (não grava versão). */
   async execute(

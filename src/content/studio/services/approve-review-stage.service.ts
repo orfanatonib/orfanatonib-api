@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
 
 import { ContentPackageEntity } from "../entities/content-package.entity";
-import { ContentPackagesRepository } from "../repositories/content-packages.repository";
+import { ContentReviewRepository } from "../repositories/content-review.repository";
 import { ApproveReviewStageDto } from "../dto/approve-review-stage.dto";
 
 @Injectable()
 export class ApproveReviewStageService {
-  constructor(private readonly packages: ContentPackagesRepository) {}
+  constructor(private readonly packages: ContentReviewRepository) {}
 
   async execute(
     packageId: string,
