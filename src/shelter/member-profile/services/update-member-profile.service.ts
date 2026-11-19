@@ -50,9 +50,7 @@ export class UpdateMemberProfileService {
     await this.repo.assignTeamByIdForUser(userId, teamId);
   }
 
-  private async notifyTeamAssignment(
-    member: MemberResponseDto,
-  ): Promise<void> {
+  private async notifyTeamAssignment(member: MemberResponseDto): Promise<void> {
     const email = member.user?.email;
     const shelter = member.shelter;
     if (!email || !shelter?.team) return;

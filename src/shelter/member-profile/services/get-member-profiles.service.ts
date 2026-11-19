@@ -1,7 +1,4 @@
-import {
-  ForbiddenException,
-  Injectable,
-} from "@nestjs/common";
+import { ForbiddenException, Injectable } from "@nestjs/common";
 import { Request } from "express";
 import { MemberProfilesRepository } from "../repositories/member-profiles.repository";
 import {
@@ -92,7 +89,9 @@ export class GetMemberProfilesService {
     if (!members.length) return;
 
     const userIds = members
-      .filter((m): m is MemberProfileEntity & { user: UserEntity } => !!m.user?.id)
+      .filter(
+        (m): m is MemberProfileEntity & { user: UserEntity } => !!m.user?.id,
+      )
       .map((m) => m.user.id);
 
     if (!userIds.length) return;
