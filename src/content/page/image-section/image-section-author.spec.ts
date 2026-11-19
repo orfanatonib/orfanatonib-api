@@ -4,9 +4,9 @@ import { toSectionAuthorDto } from "./utils";
 import { ImageSectionResponseDto } from "./dto/image-section-response.dto";
 
 describe("autoria da seção", () => {
-  it("toSectionAuthorDto: só nome público; sem autor → null", () => {
-    expect(toSectionAuthorDto({ name: "João da Silva" })).toEqual({
-      displayName: "João S.",
+  it("toSectionAuthorDto: nome completo de quem publicou (como no Clubinho); sem autor → null", () => {
+    expect(toSectionAuthorDto({ name: "  João   da Silva " })).toEqual({
+      displayName: "João da Silva",
     });
     expect(toSectionAuthorDto(null)).toBeNull();
     expect(toSectionAuthorDto(undefined)).toBeNull();
@@ -26,7 +26,7 @@ describe("autoria da seção", () => {
       [],
     );
     expect(dto.authorId).toBe("u1");
-    expect(dto.author).toEqual({ displayName: "Ana P." });
+    expect(dto.author).toEqual({ displayName: "Ana Paula" });
     expect(JSON.stringify(dto)).not.toMatch(/a@b\.c|119/);
   });
 

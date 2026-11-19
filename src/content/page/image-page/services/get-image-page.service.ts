@@ -115,8 +115,8 @@ export class GetImagePageService {
 
     const [sections, total] = await this.sectionRepository.findAndCount({
       where,
-      // O nome do autor só é carregado (e exibido) para quem tem sessão.
-      relations: loggedIn ? ["author"] : [],
+      // Quem publicou aparece para todos (visitante inclusive), como no feed do Clubinho: só o nome, nunca contato.
+      relations: ["author"],
       order: { createdAt: "DESC" },
       skip: offset,
       take: limit,
@@ -157,7 +157,7 @@ export class GetImagePageService {
     for (const id of sectionIds) {
       const celebration = celebrations.get(id);
       extras.set(id, {
-        showAuthor: viewerId !== null,
+        showAuthor: true,
         celebrationCount: celebration?.count ?? 0,
         celebratedByMe: celebration?.celebratedByMe ?? false,
         commentCount: commentCounts.get(id) ?? 0,

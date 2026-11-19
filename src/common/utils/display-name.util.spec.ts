@@ -1,4 +1,4 @@
-import { toPublicDisplayName } from "./display-name.util";
+import { toFullDisplayName, toPublicDisplayName } from "./display-name.util";
 
 describe("toPublicDisplayName", () => {
   it("primeiro nome + inicial do último sobrenome", () => {
@@ -17,5 +17,18 @@ describe("toPublicDisplayName", () => {
     const shown = toPublicDisplayName("Ana\nPaula Oliveira");
     expect(shown).toBe("Ana O.");
     expect(shown).not.toContain("Oliveira");
+  });
+});
+
+describe("toFullDisplayName", () => {
+  it("mantém o nome completo, normalizando espaços", () => {
+    expect(toFullDisplayName("  Maria   Souza  Lima ")).toBe("Maria Souza Lima");
+    expect(toFullDisplayName("Ana")).toBe("Ana");
+  });
+  it("vazio ou nulo vira null e controle de caractere não passa", () => {
+    expect(toFullDisplayName("   ")).toBeNull();
+    expect(toFullDisplayName(null)).toBeNull();
+    expect(toFullDisplayName(undefined)).toBeNull();
+    expect(toFullDisplayName("Ana\nPaula")).toBe("Ana Paula");
   });
 });
