@@ -13,6 +13,10 @@ import { parseAllowedOrigins } from "./cors.config";
 
 export type EnvironmentVariables = Record<string, unknown>;
 
+const FEED_PAGE_ID_VARIABLE = "FEED_ORFANATO_PAGE_ID";
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** Converte para texto só o que é escalar; objetos viram vazio (variável de ambiente é sempre texto). */
 const asText = (value: unknown): string =>
   typeof value === "string" || typeof value === "number" ? String(value) : "";
@@ -61,6 +65,15 @@ export function validateEnv(
     if (!Number.isInteger(port) || port < 1 || port > 65535) {
       errors.push(`${name} deve ser um inteiro entre 1 e 65535`);
     }
+  }
+
+  // A galeria do feed é identificada por esta variável: um valor que não é UUID nunca
+  // acha a página e `update`/`delete` de seção falham só em runtime com "Default page not found".
+  if (
+    !isBlank(config[FEED_PAGE_ID_VARIABLE]) &&
+    !UUID_PATTERN.test(asText(config[FEED_PAGE_ID_VARIABLE]).trim())
+  ) {
+    errors.push(`${FEED_PAGE_ID_VARIABLE} deve ser um UUID`);
   }
 
   if (!isBlank(config[CORS_ALLOWED_ORIGINS_VARIABLE])) {

@@ -16,6 +16,19 @@ const deployed = {
 };
 
 describe("validateEnv", () => {
+  it("FEED_ORFANATO_PAGE_ID, quando presente, precisa ser UUID (ausente continua aceito)", () => {
+    expect(() =>
+      validateEnv({ ...base, FEED_ORFANATO_PAGE_ID: "your_page_id" }),
+    ).toThrow("FEED_ORFANATO_PAGE_ID deve ser um UUID");
+    expect(() =>
+      validateEnv({
+        ...base,
+        FEED_ORFANATO_PAGE_ID: "48d6278a-7c26-4a9f-90ce-2dedc47fe498",
+      }),
+    ).not.toThrow();
+    expect(() => validateEnv({ ...base })).not.toThrow();
+  });
+
   it("aceita o mínimo em ambiente local", () => {
     expect(validateEnv({ ...base })).toEqual(base);
   });
