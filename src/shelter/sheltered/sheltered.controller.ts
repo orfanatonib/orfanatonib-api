@@ -12,6 +12,9 @@ import {
   Req,
   UseGuards,
 } from "@nestjs/common";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AuthenticatedRequest } from "src/core/auth/auth.types";
 import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
@@ -41,6 +44,13 @@ export class ShelteredController {
     private readonly deleteShelteredService: DeleteShelteredService,
   ) {}
 
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.SHELTERED_AREA,
+      FeatureFlagKeys.SHELTERED_MANAGEMENT,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
   @Get()
   async findAll(
     @Query() query: QueryShelteredDto,
@@ -52,6 +62,13 @@ export class ShelteredController {
     );
   }
 
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.SHELTERED_AREA,
+      FeatureFlagKeys.SHELTERED_MANAGEMENT,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
   @Get("simple")
   async findAllSimple(
     @Query() query: QueryShelteredSimpleDto,
@@ -63,6 +80,13 @@ export class ShelteredController {
     );
   }
 
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.SHELTERED_AREA,
+      FeatureFlagKeys.SHELTERED_MANAGEMENT,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   async findOne(
     @Param("id", new ParseUUIDPipe()) id: string,
@@ -74,6 +98,13 @@ export class ShelteredController {
     );
   }
 
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.SHELTERED_AREA,
+      FeatureFlagKeys.SHELTERED_MANAGEMENT,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
   @Post()
   async create(
     @Body() dto: CreateShelteredDto,
@@ -85,6 +116,13 @@ export class ShelteredController {
     );
   }
 
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.SHELTERED_AREA,
+      FeatureFlagKeys.SHELTERED_MANAGEMENT,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
   @Put(":id")
   async update(
     @Param("id", new ParseUUIDPipe()) id: string,
@@ -98,6 +136,13 @@ export class ShelteredController {
     );
   }
 
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.SHELTERED_AREA,
+      FeatureFlagKeys.SHELTERED_MANAGEMENT,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
   @Patch(":id/status")
   async updateStatus(
     @Param("id", new ParseUUIDPipe()) id: string,
@@ -111,6 +156,13 @@ export class ShelteredController {
     );
   }
 
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.SHELTERED_AREA,
+      FeatureFlagKeys.SHELTERED_MANAGEMENT,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   async remove(
     @Param("id", new ParseUUIDPipe()) id: string,

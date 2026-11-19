@@ -23,6 +23,9 @@ import { PaginationQueryDto, PaginatedResponse } from "./dto/paginated.dto";
 import { PagelaResponseDto } from "./dto/pagela-response.dto";
 import type { AuthenticatedRequest } from "src/core/auth/auth.types";
 import { toShelterAccessContext } from "src/shelter/shelter/utils/shelter-access.util";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 
 @Controller("pagelas")
@@ -37,6 +40,8 @@ export class PagelasController {
     private readonly deletePagelaService: DeletePagelaService,
   ) {}
 
+  @FeatureFlag(FeatureFlagKeys.PAGELAS)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   async create(
     @Req() req: AuthenticatedRequest,
@@ -51,6 +56,8 @@ export class PagelasController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGELAS)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   async findAllSimple(
     @Req() req: AuthenticatedRequest,
@@ -62,6 +69,8 @@ export class PagelasController {
     );
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGELAS)
+  @UseGuards(FeatureFlagGuard)
   @Get("paginated")
   async findAllPaginated(
     @Req() req: AuthenticatedRequest,
@@ -76,6 +85,8 @@ export class PagelasController {
     );
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGELAS)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   async findOne(
     @Req() req: AuthenticatedRequest,
@@ -84,6 +95,8 @@ export class PagelasController {
     return this.getPagelasService.findOneAs(toShelterAccessContext(req), id);
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGELAS)
+  @UseGuards(FeatureFlagGuard)
   @Patch(":id")
   async update(
     @Req() req: AuthenticatedRequest,
@@ -100,6 +113,8 @@ export class PagelasController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGELAS)
+  @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   async remove(
     @Req() req: AuthenticatedRequest,

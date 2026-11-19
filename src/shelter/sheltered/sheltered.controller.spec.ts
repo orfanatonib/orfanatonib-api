@@ -1,6 +1,7 @@
 import { Test } from "@nestjs/testing";
 import { AuthenticatedRequest, UserRole } from "src/core/auth/auth.types";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { ShelteredController } from "./sheltered.controller";
 import { CreateShelteredService } from "./services/create-sheltered.service";
 import { GetShelteredService } from "./services/get-sheltered.service";
@@ -44,7 +45,10 @@ describe("ShelteredController", () => {
         { provide: UpdateShelteredService, useValue: updateShelteredService },
         { provide: DeleteShelteredService, useValue: deleteShelteredService },
       ],
-    }).compile();
+    })
+      .overrideGuard(FeatureFlagGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = moduleRef.get(ShelteredController);
   });
