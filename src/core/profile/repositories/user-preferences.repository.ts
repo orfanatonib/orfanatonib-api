@@ -16,7 +16,9 @@ export class UserPreferencesRepository extends Repository<UserPreferences> {
     userId: string,
     data: Partial<UserPreferences>,
   ): Promise<UserPreferences> {
-    const { userId: _, ...cleanData } = data;
+    // `userId` do corpo é ignorado: o dono vem do argumento.
+    const cleanData: typeof data = { ...data };
+    delete cleanData.userId;
     const preferences = this.create({
       ...cleanData,
       userId,

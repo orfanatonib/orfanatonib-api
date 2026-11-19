@@ -57,7 +57,10 @@ export class ShelterScheduleController {
     return ShelterScheduleResponseDto.fromEntity(result);
   }
 
-  @FeatureFlag(FeatureFlagKeys.SHELTER_SCHEDULE)
+  // O membro lê a agenda da própria equipe (o serviço escopa): `shelter_schedule` é de admin/líder.
+  @FeatureFlag({
+    anyOf: [FeatureFlagKeys.SHELTER_SCHEDULE, FeatureFlagKeys.MEMBER_AREA],
+  })
   @UseGuards(FeatureFlagGuard)
   @Get()
   async findAll(@Req() req: Request): Promise<ShelterScheduleResponseDto[]> {

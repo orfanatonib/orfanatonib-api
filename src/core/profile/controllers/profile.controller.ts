@@ -1,3 +1,4 @@
+import type { Request as ExpressRequest } from "express";
 import {
   Controller,
   Get,
@@ -44,11 +45,14 @@ export class ProfileController {
     private readonly deleteProfileService: DeleteProfileService,
   ) {}
 
-  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  // Cada um cria o PRÓPRIO perfil: vale também para quem não é admin.
+  @FeatureFlag({
+    anyOf: [FeatureFlagKeys.USER_MANAGEMENT, FeatureFlagKeys.MEMBER_AREA],
+  })
   @UseGuards(FeatureFlagGuard)
   @Post()
   async createProfile(
-    @Request() req,
+    @Request() req: ExpressRequest,
     @Body() createProfileDto: CreateCompleteProfileDto,
   ): Promise<CompleteProfileResponseDto> {
     const userId = await this.authContextService.getUserId(req);
@@ -62,11 +66,14 @@ export class ProfileController {
     return result;
   }
 
-  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
+  // Admin e líder listam (o serviço escopa): o líder não tem `user_management`.
+  @FeatureFlag({
+    anyOf: [FeatureFlagKeys.USER_MANAGEMENT, FeatureFlagKeys.LEADER_MANAGEMENT],
+  })
   @UseGuards(FeatureFlagGuard)
   @Get()
   async getAllProfiles(
-    @Request() req,
+    @Request() req: ExpressRequest,
     @Query() queryDto: QueryProfilesDto,
   ): Promise<PaginatedProfilesResponseDto> {
     const userId = await this.authContextService.getUserId(req);
@@ -83,7 +90,9 @@ export class ProfileController {
   }
 
   @Get("me")
-  async getMyProfile(@Request() req): Promise<CompleteProfileResponseDto> {
+  async getMyProfile(
+    @Request() req: ExpressRequest,
+  ): Promise<CompleteProfileResponseDto> {
     const userId = await this.authContextService.getUserId(req);
     if (!userId) throw new ForbiddenException("User not authenticated");
     return this.getOneProfileService.execute(userId);
@@ -101,7 +110,7 @@ export class ProfileController {
 
   @Put("me")
   async updateMyProfile(
-    @Request() req,
+    @Request() req: ExpressRequest,
     @Body() updateProfileDto: UpdateCompleteProfileDto,
   ): Promise<CompleteProfileResponseDto> {
     const userId = await this.authContextService.getUserId(req);

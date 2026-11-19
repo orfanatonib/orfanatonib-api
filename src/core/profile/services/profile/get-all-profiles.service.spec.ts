@@ -17,7 +17,9 @@ function setup(rows: object[] = [], total = rows.length) {
     }),
   };
   const prefs = { findByUserId: jest.fn().mockResolvedValue(null) };
-  const media = { findManyMediaItemsByTargets: jest.fn().mockResolvedValue([]) };
+  const media = {
+    findManyMediaItemsByTargets: jest.fn().mockResolvedValue([]),
+  };
   const svc = new GetAllProfilesService(
     dataSource as never,
     {} as never,
@@ -46,7 +48,10 @@ describe("GetAllProfilesService: escopo por papel", () => {
     expect(result.items).toEqual([]);
     expect(result.meta.totalItems).toBe(0);
     expect(query).not.toHaveBeenCalled();
-    expect(media.findManyMediaItemsByTargets).toHaveBeenCalledWith([], "UserEntity");
+    expect(media.findManyMediaItemsByTargets).toHaveBeenCalledWith(
+      [],
+      "UserEntity",
+    );
   });
 
   it("admin lista sem restrição de equipe", async () => {
@@ -129,7 +134,10 @@ describe("GetAllProfilesService: paginação e montagem", () => {
   it("página 3 com limite 10 usa offset 20 e calcula os metadados", async () => {
     const { svc, calls } = setup([user("u1")], 45);
 
-    const result = await svc.execute("a1", UserRole.ADMIN, { page: 3, limit: 10 });
+    const result = await svc.execute("a1", UserRole.ADMIN, {
+      page: 3,
+      limit: 10,
+    });
 
     expect(calls()[0][1].slice(-2)).toEqual([10, 20]);
     expect(result.meta).toMatchObject({

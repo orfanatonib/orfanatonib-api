@@ -4,6 +4,7 @@ import { PersonalDataRepository } from "../../repositories/personal-data.reposit
 import { UserPreferencesRepository } from "../../repositories/user-preferences.repository";
 import { CreateCompleteProfileDto } from "../../dto/create-complete-profile.dto";
 import { CompleteProfileResponseDto } from "../../dto/complete-profile-response.dto";
+import { toCompleteProfileResponse } from "../../mappers/complete-profile.mapper";
 
 @Injectable()
 export class CreateProfileService {
@@ -66,35 +67,6 @@ export class CreateProfileService {
       }
     }
 
-    return {
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      name: user.name,
-      role: user.role,
-      personalData: personalData
-        ? {
-            birthDate: personalData.birthDate
-              ? personalData.birthDate instanceof Date
-                ? personalData.birthDate.toISOString().split("T")[0]
-                : String(personalData.birthDate).split("T")[0]
-              : undefined,
-            gender: personalData.gender,
-            gaLeaderName: personalData.gaLeaderName,
-            gaLeaderContact: personalData.gaLeaderContact,
-          }
-        : undefined,
-      preferences: preferences
-        ? {
-            loveLanguages: preferences.loveLanguages,
-            temperaments: preferences.temperaments,
-            favoriteColor: preferences.favoriteColor,
-            favoriteFood: preferences.favoriteFood,
-            favoriteMusic: preferences.favoriteMusic,
-            whatMakesYouSmile: preferences.whatMakesYouSmile,
-            skillsAndTalents: preferences.skillsAndTalents,
-          }
-        : undefined,
-    };
+    return toCompleteProfileResponse(user, personalData, preferences);
   }
 }

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { DataSource } from "typeorm";
+import { ProfilesQueryRepository } from "../../repositories/profiles-query.repository";
 import { UserRepository } from "../../../user/user.repository";
 import { PersonalDataRepository } from "../../repositories/personal-data.repository";
 import { UserPreferencesRepository } from "../../repositories/user-preferences.repository";
@@ -26,7 +26,7 @@ interface UserRow {
 @Injectable()
 export class GetAllProfilesService {
   constructor(
-    private readonly dataSource: DataSource,
+    private readonly profilesQuery: ProfilesQueryRepository,
     private readonly userRepository: UserRepository,
     private readonly personalDataRepository: PersonalDataRepository,
     private readonly userPreferencesRepository: UserPreferencesRepository,
@@ -255,11 +255,10 @@ export class GetAllProfilesService {
     baseQuery += ` LIMIT ? OFFSET ?`;
     params.push(limit, offset);
 
-    const users = await this.dataSource.query<UserRow[]>(baseQuery, params);
-    const countResult = await this.dataSource.query<Array<{ total?: string }>>(
-      countQuery,
-      countParams,
-    );
+    const users = await this.profilesQuery.query<UserRow[]>(baseQuery, params);
+    const countResult = await this.profilesQuery.query<
+      Array<{ total?: string }>
+    >(countQuery, countParams);
     const total = parseInt(countResult[0]?.total ?? "0", 10);
 
     return { users, total };

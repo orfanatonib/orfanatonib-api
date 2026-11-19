@@ -16,7 +16,9 @@ export class PersonalDataRepository extends Repository<PersonalData> {
     userId: string,
     data: Partial<PersonalData>,
   ): Promise<PersonalData> {
-    const { userId: _, ...cleanData } = data;
+    // `userId` do corpo é ignorado: o dono vem do argumento.
+    const cleanData: typeof data = { ...data };
+    delete cleanData.userId;
     const personalData = this.create({
       ...cleanData,
       userId,
