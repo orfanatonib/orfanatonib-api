@@ -43,6 +43,14 @@ export class ContentPublicationEntity extends BaseEntity {
   @Column({ name: "asset_id", type: "varchar", length: 36, nullable: true })
   assetId: string | null;
 
+  @Column({
+    name: "visit_material_page_id",
+    type: "varchar",
+    length: 36,
+    nullable: true,
+  })
+  visitMaterialPageId: string | null;
+
   @Column({ type: "varchar", length: 80, nullable: true })
   errorCode: string | null;
 

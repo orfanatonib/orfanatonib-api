@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
+import { VisitMaterialsPageModule } from "src/content/page/visit-material-page/visit-material-page.module";
 import { AuthModule } from "src/core/auth/auth.module";
 import { FeatureFlagsModule } from "src/core/feature-flags/feature-flags.module";
 
@@ -27,6 +28,13 @@ import { ConfigService } from "@nestjs/config";
 import { AiGenerationGateway } from "./ai/ai-generation.gateway";
 import { FakeAiGenerationGateway } from "./ai/fake-ai-generation.gateway";
 import { GeminiGenerationGateway } from "./ai/gemini-generation.gateway";
+import { ContentStudioPublicationController } from "./content-studio-publication.controller";
+import { ContentPublicationRepository } from "./repositories/content-publication.repository";
+import { PublishContentPackageService } from "./services/publish-content-package.service";
+import { GetContentPublicationService } from "./services/get-content-publication.service";
+import { GetPublicationPageService } from "./services/get-publication-page.service";
+import { CreatePublicationPageService } from "./services/create-publication-page.service";
+import { BuildPublicationDocumentsService } from "./services/build-publication-documents.service";
 import { ContentStudioExportController } from "./content-studio-export.controller";
 import { PdfLibreOfficeService } from "./export/pdf-libreoffice.service";
 import { StudioDocxService } from "./export/studio-docx.service";
@@ -69,6 +77,7 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
     AuthModule,
     FeatureFlagsModule,
     AiProviderSettingsModule,
+    VisitMaterialsPageModule,
     TypeOrmModule.forFeature([
       ContentAssetEntity,
       ContentGenerationJobEntity,
@@ -86,6 +95,7 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
     ContentStudioController,
     AiManagementController,
     ContentStudioExportController,
+    ContentStudioPublicationController,
     ContentStudioGenerationStreamController,
     ContentStudioPromptPreferencesController,
   ],
@@ -94,6 +104,12 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
     ContentGenerationRepository,
     ContentStageContentRepository,
     ContentReviewRepository,
+    ContentPublicationRepository,
+    PublishContentPackageService,
+    GetContentPublicationService,
+    GetPublicationPageService,
+    CreatePublicationPageService,
+    BuildPublicationDocumentsService,
     GenerationStreamRepository,
     ContentPromptPreferenceRepository,
     ListPromptPreferencesService,
