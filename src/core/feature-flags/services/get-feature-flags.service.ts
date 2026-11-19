@@ -20,7 +20,12 @@ import { FeatureFlagEntity } from "../entities/feature-flag.entity";
 import { FeatureFlagsRepository } from "../feature-flags.repository";
 import { toFeatureFlagResponse, toFeatureFlagResponseList } from "../mappers";
 import { FeatureFlagAudience } from "../types";
-import { audienceOfRoles, isTargetedForRole, targetRolesOf } from "../utils";
+import {
+  audienceOfRoles,
+  catalogDefaultFor,
+  isTargetedForRole,
+  targetRolesOf,
+} from "../utils";
 
 @Injectable()
 export class GetFeatureFlagsService {
@@ -164,12 +169,12 @@ export class GetFeatureFlagsService {
     const flag = await this.repository.findByKey(key);
     return this.writeCache(
       cacheKey,
-      flag ? isTargetedForRole(flag, role) : false,
+      flag ? isTargetedForRole(flag, role) : catalogDefaultFor(key, role),
     );
   }
 
   async isEnabled(key: string, environment?: string): Promise<boolean> {
-    return this.isEnabledOrDefault(key, false, environment);
+    return this.isEnabledOrDefault(key, catalogDefaultFor(key), environment);
   }
 
   async isEnabledOrDefault(

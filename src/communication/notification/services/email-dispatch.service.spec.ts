@@ -87,7 +87,7 @@ describe("EmailDispatchService", () => {
         true,
       );
       expect(featureFlags.isEnabledOrDefault).toHaveBeenCalledWith(
-        "email-password-reset",
+        "email_password_reset",
         true,
       );
     });
@@ -105,7 +105,7 @@ describe("EmailDispatchService", () => {
 
     it("a flag do tipo desligada barra só aquele e-mail", async () => {
       featureFlags.isEnabledOrDefault.mockImplementation((key: string) =>
-        Promise.resolve(key !== "email-password-reset"),
+        Promise.resolve(key !== "email_password_reset"),
       );
 
       await dispatchReset();

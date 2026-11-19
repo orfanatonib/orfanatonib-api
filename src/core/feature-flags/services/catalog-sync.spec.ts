@@ -6,6 +6,7 @@ import { FeatureFlagsRepository } from "../feature-flags.repository";
 import { FeatureFlagEntity } from "../entities/feature-flag.entity";
 import {
   DEFAULT_FEATURE_FLAGS,
+  FEATURE_FLAG_RENAMES,
   RETIRED_FEATURE_FLAGS,
   isInternalFeatureFlag,
 } from "../constants";
@@ -59,15 +60,46 @@ describe("catálogo de feature flags", () => {
   });
 
   describe("definições de fábrica", () => {
-    it("o catálogo cobre as três flags de interface e as de e-mail", () => {
+    it("o catálogo tem as 54 flags de interface em snake_case e as 12 de e-mail", () => {
       const keys = DEFAULT_FEATURE_FLAGS.map((flag) => flag.key);
+      const ui = keys.filter((key) => !isInternalFeatureFlag(key));
 
-      expect(keys).toContain("shelter-address");
-      expect(keys).toContain("shelter-management");
-      expect(keys).toContain("shelter-pagelas");
-      expect(keys.filter(isInternalFeatureFlag).length).toBeGreaterThanOrEqual(
-        12,
+      expect(ui).toHaveLength(54);
+      expect(ui.every((key) => /^[a-z]+(_[a-z]+)*$/.test(key))).toBe(true);
+      expect(keys.filter(isInternalFeatureFlag)).toHaveLength(12);
+      expect(new Set(keys).size).toBe(keys.length);
+    });
+
+    it("toda flag restrita inclui admin explicitamente", () => {
+      for (const flag of DEFAULT_FEATURE_FLAGS) {
+        if (flag.targetRoles.length > 0) {
+          expect(flag.targetRoles as readonly string[]).toContain("admin");
+        }
+      }
+    });
+
+    it("estúdio, Dia da Família e auditoria nascem desligados; o resto ligado", () => {
+      const off = DEFAULT_FEATURE_FLAGS.filter((flag) => !flag.enabled).map(
+        (flag) => flag.key,
       );
+      expect(off.sort()).toEqual(
+        [
+          "content_studio",
+          "content_studio_generation",
+          "content_studio_provider_admin",
+          "content_studio_publication",
+          "content_studio_review",
+          "observability_audit",
+          "special_family_day",
+        ].sort(),
+      );
+    });
+
+    it("toda chave nova de FEATURE_FLAG_RENAMES existe no catálogo", () => {
+      const keys = DEFAULT_FEATURE_FLAGS.map((flag) => flag.key) as string[];
+      for (const rename of FEATURE_FLAG_RENAMES) {
+        for (const target of rename.to) expect(keys).toContain(target);
+      }
     });
 
     it("a flag legada de eventos foi aposentada, não redefinida", () => {
@@ -120,10 +152,10 @@ describe("catálogo de feature flags", () => {
     });
 
     it("preserva o estado escolhido pelo operador numa flag existente", async () => {
-      const desligada = buildFlag("email-delivery");
+      const desligada = buildFlag("email_delivery");
       desligada.enabled = false;
       repository.findByKey.mockImplementation((key: string) =>
-        Promise.resolve(key === "email-delivery" ? desligada : null),
+        Promise.resolve(key === "email_delivery" ? desligada : null),
       );
 
       await service.seedDefaults();
@@ -131,8 +163,84 @@ describe("catálogo de feature flags", () => {
       const savedKeys = repository.save.mock.calls.map(
         ([flag]: [FeatureFlagEntity]) => flag.key,
       );
-      expect(savedKeys).not.toContain("email-delivery");
+      expect(savedKeys).not.toContain("email_delivery");
       expect(desligada.enabled).toBe(false);
+    });
+  });
+
+  describe("copyRenamedFlags", () => {
+    const saved = () =>
+      repository.save.mock.calls.map(([flag]: [FeatureFlagEntity]) => flag);
+
+    it("a chave nova copia enabled e targetRoles da antiga", async () => {
+      const antiga = buildFlag("shelter-management");
+      antiga.enabled = false;
+      antiga.metadata = { targetRoles: ["admin"] };
+      repository.findByKey.mockImplementation((key: string) =>
+        Promise.resolve(key === "shelter-management" ? antiga : null),
+      );
+
+      const copied = await service.copyRenamedFlags();
+
+      expect(copied).toEqual(["sheltered_management"]);
+      const nova = saved()[0];
+      expect(nova.enabled).toBe(false);
+      expect(nova.metadata).toEqual({ targetRoles: ["admin"] });
+      expect(getService.invalidateAll).toHaveBeenCalled();
+    });
+
+    it("shelter-pagelas desligada gera DUAS chaves desligadas (nada nasce ligado por acidente)", async () => {
+      const antiga = buildFlag("shelter-pagelas");
+      antiga.enabled = false;
+      repository.findByKey.mockImplementation((key: string) =>
+        Promise.resolve(key === "shelter-pagelas" ? antiga : null),
+      );
+
+      const copied = await service.copyRenamedFlags();
+
+      expect(copied.sort()).toEqual(["pagelas", "sheltered_area"]);
+      expect(saved().every((flag) => flag.enabled === false)).toBe(true);
+    });
+
+    it("é idempotente: chave nova já existente não é tocada", async () => {
+      repository.findByKey.mockImplementation((key: string) =>
+        Promise.resolve(buildFlag(key)),
+      );
+
+      await expect(service.copyRenamedFlags()).resolves.toEqual([]);
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it("sem a chave antiga não cria nada (instalação nova usa o seed)", async () => {
+      repository.findByKey.mockResolvedValue(null);
+      await expect(service.copyRenamedFlags()).resolves.toEqual([]);
+    });
+
+    it("erro numa cópia não impede as demais", async () => {
+      const a = buildFlag("shelter-address");
+      const b = buildFlag("shelter-management");
+      repository.findByKey.mockImplementation((key: string) =>
+        Promise.resolve(
+          key === "shelter-address"
+            ? a
+            : key === "shelter-management"
+              ? b
+              : null,
+        ),
+      );
+      repository.save.mockImplementationOnce(() =>
+        Promise.reject(new Error("ER_DUP_ENTRY")),
+      );
+
+      await expect(service.copyRenamedFlags()).resolves.toEqual([
+        "sheltered_management",
+      ]);
+    });
+
+    it("a antiga é mantida na versão N (não entra em RETIRED)", () => {
+      for (const rename of FEATURE_FLAG_RENAMES) {
+        expect(RETIRED_FEATURE_FLAGS).not.toContain(rename.from);
+      }
     });
   });
 

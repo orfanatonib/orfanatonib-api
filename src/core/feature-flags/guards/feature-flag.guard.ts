@@ -8,7 +8,9 @@ import { normalizeRole } from "src/core/auth/utils/auth-token.util";
 import {
   FEATURE_FLAG_KEY,
   FeatureFlagMetadata,
+  isFeatureFlagAnyOf,
 } from "../decorators/feature-flag.decorator";
+import { FEATURE_DISABLED_CODE } from "../constants";
 import { GetFeatureFlagsService } from "../services/get-feature-flags.service";
 
 @Injectable()
@@ -31,7 +33,12 @@ export class FeatureFlagGuard implements CanActivate {
       .getRequest<{ user?: { role?: string } }>();
     const role = normalizeRole(request?.user?.role);
 
-    const keys = Array.isArray(metadata) ? metadata : [metadata];
+    const anyOf = isFeatureFlagAnyOf(metadata);
+    const keys: readonly string[] = anyOf
+      ? metadata.anyOf
+      : Array.isArray(metadata)
+        ? (metadata as readonly string[])
+        : [metadata as string];
 
     const environment = this.configService.get<string>("ENVIRONMENT");
     // Chave ligada no ambiente E a audiência (papel) da flag inclui o ator.
@@ -43,10 +50,11 @@ export class FeatureFlagGuard implements CanActivate {
       ),
     );
 
-    if (enabled.every(Boolean)) return true;
+    if (anyOf ? enabled.some(Boolean) : enabled.every(Boolean)) return true;
 
     throw new AccessDeniedException(
       `A funcionalidade "${keys.join(", ")}" está temporariamente indisponível`,
+      { code: FEATURE_DISABLED_CODE },
     );
   }
 }

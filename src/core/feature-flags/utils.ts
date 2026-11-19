@@ -1,6 +1,7 @@
 import { UserRole } from "src/core/auth/auth.types";
 
 import {
+  DEFAULT_FEATURE_FLAGS,
   FEATURE_FLAG_AUDIENCES,
   FEATURE_FLAG_TARGET_ROLES_METADATA_KEY,
 } from "./constants";
@@ -81,4 +82,25 @@ export function isTargetedForRole(
 
   const normalized = String(role).toLowerCase().trim();
   return isUserRole(normalized) && targetRoles.includes(normalized);
+}
+
+/**
+ * Decisão de uma flag que **não existe no banco**: vale o padrão do catálogo
+ * (não `false`), senão um registro apagado derrubaria a funcionalidade. Chave
+ * fora do catálogo continua desligada.
+ */
+export function catalogDefaultFor(
+  key: string,
+  role?: UserRole | string | null,
+): boolean {
+  const definition = DEFAULT_FEATURE_FLAGS.find((flag) => flag.key === key);
+  if (!definition || !definition.enabled) return false;
+  if (definition.targetRoles.length === 0) return true;
+  if (!role) return false;
+
+  const normalized = String(role).toLowerCase().trim();
+  return (
+    isUserRole(normalized) &&
+    (definition.targetRoles as readonly string[]).includes(normalized)
+  );
 }

@@ -14,7 +14,7 @@ import { DeleteFeatureFlagService } from "./delete-feature-flag.service";
 import { GetFeatureFlagsService } from "./get-feature-flags.service";
 import { UpdateFeatureFlagService } from "./update-feature-flag.service";
 
-function buildFlag(key = "shelter-management"): FeatureFlagEntity {
+function buildFlag(key = "shelter_management"): FeatureFlagEntity {
   return Object.assign(new FeatureFlagEntity(), {
     id: "flag-id",
     key,
@@ -99,7 +99,7 @@ describe("feature flag write services", () => {
   });
 
   it("updates only supplied fields and preserves audience metadata", async () => {
-    const updated = await updateService.update("shelter-management", {
+    const updated = await updateService.update("shelter_management", {
       name: "Novo nome",
     });
 
@@ -109,7 +109,7 @@ describe("feature flag write services", () => {
   });
 
   it("clears public metadata without losing the selected audience", async () => {
-    const updated = await updateService.update("shelter-management", {
+    const updated = await updateService.update("shelter_management", {
       metadata: null,
     });
 
@@ -119,7 +119,7 @@ describe("feature flag write services", () => {
 
   it("toggles and deletes through the repository", async () => {
     await expect(
-      updateService.toggle("shelter-management"),
+      updateService.toggle("shelter_management"),
     ).resolves.toMatchObject({
       enabled: false,
     });
@@ -128,11 +128,11 @@ describe("feature flag write services", () => {
   });
 
   it("recusa remover ou renomear flag de fábrica (o boot a recriaria)", async () => {
-    await expect(deleteService.remove("shelter-management")).rejects.toThrow(
+    await expect(deleteService.remove("shelter_management")).rejects.toThrow(
       "não pode ser removida",
     );
     await expect(
-      updateService.update("shelter-management", { key: "outro" }),
+      updateService.update("shelter_management", { key: "outro" }),
     ).rejects.toThrow("não pode ser renomeada");
     expect(repository.remove).not.toHaveBeenCalled();
   });

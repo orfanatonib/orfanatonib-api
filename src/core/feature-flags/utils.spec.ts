@@ -2,6 +2,7 @@ import { UserRole } from "src/core/auth/auth.types";
 
 import { FeatureFlagEntity } from "./entities/feature-flag.entity";
 import {
+  catalogDefaultFor,
   audienceOfRoles,
   isTargetedForRole,
   metadataWithTargetRoles,
@@ -71,5 +72,20 @@ describe("feature flag utilities", () => {
 
   it("never enables a disabled flag", () => {
     expect(isTargetedForRole(buildFlag([], false), UserRole.ADMIN)).toBe(false);
+  });
+});
+
+describe("catalogDefaultFor", () => {
+  it("flag ausente do banco vale o padrão do catálogo, respeitando o público", () => {
+    expect(catalogDefaultFor("contact_form")).toBe(true);
+    expect(catalogDefaultFor("member_area")).toBe(false);
+    expect(catalogDefaultFor("member_area", "member")).toBe(true);
+    expect(catalogDefaultFor("integration", "member")).toBe(false);
+    expect(catalogDefaultFor("integration", "leader")).toBe(true);
+  });
+
+  it("flag desligada de fábrica e chave fora do catálogo ficam desligadas", () => {
+    expect(catalogDefaultFor("content_studio", "admin")).toBe(false);
+    expect(catalogDefaultFor("nao_existe", "admin")).toBe(false);
   });
 });

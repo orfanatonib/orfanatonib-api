@@ -107,4 +107,45 @@ describe("FeatureFlagGuard", () => {
       [expect.any(Function), expect.any(Function)],
     );
   });
+
+  describe("{ anyOf } (leitura compartilhada)", () => {
+    beforeEach(() => {
+      reflector.getAllAndOverride.mockReturnValue({ anyOf: ["a", "b"] });
+    });
+
+    it("passa quando só uma das flags está ligada para o ator", async () => {
+      featureFlags.isEnabledForRole.mockImplementation((key: string) =>
+        Promise.resolve(key === "b"),
+      );
+      await expect(guard.canActivate(contextFor("member"))).resolves.toBe(true);
+    });
+
+    it("bloqueia quando nenhuma está ligada", async () => {
+      featureFlags.isEnabledForRole.mockResolvedValue(false);
+      await expect(guard.canActivate(contextFor("member"))).rejects.toThrow(
+        AccessDeniedException,
+      );
+    });
+  });
+
+  it("array exige TODAS as flags", async () => {
+    reflector.getAllAndOverride.mockReturnValue(["a", "b"]);
+    featureFlags.isEnabledForRole.mockImplementation((key: string) =>
+      Promise.resolve(key === "a"),
+    );
+    await expect(guard.canActivate(contextFor("admin"))).rejects.toThrow(
+      AccessDeniedException,
+    );
+  });
+
+  it("o 403 traz details.code FEATURE_DISABLED", async () => {
+    featureFlags.isEnabledForRole.mockResolvedValue(false);
+    const error = await guard
+      .canActivate(contextFor("member"))
+      .catch((e: AccessDeniedException) => e);
+    expect(error).toBeInstanceOf(AccessDeniedException);
+    expect(
+      JSON.stringify((error as AccessDeniedException).getResponse()),
+    ).toContain("FEATURE_DISABLED");
+  });
 });

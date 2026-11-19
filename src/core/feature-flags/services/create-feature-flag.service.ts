@@ -2,7 +2,11 @@ import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
 
 import { ResourceConflictException } from "src/common/exceptions";
 
-import { DEFAULT_FEATURE_FLAGS, RETIRED_FEATURE_FLAGS } from "../constants";
+import {
+  DEFAULT_FEATURE_FLAGS,
+  FEATURE_FLAG_RENAMES,
+  RETIRED_FEATURE_FLAGS,
+} from "../constants";
 import { CreateFeatureFlagDto } from "../dto/create-feature-flag.dto";
 import { FeatureFlagResponseDto } from "../dto/feature-flag-response.dto";
 import { FeatureFlagEntity } from "../entities/feature-flag.entity";
@@ -33,6 +37,10 @@ export class CreateFeatureFlagService implements OnModuleInit {
     created: FeatureFlagResponseDto[];
     retired: string[];
   }> {
+    // Ordem fixa: copiar o estado das chaves antigas ANTES de semear o que
+    // falta (senão a nova nasceria com o padrão e ignoraria o que o admin
+    // configurou) e só depois aposentar.
+    await this.copyRenamedFlags();
     return {
       created: await this.seedDefaults(),
       retired: await this.retireLegacyFlags(),
@@ -90,6 +98,52 @@ export class CreateFeatureFlagService implements OnModuleInit {
 
     if (created.length > 0) this.getService.invalidateAll();
     return toFeatureFlagResponseList(created);
+  }
+
+  /**
+   * Cria a chave nova **copiando `enabled` e `targetRoles` da antiga** quando a
+   * nova ainda não existe. Idempotente; falha de uma chave não impede as demais.
+   * A antiga é mantida (rollout em dois passos — ver `FEATURE_FLAG_RENAMES`).
+   */
+  async copyRenamedFlags(): Promise<string[]> {
+    const copied: string[] = [];
+
+    for (const rename of FEATURE_FLAG_RENAMES) {
+      const source = await this.repository.findByKey(rename.from);
+      if (!source) continue;
+
+      for (const targetKey of rename.to) {
+        try {
+          if (await this.repository.findByKey(targetKey)) continue;
+          const definition = DEFAULT_FEATURE_FLAGS.find(
+            (flag) => flag.key === targetKey,
+          );
+          await this.repository.save(
+            this.repository.create({
+              key: targetKey,
+              name: definition?.name ?? source.name,
+              description: definition?.description ?? source.description,
+              enabled: source.enabled,
+              environment: source.environment,
+              metadata: source.metadata,
+            }),
+          );
+          copied.push(targetKey);
+          this.logger.log(
+            `Flag ${targetKey} criada copiando o estado de ${rename.from}`,
+          );
+        } catch (error: unknown) {
+          const message =
+            error instanceof Error ? error.message : String(error);
+          this.logger.warn(
+            `Não foi possível copiar ${rename.from} → ${targetKey}: ${message}`,
+          );
+        }
+      }
+    }
+
+    if (copied.length > 0) this.getService.invalidateAll();
+    return copied;
   }
 
   async retireLegacyFlags(): Promise<string[]> {
