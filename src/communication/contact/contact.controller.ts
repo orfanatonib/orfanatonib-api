@@ -20,6 +20,8 @@ import {
 import { CreateContactDto } from "./dto/create-contact.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
+import { randomUUID } from "crypto";
+import { isHoneypotTripped } from "./utils/contact-honeypot.util";
 import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
@@ -39,6 +41,11 @@ export class ContactController {
   @UseGuards(FeatureFlagGuard)
   @Post()
   async create(@Body() body: CreateContactDto): Promise<ContactReceiptDto> {
+    if (isHoneypotTripped(body.website)) {
+      // Robô: responde como se tivesse enviado, sem gravar nem avisar ninguém.
+      this.logger.warn("Contact form honeypot tripped; message discarded");
+      return { id: randomUUID(), createdAt: new Date() };
+    }
     this.logger.log("Creating new contact message");
     // Só os campos do DTO chegam ao serviço: `read`, `id` etc. nunca vêm do cliente.
     const result = await this.createContactService.execute({

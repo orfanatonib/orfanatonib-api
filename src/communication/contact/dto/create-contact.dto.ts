@@ -1,10 +1,16 @@
 import { Transform } from "class-transformer";
-import { IsEmail, IsNotEmpty, IsString, MaxLength } from "class-validator";
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from "class-validator";
 
 const trim = ({ value }: { value: unknown }): unknown =>
   typeof value === "string" ? value.trim() : value;
 
-/** Entrada pública do formulário de contato: só estes quatro campos são aceitos. */
+/** Entrada pública do formulário de contato: os quatro campos + a isca anti-robô (`website`). */
 export class CreateContactDto {
   @Transform(trim)
   @IsString()
@@ -28,4 +34,10 @@ export class CreateContactDto {
   @IsNotEmpty()
   @MaxLength(5000)
   message!: string;
+
+  /** Isca anti-robô: pessoas não a veem nem preenchem. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  website?: string;
 }
