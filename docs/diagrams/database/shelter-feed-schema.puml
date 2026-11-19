@@ -48,12 +48,21 @@ entity "image_section_comments" as comments {
   sectionId : uuid
   authorId : uuid
   content : varchar(500)
+  status : enum(pending, approved, rejected)
+  requestId : varchar(36) null
+  moderationReason : varchar(500) null
+  moderatedById : uuid null
+  reviewedAt : datetime null
   createdAt : datetime
   updatedAt : datetime
   ..
   INDEX (sectionId, createdAt)
+  INDEX (sectionId, status, createdAt)
+  INDEX (status, createdAt)
+  UNIQUE (authorId, requestId)
 }
 
+users |o--o{ comments : "moderador (ON DELETE SET NULL)"
 pages ||--o{ sections : "ON DELETE CASCADE"
 users |o--o{ sections : "autor (ON DELETE SET NULL)"
 sections ||--o{ celebrations : "ON DELETE CASCADE"
