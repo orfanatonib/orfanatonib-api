@@ -144,3 +144,14 @@ is required.
   "canonicalObjective": "Compreender o cuidado de Deus"
 }
 ```
+
+## Fila de geração: em processo (decisão vigente)
+A fila do Estúdio é `InMemoryAiJobQueue` atrás de `AiJobQueuePort`; **não há Redis/BullMQ**. Consequências: jobs em voo morrem no deploy e só voltam pelo reconciliador (a cada 60 s, por lease vencido); a concorrência (`CS_QUEUE_CONCURRENCY`, padrão 2) vale por processo, sem fila compartilhada entre instâncias. Trocar por BullMQ exige autorização de infra (regra 16) e um novo adaptador da mesma porta.
+
+## Acompanhamento pelo front
+- `POST .../stages/:stageId/generations` responde **202** (aceito na fila).
+- `GET .../stages/:stageId/generations/latest` devolve o job mais recente da etapa (vazio se nunca houve): `status` (`PENDING`, `RUNNING`, `RETRY_SCHEDULED`, `SUCCEEDED`, `FAILED`, `CANCELLED`), `attempts` e `errorCode`.
+- O front faz polling a cada 2 s (teto de 5 min), cancelável, e mostra mensagem por `errorCode`.
+
+## Tipos de erro do provedor
+`TIMEOUT`, `RATE_LIMIT`, `SERVER`, `NETWORK` (tentam de novo); `AUTHENTICATION`, `QUOTA`, `SAFETY`, `SCHEMA`, `NOT_FOUND_MODEL`, `CONTEXT_LENGTH`, `INVALID_REQUEST`, `CANCELLED`, `UNKNOWN`. A tradução de resposta HTTP é única (`ai/utils/provider-http-error.util.ts`), usada por OpenAI e Gemini.
