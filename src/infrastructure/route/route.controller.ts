@@ -11,7 +11,7 @@ import {
 import { Request } from "express";
 import { AuthContextService } from "src/core/auth/services/auth-context.service";
 import { RouteService } from "./services/route.service";
-import { RouteEntity } from "./route-page.entity";
+import { RouteResponseDto, toRouteResponse } from "./dto/route-response.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 import { CleanupOrphanRoutesService } from "./services/cleanup-orphan-routes.service";
@@ -28,10 +28,11 @@ export class RouteController {
 
   /** Anônimo recebe só rotas públicas; sessão válida recebe todas. */
   @Get()
-  async findAll(@Req() req: Request): Promise<RouteEntity[]> {
-    return this.routeService.findAllRoutes({
+  async findAll(@Req() req: Request): Promise<RouteResponseDto[]> {
+    const routes = await this.routeService.findAllRoutes({
       includeNonPublic: await this.authContext.isLoggedIn(req),
     });
+    return routes.map(toRouteResponse);
   }
 
   @Get("orphans/check")
@@ -53,13 +54,13 @@ export class RouteController {
   async findOne(
     @Param("id") id: string,
     @Req() req: Request,
-  ): Promise<RouteEntity> {
+  ): Promise<RouteResponseDto> {
     const route = await this.routeService.findById(id, {
       includeNonPublic: await this.authContext.isLoggedIn(req),
     });
     if (!route) {
       throw new NotFoundException("Route not found");
     }
-    return route;
+    return toRouteResponse(route);
   }
 }

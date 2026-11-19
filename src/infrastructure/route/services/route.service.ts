@@ -1,3 +1,4 @@
+import { RouteEntityType } from "../route-entity-type.enum";
 import {
   Injectable,
   Logger,
@@ -133,7 +134,7 @@ export class RouteService {
           current: false,
           image: meditationData.media?.url,
           idToFetch: meditationData.id,
-          entityType: "MeditationDay",
+          entityType: RouteEntityType.MeditationDay,
           entityId: meditationData.id,
           type: "page",
           createdAt: new Date(),
