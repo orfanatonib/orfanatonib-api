@@ -13,6 +13,8 @@ import { GetImagePageService } from "./services/get-image-page.service";
 import { DeleteImagePageService } from "./services/delete-image-page.service";
 import { UpdateImagePageService } from "./services/update-image-page.service";
 import { AuthModule } from "src/core/auth/auth.module";
+import { FeedCelebrationModule } from "../feed-celebration/feed-celebration.module";
+import { FeedPhotoCommentModule } from "../feed-photo-comment/feed-photo-comment.module";
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { AuthModule } from "src/core/auth/auth.module";
     RouteModule,
     MediaModule,
     AuthModule,
+    FeedCelebrationModule,
+    FeedPhotoCommentModule,
   ],
   controllers: [ImageController],
   providers: [

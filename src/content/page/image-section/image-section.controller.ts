@@ -13,6 +13,8 @@ import {
   BadRequestException,
   NotFoundException,
   Req,
+  Query,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import type { AuthenticatedRequest } from "src/core/auth/auth.types";
 import { UserRole } from "src/core/auth/auth.types";
@@ -74,7 +76,11 @@ export class ImageSectionController {
 
     const filesDict = this.mapFiles(files);
     this.logger.log("Creating new image section");
-    const result = await this.createService.createSection(dto, filesDict);
+    const result = await this.createService.createSection(
+      dto,
+      filesDict,
+      req.user?.userId ?? null,
+    );
     this.logger.log(`Image section created successfully: ${result.id}`);
 
     return result;
@@ -133,8 +139,11 @@ export class ImageSectionController {
   @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(AdminRoleGuard)
-  async getAll(): Promise<ImageSectionResponseDto[]> {
-    const result = await this.getService.findAll();
+  async getAll(
+    @Query("authorId", new ParseUUIDPipe({ optional: true }))
+    authorId?: string,
+  ): Promise<ImageSectionResponseDto[]> {
+    const result = await this.getService.findAll(authorId);
     return result;
   }
 

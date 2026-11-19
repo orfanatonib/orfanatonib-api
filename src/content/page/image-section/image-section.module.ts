@@ -30,5 +30,6 @@ import { UserModule } from "src/core/user/user.module";
     GetImageSectionService,
     UpdateImageSectionService,
   ],
+  exports: [GetImageSectionService],
 })
 export class ImageSectionModule {}

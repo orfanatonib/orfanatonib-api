@@ -44,15 +44,20 @@ export class UpdateImageSectionService {
     let committed = false;
 
     try {
-      const section = await this.sectionRepo.findOneBy({ id });
+      const section = await this.sectionRepo.findOne({
+        where: { id },
+        relations: ["author"],
+      });
       if (!section) {
         throw new NotFoundException("Section not found");
       }
 
-      const pageIdFromEnv = this.configService.get<string>(
-        "FEED_ORFANATO_PAGE_ID",
-      );
-      const page = await this.pageRepo.findOneBy({ id: pageIdFromEnv });
+      const targetPageId =
+        dto.pageId ?? this.configService.get<string>("FEED_ORFANATO_PAGE_ID");
+      // `findOneBy({ id: undefined })` casaria com qualquer galeria: exige id.
+      const page = targetPageId
+        ? await this.pageRepo.findOneBy({ id: targetPageId })
+        : null;
       if (!page) {
         throw new NotFoundException("Default page not found");
       }

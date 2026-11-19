@@ -1,0 +1,74 @@
+@startuml shelter-feed-schema
+title Feed dos abrigos - autoria, celebrações e comentários
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam EntityBorderColor #37474F
+
+entity "users" as users {
+  * id : uuid
+  --
+  name : varchar
+}
+
+entity "image_pages" as pages {
+  * id : uuid
+  --
+  name : varchar
+  public : boolean
+}
+
+entity "image_sections" as sections {
+  * id : uuid
+  --
+  caption : varchar
+  description : text
+  public : boolean
+  page_id : uuid?
+  authorId : uuid? <<novo>>
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "image_section_celebrations" as celebrations {
+  * id : uuid
+  --
+  sectionId : uuid
+  userId : uuid
+  createdAt : datetime
+  updatedAt : datetime
+  ..
+  UNIQUE (sectionId, userId)
+}
+
+entity "image_section_comments" as comments {
+  * id : uuid
+  --
+  sectionId : uuid
+  authorId : uuid
+  content : varchar(500)
+  createdAt : datetime
+  updatedAt : datetime
+  ..
+  INDEX (sectionId, createdAt)
+}
+
+pages ||--o{ sections : "ON DELETE CASCADE"
+users |o--o{ sections : "autor (ON DELETE SET NULL)"
+sections ||--o{ celebrations : "ON DELETE CASCADE"
+users ||--o{ celebrations : "ON DELETE CASCADE"
+sections ||--o{ comments : "ON DELETE CASCADE"
+users ||--o{ comments : "ON DELETE CASCADE"
+
+note bottom of celebrations
+  Uma celebração por pessoa e publicação.
+  O INSERT duplicado (corrida) é absorvido
+  pelo serviço (ER_DUP_ENTRY).
+end note
+
+note bottom of comments
+  Texto sem e-mail, telefone ou link (400).
+  Visível só com sessão.
+end note
+@enduml

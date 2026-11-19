@@ -6,6 +6,8 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ## [Unreleased] - 2026-10-02 - ESTÚDIO ORFANATO
 
+- **ADD**: feed v2 (plano 36): autoria da publicação (`image_sections.authorId`), "celebrar" (`image_section_celebrations`, único por pessoa) e comentários nas fotos (`image_section_comments`, 500 caracteres, sem e-mail/telefone/link, só com sessão). Flags `shelter_feed_celebrations` e `shelter_feed_comments`. Detalhes em `docs/modules/shelter-feed`.
+- **ADD**: `GET /image-sections?authorId=` (moderação por autor) e `pageId` opcional em `PATCH /image-sections/:id`.
 - **ADD**: catálogo de **53 flags de interface** em `snake_case` com público por flag, `FeatureFlagGuard` ciente do perfil (`anyOf`, padrão do catálogo, `403 FEATURE_DISABLED`), `@FeatureFlag` nos handlers e teste de arquitetura (`feature-flags.architecture.spec.ts`).
 - **REMOVE**: flag `special_family_day` (recurso inexistente) e o conceito de `environment` das flags (entidade, DTOs, rota `GET /feature-flags/environment/:environment`; a coluna segue no banco até a migration).
 - **ADD**: upload valida a **assinatura dos bytes** contra o MIME declarado (PNG, JPEG, GIF, WebP, PDF); conteúdo que não bate é recusado (`MEDIA_CONTENT`).
@@ -956,3 +958,7 @@ Refatoração completa de `src/shelter/sheltered/` para o padrão obrigatório d
 
 - Package creation accepts an optional audience; legacy four-track requests remain compatible.
 - Catalog exposes Baby, Crianças, Adolescentes and Adultos with `allAudiencesRequired: false`.
+
+### Presença — 2026-11-19
+- Gravação em lote atômica, com validação completa antes da persistência.
+- Filtros de período aplicados separadamente à visita e à reunião.

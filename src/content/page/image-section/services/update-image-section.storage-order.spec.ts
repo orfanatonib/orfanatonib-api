@@ -74,7 +74,7 @@ function setup() {
     s3 as never,
     processor as never,
     {
-      findOneBy: jest.fn().mockResolvedValue({ id: "s1", caption: "c" }),
+      findOne: jest.fn().mockResolvedValue({ id: "s1", caption: "c" }),
     } as never,
     { findOneBy: jest.fn().mockResolvedValue({ id: "page1" }) } as never,
   );

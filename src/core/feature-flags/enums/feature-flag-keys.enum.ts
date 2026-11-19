@@ -10,6 +10,8 @@ export enum FeatureFlagKeys {
   CONTACT_FORM = "contact_form",
   EVENTS_SECTION = "events_section",
   SHELTER_FEED = "shelter_feed",
+  SHELTER_FEED_CELEBRATIONS = "shelter_feed_celebrations",
+  SHELTER_FEED_COMMENTS = "shelter_feed_comments",
   HOME_COMMENTS = "home_comments",
   PUBLIC_GALLERIES = "public_galleries",
   PUBLIC_VIDEOS = "public_videos",

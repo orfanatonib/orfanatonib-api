@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsBoolean,
+  IsUUID,
   IsString,
   ValidateNested,
   IsOptional,
@@ -19,6 +20,11 @@ export class UpdateImageSectionDto {
   @IsBoolean({ message: 'O campo "public" deve ser booleano.' })
   @Type(() => Boolean)
   public: boolean = false;
+
+  /** Galeria de destino; omitido = galeria do feed (`FEED_ORFANATO_PAGE_ID`). */
+  @IsOptional()
+  @IsUUID(undefined, { message: 'O campo "pageId" deve ser um UUID.' })
+  pageId?: string;
 
   @IsArray({ message: 'O campo "mediaItems" deve ser um array.' })
   @ValidateNested({ each: true })

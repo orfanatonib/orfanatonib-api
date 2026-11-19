@@ -123,6 +123,22 @@ export const DEFAULT_FEATURE_FLAGS = [
     targetRoles: [],
   },
   {
+    key: "shelter_feed_celebrations",
+    name: "Celebrar publicações do feed",
+    description:
+      "Interruptor do recurso: celebrar publicações do feed dos abrigos.",
+    enabled: true,
+    targetRoles: [],
+  },
+  {
+    key: "shelter_feed_comments",
+    name: "Comentários nas fotos do feed",
+    description:
+      "Interruptor do recurso: comentários nas fotos do feed dos abrigos.",
+    enabled: true,
+    targetRoles: [],
+  },
+  {
     key: "home_comments",
     name: "Depoimentos na página inicial",
     description: "Interruptor do recurso: depoimentos na página inicial.",

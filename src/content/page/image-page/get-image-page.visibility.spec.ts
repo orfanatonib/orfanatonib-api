@@ -32,12 +32,19 @@ function setup(loggedIn: boolean) {
   };
   const sections = { findAndCount: jest.fn(async () => [[], 0]) };
   const media = { findManyMediaItemsByTargets: jest.fn(async () => []) };
-  const auth = { isLoggedIn: jest.fn(async () => loggedIn) };
+  const auth = {
+    isLoggedIn: jest.fn(async () => loggedIn),
+    getUserId: jest.fn(async () => (loggedIn ? "viewer" : null)),
+  };
+  const celebrations = { summarize: jest.fn(async () => new Map()) };
+  const comments = { countBySectionIds: jest.fn(async () => new Map()) };
   const service = new GetImagePageService(
     pages as never,
     sections as never,
     media as never,
     auth as never,
+    celebrations as never,
+    comments as never,
   );
   return { pages, sections, service };
 }

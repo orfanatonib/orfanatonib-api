@@ -14,6 +14,8 @@ import { IdeasPageEntity } from "../src/content/page/ideas-page/entities/ideas-p
 import { IdeasSectionEntity } from "../src/content/page/ideas-section/entities/ideas-section.entity";
 import { ImagePageEntity } from "../src/content/page/image-page/entities/image-page.entity";
 import { ImageSectionEntity } from "../src/content/page/image-page/entities/image-section.entity";
+import { ImageSectionCelebrationEntity } from "../src/content/page/feed-celebration/entities/image-section-celebration.entity";
+import { ImageSectionCommentEntity } from "../src/content/page/feed-photo-comment/entities/image-section-comment.entity";
 import { InformativeEntity } from "../src/content/informative/entities/informative.entity";
 import { IntegrationEntity } from "../src/shelter/integration/entities/integration.entity";
 import { LeaderProfileEntity } from "../src/shelter/leader-profile/entities/leader-profile.entity/leader-profile.entity";
@@ -51,6 +53,8 @@ export const DATABASE_ENTITIES = [
   EventEntity,
   ImagePageEntity,
   ImageSectionEntity,
+  ImageSectionCelebrationEntity,
+  ImageSectionCommentEntity,
   RouteEntity,
   UserEntity,
   VideosPage,

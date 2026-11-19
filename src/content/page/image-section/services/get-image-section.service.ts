@@ -13,8 +13,8 @@ export class GetImageSectionService {
     private readonly mediaItemProcessor: MediaItemProcessor,
   ) {}
 
-  async findAll(): Promise<ImageSectionResponseDto[]> {
-    const sections = await this.sectionRepository.findAllOrfaSections();
+  async findAll(authorId?: string): Promise<ImageSectionResponseDto[]> {
+    const sections = await this.sectionRepository.findAllOrfaSections(authorId);
     const sectionIds = sections.map((section) => section.id);
 
     const mediaItems =
@@ -37,8 +37,27 @@ export class GetImageSectionService {
     );
   }
 
+  /**
+   * Garante que a publicação existe no feed (anexada a uma galeria) e é visível
+   * para quem pergunta: visitante só enxerga seção e galeria públicas; com
+   * sessão, todas — as mesmas regras de `GET /image-pages/:id/sections`.
+   * Sem permissão devolve 404 (não revela a existência).
+   */
+  async assertFeedSectionVisible(
+    sectionId: string,
+    loggedIn: boolean,
+  ): Promise<void> {
+    const section = await this.sectionRepository.findPublishedById(sectionId);
+    const hidden =
+      !section || (!loggedIn && !(section.public && section.page?.public));
+    if (hidden) throw new NotFoundException("Publicação não encontrada.");
+  }
+
   async findOne(id: string): Promise<ImageSectionResponseDto> {
-    const section = await this.sectionRepository.findOneBy({ id });
+    const section = await this.sectionRepository.findOne({
+      where: { id },
+      relations: ["author"],
+    });
     if (!section) {
       throw new NotFoundException(`Seção com id=${id} não encontrada`);
     }

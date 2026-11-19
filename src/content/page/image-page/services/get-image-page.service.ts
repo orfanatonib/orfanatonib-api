@@ -9,6 +9,9 @@ import { Request } from "express";
 import type { FindOptionsWhere } from "typeorm";
 import { ImageSectionEntity } from "../entities/image-section.entity";
 import { AuthContextService } from "src/core/auth/services/auth-context.service";
+import { GetCelebrationService } from "src/content/page/feed-celebration/services/get-celebration.service";
+import { GetFeedCommentService } from "src/content/page/feed-photo-comment/services/get-feed-comment.service";
+import { FeedSectionExtras } from "../types";
 
 @Injectable()
 export class GetImagePageService {
@@ -19,6 +22,8 @@ export class GetImagePageService {
     private readonly sectionRepository: ImageSectionRepository,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly authContext: AuthContextService,
+    private readonly celebrations: GetCelebrationService,
+    private readonly comments: GetFeedCommentService,
   ) {}
 
   /** Galerias não públicas só aparecem com sessão válida. */
@@ -92,7 +97,8 @@ export class GetImagePageService {
   ): Promise<PaginatedImageSectionResponseDto> {
     const offset = (page - 1) * limit;
 
-    const loggedIn = await this.authContext.isLoggedIn(req);
+    const viewerId = await this.authContext.getUserId(req);
+    const loggedIn = viewerId !== null;
 
     const imagePage = await this.imagePageRepository.findById(pageId);
     if (!imagePage || (!loggedIn && !imagePage.public)) {
@@ -109,6 +115,8 @@ export class GetImagePageService {
 
     const [sections, total] = await this.sectionRepository.findAndCount({
       where,
+      // O nome do autor só é carregado (e exibido) para quem tem sessão.
+      relations: loggedIn ? ["author"] : [],
       order: { createdAt: "DESC" },
       skip: offset,
       take: limit,
@@ -121,15 +129,41 @@ export class GetImagePageService {
         "ImagesPage",
       );
     const mediaMap = this.groupMediaBySectionId(mediaItems);
+    const extrasById = await this.buildFeedExtras(sectionIds, viewerId);
 
     return PaginatedImageSectionResponseDto.fromEntities(
       imagePage,
       sections,
       mediaMap,
+      extrasById,
       page,
       limit,
       total,
     );
+  }
+
+  /** Celebrações e comentários em lote (sem N+1); visitante só vê a contagem de celebrações. */
+  private async buildFeedExtras(
+    sectionIds: string[],
+    viewerId: string | null,
+  ): Promise<Map<string, FeedSectionExtras>> {
+    const [celebrations, commentCounts] = await Promise.all([
+      this.celebrations.summarize(sectionIds, viewerId),
+      viewerId
+        ? this.comments.countBySectionIds(sectionIds)
+        : Promise.resolve(new Map<string, number>()),
+    ]);
+    const extras = new Map<string, FeedSectionExtras>();
+    for (const id of sectionIds) {
+      const celebration = celebrations.get(id);
+      extras.set(id, {
+        showAuthor: viewerId !== null,
+        celebrationCount: celebration?.count ?? 0,
+        celebratedByMe: celebration?.celebratedByMe ?? false,
+        commentCount: commentCounts.get(id) ?? 0,
+      });
+    }
+    return extras;
   }
 
   private groupMediaBySectionId(

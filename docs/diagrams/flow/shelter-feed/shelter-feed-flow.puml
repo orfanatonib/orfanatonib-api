@@ -1,0 +1,42 @@
+@startuml shelter-feed-flow
+title Feed v2 - celebrar e comentar
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+
+actor "Pessoa logada" as U
+participant "App (feed)" as App
+participant "FeedCelebrationController" as CC
+participant "UpdateCelebrationService" as US
+participant "GetImageSectionService" as SS
+database "MySQL" as DB
+
+== Celebrar (alternar) ==
+U -> App : clique em "Celebrar"
+App -> App : otimista: +1 / -1 e aria-pressed
+App -> CC : POST /feed-sections/:id/celebration/toggle
+CC -> CC : JwtAuthGuard + flags shelter_feed e shelter_feed_celebrations
+CC -> US : toggle(sectionId, userId)
+US -> SS : assertFeedSectionVisible (404 se oculta)
+US -> DB : DELETE (seção, usuário)
+alt nada removido
+  US -> DB : INSERT (ER_DUP_ENTRY é absorvido)
+end
+US --> App : { count, celebratedByMe } (verdade do servidor)
+App -> App : reconcilia; em erro, rollback + aviso
+
+== Comentar ==
+U -> App : envia comentário
+App -> "FeedPhotoCommentController" : POST /feed-sections/:id/comments
+"FeedPhotoCommentController" -> "CreateFeedCommentService" : create(actor, texto)
+"CreateFeedCommentService" -> SS : assertFeedSectionVisible
+"CreateFeedCommentService" -> "CreateFeedCommentService" : normaliza, limite 500, recusa e-mail/telefone/link
+"CreateFeedCommentService" -> DB : INSERT image_section_comments
+"CreateFeedCommentService" --> App : comentário (nome público)
+
+== Remover ==
+U -> App : remover comentário
+App -> "FeedPhotoCommentController" : DELETE /feed-section-comments/:id
+"FeedPhotoCommentController" -> "DeleteFeedCommentService" : remove(actor)
+"DeleteFeedCommentService" -> DB : autor remove o seu; admin remove qualquer (403 para os demais)
+@enduml

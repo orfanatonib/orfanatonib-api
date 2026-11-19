@@ -28,6 +28,7 @@ export class CreateImageSectionService {
   async createSection(
     dto: CreateImageSectionDto,
     filesDict: Record<string, Express.Multer.File>,
+    authorId: string | null = null,
   ): Promise<ImageSectionResponseDto> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -39,6 +40,7 @@ export class CreateImageSectionService {
         description: dto.description,
         public: dto.public || false,
         page: null,
+        author: authorId ? { id: authorId } : null,
       });
 
       const savedSection = await queryRunner.manager.save(section);
@@ -64,7 +66,18 @@ export class CreateImageSectionService {
 
       void this.notifyAdmins(savedSection.caption, mediaItems.length);
 
-      return ImageSectionResponseDto.fromEntity(savedSection, mediaItems);
+      // Recarrega com o autor para o DTO trazer o nome público.
+      const withAuthor = authorId
+        ? await this.imageSectionRepository.findOne({
+            where: { id: savedSection.id },
+            relations: ["author"],
+          })
+        : null;
+
+      return ImageSectionResponseDto.fromEntity(
+        withAuthor ?? savedSection,
+        mediaItems,
+      );
     } catch (error) {
       await queryRunner.rollbackTransaction();
       this.logger.error("Error creating section", error);

@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { DataSource, Repository, IsNull } from "typeorm";
+import { DataSource, Repository, IsNull, Not } from "typeorm";
 import { ImageSectionEntity } from "../../image-page/entities/image-section.entity";
 
 @Injectable()
@@ -11,6 +11,14 @@ export class ImageSectionRepository extends Repository<ImageSectionEntity> {
   async findByPageId(pageId: string): Promise<ImageSectionEntity[]> {
     return this.find({
       where: { page: { id: pageId } },
+      relations: ["page"],
+    });
+  }
+
+  /** Seção já publicada numa galeria (com a página carregada), ou `null`. */
+  async findPublishedById(id: string): Promise<ImageSectionEntity | null> {
+    return this.findOne({
+      where: { id, page: Not(IsNull()) },
       relations: ["page"],
     });
   }
@@ -41,9 +49,14 @@ export class ImageSectionRepository extends Repository<ImageSectionEntity> {
     return this.save(created);
   }
 
-  async findAllOrfaSections(): Promise<ImageSectionEntity[]> {
+  /** Fila de moderação (sem galeria), opcionalmente só de um autor. */
+  async findAllOrfaSections(authorId?: string): Promise<ImageSectionEntity[]> {
     return this.find({
-      where: { page: IsNull() },
+      where: {
+        page: IsNull(),
+        ...(authorId ? { author: { id: authorId } } : {}),
+      },
+      relations: ["author"],
     });
   }
 }
