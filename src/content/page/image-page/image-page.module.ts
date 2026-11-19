@@ -16,10 +16,7 @@ import { AuthModule } from "src/core/auth/auth.module";
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([
-      ImagePageEntity,
-      ImageSectionEntity,
-    ]),
+    TypeOrmModule.forFeature([ImagePageEntity, ImageSectionEntity]),
     RouteModule,
     MediaModule,
     AuthModule,

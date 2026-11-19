@@ -38,6 +38,9 @@ export class CreateImagePageService {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+    // As mídias são gravadas pelo processador fora desta transação: se algo falhar
+    // depois, o banco desfaz as seções mas as linhas de mídia e os objetos ficariam.
+    const mediaMap = new Map<string, MediaItemEntity[]>();
 
     try {
       const gallery = queryRunner.manager.create(ImagePageEntity, {
@@ -71,7 +74,6 @@ export class CreateImagePageService {
       savedGallery.route = route;
       await queryRunner.manager.save(savedGallery);
 
-      const mediaMap = new Map<string, MediaItemEntity[]>();
       const sectionList: ImageSectionEntity[] = [];
 
       for (const sectionInput of sections) {
@@ -107,7 +109,7 @@ export class CreateImagePageService {
             MediaTargetType.ImagesPage,
             filesDict,
             this.awsS3Service.upload.bind(this.awsS3Service),
-this.awsS3Service.delete.bind(this.awsS3Service),
+            this.awsS3Service.delete.bind(this.awsS3Service),
           );
         mediaMap.set(savedSection.id, mediaItems);
       }
@@ -120,11 +122,29 @@ this.awsS3Service.delete.bind(this.awsS3Service),
     } catch (error) {
       this.logger.error("Error creating gallery. Rolling back.", error);
       await queryRunner.rollbackTransaction();
+      await this.discardCreatedMedia(mediaMap);
       throw new BadRequestException(
         "Erro ao criar a galeria. Nenhum dado foi salvo.",
       );
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  /** Melhor esforço: remove linhas e objetos de mídia que ficaram sem seção após o rollback. */
+  private async discardCreatedMedia(
+    mediaMap: Map<string, MediaItemEntity[]>,
+  ): Promise<void> {
+    for (const items of mediaMap.values()) {
+      if (items.length === 0) continue;
+      try {
+        await this.mediaItemProcessor.deleteMediaItems(items, (url: string) =>
+          this.awsS3Service.delete(url),
+        );
+      } catch (error: unknown) {
+        const reason = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Mídia órfã após rollback da galeria: ${reason}`);
+      }
     }
   }
 }
