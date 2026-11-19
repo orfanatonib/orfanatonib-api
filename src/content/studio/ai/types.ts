@@ -6,6 +6,8 @@ export interface StructuredTextGenerationRequest {
   readonly instructions: readonly string[];
   readonly input: Record<string, unknown>;
   readonly outputSchema: Record<string, unknown>;
+  /** Teto de tokens de saída deste pedido (limitado por `resolveMaxOutputTokens`). */
+  readonly maxOutputTokens?: number;
 }
 
 export interface StructuredTextGenerationResult {
@@ -20,6 +22,9 @@ export interface ImageGenerationRequest {
   readonly correlationId: string;
   readonly instructions: readonly string[];
   readonly input: Record<string, unknown>;
+  /** Tamanho e qualidade da imagem deste pedido (valores fora da lista usam o padrão). */
+  readonly size?: string;
+  readonly quality?: string;
 }
 
 export interface ImageGenerationResult {

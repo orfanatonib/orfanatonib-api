@@ -23,6 +23,11 @@ import {
   StructuredTextGenerationResult,
 } from "./types";
 import { validateStructuredContent } from "./utils/structured-content-policy.util";
+import {
+  geminiAspectRatio,
+  resolveImageSize,
+  resolveMaxOutputTokens,
+} from "./utils/generation-options.util";
 import { containsSensitiveContentInstruction } from "./utils/ai-provider-policy.util";
 
 interface GeminiErrorBody {
@@ -32,7 +37,12 @@ interface GeminiErrorBody {
 interface GeminiResponseBody {
   candidates?: Array<{
     finishReason?: string;
-    content?: { parts?: Array<{ text?: string }> };
+    content?: {
+      parts?: Array<{
+        text?: string;
+        inlineData?: { mimeType?: string; data?: string };
+      }>;
+    };
   }>;
   promptFeedback?: { blockReason?: string };
   usageMetadata?: {
@@ -44,7 +54,7 @@ interface GeminiResponseBody {
 
 const BASE_URL = "https://generativelanguage.googleapis.com/v1beta";
 
-/** Adaptador do Gemini (texto estruturado). Imagem ainda não é suportada por este provedor. */
+/** Adaptador do Gemini: texto estruturado e imagem (modelo de imagem escolhido no painel). */
 @Injectable()
 export class GeminiGenerationGateway extends AiGenerationGateway {
   private readonly providerConfig = AI_PROVIDER_CONFIG_KEYS[AiProvider.GEMINI];
@@ -85,7 +95,7 @@ export class GeminiGenerationGateway extends AiGenerationGateway {
           generationConfig: {
             responseMimeType: "application/json",
             responseSchema: request.outputSchema,
-            maxOutputTokens: 4_000,
+            maxOutputTokens: resolveMaxOutputTokens(request.maxOutputTokens),
           },
         }),
       },
@@ -133,13 +143,67 @@ export class GeminiGenerationGateway extends AiGenerationGateway {
     };
   }
 
-  generateImage(
+  async generateImage(
     request: ImageGenerationRequest,
   ): Promise<ImageGenerationResult> {
-    void request;
-    return Promise.reject(
-      new AiProviderRequestError(AiProviderErrorKind.SCHEMA),
+    this.assertSafeRequest(request.instructions, request.input);
+    const { model, apiKey } = await this.runtime(
+      AiGenerationCapability.IMAGE_GENERATION,
     );
+    const startedAt = Date.now();
+    const payload = await this.request<GeminiResponseBody>(
+      `/models/${encodeURIComponent(model)}:generateContent`,
+      {
+        method: "POST",
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [
+                {
+                  text: [
+                    "Crie somente ilustração genérica, sem rostos, sem pessoas reais ou identificáveis e sem texto incorporado.",
+                    ...request.instructions,
+                    JSON.stringify(request.input),
+                  ].join("\n\n"),
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            responseModalities: ["IMAGE"],
+            imageConfig: {
+              aspectRatio: geminiAspectRatio(resolveImageSize(request.size)),
+            },
+          },
+        }),
+      },
+      apiKey,
+    );
+    if (payload.promptFeedback?.blockReason)
+      throw new AiProviderRequestError(AiProviderErrorKind.SAFETY);
+    const candidate = payload.candidates?.[0];
+    if (candidate?.finishReason === "SAFETY")
+      throw new AiProviderRequestError(AiProviderErrorKind.SAFETY);
+    const inline = (candidate?.content?.parts ?? []).find(
+      (part) => part.inlineData?.data,
+    )?.inlineData;
+    if (!inline?.data)
+      throw new AiProviderRequestError(AiProviderErrorKind.SCHEMA);
+    const bytes = new Uint8Array(Buffer.from(inline.data, "base64"));
+    if (bytes.byteLength === 0 || bytes.byteLength > 10 * 1024 * 1024)
+      throw new AiProviderRequestError(AiProviderErrorKind.SCHEMA);
+    const mediaType = inline.mimeType ?? "image/png";
+    if (!/^image\/(png|jpeg|webp)$/.test(mediaType))
+      throw new AiProviderRequestError(AiProviderErrorKind.SCHEMA);
+
+    return {
+      provider: AiProvider.GEMINI,
+      model,
+      mediaType,
+      bytes,
+      durationMs: Date.now() - startedAt,
+    };
   }
 
   listModels(

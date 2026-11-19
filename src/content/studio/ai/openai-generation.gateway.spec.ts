@@ -129,4 +129,44 @@ describe("OpenAiGenerationGateway", () => {
     });
     fetchSpy.mockRestore();
   });
+
+  it("usa os parâmetros do pedido (tokens, tamanho, qualidade) dentro dos limites", async () => {
+    const fetchSpy = jest.spyOn(globalThis, "fetch");
+    const respond = (body: unknown) =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve(body),
+      } as Response);
+    const gateway = new OpenAiGenerationGateway(config);
+
+    fetchSpy.mockReturnValueOnce(
+      respond({ output: [{ content: [{ type: "output_text", text: "{}" }] }] }),
+    );
+    await gateway.generateStructuredText({
+      correlationId: "c",
+      instructions: [],
+      input: {},
+      outputSchema: { type: "object" },
+      maxOutputTokens: 9_999_999,
+    });
+    const text = JSON.parse(
+      (fetchSpy.mock.calls[0][1] as RequestInit).body as string,
+    ) as { max_output_tokens: number };
+    expect(text.max_output_tokens).toBe(16_000);
+
+    fetchSpy.mockReturnValueOnce(respond({ data: [{ b64_json: "iVBORw0=" }] }));
+    await gateway.generateImage({
+      correlationId: "c",
+      instructions: [],
+      input: {},
+      size: "1536x1024",
+      quality: "bogus",
+    });
+    const image = JSON.parse(
+      (fetchSpy.mock.calls[1][1] as RequestInit).body as string,
+    ) as { size: string; quality: string };
+    expect(image).toMatchObject({ size: "1536x1024", quality: "low" });
+    fetchSpy.mockRestore();
+  });
 });

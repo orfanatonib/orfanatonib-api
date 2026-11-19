@@ -23,6 +23,11 @@ import {
 import { AiProvider } from "./enums/ai-provider.enum";
 import { StudioProviderOverrides } from "./provider-overrides.service";
 import { validateStructuredContent } from "./utils/structured-content-policy.util";
+import {
+  resolveImageQuality,
+  resolveImageSize,
+  resolveMaxOutputTokens,
+} from "./utils/generation-options.util";
 import { containsSensitiveContentInstruction } from "./utils/ai-provider-policy.util";
 
 interface OpenAiErrorBody {
@@ -81,7 +86,7 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
         method: "POST",
         body: JSON.stringify({
           model,
-          max_output_tokens: 4_000,
+          max_output_tokens: resolveMaxOutputTokens(request.maxOutputTokens),
           instructions: [
             "Crie material pastoral seguro, sem dados pessoais ou identificação de pessoas reais.",
             ...request.instructions,
@@ -161,8 +166,8 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
             ...request.instructions,
             JSON.stringify(request.input),
           ].join("\n\n"),
-          size: "1024x1024",
-          quality: "low",
+          size: resolveImageSize(request.size),
+          quality: resolveImageQuality(request.quality),
           output_format: "png",
           n: 1,
         }),

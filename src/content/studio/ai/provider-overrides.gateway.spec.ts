@@ -23,13 +23,11 @@ afterEach(() => jest.restoreAllMocks());
 describe("o painel de provedores vale para o Estúdio (sem variável de ambiente)", () => {
   it("OpenAI: usa a chave e o modelo de texto SALVOS no painel", async () => {
     const overrides = {
-      forProvider: jest
-        .fn()
-        .mockResolvedValue({
-          apiKey: "chave-do-painel",
-          textModel: "gpt-painel",
-          imageModel: "img",
-        }),
+      forProvider: jest.fn().mockResolvedValue({
+        apiKey: "chave-do-painel",
+        textModel: "gpt-painel",
+        imageModel: "img",
+      }),
     };
     const fetchSpy = respond({
       output: [{ content: [{ type: "output_text", text: '{"ok":true}' }] }],
@@ -50,13 +48,11 @@ describe("o painel de provedores vale para o Estúdio (sem variável de ambiente
 
   it("Gemini: usa a chave (header) e o modelo SALVOS no painel", async () => {
     const overrides = {
-      forProvider: jest
-        .fn()
-        .mockResolvedValue({
-          apiKey: "chave-gemini-painel",
-          textModel: "gemini-painel",
-          imageModel: "img",
-        }),
+      forProvider: jest.fn().mockResolvedValue({
+        apiKey: "chave-gemini-painel",
+        textModel: "gemini-painel",
+        imageModel: "img",
+      }),
     };
     const fetchSpy = respond({
       candidates: [{ content: { parts: [{ text: '{"ok":true}' }] } }],

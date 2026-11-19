@@ -157,13 +157,95 @@ describe("GeminiGenerationGateway", () => {
     ).toBe(AiProviderErrorKind.NETWORK);
   });
 
-  it("imagem não suportada; modelos e saúde pela configuração", async () => {
+  it("imagem: sem modelo de imagem configurado falha antes da rede", async () => {
     const g = new GeminiGenerationGateway(config());
     expect(
       await kind(
         g.generateImage({ correlationId: "c", instructions: [], input: {} }),
       ),
-    ).toBe(AiProviderErrorKind.SCHEMA);
+    ).toBe(AiProviderErrorKind.AUTHENTICATION);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  describe("imagem", () => {
+    const imageConfig = () =>
+      config({ CONTENT_STUDIO_GEMINI_IMAGE_MODELS: "gemini-img" });
+    const imageReq = {
+      correlationId: "c",
+      instructions: ["desenhe"],
+      input: { scene: "campo" },
+      size: "1536x1024",
+    };
+
+    it("pede só imagem, na proporção do pedido, e devolve os bytes", async () => {
+      fetchSpy.mockReturnValue(
+        ok({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  { text: "ok" },
+                  { inlineData: { mimeType: "image/png", data: "iVBORw0=" } },
+                ],
+              },
+            },
+          ],
+        }),
+      );
+      const result = await new GeminiGenerationGateway(
+        imageConfig(),
+      ).generateImage(imageReq);
+      expect(result.mediaType).toBe("image/png");
+      expect(result.model).toBe("gemini-img");
+      expect(result.bytes.byteLength).toBeGreaterThan(0);
+      const [url, init] = fetchSpy.mock.calls[0] as [string, RequestInit];
+      expect(url).toContain("/models/gemini-img:generateContent");
+      expect(url).not.toContain("k-secret");
+      const body = JSON.parse(init.body as string) as {
+        generationConfig: {
+          responseModalities: string[];
+          imageConfig: { aspectRatio: string };
+        };
+      };
+      expect(body.generationConfig.responseModalities).toEqual(["IMAGE"]);
+      expect(body.generationConfig.imageConfig.aspectRatio).toBe("3:2");
+    });
+
+    it("bloqueio, resposta sem imagem e tipo estranho", async () => {
+      const g = new GeminiGenerationGateway(imageConfig());
+      fetchSpy.mockReturnValueOnce(
+        ok({ promptFeedback: { blockReason: "SAFETY" } }),
+      );
+      expect(await kind(g.generateImage(imageReq))).toBe(
+        AiProviderErrorKind.SAFETY,
+      );
+      fetchSpy.mockReturnValueOnce(
+        ok({ candidates: [{ content: { parts: [{ text: "só texto" }] } }] }),
+      );
+      expect(await kind(g.generateImage(imageReq))).toBe(
+        AiProviderErrorKind.SCHEMA,
+      );
+      fetchSpy.mockReturnValueOnce(
+        ok({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  { inlineData: { mimeType: "text/html", data: "AAAA" } },
+                ],
+              },
+            },
+          ],
+        }),
+      );
+      expect(await kind(g.generateImage(imageReq))).toBe(
+        AiProviderErrorKind.SCHEMA,
+      );
+    });
+  });
+
+  it("modelos e saúde pela configuração", async () => {
+    const g = new GeminiGenerationGateway(config());
     expect(
       (await g.listModels(AiGenerationCapability.TEXT_STRUCTURED)).map(
         (m) => m.id,
