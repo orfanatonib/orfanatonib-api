@@ -79,7 +79,7 @@ jobs:
           IMAGE_TAG: latest
         run: |
           echo "🔨 Building image: ${ECR_REPOSITORY}:${IMAGE_TAG}"
-          docker build -f DockerFile -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
+          docker build -f Dockerfile -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
           docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REPOSITORY}:${{ github.sha }}
 
       - name: 📤 Push image to ECR

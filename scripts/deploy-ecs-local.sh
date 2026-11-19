@@ -88,7 +88,7 @@ echo -e "${YELLOW}3. Build e push da imagem ${DOCKER_PLATFORM}...${NC}"
 cd "$PROJECT_ROOT"
 docker buildx build \
     --platform "$DOCKER_PLATFORM" \
-    -f DockerFile \
+    -f Dockerfile \
     -t "$IMAGE_URI" \
     --push \
     .

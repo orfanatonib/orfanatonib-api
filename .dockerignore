@@ -1,0 +1,15 @@
+node_modules
+dist
+coverage
+logs
+audit
+.git
+.github
+.env*
+env
+*.md
+docs
+test
+e2e
+scripts
+.dynamodb-local

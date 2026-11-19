@@ -1,5 +1,6 @@
 import { INestApplication, Module } from "@nestjs/common";
 import { APP_FILTER } from "@nestjs/core";
+import { ConfigModule } from "@nestjs/config";
 import { Test } from "@nestjs/testing";
 import * as request from "supertest";
 import { DataSource } from "typeorm";
@@ -10,7 +11,10 @@ import { RequestContextModule } from "./core/request-context";
 import { createCorsOptions } from "./config/cors.config";
 
 @Module({
-  imports: [RequestContextModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: true }),
+    RequestContextModule,
+  ],
   controllers: [HealthController],
   providers: [
     {
