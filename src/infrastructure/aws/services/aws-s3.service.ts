@@ -121,7 +121,8 @@ export class AwsS3Service {
     }
 
     if (!key) {
-      this.logger.warn(`Could not extract S3 key from URL: ${url}`);
+      // Erro (não aviso): a mídia some do banco mas o objeto fica sem dono nem como limpar.
+      this.logger.error(`Could not extract S3 key from URL: ${url}`);
       return;
     }
 
@@ -156,7 +157,9 @@ export class AwsS3Service {
   async downloadOwned(url: string, maxBytes: number): Promise<Buffer> {
     const key = this.keyFromOwnedUrl(url);
     if (!key) {
-      throw new BadRequestException("A URL não pertence ao bucket da aplicação.");
+      throw new BadRequestException(
+        "A URL não pertence ao bucket da aplicação.",
+      );
     }
     const response = await this.s3Client.send(
       new GetObjectCommand({ Bucket: this.bucketName, Key: key }),

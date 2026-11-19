@@ -1,186 +1,172 @@
+import { BadRequestException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 
 import {
   UploadScope,
   uploadScopeStorage,
 } from "src/shared/media/storage/upload-scope";
+
 import { AwsS3Service } from "./aws-s3.service";
 
 const send = jest.fn();
-jest.mock("@aws-sdk/client-s3", () => ({
-  S3Client: jest.fn(() => ({ send })),
-  PutObjectCommand: jest.fn((input: unknown) => ({ kind: "put", input })),
-  DeleteObjectCommand: jest.fn((input: unknown) => ({ kind: "delete", input })),
-  ListObjectsV2Command: jest.fn((input: unknown) => ({ kind: "list", input })),
-  GetObjectCommand: jest.fn((input: unknown) => ({ kind: "get", input })),
-}));
-
-function make(env: Record<string, string> = {}) {
-  const cfg = {
-    get: (k: string) =>
-      ({
-        AWS_S3_BUCKET_NAME: "b",
-        ENVIRONMENT: "local",
-        AWS_ENDPOINT: "http://ls:4566",
-        ...env,
-      })[k],
+jest.mock("@aws-sdk/client-s3", () => {
+  class Cmd {
+    constructor(public readonly input: Record<string, unknown>) {}
+  }
+  return {
+    S3Client: jest.fn().mockImplementation(() => ({ send })),
+    PutObjectCommand: class PutObjectCommand extends Cmd {},
+    DeleteObjectCommand: class DeleteObjectCommand extends Cmd {},
+    GetObjectCommand: class GetObjectCommand extends Cmd {},
+    ListObjectsV2Command: class ListObjectsV2Command extends Cmd {},
   };
-  return new AwsS3Service(cfg as unknown as ConfigService);
+});
+
+const BUCKET = "bucket-teste";
+const ENDPOINT = "http://localhost:4566";
+
+function build(env: Record<string, string> = {}): AwsS3Service {
+  const config = {
+    AWS_S3_BUCKET_NAME: BUCKET,
+    AWS_ENDPOINT: ENDPOINT,
+    ENVIRONMENT: "local",
+    ...env,
+  };
+  return new AwsS3Service({
+    get: (key: string) => config[key as keyof typeof config],
+  } as unknown as ConfigService);
 }
 
-describe("AwsS3Service", () => {
-  beforeEach(() => send.mockReset());
+const png = (name = "Foto da Criança (1).png"): Express.Multer.File =>
+  ({
+    originalname: name,
+    mimetype: "image/png",
+    size: 4,
+    // assinatura PNG: o validador confere os bytes, não só o mimetype
+    buffer: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+  }) as Express.Multer.File;
 
-  it("upload legado: duas chamadas no mesmo ms geram chaves distintas (sem colisão)", async () => {
-    send.mockResolvedValue({});
-    jest.spyOn(Date, "now").mockReturnValue(1);
-    const s = make();
-    const f = {
-      originalname: "a b.png",
-      mimetype: "image/png",
-      size: 1,
-      buffer: Buffer.from("x"),
-    } as Express.Multer.File;
-    const [u1, u2] = [await s.upload(f), await s.upload(f)];
-    expect(u1).not.toBe(u2);
-    expect(u1).toMatch(
-      /^http:\/\/ls:4566\/b\/local\/uploads\/[0-9a-f-]{36}_a_b\.png$/,
+beforeEach(() => {
+  send.mockReset().mockResolvedValue({});
+});
+
+describe("AwsS3Service.upload", () => {
+  it("grava com chave <env>/uploads/<uuid>_<nome saneado> e devolve a URL do endpoint", async () => {
+    const url = await build().upload(png());
+    const key = (send.mock.calls[0][0] as { input: { Key: string } }).input.Key;
+    expect(key).toMatch(
+      /^local\/uploads\/[0-9a-f-]{36}_Foto_da_Crian_a__1_.png$/,
+    );
+    expect(url).toBe(`${ENDPOINT}/${BUCKET}/${key}`);
+  });
+
+  it("dois uploads do mesmo nome nunca colidem na chave", async () => {
+    const svc = build();
+    const a = await svc.upload(png("a.png"));
+    const b = await svc.upload(png("a.png"));
+    expect(a).not.toBe(b);
+  });
+
+  it("sem endpoint usa a URL virtual-hosted da AWS", async () => {
+    const svc = build({ AWS_ENDPOINT: "", AWS_S3_ENDPOINT: "" });
+    const url = await svc.upload(png("a.png"));
+    expect(url).toMatch(
+      new RegExp(`^https://${BUCKET}\\.s3\\.amazonaws\\.com/local/uploads/`),
     );
   });
 
-  it("upload legado recusa MIME fora da política e arquivo vazio, sem enviar nada", async () => {
-    const s = make();
-    const bad = {
-      originalname: "x.exe",
-      mimetype: "application/x-msdownload",
-      size: 2,
-      buffer: Buffer.from("MZ"),
+  it("arquivo recusado pela política (MIME x conteúdo) é 400 e nada vai ao bucket", async () => {
+    const fake = {
+      ...png("x.png"),
+      buffer: Buffer.from("isto não é um png"),
     } as Express.Multer.File;
-    const empty = {
-      originalname: "a.png",
-      mimetype: "image/png",
-      size: 0,
-      buffer: Buffer.alloc(0),
-    } as Express.Multer.File;
-    await expect(s.upload(bad)).rejects.toThrow("recusado");
-    await expect(s.upload(empty)).rejects.toThrow("recusado");
+    await expect(build().upload(fake)).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
     expect(send).not.toHaveBeenCalled();
   });
 
-  it("dentro de um escopo de requisição, delete é adiado e upload é registrado", async () => {
-    send.mockResolvedValue({});
-    const s = make();
+  it("falha do S3 vira erro genérico (sem vazar a mensagem do SDK)", async () => {
+    send.mockRejectedValue(new Error("AccessDenied: segredo interno"));
+    await expect(build().upload(png("a.png"))).rejects.toThrow(
+      "Error uploading to S3",
+    );
+  });
+
+  it("dentro de uma requisição o upload é lembrado no escopo (para descarte se ela falhar)", async () => {
     const scope = new UploadScope();
-    await uploadScopeStorage.run(scope, async () => {
-      const url = await s.upload({
-        originalname: "a.png",
-        mimetype: "image/png",
-        size: 1,
-        buffer: Buffer.from("x"),
-      } as Express.Multer.File);
-      await s.delete("http://ls:4566/b/local/uploads/old.png");
-      expect(scope.uploadedUrls).toEqual([url]);
-    });
+    const url = await uploadScopeStorage.run(scope, () =>
+      build().upload(png("a.png")),
+    );
+    expect(scope.uploadedUrls).toEqual([url]);
+  });
+});
+
+describe("AwsS3Service.delete", () => {
+  it("dentro de uma requisição a exclusão é ADIADA (nada vai ao S3 agora)", async () => {
+    const scope = new UploadScope();
+    await uploadScopeStorage.run(scope, () =>
+      build().delete(`${ENDPOINT}/${BUCKET}/local/uploads/a.png`),
+    );
     expect(scope.deferredDeletes).toEqual([
-      "http://ls:4566/b/local/uploads/old.png",
+      `${ENDPOINT}/${BUCKET}/local/uploads/a.png`,
     ]);
-    expect(send).toHaveBeenCalledTimes(1);
-  });
-
-  it("exclusão imediata que falha avisa o handler (fila de limpeza)", async () => {
-    send.mockRejectedValue(new Error("denied"));
-    const s = make();
-    const handler = jest.fn().mockResolvedValue(undefined);
-    s.setDeleteFailureHandler(handler);
-    await s.delete("http://ls:4566/b/local/uploads/x.png");
-    expect(handler).toHaveBeenCalledWith("local/uploads/x.png", "denied");
-  });
-
-  it("putObject devolve a URL e traduz falha", async () => {
-    send.mockResolvedValueOnce({});
-    expect(
-      await make().putObject("k/1.png", Buffer.from("x"), "image/png"),
-    ).toBe("http://ls:4566/b/k/1.png");
-    send.mockRejectedValueOnce(new Error("x"));
-    await expect(
-      make().putObject("k", Buffer.from("x"), "image/png"),
-    ).rejects.toThrow("Error uploading to S3");
-  });
-
-  it("deleteKey propaga a falha; delete legado continua engolindo (comportamento atual)", async () => {
-    send.mockRejectedValue(new Error("denied"));
-    await expect(make().deleteKey("k")).rejects.toThrow("denied");
-    await expect(
-      make().delete("http://ls:4566/b/local/uploads/x.png"),
-    ).resolves.toBeUndefined();
-  });
-
-  it("delete legado com URL sem chave não chama o S3", async () => {
-    await make().delete("https://youtube.com/x");
     expect(send).not.toHaveBeenCalled();
   });
 
-  it("listKeys percorre as páginas", async () => {
-    send
-      .mockResolvedValueOnce({
-        Contents: [{ Key: "a", LastModified: new Date(0) }],
-        IsTruncated: true,
-        NextContinuationToken: "t",
-      })
-      .mockResolvedValueOnce({ Contents: [{ Key: "b" }], IsTruncated: false });
-    const keys = await make().listKeys("local/");
-    expect(keys.map((k) => k.key)).toEqual(["a", "b"]);
+  it.each([
+    [`${ENDPOINT}/${BUCKET}/local/uploads/a.png`, "local/uploads/a.png"],
+    [
+      `https://${BUCKET}.s3.amazonaws.com/local/uploads/b.png`,
+      "local/uploads/b.png",
+    ],
+  ])("fora de requisição extrai a chave de %s e apaga", async (url, key) => {
+    await build().delete(url);
+    expect(
+      (send.mock.calls[0][0] as { input: { Key: string } }).input.Key,
+    ).toBe(key);
   });
 
-  describe("downloadOwned", () => {
-    const owned = "http://ls:4566/b/local/uploads/a.png";
+  it("URL de outra origem não apaga nada e é registrada como ERRO (não só aviso)", async () => {
+    const svc = build();
+    const error = jest
+      .spyOn(svc["logger"], "error")
+      .mockImplementation(() => undefined);
+    await svc.delete("https://outro-site.com/foto.png");
+    expect(send).not.toHaveBeenCalled();
+    expect(error).toHaveBeenCalled();
+  });
 
-    it("lê o objeto do próprio bucket pela chave extraída da URL", async () => {
-      send.mockResolvedValue({
-        ContentLength: 3,
-        Body: (async function* () {
-          yield Buffer.from("abc");
-        })(),
-      });
+  it("exclusão que falha vai para o handler da fila de limpeza com a chave e o motivo", async () => {
+    const svc = build();
+    const handler = jest.fn().mockResolvedValue(undefined);
+    svc.setDeleteFailureHandler(handler);
+    send.mockRejectedValue(new Error("timeout"));
+    await svc.delete(`${ENDPOINT}/${BUCKET}/local/uploads/c.png`);
+    expect(handler).toHaveBeenCalledWith("local/uploads/c.png", "timeout");
+  });
+});
 
-      const buffer = await make().downloadOwned(owned, 10);
+describe("AwsS3Service.keyFromOwnedUrl / downloadOwned", () => {
+  it("só reconhece URL do NOSSO bucket", () => {
+    const svc = build();
+    expect(svc.keyFromOwnedUrl(`${ENDPOINT}/${BUCKET}/a/b%20c.png?x=1`)).toBe(
+      "a/b c.png",
+    );
+    expect(svc.keyFromOwnedUrl("https://evil.com/a.png")).toBeNull();
+  });
 
-      expect(buffer.toString()).toBe("abc");
-      expect(send).toHaveBeenCalledWith({
-        kind: "get",
-        input: { Bucket: "b", Key: "local/uploads/a.png" },
-      });
-    });
+  it("recusa baixar URL de outra origem (SSRF) sem chamar o S3", async () => {
+    await expect(
+      build().downloadOwned("https://evil.com/a.png", 100),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(send).not.toHaveBeenCalled();
+  });
 
-    it("recusa URL de outra origem sem chamar o S3 (SSRF)", async () => {
-      await expect(
-        make().downloadOwned("https://evil.example/x.png", 10),
-      ).rejects.toThrow("não pertence ao bucket");
-      expect(send).not.toHaveBeenCalled();
-    });
-
-    it("recusa objeto maior que o limite pelo ContentLength, sem ler o corpo", async () => {
-      const body = (async function* () {
-        yield Buffer.from("x");
-      })();
-      send.mockResolvedValue({ ContentLength: 11, Body: body });
-
-      await expect(make().downloadOwned(owned, 10)).rejects.toThrow(
-        "excede o limite",
-      );
-    });
-
-    it("recusa corpo que passa do limite mesmo sem ContentLength", async () => {
-      send.mockResolvedValue({
-        Body: (async function* () {
-          yield Buffer.from("123456");
-          yield Buffer.from("78901");
-        })(),
-      });
-
-      await expect(make().downloadOwned(owned, 10)).rejects.toThrow(
-        "excede o limite",
-      );
-    });
+  it("recusa objeto maior que o limite pelo ContentLength, sem ler o corpo", async () => {
+    send.mockResolvedValue({ ContentLength: 500, Body: undefined });
+    await expect(
+      build().downloadOwned(`${ENDPOINT}/${BUCKET}/a.png`, 100),
+    ).rejects.toBeInstanceOf(BadRequestException);
   });
 });

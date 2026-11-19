@@ -6,6 +6,8 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ## [Unreleased] - 2026-10-02 - ESTÚDIO ORFANATO
 
+- **ADD**: upload valida a **assinatura dos bytes** contra o MIME declarado (PNG, JPEG, GIF, WebP, PDF); conteúdo que não bate é recusado (`MEDIA_CONTENT`).
+- **ADD**: teste de arquitetura da cascata de mídia (todo `delete-*.service`), spec do `AwsS3Service` e diagrama de fluxo da mídia.
 - **CHANGE**: imagem Docker com `npm ci`, `USER node`, `HEALTHCHECK` e `.dockerignore`; `DockerFile` virou `Dockerfile` (workflows e script de deploy local atualizados).
 - **DOCS**: saúde (`/health`, `/health/ready`), CORS, rate limit e Docker em `docs/modules/bootstrap-config`.
 - **ADD**: observabilidade e auditoria (plano 12): `requestId` do servidor em

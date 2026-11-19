@@ -72,3 +72,87 @@ describe("media-storage.utils", () => {
     ).toEqual({ ok: false, reason: "mime" });
   });
 });
+
+describe("validateUploadedFile: conteúdo × MIME declarado", () => {
+  const PNG = Buffer.from([
+    0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0,
+  ]);
+  const html = Buffer.from("<html><script>alert(1)</script></html>");
+
+  it("aceita quando os primeiros bytes batem com o formato", () => {
+    expect(
+      validateUploadedFile(
+        { mimetype: "image/png", size: PNG.length, buffer: PNG },
+        MediaType.IMAGE,
+      ),
+    ).toMatchObject({ ok: true, extension: "png" });
+    expect(
+      validateUploadedFile(
+        {
+          mimetype: "application/pdf",
+          size: 9,
+          buffer: Buffer.from("%PDF-1.7 "),
+        },
+        MediaType.DOCUMENT,
+      ),
+    ).toMatchObject({ ok: true });
+  });
+
+  it("recusa HTML disfarçado de imagem ou PDF (content)", () => {
+    expect(
+      validateUploadedFile(
+        { mimetype: "image/png", size: html.length, buffer: html },
+        MediaType.IMAGE,
+      ),
+    ).toEqual({ ok: false, reason: "content" });
+    expect(
+      validateUploadedFile(
+        { mimetype: "application/pdf", size: html.length, buffer: html },
+        MediaType.DOCUMENT,
+      ),
+    ).toEqual({ ok: false, reason: "content" });
+  });
+
+  it("WebP exige RIFF…WEBP; JPEG e GIF pela assinatura", () => {
+    const webp = Buffer.concat([
+      Buffer.from("RIFF"),
+      Buffer.from([1, 0, 0, 0]),
+      Buffer.from("WEBP"),
+    ]);
+    expect(
+      validateUploadedFile(
+        { mimetype: "image/webp", size: 12, buffer: webp },
+        MediaType.IMAGE,
+      ).ok,
+    ).toBe(true);
+    expect(
+      validateUploadedFile(
+        { mimetype: "image/webp", size: 12, buffer: html },
+        MediaType.IMAGE,
+      ).ok,
+    ).toBe(false);
+    expect(
+      validateUploadedFile(
+        {
+          mimetype: "image/jpeg",
+          size: 4,
+          buffer: Buffer.from([0xff, 0xd8, 0xff, 0xe0]),
+        },
+        MediaType.IMAGE,
+      ).ok,
+    ).toBe(true);
+    expect(
+      validateUploadedFile(
+        { mimetype: "image/gif", size: 6, buffer: Buffer.from("GIF89a") },
+        MediaType.IMAGE,
+      ).ok,
+    ).toBe(true);
+  });
+
+  it("sem buffer (chamadas antigas) a checagem de conteúdo é ignorada", () => {
+    expect(
+      validateUploadedFile({ mimetype: "image/png", size: 10 }, MediaType.IMAGE)
+        .ok,
+    ).toBe(true);
+  });
+});

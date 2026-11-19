@@ -31,10 +31,43 @@ export function extractStorageKey(url: string, bucket: string): string | null {
 
 export type FileValidationResult =
   | { ok: true; extension: string; contentType: string }
-  | { ok: false; reason: "mime" | "size" | "empty" };
+  | { ok: false; reason: "mime" | "size" | "empty" | "content" };
+
+/** Assinaturas (magic bytes) dos formatos que a política aceita e que têm assinatura estável. */
+const SIGNATURES: Readonly<Record<string, readonly (readonly number[])[]>> = {
+  "image/png": [[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
+  "image/jpeg": [[0xff, 0xd8, 0xff]],
+  "image/gif": [
+    [0x47, 0x49, 0x46, 0x38, 0x37, 0x61],
+    [0x47, 0x49, 0x46, 0x38, 0x39, 0x61],
+  ],
+  "application/pdf": [[0x25, 0x50, 0x44, 0x46, 0x2d]],
+};
+
+const startsWith = (buffer: Buffer, signature: readonly number[]): boolean =>
+  buffer.length >= signature.length &&
+  signature.every((byte, index) => buffer[index] === byte);
+
+/**
+ * O `mimetype` vem do cliente: um HTML renomeado para `.png` chegaria ao bucket
+ * como "image/png". Quando o conteúdo está disponível, os primeiros bytes têm de
+ * bater com o formato declarado (WebP: RIFF…WEBP).
+ */
+export function contentMatchesMime(mimetype: string, buffer?: Buffer): boolean {
+  if (!buffer) return true;
+  if (mimetype === "image/webp") {
+    return (
+      buffer.length >= 12 &&
+      buffer.subarray(0, 4).toString("ascii") === "RIFF" &&
+      buffer.subarray(8, 12).toString("ascii") === "WEBP"
+    );
+  }
+  const signatures = SIGNATURES[mimetype];
+  return !signatures || signatures.some((sig) => startsWith(buffer, sig));
+}
 
 export function validateUploadedFile(
-  file: { mimetype: string; size: number },
+  file: { mimetype: string; size: number; buffer?: Buffer },
   mediaType: MediaType,
 ): FileValidationResult {
   const policy = MEDIA_UPLOAD_POLICIES[mediaType];
@@ -42,5 +75,8 @@ export function validateUploadedFile(
   const extension = policy.allowed[file.mimetype];
   if (!extension) return { ok: false, reason: "mime" };
   if (file.size > policy.maxBytes) return { ok: false, reason: "size" };
+  if (!contentMatchesMime(file.mimetype, file.buffer)) {
+    return { ok: false, reason: "content" };
+  }
   return { ok: true, extension, contentType: file.mimetype };
 }
