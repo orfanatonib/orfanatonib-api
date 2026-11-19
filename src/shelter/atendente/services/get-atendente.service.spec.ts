@@ -49,7 +49,11 @@ function setup() {
   return {
     repo,
     media,
-    svc: new GetAtendenteService(repo as never, media as never),
+    svc: new GetAtendenteService(
+      repo as never,
+      media as never,
+      { withReadableUrl: async (m: unknown) => m } as never,
+    ),
   };
 }
 

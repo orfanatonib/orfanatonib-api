@@ -9,16 +9,31 @@ function safeSegment(value: string): string {
   return value.replace(SEGMENT_UNSAFE, "_");
 }
 
-/** Chave única: `<env>/<entidade>/<ownerId>/<uuid>.<ext>` (sem Date.now, sem colisão). */
+/** Segmento de chave dos objetos PRIVADOS: a política do bucket nega leitura anônima de `<env>/private/*`. */
+export const PRIVATE_KEY_SEGMENT = "private";
+
+/**
+ * Chave única: `<env>/<entidade>/<ownerId>/<uuid>.<ext>` (sem Date.now, sem colisão).
+ * Documento sensível (ex.: antecedentes criminais) usa `private: true` ⇒ `<env>/private/<entidade>/...`
+ * e só é lido por URL assinada de curta duração.
+ */
 export function buildStorageKey(params: {
   environment: string;
   entity: string;
   ownerId: string;
   extension: string;
   uuid?: string;
+  private?: boolean;
 }): string {
   const id = params.uuid ?? randomUUID();
-  return `${safeSegment(params.environment)}/${safeSegment(params.entity)}/${safeSegment(params.ownerId)}/${id}.${params.extension}`;
+  const env = safeSegment(params.environment);
+  const scope = params.private ? `${env}/${PRIVATE_KEY_SEGMENT}` : env;
+  return `${scope}/${safeSegment(params.entity)}/${safeSegment(params.ownerId)}/${id}.${params.extension}`;
+}
+
+/** A chave é de um objeto privado (`<env>/private/...`)? */
+export function isPrivateStorageKey(key: string): boolean {
+  return key.split("/")[1] === PRIVATE_KEY_SEGMENT;
 }
 
 /** Extrai a chave de uma URL gravada (virtual-hosted ou path-style). Null se não der. */

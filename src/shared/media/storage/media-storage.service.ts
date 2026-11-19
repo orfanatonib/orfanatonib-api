@@ -15,6 +15,8 @@ export interface UploadRequest {
   mediaType: MediaType;
   entity: string;
   ownerId: string;
+  /** Documento sensível: vai para `<env>/private/...` e só se lê por URL assinada. */
+  private?: boolean;
 }
 
 @Injectable()
@@ -53,6 +55,7 @@ export class MediaStorageService {
         entity: req.entity,
         ownerId: req.ownerId,
         extension: check.extension,
+        private: req.private,
       });
       try {
         const url = await this.s3.putObject(

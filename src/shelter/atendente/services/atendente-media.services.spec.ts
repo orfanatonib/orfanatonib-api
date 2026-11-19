@@ -75,6 +75,7 @@ function setup() {
     })),
     remove: jest.fn(async () => undefined),
   };
+  const readableUrls = { withReadableUrl: async <T>(media: T) => media };
   return {
     batch,
     storage,
@@ -87,11 +88,13 @@ function setup() {
       repo as never,
       processor,
       storage as never,
+      readableUrls as never,
     ),
     update: new UpdateAtendenteService(
       repo as never,
       processor,
       storage as never,
+      readableUrls as never,
     ),
     remove: new DeleteAtendenteService(
       repo as never,
@@ -136,6 +139,19 @@ describe("antecedentes (PDF sensível) × S3", () => {
         "local/AtendenteEstadual/a1/1.pdf",
       );
       expect(batch.commit).toHaveBeenCalledTimes(1);
+    });
+
+    it("o PDF vai como objeto PRIVADO (só se lê por URL assinada)", async () => {
+      const { create, storage } = setup();
+      await create.execute({ name: "N" } as never, {
+        estadual: pdf("e.pdf"),
+        federal: pdf("f.pdf"),
+      });
+      const requests = storage.uploadAll.mock.calls.map(
+        (call) => (call as unknown as [Array<{ private?: boolean }>])[0][0],
+      );
+      expect(requests).toHaveLength(2);
+      expect(requests.every((request) => request.private === true)).toBe(true);
     });
   });
 

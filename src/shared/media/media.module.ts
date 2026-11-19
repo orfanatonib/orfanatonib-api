@@ -13,6 +13,7 @@ import { MediaReconciliationService } from "./storage/media-reconciliation.servi
 import { MediaReconciliationController } from "./storage/media-reconciliation.controller";
 import { MediaStorageScheduler } from "./storage/media-storage.scheduler";
 import { MediaStorageService } from "./storage/media-storage.service";
+import { PrivateMediaUrlService } from "./storage/private-media-url.service";
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { MediaStorageService } from "./storage/media-storage.service";
     MediaItemRepository,
     MediaCleanupQueueRepository,
     MediaStorageService,
+    PrivateMediaUrlService,
     MediaCleanupService,
     MediaReconciliationService,
     MediaStorageScheduler,
@@ -34,6 +36,7 @@ import { MediaStorageService } from "./storage/media-storage.service";
   exports: [
     MediaItemProcessor,
     MediaStorageService,
+    PrivateMediaUrlService,
     MediaReconciliationService,
   ],
 })

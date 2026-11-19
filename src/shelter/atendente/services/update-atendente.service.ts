@@ -5,6 +5,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
 } from "@nestjs/common";
+import { PrivateMediaUrlService } from "src/shared/media/storage/private-media-url.service";
 import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import {
@@ -26,6 +27,7 @@ export class UpdateAtendenteService {
     private readonly atendenteRepo: AtendenteRepository,
     private readonly mediaProcessor: MediaItemProcessor,
     private readonly mediaStorage: MediaStorageService,
+    private readonly privateUrls: PrivateMediaUrlService,
   ) {}
 
   async execute(
@@ -118,8 +120,8 @@ export class UpdateAtendenteService {
     );
     return AtendenteResponseDto.fromEntity(
       updated,
-      pdfEstadual,
-      pdfFederal,
+      await this.privateUrls.withReadableUrl(pdfEstadual),
+      await this.privateUrls.withReadableUrl(pdfFederal),
       displayName,
     );
   }
@@ -157,6 +159,7 @@ export class UpdateAtendenteService {
             mediaType: MediaType.DOCUMENT,
             entity: targetType,
             ownerId: atendenteId,
+            private: true,
           },
         ],
         batch,

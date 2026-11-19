@@ -1,4 +1,5 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { PrivateMediaUrlService } from "src/shared/media/storage/private-media-url.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { IntegrationEntity } from "src/shelter/integration/entities/integration.entity";
@@ -18,6 +19,7 @@ export class GetAtendenteService {
   constructor(
     private readonly atendenteRepo: AtendenteRepository,
     private readonly mediaProcessor: MediaItemProcessor,
+    private readonly privateUrls: PrivateMediaUrlService,
   ) {}
 
   async findOne(id: string): Promise<AtendenteResponseDto> {
@@ -44,8 +46,8 @@ export class GetAtendenteService {
     );
     return AtendenteResponseDto.fromEntity(
       atendente,
-      pdfEstadual ?? pdfLegacy,
-      pdfFederal,
+      await this.privateUrls.withReadableUrl(pdfEstadual ?? pdfLegacy),
+      await this.privateUrls.withReadableUrl(pdfFederal),
       displayName,
     );
   }
@@ -118,30 +120,32 @@ export class GetAtendenteService {
     const integrationMap = new Map(integrations.map((i) => [i.id, i.name]));
     const userMap = new Map(users.map((u) => [u.id, u.name]));
 
-    const dtos = data.map((entity) => {
-      const pdfEstadual =
-        mediaEstadualByTargetId.get(entity.id) ??
-        mediaLegacyByTargetId.get(entity.id);
-      const pdfFederal = mediaFederalByTargetId.get(entity.id);
-      let displayName: string | undefined;
-      if (
-        entity.attendableType === AttendableType.INTEGRATION &&
-        entity.attendableId
-      ) {
-        displayName = integrationMap.get(entity.attendableId);
-      } else if (
-        entity.attendableType === AttendableType.USER &&
-        entity.attendableId
-      ) {
-        displayName = userMap.get(entity.attendableId);
-      }
-      return AtendenteResponseDto.fromEntity(
-        entity,
-        pdfEstadual ?? undefined,
-        pdfFederal ?? undefined,
-        displayName,
-      );
-    });
+    const dtos = await Promise.all(
+      data.map(async (entity) => {
+        const pdfEstadual =
+          mediaEstadualByTargetId.get(entity.id) ??
+          mediaLegacyByTargetId.get(entity.id);
+        const pdfFederal = mediaFederalByTargetId.get(entity.id);
+        let displayName: string | undefined;
+        if (
+          entity.attendableType === AttendableType.INTEGRATION &&
+          entity.attendableId
+        ) {
+          displayName = integrationMap.get(entity.attendableId);
+        } else if (
+          entity.attendableType === AttendableType.USER &&
+          entity.attendableId
+        ) {
+          displayName = userMap.get(entity.attendableId);
+        }
+        return AtendenteResponseDto.fromEntity(
+          entity,
+          await this.privateUrls.withReadableUrl(pdfEstadual ?? undefined),
+          await this.privateUrls.withReadableUrl(pdfFederal ?? undefined),
+          displayName,
+        );
+      }),
+    );
 
     return new PaginatedAtendenteResponseDto(dtos, total, page, limit);
   }

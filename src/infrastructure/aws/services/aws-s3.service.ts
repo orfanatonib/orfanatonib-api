@@ -11,6 +11,7 @@ import {
   GetObjectCommand,
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { Readable } from "node:stream";
 
 @Injectable()
@@ -185,6 +186,21 @@ export class AwsS3Service {
       chunks.push(buffer);
     }
     return Buffer.concat(chunks);
+  }
+
+  /**
+   * URL de leitura assinada para UM objeto, com expiração curta. Serve a bucket privado: quem tem só o endereço
+   * do objeto (sem a assinatura) não lê nada.
+   */
+  async getSignedReadUrl(
+    key: string,
+    expiresInSeconds: number,
+  ): Promise<string> {
+    return getSignedUrl(
+      this.s3Client,
+      new GetObjectCommand({ Bucket: this.bucketName, Key: key }),
+      { expiresIn: expiresInSeconds },
+    );
   }
 
   getEnvironment(): string {
