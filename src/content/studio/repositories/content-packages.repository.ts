@@ -166,20 +166,36 @@ export class ContentPackagesRepository {
     this.applyFilters(countQb, query);
     const total = await countQb.getCount();
 
-    const dataQb = this.packageRepo
+    // Pagina primeiro só os PACOTES. Com `skip/take` junto de joins ordenados por colunas das faixas/etapas,
+    // o TypeORM limita LINHAS do join (não pacotes): a página devolvia 2 pacotes de 8, com `total` 8.
+    const idsQb = this.packageRepo
+      .createQueryBuilder("contentPackage")
+      .select("contentPackage.id");
+    this.applyFilters(idsQb, query);
+    const pageIds = (
+      await idsQb
+        .orderBy("contentPackage.createdAt", "DESC")
+        .addOrderBy("contentPackage.id", "ASC")
+        .skip(skip)
+        .take(limit)
+        .getMany()
+    ).map((item) => item.id);
+
+    if (pageIds.length === 0) return { data: [], total, page, limit };
+
+    const loaded = await this.packageRepo
       .createQueryBuilder("contentPackage")
       .leftJoinAndSelect("contentPackage.tracks", "track")
-      .leftJoinAndSelect("track.stages", "stage");
-
-    this.applyFilters(dataQb, query);
-
-    const data = await dataQb
-      .orderBy("contentPackage.createdAt", "DESC")
-      .addOrderBy("track.minimumAge", "ASC")
+      .leftJoinAndSelect("track.stages", "stage")
+      .where("contentPackage.id IN (:...pageIds)", { pageIds })
+      .orderBy("track.minimumAge", "ASC")
       .addOrderBy("stage.position", "ASC")
-      .skip(skip)
-      .take(limit)
       .getMany();
+    // A ordem da página é a do primeiro passo (mais recentes primeiro).
+    const byId = new Map(loaded.map((item) => [item.id, item]));
+    const data = pageIds
+      .map((id) => byId.get(id))
+      .filter((item): item is ContentPackageEntity => item !== undefined);
 
     return { data, total, page, limit };
   }
@@ -988,8 +1004,9 @@ export class ContentPackagesRepository {
     }
 
     if (query.audience) {
-      qb.leftJoin("contentPackage.tracks", "filterTrack").andWhere(
-        "filterTrack.audience = :audience",
+      // EXISTS em vez de JOIN: um join solto quebra a paginação (`skip/take`) do TypeORM.
+      qb.andWhere(
+        "EXISTS (SELECT 1 FROM content_tracks filterTrack WHERE filterTrack.package_id = contentPackage.id AND filterTrack.audience = :audience)",
         { audience: query.audience },
       );
     }
