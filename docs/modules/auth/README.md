@@ -175,3 +175,18 @@ o MySQL reais), incluindo a rotação e a invalidação do refresh.
   digitação — é decisão de produto, não de refatoração, e ficou como está.
 - `core/user` e `core/profile` ainda não passaram pelo padrão; os contratos que
   o auth usa foram adicionados, mas os módulos em si seguem na fila.
+
+## Feature flags e erros (plano 06/08)
+| Endpoint | Flag | Desligada |
+|---|---|---|
+| `POST /auth/google` | `google_login` | `403` `details.code = FEATURE_DISABLED` |
+| `POST /auth/register`, `POST /auth/complete-register` | `public_registration` | idem |
+| `POST /auth/forgot-password`, `GET /auth/reset-password/validate`, `POST /auth/reset-password` | `password_recovery` | idem |
+
+Com a flag desligada **nada é gravado** (E2E confere `users`/`password_reset_tokens` inalterados). Sessão ausente, token malformado, assinatura adulterada e `alg=none` ⇒ `401`. Login com e-mail inexistente e com senha errada devolvem a **mesma mensagem** (não revela se o e-mail existe).
+
+## Segredo do JWT
+`JWT_SECRET` é lido num único ponto (`readJwtSecret` → `getOrThrow`) e é obrigatório no boot (`validateEnv`).
+
+## Front (páginas públicas)
+HTTP em `features/auth/api.ts` (as páginas não usam Axios direto); aterrissagem única em `features/auth/landing.ts` (admin e líder → `/adm`, membro → `/area-do-membro`); a página de redefinição de senha tira o token da URL e envia `no-referrer` (`resetTokenPrivacy`).
