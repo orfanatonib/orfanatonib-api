@@ -9,7 +9,7 @@ const COMMON_DEPENDENCY = [ContentStageType.CANONICAL_BASE] as const;
 export const CONTENT_AUDIENCE_CATALOG: readonly ContentAudienceDefinition[] = [
   {
     audience: ContentAudience.BABY,
-    name: "Bebê",
+    name: "Baby",
     minimumAge: 0,
     maximumAge: 2,
     stages: [
@@ -22,7 +22,7 @@ export const CONTENT_AUDIENCE_CATALOG: readonly ContentAudienceDefinition[] = [
   },
   {
     audience: ContentAudience.CHILD,
-    name: "Criança",
+    name: "Crianças",
     minimumAge: 3,
     maximumAge: 11,
     stages: [
@@ -35,7 +35,7 @@ export const CONTENT_AUDIENCE_CATALOG: readonly ContentAudienceDefinition[] = [
   },
   {
     audience: ContentAudience.TEEN,
-    name: "Adolescente",
+    name: "Adolescentes",
     minimumAge: 12,
     maximumAge: 15,
     stages: [
@@ -48,7 +48,7 @@ export const CONTENT_AUDIENCE_CATALOG: readonly ContentAudienceDefinition[] = [
   },
   {
     audience: ContentAudience.ADULT,
-    name: "Adulto",
+    name: "Adultos",
     minimumAge: 16,
     maximumAge: null,
     stages: [

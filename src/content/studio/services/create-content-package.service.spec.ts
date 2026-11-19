@@ -5,6 +5,9 @@ import { CreateContentPackageDto } from "../dto/create-content-package.dto";
 import { ContentPackageEntity } from "../entities/content-package.entity";
 import { ContentPackagesRepository } from "../repositories/content-packages.repository";
 
+import { ContentAudience } from "../enums/content-audience.enum";
+import { CONTENT_AUDIENCE_CATALOG } from "../constants";
+
 describe("CreateContentPackageService", () => {
   let service: CreateContentPackageService;
   let repository: jest.Mocked<ContentPackagesRepository>;
@@ -55,6 +58,42 @@ describe("CreateContentPackageService", () => {
         canonicalNotes: dto.canonicalNotes,
         createdById: "user-admin-1",
       }),
+    );
+  });
+
+  it.each(Object.values(ContentAudience))(
+    "creates only the selected %s track",
+    async (audience) => {
+      await service.execute(
+        {
+          audience,
+          theme: "Esperança",
+          biblicalReferences: "Salmos 23",
+          canonicalObjective: "Conhecer o cuidado de Deus",
+        },
+        "admin",
+      );
+      expect(repository.createWithCatalog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          audiences: CONTENT_AUDIENCE_CATALOG.filter(
+            (definition) => definition.audience === audience,
+          ),
+        }),
+      );
+    },
+  );
+
+  it("preserves legacy four-track creation when audience is omitted", async () => {
+    await service.execute(
+      {
+        theme: "Esperança",
+        biblicalReferences: "Salmos 23",
+        canonicalObjective: "Conhecer o cuidado de Deus",
+      },
+      "admin",
+    );
+    expect(repository.createWithCatalog).toHaveBeenCalledWith(
+      expect.objectContaining({ audiences: CONTENT_AUDIENCE_CATALOG }),
     );
   });
 

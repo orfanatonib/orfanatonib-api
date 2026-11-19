@@ -273,6 +273,7 @@ export class ContentPackagesRepository {
             stageType: stage.stageType,
             capability: input.capability,
             theme: contentPackage.theme,
+            revisionInstructions: input.revisionInstructions ?? null,
           },
           configurationSnapshot: {
             catalogVersion: CONTENT_STUDIO_CATALOG_VERSION,
@@ -300,6 +301,7 @@ export class ContentPackagesRepository {
    */
   async loadStageGenerationContext(
     stageId: string,
+    jobId?: string,
   ): Promise<StageGenerationContext | null> {
     const stage = await this.dataSource
       .getRepository(ContentStageEntity)
@@ -338,8 +340,18 @@ export class ContentPackagesRepository {
       })
       .filter(Boolean);
 
+    let revisionInstructions: string | null = null;
+    if (jobId) {
+      const job = await this.dataSource
+        .getRepository(ContentGenerationJobEntity)
+        .findOne({ where: { id: jobId } });
+      const raw = (job?.normalizedRequest as { revisionInstructions?: unknown } | undefined)?.revisionInstructions;
+      revisionInstructions = typeof raw === "string" && raw.trim() ? raw : null;
+    }
+
     const pkg = stage.track.contentPackage;
     return {
+      revisionInstructions,
       stageType: stage.stageType,
       audience: stage.track.audience,
       theme: pkg.theme,

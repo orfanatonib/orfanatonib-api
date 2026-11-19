@@ -35,7 +35,7 @@ describe("GetContentStudioCatalogService", () => {
 
     expect(result).toBeDefined();
     expect(result.version).toBe(CONTENT_STUDIO_CATALOG_VERSION);
-    expect(result.allAudiencesRequired).toBe(true);
+    expect(result.allAudiencesRequired).toBe(false);
     expect(result.audiences.length).toBe(4);
     expect(result.capabilities).toEqual({
       generation: false,
@@ -43,6 +43,10 @@ describe("GetContentStudioCatalogService", () => {
       publication: false,
       providerAdministration: false,
     });
-    expect(featureFlags.isEnabled).toHaveBeenCalledTimes(3);
+    expect(featureFlags.isEnabled).toHaveBeenCalledTimes(4);
+  });
+  it("exposes generation when its feature flag is enabled", async () => {
+    featureFlags.isEnabled.mockResolvedValue(true);
+    expect((await service.execute()).capabilities.generation).toBe(true);
   });
 });

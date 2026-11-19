@@ -56,20 +56,22 @@ referenced stages/versions is restricted by foreign keys. The detail response
 and UI expose this history.
 
 The catalog is versioned and is the frontend source of truth for audiences,
-age ranges, stages, order and dependencies. All four audiences are required in
-the MVP. The API never classifies a sheltered person and the contract contains
+age ranges, stages, order and dependencies. New clients choose one audience per material; legacy requests without an
+`audience` still create the four audience tracks. The API never classifies a sheltered person and the contract contains
 no personal data.
 
-Package creation is transactional: one package creates all four audience tracks
-and their required stages from the versioned catalog. `GET` endpoints are pure
+Package creation is transactional: one package creates the selected audience track
+and its required stages from the versioned catalog. Omitting the optional
+`audience` retains four-track creation. `allAudiencesRequired` is now `false`. `GET` endpoints are pure
 reads and do not create stages, update templates or change approval state.
 
-Automatic generation is fail-closed: the capability is reported unavailable
-and requests return `503` until a provider adapter and durable worker are wired.
-This avoids leaving a stage stuck in `GENERATING`. Saving human-authored
-structured JSON creates an immutable version, cancels active
-jobs for that stage, invalidates dependent versions and lets an
-administrator mark the stage as producer-approved.
+Generation availability follows `content-studio-generation`. The registered worker
+processes structured text jobs and validates stage/audience output before saving
+an immutable version. Visual stages currently generate a structured visual plan,
+not image assets. Provider credentials and model configuration remain server-owned.
+Saving human-authored structured content cancels active jobs for that stage,
+invalidates dependent versions and lets an administrator mark the stage as
+producer-approved.
 
 Manual structured content is constrained to plain JSON values (100 KB total,
 12 levels, 100 items per array, 8,000 characters per string). Obvious personal
@@ -109,10 +111,10 @@ comma-separated allowlists for structured text and image models:
 - `CONTENT_STUDIO_GEMINI_TEXT_MODELS`
 - `CONTENT_STUDIO_GEMINI_IMAGE_MODELS`
 
-The OpenAI adapter is implemented and registered, but jobs do not call it until
-the durable worker and approved stage schemas are wired. A provider feature flag
-alone does not enable generation. Deployment must configure a credential, an
-allowlisted model and the provider switch before a controlled activation.
+The module registers provider adapters and a generation worker. Deployment must
+configure a credential, an allowlisted model and the provider switch before
+activation. The catalog flag reports the enabled workflow, not a live provider
+health probe. This change does not modify deployment configuration.
 
 ## Safety baseline
 
@@ -125,3 +127,20 @@ allowlisted model and the provider switch before a controlled activation.
   implicit approval.
 
 See `docs/decisions/CONTENT_STUDIO_MVP_DECISIONS.md` for the complete baseline.
+
+## Single-audience creation
+
+`POST /content-studio/packages` accepts optional `audience`: `BABY`, `CHILD`,
+`TEEN`, or `ADULT`. Unknown values fail DTO validation. Other fields and response
+contracts remain unchanged. Filtering and completion use the persisted tracks;
+existing four-track packages retain their original workflow. No schema change
+is required.
+
+```json
+{
+  "audience": "ADULT",
+  "theme": "Esperança",
+  "biblicalReferences": "Salmos 23",
+  "canonicalObjective": "Compreender o cuidado de Deus"
+}
+```

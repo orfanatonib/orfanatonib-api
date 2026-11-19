@@ -52,6 +52,11 @@ export class GetVisitMaterialPageService {
     return toVisitMaterialsPageResponseDto(page, await this.findMedia(page.id));
   }
 
+  async findBySourceLessonId(sourceLessonId: string): Promise<VisitMaterialsPageResponseDTO | null> {
+    const page = await this.repository.findBySourceLessonId(sourceLessonId);
+    return page ? toVisitMaterialsPageResponseDto(page, await this.findMedia(page.id)) : null;
+  }
+
   /** Shared lookup for the write use cases. */
   async findEntityOrFail(id: string): Promise<VisitMaterialsPageEntity> {
     const page = await this.repository.findById(id);

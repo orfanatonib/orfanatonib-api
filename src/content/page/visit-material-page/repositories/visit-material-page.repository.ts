@@ -81,6 +81,10 @@ export class VisitMaterialsPageRepository {
     });
   }
 
+  async findBySourceLessonId(sourceLessonId: string): Promise<VisitMaterialsPageEntity | null> {
+    return this.repository.findOne({ where: { sourceLessonId }, relations: ROUTE_RELATION });
+  }
+
   async findCurrentWeek(): Promise<VisitMaterialsPageEntity | null> {
     return this.repository.findOne({
       where: { currentWeek: true },

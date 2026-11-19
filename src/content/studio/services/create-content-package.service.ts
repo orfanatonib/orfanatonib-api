@@ -51,7 +51,11 @@ export class CreateContentPackageService {
       canonicalNotes,
       templateCatalogVersion: CONTENT_STUDIO_CATALOG_VERSION,
       createdById,
-      audiences: CONTENT_AUDIENCE_CATALOG,
+      audiences: dto.audience
+        ? CONTENT_AUDIENCE_CATALOG.filter(
+            (definition) => definition.audience === dto.audience,
+          )
+        : CONTENT_AUDIENCE_CATALOG,
     });
   }
 }

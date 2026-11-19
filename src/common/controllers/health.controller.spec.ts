@@ -1,3 +1,4 @@
+import { ConfigService } from "@nestjs/config";
 import { ServiceUnavailableException } from "@nestjs/common";
 import { DataSource } from "typeorm";
 
@@ -5,7 +6,10 @@ import { HealthController } from "./health.controller";
 import { HealthStatus } from "./health.types";
 
 const build = (query: jest.Mock): HealthController =>
-  new HealthController({ query } as unknown as DataSource);
+  new HealthController(
+    { query } as unknown as DataSource,
+    { get: () => undefined } as unknown as ConfigService,
+  );
 
 describe("HealthController", () => {
   it("liveness responde ok sem consultar o banco", () => {

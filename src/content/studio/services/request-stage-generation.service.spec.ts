@@ -53,6 +53,7 @@ describe("RequestStageGenerationService", () => {
       capability: dto.capability,
       idempotencyKey: "key-123",
       requestedById: "user-1",
+      revisionInstructions: null,
     });
   });
 

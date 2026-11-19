@@ -56,6 +56,7 @@ export interface RequestContentStageGenerationInput {
   readonly capability: AiGenerationCapability;
   readonly idempotencyKey: string;
   readonly requestedById: string;
+  readonly revisionInstructions?: string | null;
 }
 
 export interface SaveContentStageVersionInput {

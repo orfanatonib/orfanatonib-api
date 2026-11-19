@@ -48,6 +48,7 @@ export class CreateVisitMaterialPageService {
         const page = await this.repository.save(
           this.repository.create(
             {
+              sourceLessonId: dto.sourceLessonId ?? null,
               title: dto.pageTitle,
               subtitle: dto.pageSubtitle,
               description: dto.pageDescription,

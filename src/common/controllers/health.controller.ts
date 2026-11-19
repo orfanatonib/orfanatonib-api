@@ -1,4 +1,5 @@
 import { Controller, Get, ServiceUnavailableException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { DataSource } from "typeorm";
 
 import {
@@ -11,11 +12,16 @@ export interface HealthLiveness {
   status: HealthStatus;
   timestamp: string;
   uptime: number;
+  /** "fake" quando o LLM é simulado (E2E); os testes de geração só rodam nesse modo. */
+  aiProviderMode: string;
 }
 
 @Controller("health")
 export class HealthController {
-  constructor(private readonly dataSource: DataSource) {}
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly config: ConfigService,
+  ) {}
 
   /** Liveness: o processo responde. Não depende de banco nem mede memória. */
   @Get()
@@ -24,6 +30,8 @@ export class HealthController {
       status: HealthStatus.OK,
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
+      aiProviderMode:
+        this.config.get<string>("AI_PROVIDER_MODE") === "fake" ? "fake" : "live",
     };
   }
 

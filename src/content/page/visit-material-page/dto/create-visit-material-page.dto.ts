@@ -1,5 +1,6 @@
 import {
   IsEnum,
+  IsUUID,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -10,6 +11,10 @@ import { TestamentType } from "../enums/testament-type.enum";
 import { VisitMaterialMediaInputDto } from "./visit-material-media.dto";
 
 export class CreateVisitMaterialsPageDto extends VisitMaterialMediaInputDto {
+  @IsOptional()
+  @IsUUID()
+  sourceLessonId?: string;
+
   @IsString({ message: 'O campo "pageTitle" deve ser uma string.' })
   @IsNotEmpty({ message: 'O campo "pageTitle" é obrigatório.' })
   @Matches(VISIT_MATERIAL_NON_BLANK_PATTERN, {

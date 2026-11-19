@@ -937,3 +937,8 @@ Refatoração completa de `src/shelter/sheltered/` para o padrão obrigatório d
 **Última atualização**: 23 de Outubro de 2025  
 **Versão atual**: 2.0.0  
 **Status**: 🚀 Em desenvolvimento ativo
+
+## 2026-11-18 — Content Studio category selection
+
+- Package creation accepts an optional audience; legacy four-track requests remain compatible.
+- Catalog exposes Baby, Crianças, Adolescentes and Adultos with `allAudiencesRequired: false`.

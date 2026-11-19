@@ -31,6 +31,6 @@ import { VisitMaterialMediaService } from "./services/visit-material-media.servi
     DeleteVisitMaterialPageService,
     SetCurrentVisitMaterialPageService,
   ],
-  exports: [TypeOrmModule],
+  exports: [TypeOrmModule, CreateVisitMaterialPageService, GetVisitMaterialPageService],
 })
 export class VisitMaterialsPageModule {}

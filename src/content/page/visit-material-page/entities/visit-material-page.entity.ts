@@ -1,10 +1,14 @@
-import { Entity, Column, OneToOne, JoinColumn } from "typeorm";
+import { Entity, Column, Index, OneToOne, JoinColumn } from "typeorm";
 import { RouteEntity } from "src/infrastructure/route/route-page.entity";
 import { BaseEntity } from "src/shared/entity/base.entity";
 import { TestamentType } from "../enums/testament-type.enum";
 
 @Entity("visit_material_pages")
 export class VisitMaterialsPageEntity extends BaseEntity {
+  @Index('uq_visit_material_source_lesson', { unique: true })
+  @Column({ type: 'varchar', length: 36, nullable: true })
+  sourceLessonId: string | null;
+
   @Column()
   title: string;
 

@@ -14,17 +14,19 @@ export class GetContentStudioCatalogService {
   constructor(private readonly featureFlags: GetFeatureFlagsService) {}
 
   async execute(): Promise<ContentStudioCatalogResponseDto> {
-    const [review, publication, providerAdministration] = await Promise.all([
-      this.featureFlags.isEnabled(FeatureFlagKeys.CONTENT_STUDIO_REVIEW),
-      this.featureFlags.isEnabled(FeatureFlagKeys.CONTENT_STUDIO_PUBLICATION),
-      this.featureFlags.isEnabled(
-        FeatureFlagKeys.CONTENT_STUDIO_PROVIDER_ADMIN,
-      ),
-    ]);
+    const [generation, review, publication, providerAdministration] =
+      await Promise.all([
+        this.featureFlags.isEnabled(FeatureFlagKeys.CONTENT_STUDIO_GENERATION),
+        this.featureFlags.isEnabled(FeatureFlagKeys.CONTENT_STUDIO_REVIEW),
+        this.featureFlags.isEnabled(FeatureFlagKeys.CONTENT_STUDIO_PUBLICATION),
+        this.featureFlags.isEnabled(
+          FeatureFlagKeys.CONTENT_STUDIO_PROVIDER_ADMIN,
+        ),
+      ]);
 
     return {
       version: CONTENT_STUDIO_CATALOG_VERSION,
-      allAudiencesRequired: true,
+      allAudiencesRequired: false,
       audiences: CONTENT_AUDIENCE_CATALOG.map((definition) => ({
         ...definition,
         stages: definition.stages.map((stage) => ({
@@ -33,9 +35,7 @@ export class GetContentStudioCatalogService {
         })),
       })),
       capabilities: {
-        // The capability remains unavailable until a real provider gateway and
-        // durable worker are registered. A flag alone must not create stuck jobs.
-        generation: false,
+        generation,
         review,
         publication,
         providerAdministration,
