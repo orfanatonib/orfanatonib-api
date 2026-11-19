@@ -116,7 +116,7 @@
     ],
     "coverageDirectory": "../coverage",
     "coverageThreshold": {
-      "./content/studio/": {
+      "./src/content/studio/": {
         "statements": 69,
         "branches": 54,
         "functions": 59,
