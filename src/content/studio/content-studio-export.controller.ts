@@ -42,6 +42,15 @@ export class ContentStudioExportController {
     });
   }
 
+  /** Documento da etapa para o editor: o editado à mão ou o montado dos campos (`edited` diz qual). */
+  @Get("stages/:stageId/document")
+  async document(
+    @Param("packageId", new ParseUUIDPipe()) packageId: string,
+    @Param("stageId", new ParseUUIDPipe()) stageId: string,
+  ) {
+    return this.exports.stageDocumentFor(packageId, stageId);
+  }
+
   @Get("stages/:stageId/export/:format")
   async stage(
     @Param("packageId", new ParseUUIDPipe()) packageId: string,

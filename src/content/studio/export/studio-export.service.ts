@@ -92,6 +92,38 @@ export class StudioExportService {
     );
   }
 
+  /** Documento da versão atual da etapa (para o editor): o editado à mão ou, se não houver, o montado dos campos. */
+  async stageDocumentFor(
+    packageId: string,
+    stageId: string,
+  ): Promise<{
+    document: TiptapDocument;
+    edited: boolean;
+    versionId: string | null;
+  }> {
+    const contentPackage = await this.load(packageId);
+    const stage = (contentPackage.tracks ?? [])
+      .flatMap((track) => track.stages ?? [])
+      .find((item) => item.id === stageId);
+    if (!stage)
+      throw new ResourceNotFoundException("Etapa do material não encontrada");
+    const version = stage.currentVersion;
+    const edited = version?.contentDocument as
+      | TiptapDocument
+      | null
+      | undefined;
+    if (edited && edited.type === "doc")
+      return { document: edited, edited: true, versionId: version?.id ?? null };
+    return {
+      document: buildStageDocument(
+        stage.stageType as ContentStageType,
+        version?.structuredContent ?? {},
+      ),
+      edited: false,
+      versionId: version?.id ?? null,
+    };
+  }
+
   async exportTrack(
     packageId: string,
     audience: ContentAudience,

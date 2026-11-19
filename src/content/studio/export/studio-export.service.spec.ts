@@ -186,3 +186,55 @@ describe("StudioExportService", () => {
     ).rejects.toBeInstanceOf(ResourceNotFoundException);
   });
 });
+
+describe("StudioExportService.stageDocumentFor", () => {
+  it("devolve o documento editado (edited=true) ou o montado dos campos (edited=false), e vazio se não há versão", async () => {
+    const edited = { type: "doc", content: [{ type: "paragraph" }] };
+    const withEdit = setup(
+      pkg([
+        track(ContentAudience.CHILD, [
+          stage(
+            "s1",
+            ContentStageType.LESSON,
+            1,
+            version({ contentDocument: edited }),
+          ),
+        ]),
+      ]),
+    );
+    await expect(
+      withEdit.svc.stageDocumentFor("p1", "s1"),
+    ).resolves.toMatchObject({
+      edited: true,
+      document: edited,
+      versionId: "v1",
+    });
+
+    const derived = setup(
+      pkg([
+        track(ContentAudience.CHILD, [
+          stage("s1", ContentStageType.LESSON, 1, version()),
+        ]),
+      ]),
+    );
+    const result = await derived.svc.stageDocumentFor("p1", "s1");
+    expect(result.edited).toBe(false);
+    expect(result.document.content.length).toBeGreaterThan(0);
+
+    const none = setup(
+      pkg([
+        track(ContentAudience.CHILD, [
+          stage("s1", ContentStageType.LESSON, 1, null),
+        ]),
+      ]),
+    );
+    await expect(none.svc.stageDocumentFor("p1", "s1")).resolves.toMatchObject({
+      edited: false,
+      versionId: null,
+      document: { content: [] },
+    });
+    await expect(
+      none.svc.stageDocumentFor("p1", "nope"),
+    ).rejects.toBeInstanceOf(ResourceNotFoundException);
+  });
+});
