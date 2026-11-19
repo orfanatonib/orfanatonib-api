@@ -36,6 +36,9 @@ export class CreateMeditationService {
     dto: CreateMeditationDto,
     file?: Express.Multer.File,
   ): Promise<MeditationEntity> {
+    // O que já foi gravado fora de qualquer transação: se um passo seguinte falhar,
+    // desfazemos à mão para não deixar meditação sem mídia/rota nem objeto órfão no bucket.
+    const created: { meditationId?: string; uploadedUrl?: string } = {};
     try {
       const startDate = parseDateAsLocal(dto.startDate);
       const endDate = parseDateAsLocal(dto.endDate);
@@ -68,6 +71,7 @@ export class CreateMeditationService {
       });
 
       const savedMeditation = await this.meditationRepo.save(meditation);
+      created.meditationId = savedMeditation.id;
 
       let mediaUrl = dto.media.url?.trim() || "";
       let originalName = dto.media.originalName;
@@ -76,6 +80,7 @@ export class CreateMeditationService {
       if (dto.media.isLocalFile) {
         if (!file) throw new BadRequestException("File not sent.");
         mediaUrl = await this.s3Service.upload(file);
+        created.uploadedUrl = mediaUrl;
         originalName = file.originalname;
         size = file.size;
       }
@@ -115,6 +120,7 @@ export class CreateMeditationService {
 
       return savedMeditation;
     } catch (error) {
+      await this.undoPartialCreate(created);
       if (error instanceof HttpException) {
         throw error;
       }
@@ -122,6 +128,39 @@ export class CreateMeditationService {
       throw new BadRequestException(
         validationMessage(error, "Unexpected error creating meditation."),
       );
+    }
+  }
+
+  /** Melhor esforço: falha ao desfazer é registrada, e o erro original continua sendo o devolvido. */
+  private async undoPartialCreate(created: {
+    meditationId?: string;
+    uploadedUrl?: string;
+  }): Promise<void> {
+    const { meditationId, uploadedUrl } = created;
+    try {
+      if (meditationId) {
+        const media = await this.mediaItemProcessor.findMediaItemsByTarget(
+          meditationId,
+          MediaTargetType.Meditation,
+        );
+        if (media.length > 0) {
+          await this.mediaItemProcessor.deleteMediaItems(media, (url: string) =>
+            this.s3Service.delete(url),
+          );
+        } else if (uploadedUrl) {
+          await this.s3Service.delete(uploadedUrl);
+        }
+        await this.routeService.removeRouteByEntity(
+          MediaTargetType.Meditation,
+          meditationId,
+        );
+        await this.meditationRepo.delete(meditationId);
+      } else if (uploadedUrl) {
+        await this.s3Service.delete(uploadedUrl);
+      }
+    } catch (error: unknown) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Falha ao desfazer a criação parcial: ${reason}`);
     }
   }
 }
