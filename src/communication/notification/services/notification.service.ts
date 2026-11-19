@@ -3,6 +3,9 @@ import { EmailTemplateKey } from "../enums/email-template-key.enum";
 import {
   CommentReceivedEmailData,
   PhotoUploadedEmailData,
+  FeedCommentApprovedEmailData,
+  FeedCommentPendingEmailData,
+  FeedCommentRejectedEmailData,
   ContactReceivedEmailData,
   EventNoticeEmailData,
   FeedbackReceivedEmailData,
@@ -121,6 +124,42 @@ export class NotificationService {
       EmailTemplateKey.PHOTO_UPLOADED,
       photo,
       recipientEmails,
+    );
+  }
+
+  /** Comentário novo no feed aguardando moderação: avisa a coordenação. */
+  async sendFeedCommentPendingNotification(
+    data: FeedCommentPendingEmailData,
+    recipientEmails: readonly string[],
+  ): Promise<void> {
+    await this.dispatcher.dispatch(
+      EmailTemplateKey.FEED_COMMENT_PENDING,
+      data,
+      recipientEmails,
+    );
+  }
+
+  /** O comentário foi aprovado: avisa o autor. */
+  async sendFeedCommentApprovedEmail(
+    data: FeedCommentApprovedEmailData,
+    authorEmail: string,
+  ): Promise<void> {
+    await this.dispatcher.dispatch(
+      EmailTemplateKey.FEED_COMMENT_APPROVED,
+      data,
+      [authorEmail],
+    );
+  }
+
+  /** O comentário foi reprovado: avisa o autor, com o motivo. */
+  async sendFeedCommentRejectedEmail(
+    data: FeedCommentRejectedEmailData,
+    authorEmail: string,
+  ): Promise<void> {
+    await this.dispatcher.dispatch(
+      EmailTemplateKey.FEED_COMMENT_REJECTED,
+      data,
+      [authorEmail],
     );
   }
 

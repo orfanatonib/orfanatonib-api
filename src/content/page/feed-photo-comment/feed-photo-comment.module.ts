@@ -8,11 +8,15 @@ import { FeedPhotoCommentController } from "./feed-photo-comment.controller";
 import { CreateFeedCommentService } from "./services/create-feed-comment.service";
 import { DeleteFeedCommentService } from "./services/delete-feed-comment.service";
 import { GetFeedCommentService } from "./services/get-feed-comment.service";
+import { UpdateFeedCommentService } from "./services/update-feed-comment.service";
+import { FeedCommentNotificationService } from "./services/feed-comment-notification.service";
+import { UserModule } from "src/core/user/user.module";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([ImageSectionCommentEntity]),
     ImageSectionModule,
+    UserModule,
   ],
   controllers: [FeedPhotoCommentController],
   providers: [
@@ -25,6 +29,8 @@ import { GetFeedCommentService } from "./services/get-feed-comment.service";
     CreateFeedCommentService,
     DeleteFeedCommentService,
     GetFeedCommentService,
+    UpdateFeedCommentService,
+    FeedCommentNotificationService,
   ],
   exports: [GetFeedCommentService],
 })

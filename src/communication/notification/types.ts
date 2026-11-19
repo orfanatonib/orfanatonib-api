@@ -70,6 +70,24 @@ export interface PhotoUploadedEmailData {
   photoCount: number;
 }
 
+/** Comentário novo aguardando moderação; sem o texto, que pode ter dado de criança/família. */
+export interface FeedCommentPendingEmailData {
+  authorName: string;
+  postCaption: string;
+}
+
+/** Decisão sobre o comentário, enviada ao próprio autor (o texto é dele). */
+export interface FeedCommentApprovedEmailData {
+  userName: string;
+  commentExcerpt: string;
+  postCaption: string;
+}
+
+export interface FeedCommentRejectedEmailData
+  extends FeedCommentApprovedEmailData {
+  reason: string;
+}
+
 export interface TeamAssignmentChangedEmailData {
   userName: string;
   shelterName: string;
@@ -109,6 +127,9 @@ export interface EmailTemplateDataMap {
   [EmailTemplateKey.PAGELA_REMINDER]: PagelaReminderEmailData;
   [EmailTemplateKey.VISIT_REPORT_REMINDER]: VisitReportReminderEmailData;
   [EmailTemplateKey.PHOTO_UPLOADED]: PhotoUploadedEmailData;
+  [EmailTemplateKey.FEED_COMMENT_PENDING]: FeedCommentPendingEmailData;
+  [EmailTemplateKey.FEED_COMMENT_APPROVED]: FeedCommentApprovedEmailData;
+  [EmailTemplateKey.FEED_COMMENT_REJECTED]: FeedCommentRejectedEmailData;
 }
 
 export type EmailTemplateRenderer<TKey extends EmailTemplateKey> = (

@@ -517,6 +517,28 @@ export const DEFAULT_FEATURE_FLAGS = [
     targetRoles: [],
   },
   {
+    key: "email_feed_comment_pending",
+    name: "E-mail: Comentário do Feed Aguardando Aprovação",
+    description:
+      "Avisa a coordenação sobre comentário novo no feed aguardando moderação.",
+    enabled: true,
+    targetRoles: [],
+  },
+  {
+    key: "email_feed_comment_approved",
+    name: "E-mail: Comentário do Feed Aprovado",
+    description: "Avisa o autor que o comentário foi aprovado e publicado.",
+    enabled: true,
+    targetRoles: [],
+  },
+  {
+    key: "email_feed_comment_rejected",
+    name: "E-mail: Comentário do Feed Reprovado",
+    description: "Avisa o autor que o comentário foi reprovado, com o motivo.",
+    enabled: true,
+    targetRoles: [],
+  },
+  {
     key: "email_event_notice",
     name: "E-mail: Aviso de Evento",
     description: "Envia avisos relacionados a eventos.",

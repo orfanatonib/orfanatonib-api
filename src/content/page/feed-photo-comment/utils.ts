@@ -1,4 +1,7 @@
-import { FEED_COMMENT_MESSAGES } from "./constants";
+import {
+  FEED_COMMENT_EMAIL_EXCERPT_LENGTH,
+  FEED_COMMENT_MESSAGES,
+} from "./constants";
 import { RuleException } from "src/common/exceptions";
 
 // eslint-disable-next-line no-control-regex
@@ -42,3 +45,22 @@ export const canDeleteComment = (
   authorId: string | null,
   actor: { userId: string; isAdmin: boolean },
 ): boolean => actor.isAdmin || (authorId !== null && authorId === actor.userId);
+
+/** Aparar espaços de texto livre vindo do corpo/consulta (`@Transform`). */
+export const trimText = ({ value }: { value: unknown }): unknown =>
+  typeof value === "string" ? value.trim() : value;
+
+/** Trecho do comentário para o e-mail do autor (sem quebras de linha). */
+export const toEmailExcerpt = (content: string): string => {
+  const flat = content.replace(/\s+/g, " ").trim();
+  return flat.length > FEED_COMMENT_EMAIL_EXCERPT_LENGTH
+    ? `${flat.slice(0, FEED_COMMENT_EMAIL_EXCERPT_LENGTH - 1)}…`
+    : flat;
+};
+
+/** Erro de chave duplicada do MySQL (corrida no `UNIQUE(authorId, requestId)`). */
+export const isDuplicateEntryError = (error: unknown): boolean =>
+  typeof error === "object" &&
+  error !== null &&
+  "code" in error &&
+  (error as { code?: unknown }).code === "ER_DUP_ENTRY";

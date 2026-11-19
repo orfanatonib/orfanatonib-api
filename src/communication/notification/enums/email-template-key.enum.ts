@@ -17,4 +17,7 @@ export enum EmailTemplateKey {
   PAGELA_REMINDER = "pagela-reminder",
   VISIT_REPORT_REMINDER = "visit-report-reminder",
   PHOTO_UPLOADED = "photo-uploaded",
+  FEED_COMMENT_PENDING = "feed-comment-pending",
+  FEED_COMMENT_APPROVED = "feed-comment-approved",
+  FEED_COMMENT_REJECTED = "feed-comment-rejected",
 }

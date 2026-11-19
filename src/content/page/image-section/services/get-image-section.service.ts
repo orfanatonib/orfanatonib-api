@@ -3,6 +3,9 @@ import { ImageSectionRepository } from "../repositories/image-section.repository
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { ImageSectionResponseDto } from "../dto/image-section-response.dto";
+import { FeedSectionContextDto } from "../dto/feed-section-context.dto";
+import { toFeedSectionContext } from "../utils";
+import { In } from "typeorm";
 
 @Injectable()
 export class GetImageSectionService {
@@ -51,6 +54,28 @@ export class GetImageSectionService {
     const hidden =
       !section || (!loggedIn && !(section.public && section.page?.public));
     if (hidden) throw new NotFoundException("Publicação não encontrada.");
+  }
+
+  /**
+   * Legenda e capa de várias publicações do feed, em lote (sem N+1). Ids que não
+   * existem ficam de fora do mapa.
+   */
+  async findFeedContexts(
+    sectionIds: string[],
+  ): Promise<Map<string, FeedSectionContextDto>> {
+    const contexts = new Map<string, FeedSectionContextDto>();
+    if (sectionIds.length === 0) return contexts;
+    const sections = await this.sectionRepository.find({
+      where: { id: In(sectionIds) },
+    });
+    const media = await this.mediaItemProcessor.findManyMediaItemsByTargets(
+      sectionIds,
+      MediaTargetType.ImagesPage,
+    );
+    for (const section of sections) {
+      contexts.set(section.id, toFeedSectionContext(section, media));
+    }
+    return contexts;
   }
 
   async findOne(id: string): Promise<ImageSectionResponseDto> {

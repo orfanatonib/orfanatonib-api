@@ -12,6 +12,11 @@ import {
   renderPasswordReset,
 } from "./auth.templates";
 import {
+  renderFeedCommentApproved,
+  renderFeedCommentPending,
+  renderFeedCommentRejected,
+} from "./feed-comment.templates";
+import {
   renderCommentReceived,
   renderPhotoUploaded,
   renderContactReceived,
@@ -41,6 +46,9 @@ export const EMAIL_TEMPLATES: EmailTemplateRegistry = {
   [EmailTemplateKey.PAGELA_REMINDER]: renderPagelaReminder,
   [EmailTemplateKey.VISIT_REPORT_REMINDER]: renderVisitReportReminder,
   [EmailTemplateKey.PHOTO_UPLOADED]: renderPhotoUploaded,
+  [EmailTemplateKey.FEED_COMMENT_PENDING]: renderFeedCommentPending,
+  [EmailTemplateKey.FEED_COMMENT_APPROVED]: renderFeedCommentApproved,
+  [EmailTemplateKey.FEED_COMMENT_REJECTED]: renderFeedCommentRejected,
 };
 
 export const renderEmail = <TKey extends EmailTemplateKey>(

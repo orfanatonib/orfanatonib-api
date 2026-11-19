@@ -52,6 +52,21 @@ export const EMAIL_PREVIEW_SAMPLES: {
     caption: "Visita de sábado",
     photoCount: 3,
   },
+  [EmailTemplateKey.FEED_COMMENT_PENDING]: {
+    authorName: "Maria S.",
+    postCaption: "Visita de sábado",
+  },
+  [EmailTemplateKey.FEED_COMMENT_APPROVED]: {
+    userName: "Maria",
+    commentExcerpt: "Que alegria ver as crianças tão felizes!",
+    postCaption: "Visita de sábado",
+  },
+  [EmailTemplateKey.FEED_COMMENT_REJECTED]: {
+    userName: "Maria",
+    commentExcerpt: "Que alegria ver as crianças tão felizes!",
+    postCaption: "Visita de sábado",
+    reason: "Prefira comentários sobre a atividade da visita.",
+  },
   [EmailTemplateKey.COMMENT_RECEIVED]: {
     authorName: "Carlos Pereira",
     clubinho: "12",

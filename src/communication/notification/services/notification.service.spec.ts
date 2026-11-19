@@ -192,6 +192,45 @@ describe("NotificationService", () => {
         ["c@x"],
       ],
       [
+      [
+        "sendFeedCommentPendingNotification",
+        EmailTemplateKey.FEED_COMMENT_PENDING,
+        (s) =>
+          s.sendFeedCommentPendingNotification(
+            { authorName: "Maria S.", postCaption: "Visita" },
+            ["c@x"],
+          ),
+        ["c@x"],
+      ],
+      [
+        "sendFeedCommentApprovedEmail",
+        EmailTemplateKey.FEED_COMMENT_APPROVED,
+        (s) =>
+          s.sendFeedCommentApprovedEmail(
+            {
+              userName: "Maria",
+              commentExcerpt: "Lindo",
+              postCaption: "Visita",
+            },
+            "a@x",
+          ),
+        ["a@x"],
+      ],
+      [
+        "sendFeedCommentRejectedEmail",
+        EmailTemplateKey.FEED_COMMENT_REJECTED,
+        (s) =>
+          s.sendFeedCommentRejectedEmail(
+            {
+              userName: "Maria",
+              commentExcerpt: "Lindo",
+              postCaption: "Visita",
+              reason: "Fora do tema",
+            },
+            "a@x",
+          ),
+        ["a@x"],
+      ],
         "sendEventNotification",
         EmailTemplateKey.EVENT_NOTICE,
         (s) => s.sendEventNotification(data, ["c@x", "d@x"]),
