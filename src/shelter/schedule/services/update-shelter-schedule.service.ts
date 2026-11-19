@@ -11,6 +11,12 @@ import { ShelterScheduleEntity } from "../entities/shelter-schedule.entity";
 import { GetTeamsService } from "src/shelter/team/services/get-teams.service";
 import { ShelterScheduleEventService } from "./shelter-schedule-event.service";
 
+import type { ShelterAccessContext } from "src/shelter/shelter/types";
+import {
+  assertCanAttemptScheduleWrite,
+  assertCanManageScheduleIn,
+} from "../utils/schedule-access.util";
+
 @Injectable()
 export class UpdateShelterScheduleService {
   private readonly logger = new Logger(UpdateShelterScheduleService.name);
@@ -20,6 +26,39 @@ export class UpdateShelterScheduleService {
     private readonly getTeamsService: GetTeamsService,
     private readonly scheduleEventService: ShelterScheduleEventService,
   ) {}
+
+  /**
+   * Entrada HTTP: admin, ou líder do abrigo da agenda — e, se a equipe muda,
+   * também do abrigo da equipe de destino.
+   */
+  async executeAs(
+    actor: ShelterAccessContext,
+    id: string,
+    dto: UpdateShelterScheduleDto,
+  ): Promise<ShelterScheduleEntity> {
+    assertCanAttemptScheduleWrite(actor);
+    const schedule = await this.scheduleRepo.findById(id);
+    if (!schedule) {
+      throw new NotFoundException(`Shelter schedule with ID ${id} not found`);
+    }
+    await assertCanManageScheduleIn(
+      actor,
+      schedule.team.shelter.id,
+      this.getTeamsService,
+    );
+    if (dto.teamId && dto.teamId !== schedule.team.id) {
+      const target = await this.getTeamsService.findOneEntity(dto.teamId);
+      if (!target) {
+        throw new NotFoundException(`Team with ID ${dto.teamId} not found`);
+      }
+      await assertCanManageScheduleIn(
+        actor,
+        target.shelter.id,
+        this.getTeamsService,
+      );
+    }
+    return this.execute(id, dto);
+  }
 
   async execute(
     id: string,

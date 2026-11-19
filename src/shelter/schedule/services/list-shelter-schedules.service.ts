@@ -22,23 +22,27 @@ export class ListShelterSchedulesService {
 
     const teamId = (req.query?.teamId as string) || null;
 
-    if (teamId) {
-      this.logger.log(`Filtering schedules by teamId: ${teamId}`);
-      return this.scheduleRepo.findByTeamId(teamId);
-    }
+    // O escopo do papel vem PRIMEIRO; `teamId` só estreita o que o ator já pode
+    // ler. Antes, `?teamId=` respondia antes da checagem e qualquer autenticado
+    // (inclusive membro) lia a agenda de qualquer equipe.
+    const visible = await this.visibleTo(role, userId);
+    if (!teamId) return visible;
 
-    if (role === "admin") {
-      return this.scheduleRepo.findAll();
-    }
+    this.logger.log(`Filtering schedules by teamId: ${teamId}`);
+    return visible.filter((schedule) => schedule.team?.id === teamId);
+  }
 
+  private async visibleTo(
+    role: string | undefined,
+    userId: string | undefined,
+  ): Promise<ShelterScheduleEntity[]> {
+    if (role === "admin") return this.scheduleRepo.findAll();
     if (role === "leader" && userId) {
       return this.scheduleRepo.findByLeaderId(userId);
     }
-
     if (role === "member" && userId) {
       return this.scheduleRepo.findByMemberId(userId);
     }
-
     return [];
   }
 }

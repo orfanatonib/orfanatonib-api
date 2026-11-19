@@ -13,6 +13,8 @@ import {
   Req,
 } from "@nestjs/common";
 import { Request } from "express";
+import type { AuthenticatedRequest } from "src/core/auth/auth.types";
+import { toShelterAccessContext } from "src/shelter/shelter/utils/shelter-access.util";
 import { CreateShelterScheduleDto } from "./dto/create-shelter-schedule.dto";
 import { UpdateShelterScheduleDto } from "./dto/update-shelter-schedule.dto";
 import { ShelterScheduleResponseDto } from "./dto/shelter-schedule-response.dto";
@@ -43,10 +45,14 @@ export class ShelterScheduleController {
   @UseGuards(AdminOrLeaderRoleGuard)
   @Post()
   async create(
+    @Req() req: AuthenticatedRequest,
     @Body(ValidationPipe) dto: CreateShelterScheduleDto,
   ): Promise<ShelterScheduleResponseDto> {
     this.logger.log("Creating new shelter schedule");
-    const result = await this.createService.execute(dto);
+    const result = await this.createService.executeAs(
+      toShelterAccessContext(req),
+      dto,
+    );
     this.logger.log(`Shelter schedule created successfully: ${result.id}`);
     return ShelterScheduleResponseDto.fromEntity(result);
   }
@@ -67,11 +73,16 @@ export class ShelterScheduleController {
   @UseGuards(AdminOrLeaderRoleGuard)
   @Put(":id")
   async update(
+    @Req() req: AuthenticatedRequest,
     @Param("id") id: string,
     @Body(ValidationPipe) dto: UpdateShelterScheduleDto,
   ): Promise<ShelterScheduleResponseDto> {
     this.logger.log(`Updating shelter schedule: ${id}`);
-    const result = await this.updateService.execute(id, dto);
+    const result = await this.updateService.executeAs(
+      toShelterAccessContext(req),
+      id,
+      dto,
+    );
     this.logger.log(`Shelter schedule updated successfully: ${id}`);
     return ShelterScheduleResponseDto.fromEntity(result);
   }
@@ -81,9 +92,12 @@ export class ShelterScheduleController {
   @UseGuards(AdminOrLeaderRoleGuard)
   @Delete(":id")
   @HttpCode(204)
-  async remove(@Param("id") id: string): Promise<void> {
+  async remove(
+    @Req() req: AuthenticatedRequest,
+    @Param("id") id: string,
+  ): Promise<void> {
     this.logger.log(`Deleting shelter schedule: ${id}`);
-    await this.deleteService.execute(id);
+    await this.deleteService.executeAs(toShelterAccessContext(req), id);
     this.logger.log(`Shelter schedule deleted successfully: ${id}`);
   }
 }
