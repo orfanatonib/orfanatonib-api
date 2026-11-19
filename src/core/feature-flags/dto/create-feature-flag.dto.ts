@@ -38,11 +38,6 @@ export class CreateFeatureFlagDto {
   @IsOptional()
   enabled?: boolean;
 
-  @IsString()
-  @MaxLength(50)
-  @IsOptional()
-  environment?: string;
-
   @IsArray()
   @IsEnum(UserRole, {
     each: true,

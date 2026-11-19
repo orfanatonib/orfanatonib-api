@@ -23,14 +23,6 @@ export class FeatureFlagEntity {
   @Column({ default: false })
   enabled: boolean;
 
-  /**
-   * O tipo é explícito de propósito: com `string | null`, o `design:type`
-   * refletido de uma união é `Object`, e o TypeORM recusa a entidade com
-   * `DataTypeNotSupportedError` — a aplicação nem chega a conectar no banco.
-   */
-  @Column({ type: "varchar", length: 50, nullable: true })
-  environment: string | null;
-
   @Column({ type: "json", nullable: true })
   metadata: Record<string, unknown> | null;
 

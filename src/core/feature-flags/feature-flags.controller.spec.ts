@@ -32,7 +32,6 @@ describe("FeatureFlagsController", () => {
     getStats: jest.fn(),
     getFlagsMap: jest.fn(),
     isEnabledForRole: jest.fn(),
-    findByEnvironment: jest.fn(),
     findOne: jest.fn(),
   };
   const updateService = { update: jest.fn(), toggle: jest.fn() };
@@ -46,7 +45,6 @@ describe("FeatureFlagsController", () => {
     name: "Gestão de abrigos",
     description: null,
     enabled: true,
-    environment: null,
     targetRoles: [UserRole.ADMIN],
     audience: "ADMIN" as const,
     metadata: null,
@@ -78,7 +76,6 @@ describe("FeatureFlagsController", () => {
     "seed",
     "findAll",
     "stats",
-    "findByEnvironment",
     "findOne",
     "update",
     "toggle",

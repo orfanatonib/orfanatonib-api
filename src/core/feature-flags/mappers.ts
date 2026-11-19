@@ -17,7 +17,6 @@ export function toFeatureFlagResponse(
     name: flag.name,
     description: flag.description ?? null,
     enabled: flag.enabled,
-    environment: flag.environment ?? null,
     targetRoles,
     audience: audienceOfRoles(targetRoles),
     metadata: publicMetadataOf(flag),

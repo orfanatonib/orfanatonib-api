@@ -18,7 +18,7 @@ import { FeatureFlagStatsDto } from "../dto/feature-flag-stats.dto";
 import { QueryFeatureFlagsDto } from "../dto/query-feature-flags.dto";
 import { FeatureFlagEntity } from "../entities/feature-flag.entity";
 import { FeatureFlagsRepository } from "../feature-flags.repository";
-import { toFeatureFlagResponse, toFeatureFlagResponseList } from "../mappers";
+import { toFeatureFlagResponse } from "../mappers";
 import { FeatureFlagAudience } from "../types";
 import {
   audienceOfRoles,
@@ -55,14 +55,6 @@ export class GetFeatureFlagsService {
 
   async findOne(key: string): Promise<FeatureFlagResponseDto> {
     return toFeatureFlagResponse(await this.findEntityOrFail(key));
-  }
-
-  async findByEnvironment(
-    environment: string,
-  ): Promise<FeatureFlagResponseDto[]> {
-    return toFeatureFlagResponseList(
-      await this.repository.findByEnvironment(environment),
-    );
   }
 
   async findAllPaginated(
@@ -173,21 +165,19 @@ export class GetFeatureFlagsService {
     );
   }
 
-  async isEnabled(key: string, environment?: string): Promise<boolean> {
-    return this.isEnabledOrDefault(key, catalogDefaultFor(key), environment);
+  async isEnabled(key: string): Promise<boolean> {
+    return this.isEnabledOrDefault(key, catalogDefaultFor(key));
   }
 
   async isEnabledOrDefault(
     key: string,
     defaultValue: boolean,
-    environment?: string,
   ): Promise<boolean> {
-    const environmentScope = environment ?? "all";
-    const cacheKey = `${key}:${environmentScope}:${FEATURE_FLAG_SWITCH_CACHE_SCOPE}:${defaultValue}`;
+    const cacheKey = `${key}:${FEATURE_FLAG_SWITCH_CACHE_SCOPE}:${defaultValue}`;
     const cached = this.readCache(cacheKey);
     if (cached !== undefined) return cached;
 
-    const state = await this.repository.findEnabledState(key, environment);
+    const state = await this.repository.findEnabledState(key);
     return this.writeCache(cacheKey, state ?? defaultValue);
   }
 

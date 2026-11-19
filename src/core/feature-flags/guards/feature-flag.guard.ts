@@ -1,5 +1,4 @@
 import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
 import type { Request } from "express";
 
@@ -20,7 +19,6 @@ export class FeatureFlagGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly featureFlags: GetFeatureFlagsService,
-    private readonly configService: ConfigService,
     private readonly authContext: AuthContextService,
   ) {}
 
@@ -48,12 +46,11 @@ export class FeatureFlagGuard implements CanActivate {
         ? (metadata as readonly string[])
         : [metadata as string];
 
-    const environment = this.configService.get<string>("ENVIRONMENT");
-    // Chave ligada no ambiente E a audiência (papel) da flag inclui o ator.
+    // Chave ligada E a audiência (papel) da flag inclui o ator.
     const enabled = await Promise.all(
       keys.map(
         async (key) =>
-          (await this.featureFlags.isEnabled(key, environment)) &&
+          (await this.featureFlags.isEnabled(key)) &&
           (await this.featureFlags.isEnabledForRole(key, role ?? null)),
       ),
     );

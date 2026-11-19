@@ -107,14 +107,6 @@ export class FeatureFlagsController {
   }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  @Get("environment/:environment")
-  async findByEnvironment(
-    @Param("environment") environment: string,
-  ): Promise<FeatureFlagResponseDto[]> {
-    return this.getService.findByEnvironment(environment);
-  }
-
-  @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Get(":key")
   async findOne(@Param("key") key: string): Promise<FeatureFlagResponseDto> {
     return this.getService.findOne(key);

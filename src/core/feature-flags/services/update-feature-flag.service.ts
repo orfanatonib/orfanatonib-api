@@ -50,7 +50,6 @@ export class UpdateFeatureFlagService {
     if (dto.name !== undefined) flag.name = dto.name;
     if (dto.description !== undefined) flag.description = dto.description;
     if (dto.enabled !== undefined) flag.enabled = dto.enabled;
-    if (dto.environment !== undefined) flag.environment = dto.environment;
 
     if (dto.metadata !== undefined || dto.targetRoles !== undefined) {
       flag.metadata = metadataWithTargetRoles(

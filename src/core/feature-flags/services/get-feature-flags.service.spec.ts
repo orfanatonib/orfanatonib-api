@@ -19,7 +19,6 @@ function buildFlag(
     name: key,
     description: null,
     enabled,
-    environment: null,
     metadata: metadataWithTargetRoles(null, targetRoles),
     createdAt: new Date("2026-01-01T00:00:00.000Z"),
     updatedAt: new Date("2026-01-02T00:00:00.000Z"),
@@ -32,7 +31,6 @@ describe("GetFeatureFlagsService", () => {
     findAllPaginated: jest.fn(),
     findAllFiltered: jest.fn(),
     findByKey: jest.fn(),
-    findByEnvironment: jest.fn(),
     findEnabledState: jest.fn(),
   };
 
@@ -119,7 +117,6 @@ describe("GetFeatureFlagsService — mapa público", () => {
     findAllPaginated: jest.fn(),
     findAllFiltered: jest.fn(),
     findByKey: jest.fn(),
-    findByEnvironment: jest.fn(),
     findEnabledState: jest.fn(),
   };
 
@@ -206,7 +203,6 @@ describe("GetFeatureFlagsService — consultas administrativas", () => {
     findAllPaginated: jest.fn(),
     findAllFiltered: jest.fn(),
     findByKey: jest.fn(),
-    findByEnvironment: jest.fn(),
     findEnabledState: jest.fn(),
   };
 
@@ -226,16 +222,6 @@ describe("GetFeatureFlagsService — consultas administrativas", () => {
     repository.findAllPaginated.mockResolvedValue({ items: [], total: 0 });
     repository.findAllFiltered.mockResolvedValue([]);
     repository.findAll.mockResolvedValue([]);
-    repository.findByEnvironment.mockResolvedValue([]);
-  });
-
-  it("findByEnvironment mapeia para o DTO de resposta", async () => {
-    repository.findByEnvironment.mockResolvedValue([buildFlag("local-flag")]);
-
-    const result = await service.findByEnvironment("local");
-
-    expect(repository.findByEnvironment).toHaveBeenCalledWith("local");
-    expect(result[0].key).toBe("local-flag");
   });
 
   it("findAllPaginated devolve o envelope compartilhado", async () => {

@@ -38,7 +38,6 @@ const buildFlag = (
     name: "Endereço",
     description: null,
     enabled: true,
-    environment: null,
     metadata: null,
     createdAt: new Date("2026-01-01T00:00:00.000Z"),
     updatedAt: new Date("2026-01-02T00:00:00.000Z"),
@@ -168,7 +167,7 @@ describe("FeatureFlagsRepository", () => {
 
   describe("findEnabledState", () => {
     it("devolve null para chave que não existe", async () => {
-      queryBuilder.getOne.mockResolvedValue(null);
+      typeOrmRepository.findOne.mockResolvedValue(null);
 
       await expect(
         repository.findEnabledState("nao-existe"),
@@ -176,26 +175,24 @@ describe("FeatureFlagsRepository", () => {
     });
 
     it("distingue desligada de inexistente", async () => {
-      queryBuilder.getOne.mockResolvedValue(buildFlag({ enabled: false }));
+      typeOrmRepository.findOne.mockResolvedValue(
+        buildFlag({ enabled: false }),
+      );
 
       await expect(repository.findEnabledState("email-delivery")).resolves.toBe(
         false,
       );
     });
 
-    it("aceita a flag do ambiente pedido ou a global", async () => {
-      await repository.findEnabledState("shelter-address", "local");
+    it("devolve o estado ligado/desligado pela chave", async () => {
+      typeOrmRepository.findOne.mockResolvedValue(buildFlag({ enabled: true }));
 
-      expect(clauseMatching("flag.environment")).toEqual([
-        "(flag.environment = :environment OR flag.environment IS NULL)",
-        { environment: "local" },
-      ]);
-    });
-
-    it("não restringe ambiente quando nenhum foi pedido", async () => {
-      await repository.findEnabledState("shelter-address");
-
-      expect(clauseMatching("flag.environment")).toBeUndefined();
+      await expect(
+        repository.findEnabledState("shelter_address"),
+      ).resolves.toBe(true);
+      expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
+        where: { key: "shelter_address" },
+      });
     });
   });
 
@@ -213,15 +210,6 @@ describe("FeatureFlagsRepository", () => {
 
       expect(typeOrmRepository.findOne).toHaveBeenCalledWith({
         where: { key: "shelter-address" },
-      });
-    });
-
-    it("findByEnvironment filtra pelo ambiente e ordena por nome", async () => {
-      await repository.findByEnvironment("local");
-
-      expect(typeOrmRepository.find).toHaveBeenCalledWith({
-        where: { environment: "local" },
-        order: { name: "ASC" },
       });
     });
   });

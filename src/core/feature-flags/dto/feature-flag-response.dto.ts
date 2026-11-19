@@ -8,7 +8,6 @@ export class FeatureFlagResponseDto {
   name: string;
   description: string | null;
   enabled: boolean;
-  environment: string | null;
   targetRoles: UserRole[];
   audience: FeatureFlagAudience;
   metadata: Record<string, unknown> | null;

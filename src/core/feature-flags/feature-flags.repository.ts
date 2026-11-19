@@ -81,29 +81,8 @@ export class FeatureFlagsRepository {
     return this.repository.findOne({ where: { key } });
   }
 
-  async findByEnvironment(environment: string): Promise<FeatureFlagEntity[]> {
-    return this.repository.find({
-      where: { environment },
-      order: { name: "ASC" },
-    });
-  }
-
-  async findEnabledState(
-    key: string,
-    environment?: string,
-  ): Promise<boolean | null> {
-    const queryBuilder = this.repository
-      .createQueryBuilder("flag")
-      .where("flag.key = :key", { key });
-
-    if (environment) {
-      queryBuilder.andWhere(
-        "(flag.environment = :environment OR flag.environment IS NULL)",
-        { environment },
-      );
-    }
-
-    const flag = await queryBuilder.getOne();
+  async findEnabledState(key: string): Promise<boolean | null> {
+    const flag = await this.repository.findOne({ where: { key } });
     return flag?.enabled ?? null;
   }
 

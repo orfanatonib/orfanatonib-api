@@ -21,7 +21,6 @@ function buildFlag(
     name: "Gestão de acolhidos",
     description: null,
     enabled,
-    environment: null,
     metadata: metadataWithTargetRoles({ rollout: 100 }, targetRoles),
     createdAt: new Date(),
     updatedAt: new Date(),

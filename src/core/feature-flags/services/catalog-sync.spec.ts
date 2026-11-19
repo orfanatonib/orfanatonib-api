@@ -18,7 +18,6 @@ const buildFlag = (key: string): FeatureFlagEntity =>
     name: key,
     description: null,
     enabled: true,
-    environment: null,
     metadata: null,
     createdAt: new Date(),
     updatedAt: new Date(),

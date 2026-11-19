@@ -1,5 +1,4 @@
 import { ExecutionContext } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { Reflector } from "@nestjs/core";
 import { Test } from "@nestjs/testing";
 
@@ -23,7 +22,6 @@ const context = contextFor();
 describe("FeatureFlagGuard", () => {
   const reflector = { getAllAndOverride: jest.fn() };
   const featureFlags = { isEnabled: jest.fn(), isEnabledForRole: jest.fn() };
-  const configService = { get: jest.fn() };
   const authContext = { getRole: jest.fn() };
 
   let guard: FeatureFlagGuard;
@@ -36,7 +34,6 @@ describe("FeatureFlagGuard", () => {
         FeatureFlagGuard,
         { provide: Reflector, useValue: reflector },
         { provide: GetFeatureFlagsService, useValue: featureFlags },
-        { provide: ConfigService, useValue: configService },
         { provide: AuthContextService, useValue: authContext },
       ],
     }).compile();
@@ -46,17 +43,13 @@ describe("FeatureFlagGuard", () => {
     reflector.getAllAndOverride.mockReturnValue("shelter-pagelas");
     featureFlags.isEnabled.mockResolvedValue(true);
     featureFlags.isEnabledForRole.mockResolvedValue(true);
-    configService.get.mockReturnValue("local");
     authContext.getRole.mockResolvedValue(null);
   });
 
   it("libera a rota quando a flag está ligada", async () => {
     await expect(guard.canActivate(context)).resolves.toBe(true);
 
-    expect(featureFlags.isEnabled).toHaveBeenCalledWith(
-      "shelter-pagelas",
-      "local",
-    );
+    expect(featureFlags.isEnabled).toHaveBeenCalledWith("shelter-pagelas");
   });
 
   it("libera a rota que não declara flag nenhuma", async () => {
@@ -73,17 +66,6 @@ describe("FeatureFlagGuard", () => {
       new AccessDeniedException(
         'A funcionalidade "shelter-pagelas" está temporariamente indisponível',
       ),
-    );
-  });
-
-  it("consulta sem ambiente quando ele não está configurado", async () => {
-    configService.get.mockReturnValue(undefined);
-
-    await guard.canActivate(context);
-
-    expect(featureFlags.isEnabled).toHaveBeenCalledWith(
-      "shelter-pagelas",
-      undefined,
     );
   });
 

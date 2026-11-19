@@ -59,7 +59,6 @@ export class CreateFeatureFlagService implements OnModuleInit {
       name: dto.name,
       description: dto.description ?? null,
       enabled: dto.enabled ?? false,
-      environment: dto.environment ?? null,
       metadata: metadataWithTargetRoles(dto.metadata, dto.targetRoles),
     });
 
@@ -80,7 +79,6 @@ export class CreateFeatureFlagService implements OnModuleInit {
         name: definition.name,
         description: definition.description,
         enabled: definition.enabled,
-        environment: null,
         metadata: metadataWithTargetRoles(null, definition.targetRoles),
       });
       try {
@@ -124,7 +122,6 @@ export class CreateFeatureFlagService implements OnModuleInit {
               name: definition?.name ?? source.name,
               description: definition?.description ?? source.description,
               enabled: source.enabled,
-              environment: source.environment,
               metadata: source.metadata,
             }),
           );
