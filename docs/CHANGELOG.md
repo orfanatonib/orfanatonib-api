@@ -6,6 +6,8 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ## [Unreleased] - 2026-10-02 - ESTÚDIO ORFANATO
 
+- **CHANGE**: imagem Docker com `npm ci`, `USER node`, `HEALTHCHECK` e `.dockerignore`; `DockerFile` virou `Dockerfile` (workflows e script de deploy local atualizados).
+- **DOCS**: saúde (`/health`, `/health/ready`), CORS, rate limit e Docker em `docs/modules/bootstrap-config`.
 - **ADD**: observabilidade e auditoria (plano 12): `requestId` do servidor em
   `X-Request-Id`, logger estruturado com redação, auditoria automática das
   mutações e dos jobs agendados (só `actorId`, sem nome/corpo/query/IP), storage
