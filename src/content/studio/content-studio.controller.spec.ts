@@ -25,6 +25,7 @@ import { ResolveReviewCommentService } from "./services/resolve-review-comment.s
 import { RequestStageGenerationService } from "./services/request-stage-generation.service";
 import { SaveStageContentService } from "./services/save-stage-content.service";
 import { SubmitPackageReviewService } from "./services/submit-package-review.service";
+import { GetLatestStageGenerationService } from "./services/get-latest-stage-generation.service";
 import { CancelStageGenerationService } from "./services/cancel-stage-generation.service";
 import { ArchiveContentPackageService } from "./services/archive-content-package.service";
 
@@ -91,6 +92,10 @@ describe("ContentStudioController", () => {
         },
         {
           provide: CancelStageGenerationService,
+          useValue: { execute: jest.fn() },
+        },
+        {
+          provide: GetLatestStageGenerationService,
           useValue: { execute: jest.fn() },
         },
       ],
