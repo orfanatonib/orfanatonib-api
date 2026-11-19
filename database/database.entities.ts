@@ -42,6 +42,7 @@ import { ContentStageEntity } from "../src/content/studio/entities/content-stage
 import { ContentVersionEntity } from "../src/content/studio/entities/content-version.entity";
 import { ContentGenerationJobEntity } from "../src/content/studio/entities/content-generation-job.entity";
 import { ContentAssetEntity } from "../src/content/studio/entities/content-asset.entity";
+import { ContentPromptPreferenceEntity } from "../src/content/studio/entities/content-prompt-preference.entity";
 import { ContentReviewCommentEntity } from "../src/content/studio/entities/content-review-comment.entity";
 import { ContentPublicationEntity } from "../src/content/studio/entities/content-publication.entity";
 import { ContentReviewDecisionEntity } from "../src/content/studio/entities/content-review-decision.entity";
@@ -92,6 +93,7 @@ export const DATABASE_ENTITIES = [
   ContentGenerationJobEntity,
   ContentAssetEntity,
   ContentReviewCommentEntity,
+  ContentPromptPreferenceEntity,
   ContentPublicationEntity,
   ContentReviewDecisionEntity,
 ];

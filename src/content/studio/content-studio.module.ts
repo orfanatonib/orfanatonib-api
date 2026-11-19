@@ -11,6 +11,12 @@ import { GetAiUsageService } from "./ai-management/services/get-ai-usage.service
 import { ContentStudioGenerationStreamController } from "./content-studio-generation-stream.controller";
 import { GenerationStreamRepository } from "./repositories/generation-stream.repository";
 import { GenerationStreamService } from "./services/generation-stream.service";
+import { ContentStudioPromptPreferencesController } from "./content-studio-prompt-preferences.controller";
+import { ContentPromptPreferenceEntity } from "./entities/content-prompt-preference.entity";
+import { ListPromptPreferencesService } from "./prompt-preferences/services/list-prompt-preferences.service";
+import { ResetPromptPreferenceService } from "./prompt-preferences/services/reset-prompt-preference.service";
+import { SavePromptPreferenceService } from "./prompt-preferences/services/save-prompt-preference.service";
+import { ContentPromptPreferenceRepository } from "./repositories/content-prompt-preference.repository";
 import { BullMqAiJobQueue } from "./queue/bullmq-ai-job-queue";
 import { InMemoryAiJobQueue } from "./queue/in-memory-ai-job-queue";
 import { GetLatestStageGenerationService } from "./services/get-latest-stage-generation.service";
@@ -69,6 +75,7 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
       ContentPackageEntity,
       ContentPublicationEntity,
       ContentReviewCommentEntity,
+      ContentPromptPreferenceEntity,
       ContentReviewDecisionEntity,
       ContentStageEntity,
       ContentTrackEntity,
@@ -80,6 +87,7 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
     AiManagementController,
     ContentStudioExportController,
     ContentStudioGenerationStreamController,
+    ContentStudioPromptPreferencesController,
   ],
   providers: [
     ContentPackagesRepository,
@@ -87,6 +95,10 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
     ContentStageContentRepository,
     ContentReviewRepository,
     GenerationStreamRepository,
+    ContentPromptPreferenceRepository,
+    ListPromptPreferencesService,
+    SavePromptPreferenceService,
+    ResetPromptPreferenceService,
     GenerationStreamService,
     AiUsageRepository,
     GetAiUsageService,

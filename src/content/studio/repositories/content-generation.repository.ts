@@ -5,6 +5,7 @@ import { ResourceConflictException } from "src/common/exceptions";
 
 import { CONTENT_STUDIO_CATALOG_VERSION } from "../constants";
 import type { StageGenerationContext } from "../ai/generation/stage-prompt.builder";
+import { ContentPromptPreferenceEntity } from "../entities/content-prompt-preference.entity";
 import { ContentGenerationJobEntity } from "../entities/content-generation-job.entity";
 import { ContentPackageEntity } from "../entities/content-package.entity";
 import { ContentStageEntity } from "../entities/content-stage.entity";
@@ -170,6 +171,7 @@ export class ContentGenerationRepository {
       .filter(Boolean);
 
     let revisionInstructions: string | null = null;
+    let adminPrompt: string | null = null;
     if (jobId) {
       const job = await this.dataSource
         .getRepository(ContentGenerationJobEntity)
@@ -178,11 +180,27 @@ export class ContentGenerationRepository {
         job?.normalizedRequest as { revisionInstructions?: unknown } | undefined
       )?.revisionInstructions;
       revisionInstructions = typeof raw === "string" && raw.trim() ? raw : null;
+      // Orientação pessoal de quem pediu a geração, para este público e esta etapa.
+      if (job?.requestedById) {
+        const preference = await this.dataSource
+          .getRepository(ContentPromptPreferenceEntity)
+          .findOne({
+            where: {
+              userId: job.requestedById,
+              audience: stage.track.audience,
+              stageType: stage.stageType,
+            },
+          });
+        adminPrompt = preference?.customPrompt?.trim()
+          ? preference.customPrompt
+          : null;
+      }
     }
 
     const pkg = stage.track.contentPackage;
     return {
       revisionInstructions,
+      adminPrompt,
       stageType: stage.stageType,
       audience: stage.track.audience,
       theme: pkg.theme,

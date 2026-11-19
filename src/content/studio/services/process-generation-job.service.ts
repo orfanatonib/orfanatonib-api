@@ -101,6 +101,8 @@ export class ProcessGenerationJobService {
           stageType: context.stageType,
           audience: context.audience,
           promptVersion: built.promptVersion,
+          // Orientação pessoal do administrador somada às regras oficiais nesta geração.
+          adminPromptApplied: Boolean(context.adminPrompt?.trim()),
           // Notas internas do modelo (conferência humana): ficam aqui, fora do conteúdo editável.
           reviewerNotes: internal.reviewerNotes ?? "",
           centralMessage: internal.centralMessage ?? "",

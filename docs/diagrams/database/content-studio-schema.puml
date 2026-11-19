@@ -156,6 +156,19 @@ packages ||--o{ assets : package_id
 stages ||--o{ assets : stage_id
 versions ||--o{ assets : version_id
 packages ||--o{ comments : package_id
+entity "content_prompt_preferences" as promptprefs {
+  * id : uuid
+  --
+  user_id : uuid (audit reference, not FK)
+  audience : enum
+  stage_type : enum
+  custom_prompt : text?
+  lock_version : int
+  createdAt : datetime
+  updatedAt : datetime
+  unique(user_id, audience, stage_type)
+}
+
 stages ||--o{ comments : stage_id
 versions ||--o{ comments : version_id
 stages ||--o{ decisions : stage_id (RESTRICT)
