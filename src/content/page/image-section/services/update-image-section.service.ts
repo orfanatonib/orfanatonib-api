@@ -13,6 +13,8 @@ import {
   MediaItemEntity,
 } from "src/shared/media/media-item/media-item.entity";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
+import { ImageSectionReviewStatus } from "../enums/image-section-review-status.enum";
+import { validateShelterPostMedia } from "../media-validation";
 import { ImageSectionRepository } from "../repositories/image-section.repository";
 import { ImagePageRepository } from "src/content/page/image-page/repositories/image-page.repository";
 import { UpdateImageSectionDto } from "../dto/update-image-section.dto";
@@ -36,7 +38,14 @@ export class UpdateImageSectionService {
     id: string,
     dto: UpdateImageSectionDto,
     filesDict: Record<string, Express.Multer.File>,
+    reviewerId: string | null = null,
   ): Promise<ImageSectionResponseDto> {
+    const existingForValidation =
+      await this.mediaItemProcessor.findManyMediaItemsByTargets(
+        [id],
+        MediaTargetType.ImagesPage,
+      );
+    validateShelterPostMedia(dto.mediaItems, filesDict, existingForValidation);
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -82,6 +91,11 @@ export class UpdateImageSectionService {
       section.description = dto.description;
       section.public = dto.public || false;
       section.page = page;
+      // Anexar à galeria é aprovar: registra quem revisou e limpa um motivo anterior.
+      section.reviewStatus = ImageSectionReviewStatus.APPROVED;
+      section.rejectionReason = null;
+      section.reviewedBy = reviewerId ? ({ id: reviewerId } as never) : null;
+      section.reviewedAt = new Date();
       const savedSection = await queryRunner.manager.save(section);
 
       await queryRunner.commitTransaction();

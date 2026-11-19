@@ -4,7 +4,8 @@ import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { ImageSectionResponseDto } from "../dto/image-section-response.dto";
 import { FeedSectionContextDto } from "../dto/feed-section-context.dto";
-import { toFeedSectionContext } from "../utils";
+import { toFeedSectionContext, toMyImageSectionDto } from "../utils";
+import { MyImageSectionDto } from "../dto/my-image-section.dto";
 import { In } from "typeorm";
 
 @Injectable()
@@ -15,6 +16,21 @@ export class GetImageSectionService {
     private readonly sectionRepository: ImageSectionRepository,
     private readonly mediaItemProcessor: MediaItemProcessor,
   ) {}
+
+  /** "Minhas publicações": status e motivo da reprovação, só do autor logado. */
+  async findMine(authorId: string): Promise<MyImageSectionDto[]> {
+    const sections = await this.sectionRepository.findByAuthor(authorId);
+    const media = await this.mediaItemProcessor.findManyMediaItemsByTargets(
+      sections.map((section) => section.id),
+      MediaTargetType.ImagesPage,
+    );
+    return sections.map((section) =>
+      toMyImageSectionDto(
+        section,
+        media.filter((item) => item.targetId === section.id),
+      ),
+    );
+  }
 
   async findAll(authorId?: string): Promise<ImageSectionResponseDto[]> {
     const sections = await this.sectionRepository.findAllOrfaSections(authorId);

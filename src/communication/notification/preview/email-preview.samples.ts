@@ -48,9 +48,16 @@ export const EMAIL_PREVIEW_SAMPLES: {
     rating: 5,
     comment: "O site está muito melhor, parabéns pelo trabalho!",
   },
-  [EmailTemplateKey.PHOTO_UPLOADED]: {
+  [EmailTemplateKey.IMAGE_SHARED_NOTIFICATION]: {
+    authorName: "Maria S.",
     caption: "Visita de sábado",
-    photoCount: 3,
+    photoCount: 2,
+    videoCount: 1,
+  },
+  [EmailTemplateKey.IMAGE_REJECTED_NOTIFICATION]: {
+    userName: "Maria",
+    postCaption: "Visita de sábado",
+    reason: "A foto 2 mostra o rosto de uma criança; envie sem rostos.",
   },
   [EmailTemplateKey.FEED_COMMENT_PENDING]: {
     authorName: "Maria S.",

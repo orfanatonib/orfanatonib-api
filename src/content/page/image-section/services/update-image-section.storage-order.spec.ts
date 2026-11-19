@@ -11,12 +11,19 @@ afterEach(() => jest.restoreAllMocks());
 
 const OLD = "https://b/old.png";
 const NEW = "https://b/new.png";
-const file = { originalname: "n.png", size: 3 } as Express.Multer.File;
+const file = {
+  fieldname: "f",
+  originalname: "n.png",
+  mimetype: "image/png",
+  size: 3,
+  buffer: Buffer.alloc(3),
+} as Express.Multer.File;
 
 function setup() {
   const events: string[] = [];
   const existingRow = {
     id: "m1",
+    mediaType: "image",
     isLocalFile: true,
     url: OLD,
     originalName: "o.png",
@@ -88,6 +95,7 @@ const dto = {
   mediaItems: [
     {
       id: "m1",
+      mediaType: "image",
       uploadType: UploadType.UPLOAD,
       isLocalFile: true,
       fieldKey: "f",

@@ -184,14 +184,24 @@ describe("NotificationService", () => {
       ],
       [
         "sendPhotoUploadedNotification",
-        EmailTemplateKey.PHOTO_UPLOADED,
+        EmailTemplateKey.IMAGE_SHARED_NOTIFICATION,
         (s) =>
-          s.sendPhotoUploadedNotification({ caption: "x", photoCount: 2 }, [
-            "c@x",
-          ]),
+          s.sendPhotoUploadedNotification(
+            { authorName: null, caption: "x", photoCount: 2, videoCount: 0 },
+            ["c@x"],
+          ),
         ["c@x"],
       ],
       [
+        "sendImageRejectedEmail",
+        EmailTemplateKey.IMAGE_REJECTED_NOTIFICATION,
+        (s) =>
+          s.sendImageRejectedEmail(
+            { userName: "Maria", postCaption: "Visita", reason: "Motivo" },
+            "a@x",
+          ),
+        ["a@x"],
+      ],
       [
         "sendFeedCommentPendingNotification",
         EmailTemplateKey.FEED_COMMENT_PENDING,
@@ -231,6 +241,7 @@ describe("NotificationService", () => {
           ),
         ["a@x"],
       ],
+      [
         "sendEventNotification",
         EmailTemplateKey.EVENT_NOTICE,
         (s) => s.sendEventNotification(data, ["c@x", "d@x"]),

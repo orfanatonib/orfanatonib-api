@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { EmailTemplateKey } from "../enums/email-template-key.enum";
 import {
   CommentReceivedEmailData,
+  ImageRejectedEmailData,
   PhotoUploadedEmailData,
   FeedCommentApprovedEmailData,
   FeedCommentPendingEmailData,
@@ -121,9 +122,21 @@ export class NotificationService {
     recipientEmails: readonly string[],
   ): Promise<void> {
     await this.dispatcher.dispatch(
-      EmailTemplateKey.PHOTO_UPLOADED,
+      EmailTemplateKey.IMAGE_SHARED_NOTIFICATION,
       photo,
       recipientEmails,
+    );
+  }
+
+  /** Publicação reprovada: avisa o autor, com o motivo. */
+  async sendImageRejectedEmail(
+    data: ImageRejectedEmailData,
+    authorEmail: string,
+  ): Promise<void> {
+    await this.dispatcher.dispatch(
+      EmailTemplateKey.IMAGE_REJECTED_NOTIFICATION,
+      data,
+      [authorEmail],
     );
   }
 

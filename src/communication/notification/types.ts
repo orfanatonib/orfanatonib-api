@@ -64,10 +64,23 @@ export interface CommentReceivedEmailData {
   comment: string;
 }
 
-/** Foto(s) nova(s) enviada(s) para o feed de abrigos; sem dado de criança. */
+/**
+ * Publicação nova (fotos e/ou vídeo) aguardando aprovação no feed de abrigos.
+ * Só o nome público de quem enviou (sem e-mail/telefone) e as contagens; sem arquivo nem dado de criança.
+ */
 export interface PhotoUploadedEmailData {
+  /** Nome público ("Fulano E."); `null` = autoria desconhecida. */
+  authorName: string | null;
   caption: string;
   photoCount: number;
+  videoCount: number;
+}
+
+/** Publicação reprovada, enviada ao próprio autor: leva o motivo dado pelo admin e nada além disso. */
+export interface ImageRejectedEmailData {
+  userName: string;
+  postCaption: string;
+  reason: string;
 }
 
 /** Comentário novo aguardando moderação; sem o texto, que pode ter dado de criança/família. */
@@ -83,8 +96,7 @@ export interface FeedCommentApprovedEmailData {
   postCaption: string;
 }
 
-export interface FeedCommentRejectedEmailData
-  extends FeedCommentApprovedEmailData {
+export interface FeedCommentRejectedEmailData extends FeedCommentApprovedEmailData {
   reason: string;
 }
 
@@ -126,7 +138,8 @@ export interface EmailTemplateDataMap {
   [EmailTemplateKey.TEAM_ASSIGNMENT_CHANGED]: TeamAssignmentChangedEmailData;
   [EmailTemplateKey.PAGELA_REMINDER]: PagelaReminderEmailData;
   [EmailTemplateKey.VISIT_REPORT_REMINDER]: VisitReportReminderEmailData;
-  [EmailTemplateKey.PHOTO_UPLOADED]: PhotoUploadedEmailData;
+  [EmailTemplateKey.IMAGE_SHARED_NOTIFICATION]: PhotoUploadedEmailData;
+  [EmailTemplateKey.IMAGE_REJECTED_NOTIFICATION]: ImageRejectedEmailData;
   [EmailTemplateKey.FEED_COMMENT_PENDING]: FeedCommentPendingEmailData;
   [EmailTemplateKey.FEED_COMMENT_APPROVED]: FeedCommentApprovedEmailData;
   [EmailTemplateKey.FEED_COMMENT_REJECTED]: FeedCommentRejectedEmailData;

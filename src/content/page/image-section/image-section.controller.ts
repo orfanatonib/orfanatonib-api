@@ -11,6 +11,7 @@ import {
   UseGuards,
   Logger,
   BadRequestException,
+  UnauthorizedException,
   NotFoundException,
   Req,
   Query,
@@ -33,10 +34,17 @@ import { CreateImageSectionService } from "./services/create-image-section.servi
 import { ImageSectionResponseDto } from "./dto/image-section-response.dto";
 import { CreateImageSectionDto } from "./dto/create-image-section.dto";
 import { UpdateImageSectionDto } from "./dto/update-image-section.dto";
+import { IMAGE_SECTION_UPLOAD_LIMITS } from "./constants";
+import { RejectImageSectionService } from "./services/reject-image-section.service";
+import { RejectImageSectionDto } from "./dto/reject-image-section.dto";
+import { MyImageSectionDto } from "./dto/my-image-section.dto";
 
-/** Imagens da seção: até 10 arquivos de 10 MB (MIME validado no armazenamento). */
+/**
+ * Fotos e vídeo da seção: até 10 fotos + 1 vídeo (11 arquivos), o maior com 100 MB.
+ * O limite por tipo (foto 10 MB) e o conteúdo são conferidos em `validateShelterPostMedia`.
+ */
 export const IMAGE_SECTION_UPLOAD_OPTIONS = {
-  limits: { fileSize: 10 * 1024 * 1024, files: 10 },
+  limits: IMAGE_SECTION_UPLOAD_LIMITS,
 } as const;
 
 /** Qualquer sessão envia (membro propõe); só admin lê a fila, edita e apaga. */
@@ -50,6 +58,7 @@ export class ImageSectionController {
     private readonly updateService: UpdateImageSectionService,
     private readonly getService: GetImageSectionService,
     private readonly deleteService: DeleteImageSectionService,
+    private readonly rejectService: RejectImageSectionService,
   ) {}
 
   @FeatureFlag({
@@ -76,14 +85,44 @@ export class ImageSectionController {
 
     const filesDict = this.mapFiles(files);
     this.logger.log("Creating new image section");
+    // O próprio admin publicando não "aguarda aprovação": não avisa os admins.
     const result = await this.createService.createSection(
       dto,
       filesDict,
       req.user?.userId ?? null,
+      { notifyAdmins: req.user?.role?.toLowerCase() !== UserRole.ADMIN },
     );
     this.logger.log(`Image section created successfully: ${result.id}`);
 
     return result;
+  }
+
+  /** O autor acompanha as próprias publicações (status e motivo da reprovação). */
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.SHELTER_PHOTO_UPLOAD,
+      FeatureFlagKeys.PHOTO_MODERATION,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
+  @Get("mine")
+  async mine(@Req() req: AuthenticatedRequest): Promise<MyImageSectionDto[]> {
+    const userId = req.user?.userId;
+    if (!userId) throw new UnauthorizedException();
+    return this.getService.findMine(userId);
+  }
+
+  @FeatureFlag(FeatureFlagKeys.PHOTO_MODERATION)
+  @UseGuards(FeatureFlagGuard)
+  @Patch(":id/reject")
+  @UseGuards(AdminRoleGuard)
+  async reject(
+    @Param("id", ParseUUIDPipe) id: string,
+    @Body() dto: RejectImageSectionDto,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<ImageSectionResponseDto> {
+    this.logger.log(`Rejecting image section: ${id}`);
+    return this.rejectService.reject(id, dto.reason, req.user?.userId ?? null);
   }
 
   @FeatureFlag(FeatureFlagKeys.PHOTO_MODERATION)
@@ -92,6 +131,7 @@ export class ImageSectionController {
   @UseGuards(AdminRoleGuard)
   @UseInterceptors(AnyFilesInterceptor(IMAGE_SECTION_UPLOAD_OPTIONS))
   async update(
+    @Req() req: AuthenticatedRequest,
     @Param("id") id: string,
     @UploadedFiles() files: Express.Multer.File[],
     @Body("sectionData") raw: string,
@@ -104,7 +144,12 @@ export class ImageSectionController {
 
     const filesDict = this.mapFiles(files);
     this.logger.log(`Updating image section: ${id}`);
-    const result = await this.updateService.updateSection(id, dto, filesDict);
+    const result = await this.updateService.updateSection(
+      id,
+      dto,
+      filesDict,
+      req.user?.userId ?? null,
+    );
     this.logger.log(`Image section updated successfully: ${id}`);
 
     return result;

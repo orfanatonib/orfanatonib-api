@@ -12,6 +12,7 @@ import { DeleteImageSectionService } from "./services/delete-image-section.servi
 import { GetImageSectionService } from "./services/get-image-section.service";
 import { ImageSectionController } from "./image-section.controller";
 import { CreateImageSectionService } from "./services/create-image-section.service";
+import { RejectImageSectionService } from "./services/reject-image-section.service";
 import { UserModule } from "src/core/user/user.module";
 
 @Module({
@@ -29,6 +30,7 @@ import { UserModule } from "src/core/user/user.module";
     DeleteImageSectionService,
     GetImageSectionService,
     UpdateImageSectionService,
+    RejectImageSectionService,
   ],
   exports: [GetImageSectionService],
 })

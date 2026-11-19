@@ -13,7 +13,7 @@ describe("ImageSectionController (antes sem nenhum guard)", () => {
     expect(guardsOf(ImageSectionController)).toContain(JwtAuthGuard);
   });
 
-  it.each(["getAll", "getById", "update", "delete"] as const)(
+  it.each(["getAll", "getById", "update", "delete", "reject"] as const)(
     "%s é só de admin",
     (handler) => {
       expect(
@@ -32,6 +32,12 @@ describe("ImageSectionController (antes sem nenhum guard)", () => {
     ).not.toContain(AdminRoleGuard);
   });
 
+  it("mine (minhas publicações) fica aberto a qualquer sessão", () => {
+    expect(
+      guardsOf(Reflect.get(ImageSectionController.prototype, "mine") as object),
+    ).not.toContain(AdminRoleGuard);
+  });
+
   describe("create: publicação direta só para admin", () => {
     const raw = JSON.stringify({
       caption: "c",
@@ -45,6 +51,7 @@ describe("ImageSectionController (antes sem nenhum guard)", () => {
       };
       const controller = new ImageSectionController(
         createService as never,
+        {} as never,
         {} as never,
         {} as never,
         {} as never,
@@ -72,6 +79,42 @@ describe("ImageSectionController (antes sem nenhum guard)", () => {
       >;
       expect(calls).toHaveLength(1);
       expect(calls[0][0].public).toBe(true);
+    });
+  });
+
+  describe("create: aviso aos admins", () => {
+    const raw = JSON.stringify({
+      caption: "c",
+      description: "d",
+      mediaItems: [],
+    });
+    const run = async (role: string) => {
+      const createService = {
+        createSection: jest.fn().mockResolvedValue({ id: "s1" }),
+      };
+      const controller = new ImageSectionController(
+        createService as never,
+        {} as never,
+        {} as never,
+        {} as never,
+        {} as never,
+      );
+      await controller.create(
+        { user: { userId: "u", role } } as unknown as AuthenticatedRequest,
+        [],
+        raw,
+      );
+      return createService.createSection.mock.calls[0] as unknown[];
+    };
+
+    it("membro e líder avisam os admins", async () => {
+      for (const role of ["member", "leader"]) {
+        expect((await run(role))[3]).toEqual({ notifyAdmins: true });
+      }
+    });
+
+    it("o próprio admin publicando não avisa", async () => {
+      expect((await run("admin"))[3]).toEqual({ notifyAdmins: false });
     });
   });
 });

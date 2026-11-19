@@ -1,5 +1,8 @@
 import { toFullDisplayName } from "src/common/utils/display-name.util";
 import type { UserEntity } from "src/core/user/entities/user.entity";
+import { MediaType } from "src/shared/media/media-item/media-item.entity";
+import { MyImageSectionDto } from "./dto/my-image-section.dto";
+import { ImageSectionReviewStatus } from "./enums/image-section-review-status.enum";
 import { SectionAuthorDto } from "./dto/section-author.dto";
 import { FeedSectionContextDto } from "./dto/feed-section-context.dto";
 import type { ImageSectionEntity } from "src/content/page/image-page/entities/image-section.entity";
@@ -39,5 +42,32 @@ export const toFeedSectionContext = (
           platformType: first.platformType,
         }
       : null,
+  };
+};
+
+/** Quantas fotos e quantos vídeos a publicação tem (o resto não conta). */
+export const countMediaByType = (
+  items: ReadonlyArray<{ mediaType: MediaType }>,
+): { photos: number; videos: number } => ({
+  photos: items.filter((item) => item.mediaType === MediaType.IMAGE).length,
+  videos: items.filter((item) => item.mediaType === MediaType.VIDEO).length,
+});
+
+/** Resumo "minhas publicações": o motivo só aparece quando foi reprovada. */
+export const toMyImageSectionDto = (
+  section: ImageSectionEntity,
+  media: ReadonlyArray<{ mediaType: MediaType }>,
+): MyImageSectionDto => {
+  const { photos, videos } = countMediaByType(media);
+  const rejected = section.reviewStatus === ImageSectionReviewStatus.REJECTED;
+  return {
+    id: section.id,
+    caption: section.caption,
+    reviewStatus: section.reviewStatus,
+    rejectionReason: rejected ? (section.rejectionReason ?? null) : null,
+    photoCount: photos,
+    videoCount: videos,
+    createdAt: section.createdAt,
+    reviewedAt: section.reviewedAt ?? null,
   };
 };

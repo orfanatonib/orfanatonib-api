@@ -1,5 +1,7 @@
 import {
+  button,
   definitionList,
+  escapeHtml,
   paragraph,
   quotedText,
   renderEmailShell,
@@ -9,6 +11,7 @@ import {
   ContactReceivedEmailData,
   EmailRenderContext,
   FeedbackReceivedEmailData,
+  ImageRejectedEmailData,
   PhotoUploadedEmailData,
   RenderedEmail,
 } from "../types";
@@ -86,34 +89,86 @@ export const renderFeedbackReceived = (
   ].join("\n"),
 });
 
+/** Rota da fila de revisão do admin. */
+const ADMIN_IMAGE_SECTIONS_PATH = "/adm/fotos-abrigos";
+
+const describeMedia = (photos: number, videos: number): string => {
+  const parts: string[] = [];
+  if (photos > 0) parts.push(photos === 1 ? "1 foto" : `${photos} fotos`);
+  if (videos > 0) parts.push(videos === 1 ? "1 vídeo" : `${videos} vídeos`);
+  return parts.join(" e ") || "Sem arquivos";
+};
+
 export const renderPhotoUploaded = (
   data: PhotoUploadedEmailData,
   context: EmailRenderContext,
-): RenderedEmail => ({
-  subject: `Nova foto enviada - ${APP}`,
-  html: renderEmailShell({
-    title: "Nova foto enviada",
-    logoUrl: context.logoUrl,
-    body: [
-      paragraph("Alguém enviou foto(s) para o feed de abrigos."),
-      definitionList([
-        { label: "Legenda", value: data.caption?.trim() || "Sem legenda" },
-        { label: "Quantidade", value: String(data.photoCount) },
-      ]),
-      paragraph(
-        "Revise antes de publicar: a foto só aparece depois de aprovada.",
-      ),
-    ].join(""),
-  }),
-  text: [
-    "Nova foto enviada para o feed de abrigos:",
-    "",
-    `Legenda: ${data.caption?.trim() || "Sem legenda"}`,
-    `Quantidade: ${data.photoCount}`,
-    "",
-    "Revise antes de publicar: a foto só aparece depois de aprovada.",
-  ].join("\n"),
-});
+): RenderedEmail => {
+  const author = data.authorName?.trim() || "Autor não informado";
+  const caption = data.caption?.trim() || "Sem legenda";
+  const media = describeMedia(data.photoCount, data.videoCount);
+  const link = `${context.appUrl}${ADMIN_IMAGE_SECTIONS_PATH}`;
+  return {
+    subject: `Nova publicação aguardando aprovação - ${APP}`,
+    html: renderEmailShell({
+      title: "Nova publicação aguardando aprovação",
+      logoUrl: context.logoUrl,
+      body: [
+        paragraph("Alguém enviou uma publicação para o feed de abrigos."),
+        definitionList([
+          { label: "Enviado por", value: author },
+          { label: "Legenda", value: caption },
+          { label: "Mídia", value: media },
+        ]),
+        paragraph(
+          "Revise antes de publicar: ela só aparece no feed depois de aprovada.",
+        ),
+        button("Revisar publicações", link),
+      ].join(""),
+    }),
+    text: [
+      "Nova publicação aguardando aprovação no feed de abrigos:",
+      "",
+      `Enviado por: ${author}`,
+      `Legenda: ${caption}`,
+      `Mídia: ${media}`,
+      "",
+      "Revise antes de publicar: ela só aparece no feed depois de aprovada.",
+      `Revisar: ${link}`,
+    ].join("\n"),
+  };
+};
+
+/** Ao autor: só o motivo e a legenda; sem dado de terceiros. */
+export const renderImageRejected = (
+  data: ImageRejectedEmailData,
+  context: EmailRenderContext,
+): RenderedEmail => {
+  const link = `${context.appUrl}/area-do-membro/imagens-abrigo`;
+  return {
+    subject: `Sua publicação não foi aprovada - ${APP}`,
+    html: renderEmailShell({
+      title: "Publicação não aprovada",
+      greetingName: data.userName,
+      logoUrl: context.logoUrl,
+      body: [
+        paragraph(
+          `A equipe revisou a publicação "${escapeHtml(data.postCaption)}" e não pôde aprová-la.`,
+        ),
+        definitionList([{ label: "Motivo", value: data.reason }]),
+        paragraph("Você pode ajustar e enviar uma nova publicação."),
+        button("Enviar outra publicação", link),
+      ].join(""),
+    }),
+    text: [
+      `Olá, ${data.userName}.`,
+      "",
+      `A equipe revisou a publicação "${data.postCaption}" e não pôde aprová-la.`,
+      `Motivo: ${data.reason}`,
+      "",
+      `Envie outra publicação: ${link}`,
+    ].join("\n"),
+  };
+};
 
 export const renderCommentReceived = (
   data: CommentReceivedEmailData,

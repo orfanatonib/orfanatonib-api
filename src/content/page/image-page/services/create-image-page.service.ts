@@ -1,4 +1,5 @@
 import { Injectable, Logger, BadRequestException } from "@nestjs/common";
+import { ImageSectionReviewStatus } from "src/content/page/image-section/enums/image-section-review-status.enum";
 import { DataSource, QueryRunner } from "typeorm";
 import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { RouteService } from "src/infrastructure/route/services/route.service";
@@ -82,6 +83,8 @@ export class CreateImagePageService {
           description: sectionInput.description,
           public: sectionInput.public,
           page: savedGallery,
+          // Curadoria do admin: já nasce aprovada.
+          reviewStatus: ImageSectionReviewStatus.APPROVED,
         });
 
         const savedSection = await queryRunner.manager.save(section);

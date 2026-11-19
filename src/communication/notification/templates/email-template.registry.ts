@@ -18,6 +18,7 @@ import {
 } from "./feed-comment.templates";
 import {
   renderCommentReceived,
+  renderImageRejected,
   renderPhotoUploaded,
   renderContactReceived,
   renderFeedbackReceived,
@@ -45,7 +46,8 @@ export const EMAIL_TEMPLATES: EmailTemplateRegistry = {
   [EmailTemplateKey.TEAM_ASSIGNMENT_CHANGED]: renderTeamAssignmentChanged,
   [EmailTemplateKey.PAGELA_REMINDER]: renderPagelaReminder,
   [EmailTemplateKey.VISIT_REPORT_REMINDER]: renderVisitReportReminder,
-  [EmailTemplateKey.PHOTO_UPLOADED]: renderPhotoUploaded,
+  [EmailTemplateKey.IMAGE_SHARED_NOTIFICATION]: renderPhotoUploaded,
+  [EmailTemplateKey.IMAGE_REJECTED_NOTIFICATION]: renderImageRejected,
   [EmailTemplateKey.FEED_COMMENT_PENDING]: renderFeedCommentPending,
   [EmailTemplateKey.FEED_COMMENT_APPROVED]: renderFeedCommentApproved,
   [EmailTemplateKey.FEED_COMMENT_REJECTED]: renderFeedCommentRejected,

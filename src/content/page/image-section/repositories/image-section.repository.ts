@@ -49,6 +49,14 @@ export class ImageSectionRepository extends Repository<ImageSectionEntity> {
     return this.save(created);
   }
 
+  /** Publicações de um autor (qualquer estado), da mais recente à mais antiga. */
+  async findByAuthor(authorId: string): Promise<ImageSectionEntity[]> {
+    return this.find({
+      where: { author: { id: authorId } },
+      order: { createdAt: "DESC" },
+    });
+  }
+
   /** Fila de moderação (sem galeria), opcionalmente só de um autor. */
   async findAllOrfaSections(authorId?: string): Promise<ImageSectionEntity[]> {
     return this.find({

@@ -510,9 +510,18 @@ export const DEFAULT_FEATURE_FLAGS = [
     targetRoles: [],
   },
   {
-    key: "email_photo_uploaded",
-    name: "E-mail: Foto Nova no Feed",
-    description: "Avisa a coordenação sobre foto enviada ao feed de abrigos.",
+    key: "email_image_shared_notification",
+    name: "E-mail: Nova Publicação do Feed",
+    description:
+      "Avisa os admins sobre publicação (fotos/vídeo) aguardando aprovação no feed de abrigos.",
+    enabled: true,
+    targetRoles: [],
+  },
+  {
+    key: "email_image_rejected_notification",
+    name: "E-mail: Publicação do Feed Reprovada",
+    description:
+      "Avisa o autor que a publicação de fotos/vídeo foi reprovada, com o motivo.",
     enabled: true,
     targetRoles: [],
   },
