@@ -42,6 +42,52 @@ export class UpdateDocumentService {
       throw new BadRequestException("Media data is required.");
     }
 
+    // Ordem segura: o objeto novo sobe antes, o antigo só é apagado DEPOIS do commit.
+    // Apagar dentro da transação deixava o banco apontando para um objeto inexistente
+    // se qualquer passo seguinte falhasse e a transação voltasse.
+    const uploadedUrls: string[] = [];
+    const staleUrls: string[] = [];
+    const uploadTracked = async (f: Express.Multer.File): Promise<string> => {
+      const url = await this.s3Service.upload(f);
+      uploadedUrls.push(url);
+      return url;
+    };
+
+    let saved: DocumentEntity;
+    try {
+      saved = await this.runUpdate(
+        existingDocument,
+        dto,
+        file,
+        uploadTracked,
+        staleUrls,
+      );
+    } catch (error: unknown) {
+      await this.discard(uploadedUrls);
+      throw error;
+    }
+    await this.discard(staleUrls);
+    return saved;
+  }
+
+  private async discard(urls: readonly string[]): Promise<void> {
+    for (const url of urls) {
+      try {
+        await this.s3Service.delete(url);
+      } catch (error: unknown) {
+        const reason = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Objeto órfão no bucket (${url}): ${reason}`);
+      }
+    }
+  }
+
+  private async runUpdate(
+    existingDocument: DocumentEntity,
+    dto: UpdateDocumentDto & { isLocalFile?: boolean },
+    file: Express.Multer.File | undefined,
+    uploadTracked: (f: Express.Multer.File) => Promise<string>,
+    staleUrls: string[],
+  ): Promise<DocumentEntity> {
     return await this.dataSource.transaction(async (manager) => {
       const updatedDocument = manager.merge(DocumentEntity, existingDocument, {
         name: dto.name,
@@ -94,8 +140,10 @@ export class UpdateDocumentService {
           "document",
           filesDict,
           existingMedia,
-          (url) => this.s3Service.delete(url),
-          (file) => this.s3Service.upload(file),
+          async (url) => {
+            staleUrls.push(url);
+          },
+          (f) => uploadTracked(f),
         );
       } else if (existingMedia.length > 0) {
         const mediaToUpdate = existingMedia[0];
@@ -106,7 +154,7 @@ export class UpdateDocumentService {
         const isNowUpload = dto.media.isLocalFile === true;
 
         if (wasUpload && isNowLink && mediaToUpdate.url) {
-          await this.s3Service.delete(mediaToUpdate.url);
+          staleUrls.push(mediaToUpdate.url);
         }
 
         if (wasLink && isNowUpload) {
@@ -115,7 +163,7 @@ export class UpdateDocumentService {
               "Upload file is required when changing to upload.",
             );
           }
-          const newUrl = await this.s3Service.upload(file);
+          const newUrl = await uploadTracked(file);
           dto.media.url = newUrl;
           dto.media.originalName = file.originalname;
           dto.media.size = file.size;

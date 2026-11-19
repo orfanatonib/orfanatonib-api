@@ -35,17 +35,25 @@ export class CreateDocumentService {
     const runner = this.dataSource.createQueryRunner();
     await runner.connect();
     await runner.startTransaction();
+    // Objetos já enviados ao bucket: o banco desfaz no rollback, o bucket não.
+    const uploadedUrls: string[] = [];
 
     try {
       const savedDoc = await this.persistDocument(runner, dto);
-      const route = await this.attachRoute(runner, savedDoc, dto);
-      const media = await this.processMedia(runner, savedDoc.id, dto, file);
+      await this.attachRoute(runner, savedDoc, dto);
+      const media = await this.processMedia(
+        savedDoc.id,
+        dto,
+        file,
+        uploadedUrls,
+      );
 
       await runner.commitTransaction();
 
       return DocumentDto.fromEntity(savedDoc, media);
     } catch (err) {
       await runner.rollbackTransaction();
+      await this.discardUploads(uploadedUrls);
       this.logger.error("Transaction rolled back", err.stack);
       throw new BadRequestException(`Error creating document: ${err.message}`);
     } finally {
@@ -97,11 +105,23 @@ export class CreateDocumentService {
     await runner.manager.save(document);
   }
 
+  /** Remove do bucket o que foi enviado numa tentativa que não chegou ao commit. */
+  private async discardUploads(urls: readonly string[]): Promise<void> {
+    for (const url of urls) {
+      try {
+        await this.s3Service.delete(url);
+      } catch (error: unknown) {
+        const reason = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Objeto órfão no bucket (${url}): ${reason}`);
+      }
+    }
+  }
+
   private async processMedia(
-    runner: QueryRunner,
     documentId: string,
     dto: CreateDocumentDto,
-    file?: Express.Multer.File,
+    file: Express.Multer.File | undefined,
+    uploadedUrls: string[],
   ) {
     let mediaUrl = dto.media.url?.trim() || "";
     let originalName = dto.media.originalName;
@@ -114,6 +134,7 @@ export class CreateDocumentService {
 
       try {
         mediaUrl = await this.s3Service.upload(file);
+        uploadedUrls.push(mediaUrl);
         originalName = file.originalname;
         size = file.size;
       } catch (error) {
