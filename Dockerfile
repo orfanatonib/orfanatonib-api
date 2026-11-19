@@ -17,6 +17,16 @@ FROM node:22-alpine
 ENV NODE_ENV=production
 WORKDIR /app
 
+# PDF do Estúdio: o DOCX é convertido pelo LibreOffice (`soffice --headless`). As fontes são as compatíveis com
+# Calibri/Arial/Times usadas nos documentos; sem elas a paginação do PDF muda.
+RUN apk add --no-cache \
+      libreoffice-writer \
+      fontconfig \
+      font-carlito \
+      font-liberation \
+      font-dejavu \
+    && fc-cache -f
+
 COPY package.json package-lock.json ./
 # Só dependências de produção, a partir do lock.
 RUN npm ci --omit=dev && npm cache clean --force

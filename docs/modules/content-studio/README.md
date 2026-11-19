@@ -168,3 +168,13 @@ Tela `/adm/config-provedores-ia` (link no sidebar do Estúdio e no rodapé, só 
 
 Chave cifrada no banco (AES-256-GCM) com `AI_PROVIDER_SETTINGS_ENCRYPTION_KEY` (obrigatória fora do `local`). Ver `docs/decisions/AI_PROVIDER_SECRETS_ADR.md` (revisão de 2026-11-19).
 O Estúdio usa o provedor, a chave e os modelos salvos na **próxima geração** (`ConfiguredAiGenerationGateway`); sem chave salva, vale o ambiente.
+
+## Documento rico e exportação (DOCX/PDF)
+Núcleo portado do Clubinho, adaptado ao Estúdio (`src/content/studio/export/`):
+
+- **Documento por versão:** cada versão guarda `structuredContent` (fonte para a IA e a validação) e, opcionalmente, `contentDocument` (TipTap/ProseMirror, editado à mão). Sem `contentDocument`, a prévia e a exportação **montam o documento a partir dos campos** (`stage-document.builder.ts`, um montador por tipo de etapa). Salvar pelos campos descarta a edição do documento; salvar o documento mantém os campos da versão atual.
+- **Salvar:** `PATCH /content-studio/packages/:id/stages/:stageId/content` aceita `contentDocument` (raiz `doc`, até 1,5 MB e 32 níveis; texto passa pela checagem de dados pessoais). O limite do corpo JSON da API é 4 MB.
+- **Ler para o editor:** `GET .../stages/:stageId/document` → `{ document, edited, versionId }`.
+- **Exportar** (sempre a versão atual SALVA; rascunho local não entra): `GET .../stages/:stageId/export/{pdf|docx}`, `GET .../tracks/:audience/export/{pdf|docx}`, `GET .../export/{pdf|docx}` (todas as faixas). PDF abre inline; DOCX baixa. Sem conteúdo salvo ⇒ 422.
+- **DOCX:** `tiptap-docx.renderer.ts` converte o documento (títulos, listas, citações, tabelas, marcas, links) com a biblioteca `docx`; `studio-docx.service.ts` monta capa, cabeçalho "Orfanatos NIB · Material para visita", rodapé com paginação e uma seção por etapa.
+- **PDF:** `pdf-libreoffice.service.ts` roda `soffice --headless` num processo isolado (perfil temporário próprio, grupo de processos morto no timeout), com fila (2 conversões simultâneas por padrão, `PDF_CONVERSION_MAX_CONCURRENCY`), cache por versões (as versões são imutáveis) e verificação da assinatura `%PDF-`. **Requer `libreoffice-writer` e as fontes `font-carlito`/`font-liberation` na imagem** (já no `Dockerfile`).
