@@ -1,7 +1,7 @@
 # Guia de Tratamento de Erros - API Orfanato NIB
 
-**📅 Última atualização:** Janeiro 2026
-**🔧 Estado atual:** Rate limiting e timeout temporariamente desabilitados
+**📅 Última atualização:** Novembro 2026
+**🔧 Estado atual:** rate limiting opt-in (`RATE_LIMIT_ENABLED=true`); timeout de requisição removido; `requestId` gerado no servidor
 **📝 Sem Swagger:** Documentação manual mantida atualizada
 
 ## Visão Geral
@@ -14,8 +14,12 @@ Esta API possui um sistema robusto e profissional de tratamento de erros, projet
 
 - ✅ **Swagger removido** - Sem dependências desnecessárias
 - ✅ **Logs simplificados** - Só mostra erros, console limpo
-- ⚠️ **Rate limiting desabilitado** - Temporariamente para estabilidade
-- ⚠️ **Timeout desabilitado** - Temporariamente para estabilidade
+- ✅ **`requestId` do servidor** - UUID gerado por requisição (AsyncLocalStorage), igual ao cabeçalho `X-Request-Id`; o valor enviado pelo cliente é **ignorado**
+- ✅ **Sem vazamento** - a resposta nunca traz stack nem SQL; o `path` e o log **não ecoam a query string**; IP e User-Agent não são gravados
+- ✅ **`details.code`** - código estável opcional (`FEATURE_DISABLED`, `LOG_9101`, `LOG_9102`, `VAL_4005`…) para o front decidir a mensagem
+- ✅ **Auditoria e log técnico** - o filtro registra a falha (`docs/modules/observability-audit`)
+- ⚠️ **Rate limiting opt-in** - ligue com `RATE_LIMIT_ENABLED=true` (e `TRUST_PROXY_HOPS` atrás de proxy)
+- ❌ **Timeout removido** - o middleware antigo estava morto e lançava dentro de `setTimeout`
 - ✅ **Build limpo** - Sem warnings ou erros
 - ✅ **Código enxuto** - Imports e dependências otimizadas
 
@@ -30,7 +34,7 @@ Todos os erros da API seguem este formato JSON:
   "error": "Bad Request",
   "category": "RULE",
   "timestamp": "2024-01-15T10:30:00.000Z",
-  "path": "/api/users",
+  "path": "/users",
   "requestId": "550e8400-e29b-41d4-a716-446655440000",
   "correlationId": "corr-1705312200000-abc123def",
   "details": {
@@ -49,8 +53,8 @@ Todos os erros da API seguem este formato JSON:
 | `error` | string | Nome do erro HTTP (Bad Request, Unauthorized, etc.) |
 | `category` | string | Categoria do erro (ver seção de categorias) |
 | `timestamp` | string | Data/hora ISO do erro |
-| `path` | string | Endpoint onde o erro ocorreu |
-| `requestId` | string | ID único da requisição (para rastreamento) |
+| `path` | string | Endpoint onde o erro ocorreu, **sem query string** |
+| `requestId` | string | UUID gerado pelo servidor; igual ao cabeçalho `X-Request-Id` (para rastreamento e para achar o registro na auditoria) |
 | `correlationId` | string | ID de correlação (para debugging interno) |
 | `details` | object | Detalhes adicionais específicos do erro (opcional) |
 
@@ -270,7 +274,7 @@ servidor SMTP:
 
 ## Rate Limiting (Limitação de Taxa)
 
-**⚠️ ATUALMENTE DESABILITADO:** Os middlewares de rate limiting estão temporariamente desabilitados para estabilidade. Quando reabilitados, implementarão:
+**Opt-in:** só vale com `RATE_LIMIT_ENABLED=true`. Atrás de proxy/balanceador defina também `TRUST_PROXY_HOPS`, senão todos os usuários dividem o IP do proxy. Limites:
 
 ### Limites por Tipo de Operação (Quando Ativo)
 
@@ -292,24 +296,7 @@ Retry-After: 900  // Aparece quando limite excedido
 
 ## Timeouts
 
-**⚠️ ATUALMENTE DESABILITADO:** Os middlewares de timeout estão temporariamente desabilitados. Quando reabilitados:
-
-- **Timeout padrão:** 30 segundos
-- Se uma requisição exceder este tempo, retorna erro 408 Request Timeout
-
-```json
-{
-  "statusCode": 408,
-  "message": "Request timeout after 30000ms",
-  "error": "Request Timeout",
-  "category": "SERVER",
-  "details": {
-    "url": "/api/shelters",
-    "method": "GET",
-    "timeout": 30000
-  }
-}
-```
+Não há timeout global de requisição na aplicação (o middleware antigo foi removido por ser código morto e por lançar dentro de `setTimeout`). O prazo de cada chamada é do balanceador/cliente; a readiness (`/health/ready`) tem prazo próprio.
 
 ## Headers Importantes
 
@@ -318,14 +305,13 @@ Retry-After: 900  // Aparece quando limite excedido
 ```http
 Authorization: Bearer <token>
 Content-Type: application/json
-X-Request-ID: <uuid>  // Opcional, usado para rastreamento
 ```
 
 ### Response Headers
 
 ```http
-X-Request-ID: 550e8400-e29b-41d4-a716-446655440000  // Mesmo ID da request (sempre presente)
-// Headers de rate limiting ausentes (middleware desabilitado)
+X-Request-Id: 550e8400-e29b-41d4-a716-446655440000  // gerado pelo servidor; igual ao `requestId` do corpo de erro (sempre presente)
+// Headers de rate limiting só aparecem com RATE_LIMIT_ENABLED=true
 ```
 
 ## Logging e Monitoramento
