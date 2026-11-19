@@ -119,7 +119,7 @@ export function fakeStageContent(
         centralMessage: central,
         overview: `Visão geral para ${p.deliveredBy}.`,
         preparationChecklist: ["Separar materiais."],
-        timeline: [{ minutes: p.sessionMinutes, moment: "Encontro completo." }],
+        timeline: [{ minutes: p.sessionMinutes, moment: "Visita completa." }],
         tips: ["Acolha cada pessoa."],
         sensitivityNotes: ["Não peça que ninguém conte a própria história."],
         followUp: "Acompanhe na semana.",

@@ -207,6 +207,8 @@ export class ContentPackageListItemResponseDto {
   templateCatalogVersion: string;
   createdById: string;
   tracksCount: number;
+  /** Faixas etárias do material, da mais nova para a mais velha (para o cartão da listagem). */
+  audiences: ContentAudience[];
   stagesCount: number;
   requiredStagesCount: number;
   approvedStagesCount: number;
@@ -227,6 +229,9 @@ export class ContentPackageListItemResponseDto {
       templateCatalogVersion: entity.templateCatalogVersion,
       createdById: entity.createdById,
       tracksCount: tracks.length,
+      audiences: [...tracks]
+        .sort((a, b) => a.minimumAge - b.minimumAge)
+        .map((track) => track.audience),
       stagesCount: stages.length,
       requiredStagesCount: stages.filter((stage) => stage.required).length,
       approvedStagesCount: stages.filter(

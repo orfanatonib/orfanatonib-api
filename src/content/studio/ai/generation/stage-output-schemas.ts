@@ -163,11 +163,11 @@ export const STAGE_OUTPUT_SCHEMAS: Readonly<Record<ContentStageType, Schema>> =
 
     [ContentStageType.FACILITATOR_GUIDANCE]: obj({
       centralMessage,
-      overview: str("Visão geral do encontro para quem vai conduzir."),
-      preparationChecklist: strList("Lista de preparação antes do encontro."),
+      overview: str("Visão geral da visita para quem vai conduzir."),
+      preparationChecklist: strList("Lista de preparação antes da visita."),
       timeline: {
         type: "array",
-        description: "Roteiro do encontro com tempo estimado por momento.",
+        description: "Roteiro da visita com tempo estimado por momento.",
         items: obj({
           minutes: { type: "integer", description: "Minutos." },
           moment: str("O que acontece neste momento."),
@@ -177,7 +177,7 @@ export const STAGE_OUTPUT_SCHEMAS: Readonly<Record<ContentStageType, Schema>> =
       sensitivityNotes: strList(
         "Cuidados de acolhimento para este público (sem expor histórias pessoais).",
       ),
-      followUp: str("Como acompanhar depois do encontro."),
+      followUp: str("Como acompanhar depois da visita."),
       reviewerNotes,
     }),
   };

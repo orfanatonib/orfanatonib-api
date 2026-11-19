@@ -113,9 +113,9 @@ export function stageBasePrompt(
     case ContentStageType.FACILITATOR_GUIDANCE:
       return [
         `Produza somente a ORIENTAÇÃO para ${profile.deliveredBy}.`,
-        `- Roteiro do encontro (timeline) somando cerca de ${profile.sessionMinutes} minutos, com os momentos da lição, da discussão (quando houver) e da atividade já aprovadas.`,
+        `- Roteiro da visita (timeline) somando cerca de ${profile.sessionMinutes} minutos, com os momentos da lição, da discussão (quando houver) e da atividade já aprovadas.`,
         "- Lista de preparação, dicas práticas e cuidados de acolhimento próprios deste público (sensitivityNotes), sem expor histórias pessoais.",
-        "- Diga como acompanhar depois do encontro (followUp) e quando chamar um adulto responsável: nunca prometa sigilo absoluto sobre risco à pessoa.",
+        "- Diga como acompanhar depois da visita (followUp) e quando chamar um adulto responsável: nunca prometa sigilo absoluto sobre risco à pessoa.",
         "- Não reescreva a lição nem a atividade: referencie-as.",
       ].join("\n");
   }
