@@ -28,6 +28,8 @@ export class MediaItemRepository {
         targetType,
         targetId: In(targetIds),
       },
+      // Ordem de envio, sempre a mesma (sem ORDER BY o MySQL devolvia pela chave e o vídeo podia vir antes das fotos).
+      order: { createdAt: "ASC", id: "ASC" },
     });
   }
 
