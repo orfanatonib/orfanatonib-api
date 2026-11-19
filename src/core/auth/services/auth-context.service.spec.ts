@@ -15,7 +15,7 @@ const authenticated = (token = "token") =>
 
 describe("AuthContextService", () => {
   const jwt = { verifyAsync: jest.fn(), decode: jest.fn() };
-  const config = { get: jest.fn() };
+  const config = { getOrThrow: jest.fn() };
 
   let service: AuthContextService;
 
@@ -32,7 +32,7 @@ describe("AuthContextService", () => {
 
     service = moduleRef.get(AuthContextService);
 
-    config.get.mockReturnValue("jwt-secret");
+    config.getOrThrow.mockReturnValue("jwt-secret");
     jwt.verifyAsync.mockResolvedValue({
       sub: "user-id",
       email: "maria@orfanatonib.test",
@@ -63,12 +63,12 @@ describe("AuthContextService", () => {
     });
   });
 
-  it("refuses to verify when no secret is configured", async () => {
-    config.get.mockReturnValue(undefined);
+  it("sem JWT_SECRET é erro de configuração (getOrThrow), não um 401 que esconda a falha", async () => {
+    config.getOrThrow.mockImplementation(() => {
+      throw new Error('Configuration key "JWT_SECRET" does not exist');
+    });
 
-    await expect(service.verifyToken("abc")).rejects.toThrow(
-      new UnauthenticatedException(AuthErrorMessages.JWT_SECRET_MISSING),
-    );
+    await expect(service.verifyToken("abc")).rejects.toThrow("JWT_SECRET");
   });
 
   it("decodes without verifying, normalizing the role", () => {

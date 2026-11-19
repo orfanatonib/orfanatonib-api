@@ -38,7 +38,10 @@ describe("RegisterService", () => {
         { provide: GetUsersService, useValue: getUsersService },
         { provide: CreateUserService, useValue: createUserService },
         { provide: UpdateUserService, useValue: updateUserService },
-        { provide: UpdateMemberProfileService, useValue: updateMemberProfileService },
+        {
+          provide: UpdateMemberProfileService,
+          useValue: updateMemberProfileService,
+        },
         {
           provide: EmailVerificationService,
           useValue: emailVerification,
@@ -107,13 +110,17 @@ describe("RegisterService", () => {
         buildRegisterDto({ role: UserRole.LEADER, teamId: "team-id" }),
       );
 
-      expect(updateMemberProfileService.assignTeamForUser).not.toHaveBeenCalled();
+      expect(
+        updateMemberProfileService.assignTeamForUser,
+      ).not.toHaveBeenCalled();
     });
 
     it("does not link a team when none was chosen", async () => {
       await service.register(buildRegisterDto());
 
-      expect(updateMemberProfileService.assignTeamForUser).not.toHaveBeenCalled();
+      expect(
+        updateMemberProfileService.assignTeamForUser,
+      ).not.toHaveBeenCalled();
     });
 
     it("keeps the account when linking the team fails", async () => {

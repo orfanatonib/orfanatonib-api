@@ -18,6 +18,7 @@ import { PasswordResetTokenRepository } from "./repositories/password-reset-toke
 import { EmailVerificationTokenRepository } from "./repositories/email-verification-token.repository";
 import { EmailVerificationService } from "./services/email-verification.service";
 import { EmailVerificationTokenEntity } from "./entities/email-verification-token.entity";
+import { readJwtSecret } from "./utils/jwt-secret.util";
 
 import { UserModule } from "../user/user.module";
 import { ProfileModule } from "../profile/profile.module";
@@ -35,7 +36,7 @@ import { toExpiresIn } from "./utils/auth-token.util";
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.getOrThrow<string>("JWT_SECRET"),
+        secret: readJwtSecret(config),
         signOptions: {
           expiresIn: toExpiresIn(config.getOrThrow<string>("JWT_EXPIRES_IN")),
         },

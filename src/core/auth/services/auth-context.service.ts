@@ -7,6 +7,7 @@ import { JwtPayload, UserRole } from "../auth.types";
 import { AuthErrorMessages } from "../constants/auth.constants";
 import { RequestTokenCarriers } from "../types";
 import { extractBearerToken, normalizeRole } from "../utils/auth-token.util";
+import { readJwtSecret } from "../utils/jwt-secret.util";
 
 /**
  * Lê o ator a partir da requisição para quem não passa pelo `JwtAuthGuard` —
@@ -27,10 +28,7 @@ export class AuthContextService {
   }
 
   async verifyToken(token: string): Promise<JwtPayload> {
-    const secret = this.config.get<string>("JWT_SECRET");
-    if (!secret) {
-      throw new UnauthenticatedException(AuthErrorMessages.JWT_SECRET_MISSING);
-    }
+    const secret = readJwtSecret(this.config);
 
     const payload = await this.jwt.verifyAsync<JwtPayload>(token, { secret });
     return this.normalizePayload(payload);
