@@ -28,6 +28,8 @@ import {
   SaveGeminiSettingsDto,
   SaveOpenAiSettingsDto,
 } from '../dto/ai-provider-settings.dto';
+import { AiProviderHealthResponseDto } from '../dto/ai-provider-health-response.dto';
+import { buildProviderHealth } from '../utils/ai-provider-health.utils';
 import {
   geminiCatalogModels,
   modelCatalogFailureWarning,
@@ -137,5 +139,36 @@ export class AiProvidersConfigService {
     dto: SaveGeminiSettingsDto,
   ): Promise<GeminiSettingsResponseDto> {
     return this.update.saveGeminiSettings(dto);
+  }
+
+  /** "Testar conexão": pede a lista de modelos com a chave salva e confere os modelos escolhidos. */
+  async checkOpenAiHealth(): Promise<AiProviderHealthResponseDto> {
+    const startedAt = Date.now();
+    const saved = await this.get.getInternalOpenAiSettings();
+    const catalog = await this.getOpenAiModels();
+    return buildProviderHealth({
+      provider: 'openai',
+      label: 'OpenAI',
+      key: saved,
+      saved,
+      catalog,
+      checkedAt: new Date(),
+      durationMs: Date.now() - startedAt,
+    });
+  }
+
+  async checkGeminiHealth(): Promise<AiProviderHealthResponseDto> {
+    const startedAt = Date.now();
+    const saved = await this.get.getInternalGeminiSettings();
+    const catalog = await this.getGeminiModels();
+    return buildProviderHealth({
+      provider: 'gemini',
+      label: 'Gemini',
+      key: saved,
+      saved,
+      catalog,
+      checkedAt: new Date(),
+      durationMs: Date.now() - startedAt,
+    });
   }
 }

@@ -1,7 +1,7 @@
 import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
 import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
-import { Body, Controller, Get, Put, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Put, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 import { AiProvidersConfigService } from "../services/ai-providers-config.service";
@@ -11,6 +11,7 @@ import {
   SaveOpenAiSettingsDto,
 } from "../dto/ai-provider-settings.dto";
 
+import { AiProviderHealthResponseDto } from "../dto/ai-provider-health-response.dto";
 import { GetAiProviderSettingsService } from "../services/get-ai-provider-settings.service";
 import { UpdateAiProviderSettingsService } from "../services/update-ai-provider-settings.service";
 import {
@@ -43,6 +44,16 @@ export class AiProvidersController {
     @Body() dto: SaveAiProviderSettingsDto,
   ): Promise<AiProviderSettingsResponseDto> {
     return this.update.saveSettings(dto);
+  }
+
+  @Post("openai/health")
+  checkOpenAiHealth(): Promise<AiProviderHealthResponseDto> {
+    return this.service.checkOpenAiHealth();
+  }
+
+  @Post("gemini/health")
+  checkGeminiHealth(): Promise<AiProviderHealthResponseDto> {
+    return this.service.checkGeminiHealth();
   }
 
   @Get("openai/models")

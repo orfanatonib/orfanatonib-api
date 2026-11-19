@@ -26,3 +26,7 @@ export const AI_PROVIDER_CONFIG_KEYS: Readonly<
 };
 
 export const AI_PROVIDERS: readonly AiProvider[] = Object.values(AiProvider);
+
+/** Janela do relatório de uso de IA. */
+export const AI_USAGE_DEFAULT_DAYS = 30;
+export const AI_USAGE_MAX_DAYS = 365;

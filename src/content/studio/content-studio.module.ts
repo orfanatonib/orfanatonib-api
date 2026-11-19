@@ -6,6 +6,8 @@ import { FeatureFlagsModule } from "src/core/feature-flags/feature-flags.module"
 
 import { ContentStudioController } from "./content-studio.controller";
 import { AiJobQueuePort } from "./queue/ai-job-queue.port";
+import { AiUsageRepository } from "./ai-management/ai-usage.repository";
+import { GetAiUsageService } from "./ai-management/services/get-ai-usage.service";
 import { BullMqAiJobQueue } from "./queue/bullmq-ai-job-queue";
 import { InMemoryAiJobQueue } from "./queue/in-memory-ai-job-queue";
 import { GetLatestStageGenerationService } from "./services/get-latest-stage-generation.service";
@@ -74,6 +76,8 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
   ],
   providers: [
     ContentPackagesRepository,
+    AiUsageRepository,
+    GetAiUsageService,
     ContentStudioDashboardRepository,
     ApproveReviewStageService,
     ArchiveContentPackageService,
