@@ -97,7 +97,7 @@ describe("GeminiGenerationGateway", () => {
     ],
     [401, {}, AiProviderErrorKind.AUTHENTICATION],
     [503, {}, AiProviderErrorKind.SERVER],
-    [400, {}, AiProviderErrorKind.SCHEMA],
+    [400, {}, AiProviderErrorKind.INVALID_REQUEST],
   ])("HTTP %s classifica como %s", async (status, body, expected) => {
     fetchSpy.mockReturnValue(ok(body, status));
     expect(
@@ -133,7 +133,7 @@ describe("GeminiGenerationGateway", () => {
     );
   });
 
-  it("sem chave/desligado/modelo: AUTHENTICATION sem chamar a rede; falha de rede vira UNKNOWN", async () => {
+  it("sem chave/desligado/modelo: AUTHENTICATION sem chamar a rede; falha de rede vira NETWORK", async () => {
     expect(
       await kind(
         new GeminiGenerationGateway(
@@ -154,7 +154,7 @@ describe("GeminiGenerationGateway", () => {
       await kind(
         new GeminiGenerationGateway(config()).generateStructuredText(req),
       ),
-    ).toBe(AiProviderErrorKind.UNKNOWN);
+    ).toBe(AiProviderErrorKind.NETWORK);
   });
 
   it("imagem não suportada; modelos e saúde pela configuração", async () => {

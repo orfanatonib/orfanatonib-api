@@ -28,6 +28,7 @@ const RETRYABLE_KINDS: ReadonlySet<AiProviderErrorKind> = new Set([
   AiProviderErrorKind.RATE_LIMIT,
   AiProviderErrorKind.TIMEOUT,
   AiProviderErrorKind.SERVER,
+  AiProviderErrorKind.NETWORK,
   AiProviderErrorKind.UNKNOWN,
 ]);
 

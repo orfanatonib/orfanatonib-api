@@ -8,6 +8,7 @@ import {
 } from "../ai-management/utils/ai-provider-config.util";
 import { AiGenerationGateway } from "./ai-generation.gateway";
 import { AiGenerationCapability } from "./enums/ai-generation-capability.enum";
+import { classifyProviderHttpError } from "./utils/provider-http-error.util";
 import { AiProviderErrorKind } from "./enums/ai-provider-error-kind.enum";
 import { AiProviderHealth } from "./enums/ai-provider-health.enum";
 import { AiProvider } from "./enums/ai-provider.enum";
@@ -239,7 +240,11 @@ export class GeminiGenerationGateway extends AiGenerationGateway {
           .json()
           .catch(() => ({}))) as GeminiErrorBody;
         throw new AiProviderRequestError(
-          this.classifyError(response.status, body),
+          classifyProviderHttpError({
+            status: response.status,
+            code: body.error?.status,
+            message: body.error?.message,
+          }),
         );
       }
       return (await response.json()) as T;
@@ -247,27 +252,9 @@ export class GeminiGenerationGateway extends AiGenerationGateway {
       if (error instanceof AiProviderRequestError) throw error;
       if (abortController.signal.aborted)
         throw new AiProviderRequestError(AiProviderErrorKind.TIMEOUT);
-      throw new AiProviderRequestError(AiProviderErrorKind.UNKNOWN);
+      throw new AiProviderRequestError(AiProviderErrorKind.NETWORK);
     } finally {
       clearTimeout(timeout);
     }
-  }
-
-  private classifyError(
-    status: number,
-    body: GeminiErrorBody,
-  ): AiProviderErrorKind {
-    if (status === 401 || status === 403)
-      return AiProviderErrorKind.AUTHENTICATION;
-    if (status === 429) {
-      const text =
-        `${body.error?.status ?? ""} ${body.error?.message ?? ""}`.toLowerCase();
-      return text.includes("quota") && !text.includes("per minute")
-        ? AiProviderErrorKind.QUOTA
-        : AiProviderErrorKind.RATE_LIMIT;
-    }
-    if (status >= 500) return AiProviderErrorKind.SERVER;
-    if (status === 408) return AiProviderErrorKind.TIMEOUT;
-    return AiProviderErrorKind.SCHEMA;
   }
 }

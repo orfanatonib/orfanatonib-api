@@ -58,7 +58,7 @@ describe("FakeAiGenerationGateway", () => {
     ["[[fake:moderation]]", AiProviderErrorKind.SAFETY],
     ["[[fake:500]]", AiProviderErrorKind.SERVER],
     ["[[fake:schema]]", AiProviderErrorKind.SCHEMA],
-    ["[[fake:network]]", AiProviderErrorKind.UNKNOWN],
+    ["[[fake:network]]", AiProviderErrorKind.NETWORK],
   ])("diretiva %s vira %s", async (directive, kind) => {
     expect(await kindOf(make().generateStructuredText(req(directive)))).toBe(
       kind,

@@ -4,6 +4,7 @@ import { ConfigService } from "@nestjs/config";
 import { REDACTED_AI_ERROR_MESSAGE } from "./constants";
 import { AiGenerationGateway } from "./ai-generation.gateway";
 import { AiGenerationCapability } from "./enums/ai-generation-capability.enum";
+import { classifyProviderHttpError } from "./utils/provider-http-error.util";
 import { AiProviderErrorKind } from "./enums/ai-provider-error-kind.enum";
 import { AiProviderHealth } from "./enums/ai-provider-health.enum";
 import {
@@ -24,7 +25,11 @@ import { validateStructuredContent } from "./utils/structured-content-policy.uti
 import { containsSensitiveContentInstruction } from "./utils/ai-provider-policy.util";
 
 interface OpenAiErrorBody {
-  error?: { code?: string | null; type?: string | null };
+  error?: {
+    code?: string | null;
+    type?: string | null;
+    message?: string | null;
+  };
 }
 
 interface OpenAiResponseBody {
@@ -269,7 +274,11 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
           .json()
           .catch(() => ({}))) as OpenAiErrorBody;
         throw new AiProviderRequestError(
-          this.classifyError(response.status, errorBody),
+          classifyProviderHttpError({
+            status: response.status,
+            code: errorBody.error?.code ?? undefined,
+            message: errorBody.error?.message ?? undefined,
+          }),
         );
       }
       return (await response.json()) as T;
@@ -277,26 +286,9 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
       if (error instanceof AiProviderRequestError) throw error;
       if (abortController.signal.aborted)
         throw new AiProviderRequestError(AiProviderErrorKind.TIMEOUT);
-      throw new AiProviderRequestError(AiProviderErrorKind.UNKNOWN);
+      throw new AiProviderRequestError(AiProviderErrorKind.NETWORK);
     } finally {
       clearTimeout(timeout);
     }
-  }
-
-  private classifyError(
-    status: number,
-    body: OpenAiErrorBody,
-  ): AiProviderErrorKind {
-    if (status === 401 || status === 403)
-      return AiProviderErrorKind.AUTHENTICATION;
-    if (status === 429) {
-      return body.error?.code?.toLowerCase().includes("quota")
-        ? AiProviderErrorKind.QUOTA
-        : AiProviderErrorKind.RATE_LIMIT;
-    }
-    if (status >= 500) return AiProviderErrorKind.SERVER;
-    if (body.error?.code === "moderation_blocked")
-      return AiProviderErrorKind.SAFETY;
-    return AiProviderErrorKind.SCHEMA;
   }
 }

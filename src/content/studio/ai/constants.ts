@@ -4,6 +4,7 @@ export const RETRYABLE_AI_PROVIDER_ERRORS: readonly AiProviderErrorKind[] = [
   AiProviderErrorKind.TIMEOUT,
   AiProviderErrorKind.RATE_LIMIT,
   AiProviderErrorKind.SERVER,
+  AiProviderErrorKind.NETWORK,
 ];
 
 export const CONTENT_STUDIO_SENSITIVE_INSTRUCTION_PATTERNS: readonly RegExp[] =

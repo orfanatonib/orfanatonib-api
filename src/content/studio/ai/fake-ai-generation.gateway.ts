@@ -42,7 +42,7 @@ const KIND_BY_FAILURE: Readonly<Record<FakeAiFailure, AiProviderErrorKind>> = {
   [FakeAiFailure.MODERATION]: AiProviderErrorKind.SAFETY,
   [FakeAiFailure.SERVER_ERROR]: AiProviderErrorKind.SERVER,
   [FakeAiFailure.INVALID_SCHEMA]: AiProviderErrorKind.SCHEMA,
-  [FakeAiFailure.NETWORK]: AiProviderErrorKind.UNKNOWN,
+  [FakeAiFailure.NETWORK]: AiProviderErrorKind.NETWORK,
 };
 
 /**

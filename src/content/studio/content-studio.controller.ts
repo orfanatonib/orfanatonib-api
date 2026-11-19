@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Patch,
   ParseUUIDPipe,
@@ -136,7 +138,9 @@ export class ContentStudioController {
     );
   }
 
+  /** 202: o pedido foi aceito e entra na fila; o resultado vem pelo job. */
   @Post("packages/:packageId/stages/:stageId/generations")
+  @HttpCode(HttpStatus.ACCEPTED)
   @FeatureFlag([
     FeatureFlagKeys.CONTENT_STUDIO,
     FeatureFlagKeys.CONTENT_STUDIO_GENERATION,
