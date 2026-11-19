@@ -1,5 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Optional } from "@nestjs/common";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import { AuditOutcome } from "src/core/audit/enums";
+import { ActionBoundaryService } from "src/core/audit/services/action-boundary.service";
+import { runAuditedJob } from "src/core/audit/utils/audited-job.utils";
 import { EmailService } from "src/infrastructure/email/services/email.service";
 import { EmailOutboxService } from "./email-outbox.service";
 import { OutboxLogs } from "../constants/notification.constants";
@@ -18,6 +21,7 @@ export class EmailOutboxWorker {
   constructor(
     private readonly outbox: EmailOutboxService,
     private readonly emailService: EmailService,
+    @Optional() private readonly boundary?: ActionBoundaryService,
   ) {}
 
   @Cron(CronExpression.EVERY_MINUTE, { name: "email-outbox-drain" })
@@ -31,21 +35,33 @@ export class EmailOutboxWorker {
 
       this.logger.log(OutboxLogs.BATCH_START(due.length));
 
-      for (const entry of due) {
-        try {
-          await this.emailService.dispatch({
-            to: entry.recipient,
-            subject: entry.subject,
-            text: entry.text,
-            html: entry.html,
-          });
-          await this.outbox.markSent(entry);
-          this.logger.log(OutboxLogs.SENT(entry.id));
-        } catch (error: unknown) {
-          const reason = error instanceof Error ? error.message : String(error);
-          await this.outbox.markAttemptFailed(entry, reason);
-        }
-      }
+      // Só passada com trabalho vira ação auditada (um evento por minuto vazio seria ruído).
+      await runAuditedJob(
+        this.boundary,
+        "email-outbox-drain",
+        async () => {
+          let failed = 0;
+          for (const entry of due) {
+            try {
+              await this.emailService.dispatch({
+                to: entry.recipient,
+                subject: entry.subject,
+                text: entry.text,
+                html: entry.html,
+              });
+              await this.outbox.markSent(entry);
+              this.logger.log(OutboxLogs.SENT(entry.id));
+            } catch (error: unknown) {
+              failed += 1;
+              const reason =
+                error instanceof Error ? error.message : String(error);
+              await this.outbox.markAttemptFailed(entry, reason);
+            }
+          }
+          return failed;
+        },
+        (failed) => (failed > 0 ? AuditOutcome.Failed : AuditOutcome.Succeeded),
+      );
     } catch (error: unknown) {
       // Uma falha ao ler a fila não pode derrubar o agendador.
       const reason = error instanceof Error ? error.message : String(error);

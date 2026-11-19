@@ -10,6 +10,9 @@ import {
 
 import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
 
+import { FeatureFlag } from "../feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "../feature-flags/enums/feature-flag-keys.enum";
+import { FeatureFlagGuard } from "../feature-flags/guards/feature-flag.guard";
 import { JwtAuthGuard } from "../auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "../auth/guards/role-guard";
 
@@ -42,7 +45,9 @@ import { GetLogRecordsService } from "./services/get-log-records.service";
  * item ou um intervalo; a chamada em si fica na auditoria.
  */
 @Controller(LOG_RECORDS_ROUTE)
-@UseGuards(JwtAuthGuard, AdminRoleGuard)
+// Flag por último: 401/403 vêm antes de 403 FEATURE_DISABLED.
+@FeatureFlag(FeatureFlagKeys.OBSERVABILITY_AUDIT)
+@UseGuards(JwtAuthGuard, AdminRoleGuard, FeatureFlagGuard)
 export class LogRecordsController {
   constructor(
     private readonly getService: GetLogRecordsService,
