@@ -34,6 +34,10 @@ Blocos “9. OBSERVABILIDADE” e “10. AUDITORIA” de `env/example.env`:
 
 Configuração inválida derruba o boot com mensagem segura.
 
+### DynamoDB Local (padrão em `./run.sh local`)
+
+`env/local.env` usa `OBS_STORAGE=AUDIT_STORAGE=dynamodb` com `LOG_DYNAMODB_ENDPOINT=http://localhost:8000` e a tabela **própria** `orfanatonib-log-records-local`. O `run.sh` **não cria container novo** quando já há um DynamoDB Local na porta 8000 (ex.: o do Clubinho): reaproveita-o e só cria a tabela do Orfanato (`npm run dynamodb:local:ensure-table`, idempotente; tabela existente não é tocada). As tabelas de outras aplicações no mesmo container não são lidas nem alteradas. Só se nada estiver na porta 8000 o `run.sh` cria o container `orfanato-dynamodb`.
+
 ## Consulta
 
 Somente administrador **e** com a flag `observability_audit` ligada (desligada por padrão, público `admin`). Ordem dos guards: `JwtAuthGuard` → `AdminRoleGuard` → `FeatureFlagGuard` (401/403 antes de `403 FEATURE_DISABLED`).
@@ -59,7 +63,7 @@ Somente administrador **e** com a flag `observability_audit` ligada (desligada p
 
 ## Pendente
 
-- Tabela DynamoDB, IAM mínimo e alarmes (taxa de `fatal`, fila de entrega cheia): **exige autorização explícita** (regra 16). O provider `dynamodb` está implementado e coberto por teste com cliente simulado, mas nunca rodou contra uma tabela real.
+- Tabela DynamoDB **de staging/prod**, IAM mínimo e alarmes (taxa de `fatal`, fila de entrega cheia): **exige autorização explícita** (regra 16). Localmente o provider já roda contra o DynamoDB Local (E2E verde).
 - Ligar a geração de LLM ao `ActionBoundaryService` quando o Estúdio (planos 43–44) entrar no `AppModule`.
 
 ## Testes
