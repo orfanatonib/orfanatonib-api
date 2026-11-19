@@ -142,3 +142,31 @@ npx playwright test --config=playwright.live.config.ts e2e/live/feature-flags.ui
   Irrelevante em 15 linhas; relevante se o catálogo crescer muito.
 - O cache é por instância. Com mais de uma, alternar uma flag leva até 60 s
   para valer nas demais.
+
+## Catálogo por recurso e imposição na API (planos 08/09)
+
+- **Formato do Clubinho:** uma flag por recurso, em `snake_case`; o perfil nunca
+  entra no nome — quem enxerga é decidido por `targetRoles` (vazio = todos,
+  inclusive visitante; admin é sempre explícito). 54 flags de interface +
+  `email_*` (uma por notificação, mais a chave-mestra `email_delivery`), em
+  `constants.ts` (`DEFAULT_FEATURE_FLAGS`) e `enums/feature-flag-keys.enum.ts`.
+- **Imposição dupla:** a mesma chave governa a tela (`FeatureFlagRoute`) e a API
+  (`@FeatureFlag` + `FeatureFlagGuard`, 125 handlers da matriz `09a`). A flag
+  **nunca amplia** acesso: o guard de papel continua soberano.
+- **Guard:** resolve o perfil por `request.user` ou, sem ele, pelo token
+  (`AuthContextService`), então não depende da ordem dos guards. Aceita
+  `"chave"`, `["a","b"]` (todas) e `{ anyOf: ["a","b"] }` (qualquer uma, para
+  leituras compartilhadas). Flag ausente do banco vale o **padrão do catálogo**.
+  Desligada: 403 com `details.code = "FEATURE_DISABLED"`.
+- **Rotas públicas** cujo público da flag não é "todos" ficaram sem `@FeatureFlag`
+  (`POST /accepted-christs`, `/image-sections*`, `GET /ideas-pages*`,
+  `GET /documents*`): decorá-las derrubaria o acesso de quem hoje entra — ver
+  divergências na §4.1 do plano 09.
+- **Renomeação sem acidente:** `FEATURE_FLAG_RENAMES` cria a chave nova
+  **copiando `enabled` e `targetRoles` da antiga** no boot (`shelter-pagelas`
+  gera `sheltered_area` e `pagelas`). Rollout em dois passos: na versão N as
+  chaves antigas permanecem (instâncias antigas ainda as leem); na versão N+1
+  vão para `RETIRED_FEATURE_FLAGS`. `INTERNAL_FEATURE_FLAG_PREFIXES` cobre
+  `email_` e, durante a versão N, também `email-` (não vazam no mapa público).
+- **Front:** `FeatureFlagKeys` com as mesmas 54 chaves; `FeatureFlagRoute` em 55
+  rotas; o slice ignora resposta de requisição antiga (troca de sessão).
