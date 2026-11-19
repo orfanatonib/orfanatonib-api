@@ -30,24 +30,37 @@ export class VisitReportReminderService {
       isoDay(daysAgo(REMINDER_LOOKBACK_DAYS)),
     );
 
+    let failures = 0;
     for (const visit of pending) {
       const leaders = await this.pendingWork.findTeamLeaders(visit.teamId);
 
       for (const leader of leaders) {
-        await this.notificationService.sendVisitReportReminder(
-          leader.email,
-          {
-            userName: leader.name,
-            shelterName: visit.shelterName,
-            referenceLabel: `a visita ${visit.visitNumber}, de ${this.formatDate(visit.visitDate)}`,
-          },
-          // Sem a chave, o agendador cobraria a mesma visita todo dia.
-          { dedupeKey: visitReportDedupeKey(visit.scheduleId, leader.email) },
-        );
+        try {
+          await this.notificationService.sendVisitReportReminder(
+            leader.email,
+            {
+              userName: leader.name,
+              shelterName: visit.shelterName,
+              referenceLabel: `a visita ${visit.visitNumber}, de ${this.formatDate(visit.visitDate)}`,
+            },
+            // Sem a chave, o agendador cobraria a mesma visita todo dia.
+            { dedupeKey: visitReportDedupeKey(visit.scheduleId, leader.email) },
+          );
+        } catch (error: unknown) {
+          // Um destinatário com problema não pode impedir os demais de serem avisados.
+          failures += 1;
+          this.logger.error(
+            ReminderLogs.RECIPIENT_FAILED(
+              leader.email,
+              error instanceof Error ? error.message : String(error),
+            ),
+          );
+        }
       }
     }
 
     this.logger.log(ReminderLogs.VISIT_REPORT_DONE(pending.length));
+    if (failures > 0) throw new Error(ReminderLogs.SOME_FAILED(failures));
     return pending.length;
   }
 

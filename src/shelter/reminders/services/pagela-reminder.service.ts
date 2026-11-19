@@ -43,32 +43,45 @@ export class PagelaReminderService {
       latest.visit,
     );
 
+    let failures = 0;
     for (const group of groups) {
       if (group.pendingCount === 0) continue;
 
       const leaders = await this.pendingWork.findTeamLeaders(group.teamId);
       for (const leader of leaders) {
-        await this.notificationService.sendPagelaReminder(
-          leader.email,
-          {
-            userName: leader.name,
-            shelterName: group.shelterName,
-            referenceLabel: `a visita ${group.visit} de ${group.year}`,
-            pendingCount: group.pendingCount,
-          },
-          {
-            dedupeKey: pagelaDedupeKey(
-              group.shelterId,
-              group.year,
-              group.visit,
+        try {
+          await this.notificationService.sendPagelaReminder(
+            leader.email,
+            {
+              userName: leader.name,
+              shelterName: group.shelterName,
+              referenceLabel: `a visita ${group.visit} de ${group.year}`,
+              pendingCount: group.pendingCount,
+            },
+            {
+              dedupeKey: pagelaDedupeKey(
+                group.shelterId,
+                group.year,
+                group.visit,
+                leader.email,
+              ),
+            },
+          );
+        } catch (error: unknown) {
+          // Um destinatário com problema não pode impedir os demais de serem avisados.
+          failures += 1;
+          this.logger.error(
+            ReminderLogs.RECIPIENT_FAILED(
               leader.email,
+              error instanceof Error ? error.message : String(error),
             ),
-          },
-        );
+          );
+        }
       }
     }
 
     this.logger.log(ReminderLogs.PAGELA_DONE(groups.length));
+    if (failures > 0) throw new Error(ReminderLogs.SOME_FAILED(failures));
     return groups.length;
   }
 }

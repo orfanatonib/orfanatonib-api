@@ -112,6 +112,25 @@ describe("VisitReportReminderService", () => {
     expect(keys[1]).toContain("s2");
   });
 
+  it("um líder com envio falhando não impede os demais de serem cobrados (e a passada acusa a falha)", async () => {
+    pendingWork.findVisitsWithoutReport.mockResolvedValue([visit()]);
+    pendingWork.findTeamLeaders.mockResolvedValue([
+      leader({ email: "quebrado@orfanatonib.test" }),
+      leader({ email: "ok@orfanatonib.test" }),
+    ]);
+    notificationService.sendVisitReportReminder
+      .mockRejectedValueOnce(new Error("e-mail inválido"))
+      .mockResolvedValueOnce(undefined);
+
+    await expect(service.run()).rejects.toThrow("1 aviso(s) falharam");
+    expect(notificationService.sendVisitReportReminder).toHaveBeenCalledTimes(
+      2,
+    );
+    expect(notificationService.sendVisitReportReminder.mock.calls[1][0]).toBe(
+      "ok@orfanatonib.test",
+    );
+  });
+
   it("não cobra quando a equipe não tem líder ativo", async () => {
     pendingWork.findVisitsWithoutReport.mockResolvedValue([visit()]);
     pendingWork.findTeamLeaders.mockResolvedValue([]);
@@ -180,6 +199,22 @@ describe("PagelaReminderService", () => {
 
     await expect(service.run()).resolves.toBe(0);
     expect(notificationService.sendPagelaReminder).not.toHaveBeenCalled();
+  });
+
+  it("um líder com envio falhando não impede os demais de serem cobrados", async () => {
+    pendingWork.findLatestPastVisit.mockResolvedValue({ year: 2026, visit: 3 });
+    pendingWork.hasAnyPagela.mockResolvedValue(true);
+    pendingWork.findShelteredWithoutPagela.mockResolvedValue([pagelaGroup()]);
+    pendingWork.findTeamLeaders.mockResolvedValue([
+      leader({ email: "quebrado@orfanatonib.test" }),
+      leader({ email: "ok@orfanatonib.test" }),
+    ]);
+    notificationService.sendPagelaReminder
+      .mockRejectedValueOnce(new Error("e-mail inválido"))
+      .mockResolvedValueOnce(undefined);
+
+    await expect(service.run()).rejects.toThrow("1 aviso(s) falharam");
+    expect(notificationService.sendPagelaReminder).toHaveBeenCalledTimes(2);
   });
 
   it("ignora abrigo sem pendência", async () => {

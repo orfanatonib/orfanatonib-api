@@ -11,6 +11,10 @@ export const ReminderLogs = {
   PAGELA_START: "Lembretes: verificando pagelas pendentes",
   PAGELA_DONE: (count: number) =>
     `Lembretes: ${count} abrigo(s) com pagela pendente`,
+  RECIPIENT_FAILED: (email: string, reason: string) =>
+    `Lembretes: falha ao avisar ${email} — ${reason}`,
+  SOME_FAILED: (count: number) =>
+    `Lembretes: ${count} aviso(s) falharam; os demais foram enviados`,
   FAILED: (kind: string, reason: string) =>
     `Lembretes: falha ao processar ${kind} — ${reason}`,
 } as const;
