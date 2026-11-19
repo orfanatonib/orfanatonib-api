@@ -27,7 +27,12 @@ describe("CreateSiteFeedbackService", () => {
   });
 
   it("creates and saves site feedback", async () => {
-    const dto = { name: "Pedro", email: "pedro@test.com", rating: 5, comment: "Excelente" };
+    const dto = {
+      name: "Pedro",
+      email: "pedro@test.com",
+      rating: 5,
+      comment: "Excelente",
+    };
     const entity = { id: "1", ...dto };
 
     repository.create.mockReturnValue(entity);

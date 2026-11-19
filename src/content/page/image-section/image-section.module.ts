@@ -12,12 +12,14 @@ import { DeleteImageSectionService } from "./services/delete-image-section.servi
 import { GetImageSectionService } from "./services/get-image-section.service";
 import { ImageSectionController } from "./image-section.controller";
 import { CreateImageSectionService } from "./services/create-image-section.service";
+import { UserModule } from "src/core/user/user.module";
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([ImageSectionEntity, ImagePageEntity]),
     MediaModule,
     AwsModule,
+    UserModule,
   ],
   controllers: [ImageSectionController],
   providers: [

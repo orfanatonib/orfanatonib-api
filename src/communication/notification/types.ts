@@ -64,6 +64,12 @@ export interface CommentReceivedEmailData {
   comment: string;
 }
 
+/** Foto(s) nova(s) enviada(s) para o feed de abrigos; sem dado de criança. */
+export interface PhotoUploadedEmailData {
+  caption: string;
+  photoCount: number;
+}
+
 export interface TeamAssignmentChangedEmailData {
   userName: string;
   shelterName: string;
@@ -102,6 +108,7 @@ export interface EmailTemplateDataMap {
   [EmailTemplateKey.TEAM_ASSIGNMENT_CHANGED]: TeamAssignmentChangedEmailData;
   [EmailTemplateKey.PAGELA_REMINDER]: PagelaReminderEmailData;
   [EmailTemplateKey.VISIT_REPORT_REMINDER]: VisitReportReminderEmailData;
+  [EmailTemplateKey.PHOTO_UPLOADED]: PhotoUploadedEmailData;
 }
 
 export type EmailTemplateRenderer<TKey extends EmailTemplateKey> = (

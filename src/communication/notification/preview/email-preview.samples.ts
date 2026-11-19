@@ -48,6 +48,10 @@ export const EMAIL_PREVIEW_SAMPLES: {
     rating: 5,
     comment: "O site está muito melhor, parabéns pelo trabalho!",
   },
+  [EmailTemplateKey.PHOTO_UPLOADED]: {
+    caption: "Visita de sábado",
+    photoCount: 3,
+  },
   [EmailTemplateKey.COMMENT_RECEIVED]: {
     authorName: "Carlos Pereira",
     clubinho: "12",

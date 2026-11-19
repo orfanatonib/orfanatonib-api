@@ -129,4 +129,111 @@ describe("NotificationService", () => {
   it("expõe o endereço do frontend para quem precisa montar link", () => {
     expect(service.appUrl()).toBe("https://app.test");
   });
+
+  describe("cada acontecimento dispara o template certo para os destinatários certos", () => {
+    const data = {} as never;
+    const cases: Array<
+      [
+        string,
+        EmailTemplateKey,
+        (svc: NotificationService) => Promise<void>,
+        string[],
+      ]
+    > = [
+      [
+        "sendPasswordResetEmail",
+        EmailTemplateKey.PASSWORD_RESET,
+        (s) => s.sendPasswordResetEmail("a@x", "A", "l", 30),
+        ["a@x"],
+      ],
+      [
+        "sendPasswordChangedEmail",
+        EmailTemplateKey.PASSWORD_CHANGED,
+        (s) => s.sendPasswordChangedEmail("a@x", "A"),
+        ["a@x"],
+      ],
+      [
+        "sendEmailVerification",
+        EmailTemplateKey.EMAIL_VERIFICATION,
+        (s) => s.sendEmailVerification("a@x", "A", "l", 24),
+        ["a@x"],
+      ],
+      [
+        "sendAccountApproved",
+        EmailTemplateKey.ACCOUNT_APPROVED,
+        (s) => s.sendAccountApproved("a@x", "A"),
+        ["a@x"],
+      ],
+      [
+        "sendContactNotification",
+        EmailTemplateKey.CONTACT_RECEIVED,
+        (s) => s.sendContactNotification(data, ["c@x"]),
+        ["c@x"],
+      ],
+      [
+        "sendFeedbackNotification",
+        EmailTemplateKey.FEEDBACK_RECEIVED,
+        (s) => s.sendFeedbackNotification(data, ["c@x"]),
+        ["c@x"],
+      ],
+      [
+        "sendCommentNotification",
+        EmailTemplateKey.COMMENT_RECEIVED,
+        (s) => s.sendCommentNotification(data, ["c@x"]),
+        ["c@x"],
+      ],
+      [
+        "sendPhotoUploadedNotification",
+        EmailTemplateKey.PHOTO_UPLOADED,
+        (s) =>
+          s.sendPhotoUploadedNotification({ caption: "x", photoCount: 2 }, [
+            "c@x",
+          ]),
+        ["c@x"],
+      ],
+      [
+        "sendEventNotification",
+        EmailTemplateKey.EVENT_NOTICE,
+        (s) => s.sendEventNotification(data, ["c@x", "d@x"]),
+        ["c@x", "d@x"],
+      ],
+      [
+        "sendTeamAssignmentChanged",
+        EmailTemplateKey.TEAM_ASSIGNMENT_CHANGED,
+        (s) => s.sendTeamAssignmentChanged("a@x", data),
+        ["a@x"],
+      ],
+      [
+        "sendPagelaReminder",
+        EmailTemplateKey.PAGELA_REMINDER,
+        (s) => s.sendPagelaReminder("a@x", data, { dedupeKey: "k" } as never),
+        ["a@x"],
+      ],
+      [
+        "sendVisitReportReminder",
+        EmailTemplateKey.VISIT_REPORT_REMINDER,
+        (s) =>
+          s.sendVisitReportReminder("a@x", data, { dedupeKey: "k" } as never),
+        ["a@x"],
+      ],
+    ];
+
+    it.each(cases)(
+      "%s usa o template %s",
+      async (_name, key, call, recipients) => {
+        await call(service);
+        expect(dispatcher.dispatch).toHaveBeenCalledTimes(1);
+        const [usedKey, , usedRecipients] = dispatcher.dispatch.mock
+          .calls[0] as [string, unknown, string[]];
+        expect(usedKey).toBe(key);
+        expect(usedRecipients).toEqual(recipients);
+      },
+    );
+
+    it("todo EmailTemplateKey tem um método de envio (nenhum template órfão)", () => {
+      expect(new Set(cases.map(([, key]) => key))).toEqual(
+        new Set(Object.values(EmailTemplateKey)),
+      );
+    });
+  });
 });

@@ -494,6 +494,13 @@ export const DEFAULT_FEATURE_FLAGS = [
     targetRoles: [],
   },
   {
+    key: "email_photo_uploaded",
+    name: "E-mail: Foto Nova no Feed",
+    description: "Avisa a coordenação sobre foto enviada ao feed de abrigos.",
+    enabled: true,
+    targetRoles: [],
+  },
+  {
     key: "email_event_notice",
     name: "E-mail: Aviso de Evento",
     description: "Envia avisos relacionados a eventos.",

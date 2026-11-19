@@ -9,6 +9,8 @@ import { CreateImageSectionDto } from "../dto/create-image-section.dto";
 import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
 import { ImageSectionResponseDto } from "../dto/image-section-response.dto";
 import { ImageSectionEntity } from "src/content/page/image-page/entities/image-section.entity";
+import { NotificationService } from "src/communication/notification/services/notification.service";
+import { GetUsersService } from "src/core/user/services/get-user.service";
 
 @Injectable()
 export class CreateImageSectionService {
@@ -19,6 +21,8 @@ export class CreateImageSectionService {
     private readonly awsS3Service: AwsS3Service,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly imageSectionRepository: ImageSectionRepository,
+    private readonly notificationService: NotificationService,
+    private readonly getUsersService: GetUsersService,
   ) {}
 
   async createSection(
@@ -53,10 +57,12 @@ export class CreateImageSectionService {
           MediaTargetType.ImagesPage,
           filesDict,
           this.awsS3Service.upload.bind(this.awsS3Service),
-this.awsS3Service.delete.bind(this.awsS3Service),
+          this.awsS3Service.delete.bind(this.awsS3Service),
         );
 
       await queryRunner.commitTransaction();
+
+      void this.notifyAdmins(savedSection.caption, mediaItems.length);
 
       return ImageSectionResponseDto.fromEntity(savedSection, mediaItems);
     } catch (error) {
@@ -65,6 +71,24 @@ this.awsS3Service.delete.bind(this.awsS3Service),
       throw new BadRequestException("Error creating section");
     } finally {
       await queryRunner.release();
+    }
+  }
+
+  /** Avisa a coordenação depois do commit; falha de e-mail nunca desfaz nem atrasa o upload. */
+  private async notifyAdmins(
+    caption: string,
+    photoCount: number,
+  ): Promise<void> {
+    try {
+      const adminEmails = await this.getUsersService.findAdminEmails();
+      if (adminEmails.length === 0) return;
+      await this.notificationService.sendPhotoUploadedNotification(
+        { caption, photoCount },
+        adminEmails,
+      );
+    } catch (error: unknown) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to notify admins about new photo: ${reason}`);
     }
   }
 

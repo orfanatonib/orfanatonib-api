@@ -9,6 +9,7 @@ import {
   ContactReceivedEmailData,
   EmailRenderContext,
   FeedbackReceivedEmailData,
+  PhotoUploadedEmailData,
   RenderedEmail,
 } from "../types";
 
@@ -82,6 +83,35 @@ export const renderFeedbackReceived = (
     "",
     "Comentário:",
     data.comment,
+  ].join("\n"),
+});
+
+export const renderPhotoUploaded = (
+  data: PhotoUploadedEmailData,
+  context: EmailRenderContext,
+): RenderedEmail => ({
+  subject: `Nova foto enviada - ${APP}`,
+  html: renderEmailShell({
+    title: "Nova foto enviada",
+    logoUrl: context.logoUrl,
+    body: [
+      paragraph("Alguém enviou foto(s) para o feed de abrigos."),
+      definitionList([
+        { label: "Legenda", value: data.caption?.trim() || "Sem legenda" },
+        { label: "Quantidade", value: String(data.photoCount) },
+      ]),
+      paragraph(
+        "Revise antes de publicar: a foto só aparece depois de aprovada.",
+      ),
+    ].join(""),
+  }),
+  text: [
+    "Nova foto enviada para o feed de abrigos:",
+    "",
+    `Legenda: ${data.caption?.trim() || "Sem legenda"}`,
+    `Quantidade: ${data.photoCount}`,
+    "",
+    "Revise antes de publicar: a foto só aparece depois de aprovada.",
   ].join("\n"),
 });
 

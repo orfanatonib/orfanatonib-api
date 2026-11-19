@@ -2,7 +2,7 @@
  * Catálogo dos e-mails que a aplicação envia.
  *
  * A chave é o contrato: identifica o template, dá nome à feature flag
- * (`email-<chave>`) e é gravada no outbox, que é como se audita o que saiu.
+ * (`email_<chave>`, com `-` virando `_`) e é gravada no outbox, que é como se audita o que saiu.
  */
 export enum EmailTemplateKey {
   PASSWORD_RESET = "password-reset",
@@ -16,4 +16,5 @@ export enum EmailTemplateKey {
   TEAM_ASSIGNMENT_CHANGED = "team-assignment-changed",
   PAGELA_REMINDER = "pagela-reminder",
   VISIT_REPORT_REMINDER = "visit-report-reminder",
+  PHOTO_UPLOADED = "photo-uploaded",
 }

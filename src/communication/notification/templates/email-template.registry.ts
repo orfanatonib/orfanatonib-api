@@ -13,6 +13,7 @@ import {
 } from "./auth.templates";
 import {
   renderCommentReceived,
+  renderPhotoUploaded,
   renderContactReceived,
   renderFeedbackReceived,
 } from "./inbound.templates";
@@ -39,6 +40,7 @@ export const EMAIL_TEMPLATES: EmailTemplateRegistry = {
   [EmailTemplateKey.TEAM_ASSIGNMENT_CHANGED]: renderTeamAssignmentChanged,
   [EmailTemplateKey.PAGELA_REMINDER]: renderPagelaReminder,
   [EmailTemplateKey.VISIT_REPORT_REMINDER]: renderVisitReportReminder,
+  [EmailTemplateKey.PHOTO_UPLOADED]: renderPhotoUploaded,
 };
 
 export const renderEmail = <TKey extends EmailTemplateKey>(

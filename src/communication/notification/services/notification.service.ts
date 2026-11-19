@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { EmailTemplateKey } from "../enums/email-template-key.enum";
 import {
   CommentReceivedEmailData,
+  PhotoUploadedEmailData,
   ContactReceivedEmailData,
   EventNoticeEmailData,
   FeedbackReceivedEmailData,
@@ -107,6 +108,18 @@ export class NotificationService {
     await this.dispatcher.dispatch(
       EmailTemplateKey.COMMENT_RECEIVED,
       comment,
+      recipientEmails,
+    );
+  }
+
+  /** Foto nova no feed de abrigos: avisa a coordenação para revisar. */
+  async sendPhotoUploadedNotification(
+    photo: PhotoUploadedEmailData,
+    recipientEmails: readonly string[],
+  ): Promise<void> {
+    await this.dispatcher.dispatch(
+      EmailTemplateKey.PHOTO_UPLOADED,
+      photo,
       recipientEmails,
     );
   }
