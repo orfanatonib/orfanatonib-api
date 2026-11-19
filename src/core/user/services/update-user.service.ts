@@ -52,18 +52,18 @@ export class UpdateUserService {
       if (nextRole === UserRole.MEMBER) {
         await this.deleteLeaderService.removeByUserId(id);
         if (nextActive) {
-          try {
-            await this.createMemberService.createForUser(id);
-          } catch {}
+          // Idempotente (devolve o perfil existente); qualquer outra falha PROPAGA — antes
+          // era engolida e o usuário ficava com o papel novo e sem perfil.
+          await this.createMemberService.createForUser(id);
         } else {
           await this.deleteMemberService.removeByUserId(id);
         }
       } else if (nextRole === UserRole.LEADER) {
         await this.deleteMemberService.removeByUserId(id);
         if (nextActive) {
-          try {
-            await this.createLeaderService.createForUser(id);
-          } catch {}
+          // Idempotente (devolve o perfil existente); qualquer outra falha PROPAGA — antes
+          // era engolida e o usuário ficava com o papel novo e sem perfil.
+          await this.createLeaderService.createForUser(id);
         } else {
           await this.deleteLeaderService.removeByUserId(id);
         }
@@ -76,17 +76,17 @@ export class UpdateUserService {
     if (!willChangeRole && activeInDto) {
       if (nextRole === UserRole.MEMBER) {
         if (nextActive) {
-          try {
-            await this.createMemberService.createForUser(id);
-          } catch {}
+          // Idempotente (devolve o perfil existente); qualquer outra falha PROPAGA — antes
+          // era engolida e o usuário ficava com o papel novo e sem perfil.
+          await this.createMemberService.createForUser(id);
         } else {
           await this.deleteMemberService.removeByUserId(id);
         }
       } else if (nextRole === UserRole.LEADER) {
         if (nextActive) {
-          try {
-            await this.createLeaderService.createForUser(id);
-          } catch {}
+          // Idempotente (devolve o perfil existente); qualquer outra falha PROPAGA — antes
+          // era engolida e o usuário ficava com o papel novo e sem perfil.
+          await this.createLeaderService.createForUser(id);
         } else {
           await this.deleteLeaderService.removeByUserId(id);
         }

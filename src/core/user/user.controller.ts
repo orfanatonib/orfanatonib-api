@@ -30,10 +30,11 @@ import { DeleteUserService } from "./services/delete-user.service";
 import { UpdateUserService } from "./services/update-user.service";
 import { UpdateUserDto } from "./dto/update-user.dto";
 import { UpdateUserImageService } from "./services/update-user-image.service";
-import { UserEntity } from "./entities/user.entity";
 import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
+
+import { SafeUser, toSafeUser } from "./mappers/safe-user.mapper";
 
 @Controller("users")
 @UseGuards(JwtAuthGuard)
@@ -56,7 +57,7 @@ export class UserController {
     this.logger.log("Creating new user");
     const result = await this.createUserService.create(dto);
     this.logger.log(`User created successfully: ${result.id}`);
-    return result;
+    return toSafeUser(result);
   }
 
   @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
@@ -86,7 +87,7 @@ export class UserController {
   @Get(":id")
   @UseGuards(AdminRoleGuard)
   async findOne(@Param("id", new ParseUUIDPipe()) id: string) {
-    return this.getUsersService.findOne(id);
+    return toSafeUser(await this.getUsersService.findOne(id));
   }
 
   @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
@@ -104,11 +105,11 @@ export class UserController {
   async update(
     @Param("id", new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateUserDto,
-  ): Promise<UserEntity> {
+  ): Promise<SafeUser> {
     this.logger.log(`Updating user: ${id}`);
     const result = await this.updateUserService.update(id, dto);
     this.logger.log(`User updated successfully: ${id}`);
-    return result;
+    return toSafeUser(result);
   }
 
   @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
@@ -132,7 +133,7 @@ export class UserController {
     @UploadedFiles() files: Express.Multer.File[] = [],
     @Body("imageData") imageDataRaw?: string,
     @Body() body?: UserImageBody,
-  ): Promise<UserEntity> {
+  ): Promise<SafeUser> {
     this.logger.log(`Updating user image: ${id}`);
     const bodyToProcess = imageDataRaw
       ? { imageData: imageDataRaw }
@@ -143,6 +144,6 @@ export class UserController {
       files,
     );
     this.logger.log(`User image updated successfully: ${id}`);
-    return result;
+    return toSafeUser(result);
   }
 }
