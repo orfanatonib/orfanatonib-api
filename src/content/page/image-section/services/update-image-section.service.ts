@@ -40,6 +40,8 @@ export class UpdateImageSectionService {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
+    const tracking: FileTracking = { pendingNew: [], replaced: [] };
+    let committed = false;
 
     try {
       const section = await this.sectionRepo.findOneBy({ id });
@@ -61,16 +63,15 @@ export class UpdateImageSectionService {
           MediaTargetType.ImagesPage,
         );
 
-      await this.deleteObsoleteMedia(
-        existingMedia,
-        dto.mediaItems,
-        queryRunner,
-      );
+      // Ordem segura (plano 32, P0): objeto novo → linha → commit → só então some o
+      // antigo. Apagar antes deixava a linha apontando para um objeto inexistente se
+      // um passo seguinte falhasse.
       const processedMedia = await this.processMedia(
         dto.mediaItems,
         section.id,
         filesDict,
         queryRunner,
+        tracking,
       );
       section.caption = dto.caption;
       section.description = dto.description;
@@ -79,9 +80,16 @@ export class UpdateImageSectionService {
       const savedSection = await queryRunner.manager.save(section);
 
       await queryRunner.commitTransaction();
+      committed = true;
+
+      await this.deleteObsoleteMedia(existingMedia, dto.mediaItems);
+      await this.discardObjects(tracking.replaced);
       return ImageSectionResponseDto.fromEntity(savedSection, processedMedia);
     } catch (error) {
-      await queryRunner.rollbackTransaction();
+      if (!committed) await queryRunner.rollbackTransaction();
+      // O que subiu e ainda não tem linha é órfão; o que já foi trocado numa linha
+      // gravada deixa o objeto antigo sem referência.
+      await this.discardObjects([...tracking.pendingNew, ...tracking.replaced]);
       this.logger.error("Error updating section", error);
       throw new BadRequestException("Error updating section");
     } finally {
@@ -92,7 +100,6 @@ export class UpdateImageSectionService {
   private async deleteObsoleteMedia(
     existingMedia: MediaItemEntity[],
     incomingMedia: MediaItemDto[],
-    queryRunner: QueryRunner,
   ): Promise<void> {
     const incomingIds = incomingMedia
       .map((m) => m.id)
@@ -111,6 +118,7 @@ export class UpdateImageSectionService {
     sectionId: string,
     filesDict: Record<string, Express.Multer.File>,
     queryRunner: QueryRunner,
+    tracking: FileTracking,
   ): Promise<MediaItemEntity[]> {
     const processed: MediaItemEntity[] = [];
 
@@ -121,6 +129,7 @@ export class UpdateImageSectionService {
           sectionId,
           filesDict,
           queryRunner,
+          tracking,
         );
         processed.push(updated);
       } else {
@@ -129,6 +138,7 @@ export class UpdateImageSectionService {
           sectionId,
           filesDict,
           queryRunner,
+          tracking,
         );
         processed.push(created);
       }
@@ -141,6 +151,7 @@ export class UpdateImageSectionService {
     sectionId: string,
     filesDict: Record<string, Express.Multer.File>,
     queryRunner: QueryRunner,
+    tracking: FileTracking,
   ): Promise<MediaItemEntity> {
     const media = this.mediaItemProcessor.buildBaseMediaItem(
       mediaInput,
@@ -154,6 +165,7 @@ export class UpdateImageSectionService {
         throw new BadRequestException("File not found for upload");
       }
       media.url = await this.awsS3Service.upload(file);
+      tracking.pendingNew.push(media.url);
       media.isLocalFile = true;
       media.originalName = file.originalname;
       media.size = file.size;
@@ -162,7 +174,9 @@ export class UpdateImageSectionService {
       media.isLocalFile = false;
     }
 
-    return await this.mediaItemProcessor.saveMediaItem(media);
+    const saved = await this.mediaItemProcessor.saveMediaItem(media);
+    this.markPersisted(media.url, tracking);
+    return saved;
   }
 
   private async upsertMedia(
@@ -170,6 +184,7 @@ export class UpdateImageSectionService {
     sectionId: string,
     filesDict: Record<string, Express.Multer.File>,
     queryRunner: QueryRunner,
+    tracking: FileTracking,
   ): Promise<MediaItemEntity> {
     const existingMedia = await queryRunner.manager.findOneBy(MediaItemEntity, {
       id: mediaInput.id,
@@ -190,14 +205,8 @@ export class UpdateImageSectionService {
     if (mediaInput.uploadType === UploadType.UPLOAD && mediaInput.isLocalFile) {
       const file = filesDict[mediaInput.fieldKey ?? ""];
       if (file) {
-        if (existingMedia.isLocalFile && existingMedia.url) {
-          try {
-            await this.awsS3Service.delete(existingMedia.url);
-          } catch (error) {
-            this.logger.warn(`Could not delete old file: ${existingMedia.url}`);
-          }
-        }
         updatedMedia.url = await this.awsS3Service.upload(file);
+        tracking.pendingNew.push(updatedMedia.url);
         updatedMedia.isLocalFile = true;
         updatedMedia.originalName = file.originalname;
         updatedMedia.size = file.size;
@@ -208,22 +217,46 @@ export class UpdateImageSectionService {
         updatedMedia.size = existingMedia.size;
       }
     } else {
-      if (existingMedia.isLocalFile && existingMedia.url) {
-        try {
-          await this.awsS3Service.delete(existingMedia.url);
-        } catch (error) {
-          this.logger.warn(
-            `Could not delete old file when switching to link: ${existingMedia.url}`,
-          );
-        }
-      }
       updatedMedia.url = mediaInput.url?.trim() || existingMedia.url;
       updatedMedia.isLocalFile = false;
     }
 
-    return await this.mediaItemProcessor.upsertMediaItem(
+    const saved = await this.mediaItemProcessor.upsertMediaItem(
       mediaInput.id,
       updatedMedia,
     );
+    this.markPersisted(updatedMedia.url, tracking);
+    // O arquivo antigo só sai de cena se a linha deixou de apontar para ele.
+    if (
+      existingMedia.isLocalFile &&
+      existingMedia.url &&
+      existingMedia.url !== updatedMedia.url
+    ) {
+      tracking.replaced.push(existingMedia.url);
+    }
+    return saved;
   }
+
+  /** A linha já referencia o objeto novo: ele deixa de ser candidato a órfão. */
+  private markPersisted(url: string | undefined, tracking: FileTracking): void {
+    tracking.pendingNew = tracking.pendingNew.filter((u) => u !== url);
+  }
+
+  /** Melhor esforço: objeto não apagado vira registro, não falha da requisição. */
+  private async discardObjects(urls: readonly string[]): Promise<void> {
+    for (const url of urls) {
+      try {
+        await this.awsS3Service.delete(url);
+      } catch (error: unknown) {
+        const reason = error instanceof Error ? error.message : String(error);
+        this.logger.warn(`Objeto não apagado do bucket (${url}): ${reason}`);
+      }
+    }
+  }
+}
+
+/** `pendingNew`: subiu e ainda sem linha. `replaced`: antigo já sem referência. */
+interface FileTracking {
+  pendingNew: string[];
+  replaced: string[];
 }
