@@ -60,11 +60,11 @@ describe("catálogo de feature flags", () => {
   });
 
   describe("definições de fábrica", () => {
-    it("o catálogo tem as 54 flags de interface em snake_case e as 12 de e-mail", () => {
+    it("o catálogo tem as 53 flags de interface em snake_case e as 12 de e-mail", () => {
       const keys = DEFAULT_FEATURE_FLAGS.map((flag) => flag.key);
       const ui = keys.filter((key) => !isInternalFeatureFlag(key));
 
-      expect(ui).toHaveLength(54);
+      expect(ui).toHaveLength(53);
       expect(ui.every((key) => /^[a-z]+(_[a-z]+)*$/.test(key))).toBe(true);
       expect(keys.filter(isInternalFeatureFlag)).toHaveLength(12);
       expect(new Set(keys).size).toBe(keys.length);
@@ -90,7 +90,6 @@ describe("catálogo de feature flags", () => {
           "content_studio_publication",
           "content_studio_review",
           "observability_audit",
-          "special_family_day",
         ].sort(),
       );
     });

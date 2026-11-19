@@ -15,7 +15,6 @@ export enum FeatureFlagKeys {
   PUBLIC_VIDEOS = "public_videos",
   SHELTER_PAGES = "shelter_pages",
   ABOUT_PAGE = "about_page",
-  SPECIAL_FAMILY_DAY = "special_family_day",
   SHELTER_ADDRESS = "shelter_address",
 
   MEMBER_AREA = "member_area",

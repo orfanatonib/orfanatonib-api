@@ -15,6 +15,8 @@ export const FEATURE_FLAG_TARGET_ROLES_METADATA_KEY = "targetRoles";
  */
 export const RETIRED_FEATURE_FLAGS: readonly string[] = [
   "event-email-notifications",
+  // Nunca existiu no Orfanato NIB; removida do catálogo.
+  "special_family_day",
 ];
 
 /**
@@ -153,13 +155,6 @@ export const DEFAULT_FEATURE_FLAGS = [
     name: "Página Sobre",
     description: "Interruptor do recurso: página Sobre.",
     enabled: true,
-    targetRoles: [],
-  },
-  {
-    key: "special_family_day",
-    name: "Dia Especial da Família",
-    description: "Interruptor do recurso: dia Especial da Família.",
-    enabled: false,
     targetRoles: [],
   },
   {
