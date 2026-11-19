@@ -21,8 +21,9 @@ describe("DeleteEventService", () => {
     order.length = 0;
     repo = {
       findById: jest.fn().mockResolvedValue({ id: "e1" }),
-      remove: jest.fn().mockImplementation(async () => {
+      remove: jest.fn().mockImplementation(() => {
         order.push("row");
+        return Promise.resolve();
       }),
     };
     media = {
@@ -32,8 +33,9 @@ describe("DeleteEventService", () => {
         .mockResolvedValue(["https://b/x.png"]),
     };
     storage = {
-      deleteAfterCommit: jest.fn().mockImplementation(async () => {
+      deleteAfterCommit: jest.fn().mockImplementation(() => {
         order.push("bucket");
+        return Promise.resolve();
       }),
     };
     notify = { notifyEventDeleted: jest.fn().mockResolvedValue(undefined) };
