@@ -11,6 +11,7 @@ import { MediaType } from "src/shared/media/media-item/media-item.entity";
 import { UpdateVisitMaterialPageService } from "./update-visit-material-page.service";
 import { GetVisitMaterialPageService } from "./get-visit-material-page.service";
 import { VisitMaterialMediaService } from "./visit-material-media.service";
+import { VisitMaterialSectionsService } from "./visit-material-sections.service";
 import { VisitMaterialsPageRepository } from "../repositories/visit-material-page.repository";
 import { TestamentType } from "../enums/testament-type.enum";
 import { VISIT_MATERIAL_ROUTE_ENTITY_TYPE } from "../constants";
@@ -38,6 +39,15 @@ describe("UpdateVisitMaterialPageService", () => {
     upsertRoute: jest.fn(),
   };
 
+  const sectionsService = {
+    prepare: jest.fn().mockReturnValue([]),
+    createAll: jest.fn().mockResolvedValue([]),
+    sync: jest.fn().mockResolvedValue(undefined),
+    loadForPage: jest.fn().mockResolvedValue([]),
+    loadForPages: jest.fn().mockResolvedValue(new Map()),
+    removeAllMedia: jest.fn().mockResolvedValue(undefined),
+  };
+
   let service: UpdateVisitMaterialPageService;
 
   const emptyGroups = () =>
@@ -55,6 +65,7 @@ describe("UpdateVisitMaterialPageService", () => {
       providers: [
         UpdateVisitMaterialPageService,
         { provide: VisitMaterialsPageRepository, useValue: repository },
+        { provide: VisitMaterialSectionsService, useValue: sectionsService },
         { provide: GetVisitMaterialPageService, useValue: getService },
         { provide: VisitMaterialMediaService, useValue: mediaService },
         { provide: RouteService, useValue: routeService },
@@ -198,11 +209,7 @@ describe("UpdateVisitMaterialPageService", () => {
 
   it("rejects a payload id that differs from the route before any write", async () => {
     await expect(
-      service.execute(
-        "page-id",
-        buildUpdateDto({ id: "another-page-id" }),
-        {},
-      ),
+      service.execute("page-id", buildUpdateDto({ id: "another-page-id" }), {}),
     ).rejects.toBeInstanceOf(RuleException);
 
     expect(getService.findEntityOrFail).not.toHaveBeenCalled();

@@ -6,6 +6,9 @@ import { MediaModule } from "src/shared/media/media.module";
 
 import { VisitMaterialsPageController } from "./visit-material-page.controller";
 import { VisitMaterialsPageEntity } from "./entities/visit-material-page.entity";
+import { VisitMaterialSectionEntity } from "./entities/visit-material-section.entity";
+import { VisitMaterialSectionRepository } from "./repositories/visit-material-section.repository";
+import { VisitMaterialSectionsService } from "./services/visit-material-sections.service";
 import { VisitMaterialsPageRepository } from "./repositories/visit-material-page.repository";
 import { CreateVisitMaterialPageService } from "./services/create-visit-material-page.service";
 import { GetVisitMaterialPageService } from "./services/get-visit-material-page.service";
@@ -16,7 +19,10 @@ import { VisitMaterialMediaService } from "./services/visit-material-media.servi
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([VisitMaterialsPageEntity]),
+    TypeOrmModule.forFeature([
+      VisitMaterialsPageEntity,
+      VisitMaterialSectionEntity,
+    ]),
     RouteModule,
     MediaModule,
     AwsModule,
@@ -25,12 +31,18 @@ import { VisitMaterialMediaService } from "./services/visit-material-media.servi
   providers: [
     VisitMaterialsPageRepository,
     VisitMaterialMediaService,
+    VisitMaterialSectionRepository,
+    VisitMaterialSectionsService,
     CreateVisitMaterialPageService,
     GetVisitMaterialPageService,
     UpdateVisitMaterialPageService,
     DeleteVisitMaterialPageService,
     SetCurrentVisitMaterialPageService,
   ],
-  exports: [TypeOrmModule, CreateVisitMaterialPageService, GetVisitMaterialPageService],
+  exports: [
+    TypeOrmModule,
+    CreateVisitMaterialPageService,
+    GetVisitMaterialPageService,
+  ],
 })
 export class VisitMaterialsPageModule {}

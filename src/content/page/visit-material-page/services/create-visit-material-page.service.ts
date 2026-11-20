@@ -13,6 +13,7 @@ import { toVisitMaterialsPageResponseDto } from "../mappers/visit-material-page.
 import { toMediaBuckets } from "../utils/visit-material-payload.util";
 import { UploadedFilesDict } from "../types";
 import { VisitMaterialMediaService } from "./visit-material-media.service";
+import { VisitMaterialSectionsService } from "./visit-material-sections.service";
 import {
   VISIT_MATERIAL_MESSAGES,
   VISIT_MATERIAL_ROUTE_CARD_IMAGE_URL,
@@ -27,6 +28,7 @@ export class CreateVisitMaterialPageService {
   constructor(
     private readonly repository: VisitMaterialsPageRepository,
     private readonly mediaService: VisitMaterialMediaService,
+    private readonly sectionsService: VisitMaterialSectionsService,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly routeService: RouteService,
     private readonly s3: AwsS3Service,
@@ -40,6 +42,11 @@ export class CreateVisitMaterialPageService {
     // before anything is written.
     const mediaInputs = this.mediaService.toPolymorphicItems(
       toMediaBuckets(dto),
+      files,
+    );
+
+    const preparedSections = this.sectionsService.prepare(
+      dto.sections ?? [],
       files,
     );
 
@@ -85,16 +92,24 @@ export class CreateVisitMaterialPageService {
             MediaTargetType.VisitMaterialsPage,
             files,
             (file) => this.s3.upload(file),
-(url) => this.s3.delete(url),
+            (url) => this.s3.delete(url),
           );
 
-        return { savedPage, mediaItems };
+        const sections = await this.sectionsService.createAll(
+          savedPage.id,
+          preparedSections,
+          files,
+          manager,
+        );
+
+        return { savedPage, mediaItems, sections };
       });
 
       this.logger.log(`Visit material page created: ${result.savedPage.id}`);
       return toVisitMaterialsPageResponseDto(
         result.savedPage,
         result.mediaItems,
+        result.sections,
       );
     } catch (error) {
       // Preserva o código específico de qualquer exceção HTTP já classificada,

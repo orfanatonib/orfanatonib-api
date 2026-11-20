@@ -5,7 +5,10 @@ import {
 } from "src/shared/media/media-item/media-item.entity";
 import { VisitMaterialsPageEntity } from "../entities/visit-material-page.entity";
 import { TestamentType } from "../enums/testament-type.enum";
+import { VISIT_MATERIAL_CATEGORY_ORDER } from "../enums/visit-material-category.enum";
+import type { VisitMaterialSectionWithMedia } from "../types";
 import {
+  VisitMaterialSectionResponseDTO,
   VisitMaterialsPageResponseDTO,
   VisitMediaItemResponseDTO,
   VisitRouteResponseDTO,
@@ -40,9 +43,37 @@ const bucket = (
 ): VisitMediaItemResponseDTO[] =>
   mediaItems.filter((item) => item.mediaType === mediaType).map(toMediaDto);
 
+const toSectionDto = ({
+  section,
+  media,
+}: VisitMaterialSectionWithMedia): VisitMaterialSectionResponseDTO => ({
+  id: section.id,
+  category: section.category,
+  title: section.title ?? null,
+  description: section.description ?? null,
+  position: section.position,
+  videos: bucket(media, MediaType.VIDEO),
+  documents: bucket(media, MediaType.DOCUMENT),
+  images: bucket(media, MediaType.IMAGE),
+  audios: bucket(media, MediaType.AUDIO),
+});
+
+/** Seções na ordem fixa das categorias (da faixa mais nova para a mais velha). */
+const sortedSections = (
+  sections: readonly VisitMaterialSectionWithMedia[],
+): VisitMaterialSectionResponseDTO[] =>
+  [...sections]
+    .sort(
+      (a, b) =>
+        VISIT_MATERIAL_CATEGORY_ORDER.indexOf(a.section.category) -
+        VISIT_MATERIAL_CATEGORY_ORDER.indexOf(b.section.category),
+    )
+    .map(toSectionDto);
+
 export const toVisitMaterialsPageResponseDto = (
   entity: VisitMaterialsPageEntity,
   mediaItems: MediaItemEntity[] = [],
+  sections: readonly VisitMaterialSectionWithMedia[] = [],
 ): VisitMaterialsPageResponseDTO => ({
   id: entity.id,
   title: entity.title,
@@ -51,6 +82,7 @@ export const toVisitMaterialsPageResponseDto = (
   description: entity.description,
   currentWeek: entity.currentWeek,
   route: toRouteDto(entity.route),
+  sections: sortedSections(sections),
   videos: bucket(mediaItems, MediaType.VIDEO),
   documents: bucket(mediaItems, MediaType.DOCUMENT),
   images: bucket(mediaItems, MediaType.IMAGE),

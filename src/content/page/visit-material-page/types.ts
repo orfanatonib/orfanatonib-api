@@ -1,4 +1,5 @@
 import { MediaItemDto } from "src/shared/dto/media-item-dto";
+import { VisitMaterialSectionEntity } from "./entities/visit-material-section.entity";
 import {
   MediaItemEntity,
   MediaType,
@@ -26,4 +27,10 @@ export interface VisitMaterialRouteInput {
   pageId: string;
   public: boolean;
   current?: boolean;
+}
+
+/** Seção já gravada com as mídias dela. */
+export interface VisitMaterialSectionWithMedia {
+  section: VisitMaterialSectionEntity;
+  media: MediaItemEntity[];
 }

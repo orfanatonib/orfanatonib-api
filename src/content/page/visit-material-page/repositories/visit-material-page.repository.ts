@@ -56,6 +56,16 @@ export class VisitMaterialsPageRepository {
       });
     }
 
+    if (query.category) {
+      queryBuilder.andWhere(
+        `EXISTS (
+          SELECT 1 FROM visit_material_sections section
+          WHERE section.page_id = ${PAGE_ALIAS}.id AND section.category = :category
+        )`,
+        { category: query.category },
+      );
+    }
+
     const searchString = query.searchString?.trim();
     if (searchString) {
       queryBuilder.andWhere(
@@ -81,8 +91,13 @@ export class VisitMaterialsPageRepository {
     });
   }
 
-  async findBySourceLessonId(sourceLessonId: string): Promise<VisitMaterialsPageEntity | null> {
-    return this.repository.findOne({ where: { sourceLessonId }, relations: ROUTE_RELATION });
+  async findBySourceLessonId(
+    sourceLessonId: string,
+  ): Promise<VisitMaterialsPageEntity | null> {
+    return this.repository.findOne({
+      where: { sourceLessonId },
+      relations: ROUTE_RELATION,
+    });
   }
 
   async findCurrentWeek(): Promise<VisitMaterialsPageEntity | null> {

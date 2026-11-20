@@ -35,6 +35,7 @@ import { TeamEntity } from "../src/shelter/team/entities/team.entity";
 import { UserEntity } from "../src/core/user/entities/user.entity";
 import { UserPreferences } from "../src/core/profile/entities/user-preferences.entity";
 import { VideosPage } from "../src/content/page/video-page/entities/video-page.entity";
+import { VisitMaterialSectionEntity } from "../src/content/page/visit-material-page/entities/visit-material-section.entity";
 import { VisitMaterialsPageEntity } from "../src/content/page/visit-material-page/entities/visit-material-page.entity";
 import { VisitReportEntity } from "../src/shelter/visit-report/entities/visit-report.entity";
 import { AiProviderSettingEntity } from "../src/content/ai-lessons/entities/ai-provider-setting.entity";
@@ -59,6 +60,7 @@ export const DATABASE_ENTITIES = [
   UserEntity,
   VideosPage,
   VisitMaterialsPageEntity,
+  VisitMaterialSectionEntity,
   MeditationEntity,
   DayEntity,
   MediaItemEntity,

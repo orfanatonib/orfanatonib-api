@@ -33,6 +33,8 @@ export const VISIT_MATERIAL_MESSAGES = {
   CREATE_FAILED: "Erro ao criar a página de materiais.",
   UPDATE_FAILED: "Erro ao atualizar a página de materiais.",
   DELETE_FAILED: "Erro ao remover a página de materiais.",
+  DUPLICATE_CATEGORY: (category: string): string =>
+    `A categoria "${category}" aparece mais de uma vez na página.`,
   MISSING_FIELD_KEY: (title: string): string =>
     `fieldKey ausente para o item de mídia "${title}".`,
   MISSING_FILE: (title: string): string =>

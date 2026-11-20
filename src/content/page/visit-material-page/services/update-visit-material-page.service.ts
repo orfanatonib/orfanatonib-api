@@ -22,6 +22,7 @@ import { toMediaBuckets } from "../utils/visit-material-payload.util";
 import { UploadedFilesDict } from "../types";
 import { GetVisitMaterialPageService } from "./get-visit-material-page.service";
 import { VisitMaterialMediaService } from "./visit-material-media.service";
+import { VisitMaterialSectionsService } from "./visit-material-sections.service";
 import {
   VISIT_MATERIAL_MESSAGES,
   VISIT_MATERIAL_ROUTE_CARD_IMAGE_URL,
@@ -37,6 +38,7 @@ export class UpdateVisitMaterialPageService {
     private readonly repository: VisitMaterialsPageRepository,
     private readonly getService: GetVisitMaterialPageService,
     private readonly mediaService: VisitMaterialMediaService,
+    private readonly sectionsService: VisitMaterialSectionsService,
     private readonly routeService: RouteService,
   ) {}
 
@@ -54,9 +56,16 @@ export class UpdateVisitMaterialPageService {
 
     const page = await this.getService.findEntityOrFail(id);
     const route = await this.findRouteOrFail(page.id);
+    // `sections` omitido = não mexe nas seções (clientes antigos); enviado = lista completa.
+    const preparedSections = dto.sections
+      ? this.sectionsService.prepare(dto.sections, files)
+      : null;
 
     try {
       await this.syncMedia(page.id, dto, files);
+      if (preparedSections) {
+        await this.sectionsService.sync(page.id, preparedSections, files);
+      }
 
       const updatedRoute = await this.upsertRoute(route, dto, page.id);
 
@@ -77,6 +86,7 @@ export class UpdateVisitMaterialPageService {
       return toVisitMaterialsPageResponseDto(
         updatedPage,
         await this.mediaService.findAllByPage(updatedPage.id),
+        await this.sectionsService.loadForPage(updatedPage.id),
       );
     } catch (error) {
       // Preserva o código específico de qualquer exceção HTTP já classificada,

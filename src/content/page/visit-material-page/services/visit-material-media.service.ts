@@ -50,16 +50,22 @@ export class VisitMaterialMediaService {
   }
 
   /** Every media item stored for the page, in a single query. */
-  async findAllByPage(pageId: string): Promise<MediaItemEntity[]> {
-    return this.mediaItemProcessor.findMediaItemsByTarget(pageId, TARGET_TYPE);
+  async findAllByPage(
+    pageId: string,
+    targetType: MediaTargetType = TARGET_TYPE,
+  ): Promise<MediaItemEntity[]> {
+    return this.mediaItemProcessor.findMediaItemsByTarget(pageId, targetType);
   }
 
   /**
    * Stored media grouped by type. Replaces four identical queries, one per
    * bucket, with a single round trip.
    */
-  async findGroupedByPage(pageId: string): Promise<StoredMediaByType> {
-    const items = await this.findAllByPage(pageId);
+  async findGroupedByPage(
+    pageId: string,
+    targetType: MediaTargetType = TARGET_TYPE,
+  ): Promise<StoredMediaByType> {
+    const items = await this.findAllByPage(pageId, targetType);
     const grouped = new Map<MediaType, MediaItemEntity[]>(
       VISIT_MATERIAL_MEDIA_TYPES.map((mediaType) => [mediaType, []]),
     );
@@ -133,8 +139,9 @@ export class VisitMaterialMediaService {
     pageId: string,
     mediaType: MediaType,
     files: UploadedFilesDict,
+    targetType: MediaTargetType = TARGET_TYPE,
   ): Promise<MediaItemEntity> {
-    const media = this.buildBase(input, pageId, mediaType);
+    const media = this.buildBase(input, pageId, mediaType, targetType);
 
     if (this.isUpload(input)) {
       await this.applyUpload(media, input, files);
@@ -152,9 +159,15 @@ export class VisitMaterialMediaService {
     pageId: string,
     mediaType: MediaType,
     files: UploadedFilesDict,
+    targetType: MediaTargetType = TARGET_TYPE,
   ): Promise<MediaItemEntity> {
-    const stored = await this.findOwnedStoredItem(input, pageId, mediaType);
-    const media = this.buildBase(input, pageId, mediaType);
+    const stored = await this.findOwnedStoredItem(
+      input,
+      pageId,
+      mediaType,
+      targetType,
+    );
+    const media = this.buildBase(input, pageId, mediaType, targetType);
 
     if (this.isUpload(input)) {
       if (!input.fieldKey && stored.isLocalFile) {
@@ -184,11 +197,12 @@ export class VisitMaterialMediaService {
     input: MediaItemDto,
     pageId: string,
     mediaType: MediaType,
+    targetType: MediaTargetType = TARGET_TYPE,
   ): MediaItemEntity {
     return this.mediaItemProcessor.buildBaseMediaItem(
       { ...input, mediaType },
       pageId,
-      TARGET_TYPE,
+      targetType,
     );
   }
 
@@ -242,6 +256,7 @@ export class VisitMaterialMediaService {
     input: MediaItemDto,
     pageId: string,
     mediaType: MediaType,
+    targetType: MediaTargetType = TARGET_TYPE,
   ): Promise<MediaItemEntity> {
     const stored = input.id
       ? await this.mediaItemProcessor.findMediaItemById(input.id)
@@ -250,7 +265,7 @@ export class VisitMaterialMediaService {
     if (
       !stored ||
       stored.targetId !== pageId ||
-      stored.targetType !== TARGET_TYPE ||
+      stored.targetType !== (targetType as string) ||
       stored.mediaType !== mediaType
     ) {
       throw new ResourceNotFoundException(

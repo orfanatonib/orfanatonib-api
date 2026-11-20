@@ -4,6 +4,7 @@ import { DataSource, EntityManager } from "typeorm";
 import { VisitMaterialsPageRepository } from "./visit-material-page.repository";
 import { VisitMaterialsPageEntity } from "../entities/visit-material-page.entity";
 import { TestamentType } from "../enums/testament-type.enum";
+import { VisitMaterialCategory } from "../enums/visit-material-category.enum";
 import { buildPageEntity } from "../visit-material-page.fixtures";
 
 type WhereCall = [string, Record<string, unknown>?];
@@ -85,6 +86,23 @@ describe("VisitMaterialsPageRepository", () => {
       expect(clauseMatching("page.testament")?.[1]).toEqual({
         testament: TestamentType.NEW_TESTAMENT,
       });
+    });
+
+    it("filters by the category of a section", async () => {
+      await repository.findAll({ category: VisitMaterialCategory.TEEN });
+
+      const clause = clauseMatching("visit_material_sections");
+      expect(clause?.[0]).toContain("section.page_id = page.id");
+      expect(clause?.[1]).toEqual({ category: VisitMaterialCategory.TEEN });
+    });
+
+    it("combines testament and category", async () => {
+      await repository.findAll({
+        testament: TestamentType.OLD_TESTAMENT,
+        category: VisitMaterialCategory.BABY,
+      });
+
+      expect(whereClauses()).toHaveLength(2);
     });
 
     it("parameterizes the free-text search over title, subtitle and description", async () => {

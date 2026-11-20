@@ -6,6 +6,7 @@ import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { VisitMaterialsPageRepository } from "../repositories/visit-material-page.repository";
 import { GetVisitMaterialPageService } from "./get-visit-material-page.service";
 import { VisitMaterialMediaService } from "./visit-material-media.service";
+import { VisitMaterialSectionsService } from "./visit-material-sections.service";
 import { VISIT_MATERIAL_MESSAGES } from "../constants";
 
 @Injectable()
@@ -16,6 +17,7 @@ export class DeleteVisitMaterialPageService {
     private readonly repository: VisitMaterialsPageRepository,
     private readonly getService: GetVisitMaterialPageService,
     private readonly mediaService: VisitMaterialMediaService,
+    private readonly sectionsService: VisitMaterialSectionsService,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly routeService: RouteService,
     private readonly s3: AwsS3Service,
@@ -27,6 +29,7 @@ export class DeleteVisitMaterialPageService {
     const page = await this.getService.findEntityOrFail(id);
 
     try {
+      await this.sectionsService.removeAllMedia(page.id);
       const mediaItems = await this.mediaService.findAllByPage(page.id);
       if (mediaItems.length > 0) {
         await this.mediaItemProcessor.deleteMediaItems(mediaItems, (url) =>

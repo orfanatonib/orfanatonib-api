@@ -1,3 +1,4 @@
+import { VisitMaterialSectionsService } from "./visit-material-sections.service";
 import { Test } from "@nestjs/testing";
 import { HttpStatus } from "@nestjs/common";
 import { ResourceNotFoundException } from "src/common/exceptions";
@@ -22,6 +23,15 @@ describe("GetVisitMaterialPageService", () => {
     findManyMediaItemsByTargets: jest.fn(),
   };
 
+  const sectionsService = {
+    prepare: jest.fn().mockReturnValue([]),
+    createAll: jest.fn().mockResolvedValue([]),
+    sync: jest.fn().mockResolvedValue(undefined),
+    loadForPage: jest.fn().mockResolvedValue([]),
+    loadForPages: jest.fn().mockResolvedValue(new Map()),
+    removeAllMedia: jest.fn().mockResolvedValue(undefined),
+  };
+
   let service: GetVisitMaterialPageService;
 
   beforeEach(async () => {
@@ -33,6 +43,7 @@ describe("GetVisitMaterialPageService", () => {
       providers: [
         GetVisitMaterialPageService,
         { provide: VisitMaterialsPageRepository, useValue: repository },
+        { provide: VisitMaterialSectionsService, useValue: sectionsService },
         { provide: MediaItemProcessor, useValue: mediaItemProcessor },
       ],
     }).compile();

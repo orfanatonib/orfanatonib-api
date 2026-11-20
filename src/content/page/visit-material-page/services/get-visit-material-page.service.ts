@@ -9,12 +9,14 @@ import { VisitMaterialsPageResponseDTO } from "../dto/visit-material-page-respon
 import { VisitMaterialsPageEntity } from "../entities/visit-material-page.entity";
 import { toVisitMaterialsPageResponseDto } from "../mappers/visit-material-page.mapper";
 import { VISIT_MATERIAL_MESSAGES } from "../constants";
+import { VisitMaterialSectionsService } from "./visit-material-sections.service";
 
 @Injectable()
 export class GetVisitMaterialPageService {
   constructor(
     private readonly repository: VisitMaterialsPageRepository,
     private readonly mediaItemProcessor: MediaItemProcessor,
+    private readonly sections: VisitMaterialSectionsService,
   ) {}
 
   async findAll(
@@ -35,26 +37,36 @@ export class GetVisitMaterialPageService {
       else mediaByPage.set(item.targetId, [item]);
     }
 
+    const sectionsByPage = await this.sections.loadForPages(
+      pages.map((page) => page.id),
+    );
+
     return pages.map((page) =>
-      toVisitMaterialsPageResponseDto(page, mediaByPage.get(page.id) ?? []),
+      toVisitMaterialsPageResponseDto(
+        page,
+        mediaByPage.get(page.id) ?? [],
+        sectionsByPage.get(page.id) ?? [],
+      ),
     );
   }
 
   async findOne(id: string): Promise<VisitMaterialsPageResponseDTO> {
     const page = await this.findEntityOrFail(id);
-    return toVisitMaterialsPageResponseDto(page, await this.findMedia(page.id));
+    return this.toResponse(page);
   }
 
   /** The page flagged as the current week, or `null` when none is set. */
   async findCurrentWeek(): Promise<VisitMaterialsPageResponseDTO | null> {
     const page = await this.repository.findCurrentWeek();
     if (!page) return null;
-    return toVisitMaterialsPageResponseDto(page, await this.findMedia(page.id));
+    return this.toResponse(page);
   }
 
-  async findBySourceLessonId(sourceLessonId: string): Promise<VisitMaterialsPageResponseDTO | null> {
+  async findBySourceLessonId(
+    sourceLessonId: string,
+  ): Promise<VisitMaterialsPageResponseDTO | null> {
     const page = await this.repository.findBySourceLessonId(sourceLessonId);
-    return page ? toVisitMaterialsPageResponseDto(page, await this.findMedia(page.id)) : null;
+    return page ? this.toResponse(page) : null;
   }
 
   /** Shared lookup for the write use cases. */
@@ -67,6 +79,17 @@ export class GetVisitMaterialPageService {
       );
     }
     return page;
+  }
+
+  /** Resposta completa da página: mídias da página ("Geral") e seções por categoria. */
+  async toResponse(
+    page: VisitMaterialsPageEntity,
+  ): Promise<VisitMaterialsPageResponseDTO> {
+    return toVisitMaterialsPageResponseDto(
+      page,
+      await this.findMedia(page.id),
+      await this.sections.loadForPage(page.id),
+    );
   }
 
   private findMedia(pageId: string): Promise<MediaItemEntity[]> {

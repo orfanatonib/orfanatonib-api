@@ -5,6 +5,7 @@ import {
   UploadType,
 } from "src/shared/media/media-item/media-item.entity";
 import { TestamentType } from "../enums/testament-type.enum";
+import { VisitMaterialCategory } from "../enums/visit-material-category.enum";
 
 export class VisitMediaItemResponseDTO {
   id: string;
@@ -29,6 +30,19 @@ export class VisitRouteResponseDTO {
   public: boolean;
 }
 
+/** Seção de uma categoria, com as mídias dela. */
+export class VisitMaterialSectionResponseDTO {
+  id: string;
+  category: VisitMaterialCategory;
+  title: string | null;
+  description: string | null;
+  position: number;
+  videos: VisitMediaItemResponseDTO[];
+  documents: VisitMediaItemResponseDTO[];
+  images: VisitMediaItemResponseDTO[];
+  audios: VisitMediaItemResponseDTO[];
+}
+
 export class VisitMaterialsPageResponseDTO {
   id: string;
   title: string;
@@ -37,6 +51,8 @@ export class VisitMaterialsPageResponseDTO {
   description: string;
   currentWeek: boolean;
   route: VisitRouteResponseDTO;
+  /** Seções por categoria (vazio nas páginas antigas, cujas mídias ficam nas listas abaixo, como "Geral"). */
+  sections: VisitMaterialSectionResponseDTO[];
   videos: VisitMediaItemResponseDTO[];
   documents: VisitMediaItemResponseDTO[];
   images: VisitMediaItemResponseDTO[];

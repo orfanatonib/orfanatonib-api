@@ -1,5 +1,7 @@
 export enum MediaTargetType {
   VisitMaterialsPage = "VisitMaterialsPage",
+  /** Seção (categoria) de uma página de material de visita. */
+  VisitMaterialsSection = "VisitMaterialsSection",
   VideosPage = "VideosPage",
   ImagesPage = "ImagesPage",
   ImagesSection = "ImagesSection",

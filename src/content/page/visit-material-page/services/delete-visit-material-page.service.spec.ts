@@ -10,6 +10,7 @@ import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { DeleteVisitMaterialPageService } from "./delete-visit-material-page.service";
 import { GetVisitMaterialPageService } from "./get-visit-material-page.service";
 import { VisitMaterialMediaService } from "./visit-material-media.service";
+import { VisitMaterialSectionsService } from "./visit-material-sections.service";
 import { VisitMaterialsPageRepository } from "../repositories/visit-material-page.repository";
 import {
   buildMediaEntity,
@@ -26,6 +27,15 @@ describe("DeleteVisitMaterialPageService", () => {
   const routeService = { findById: jest.fn(), removeRoute: jest.fn() };
   const s3 = { delete: jest.fn() };
 
+  const sectionsService = {
+    prepare: jest.fn().mockReturnValue([]),
+    createAll: jest.fn().mockResolvedValue([]),
+    sync: jest.fn().mockResolvedValue(undefined),
+    loadForPage: jest.fn().mockResolvedValue([]),
+    loadForPages: jest.fn().mockResolvedValue(new Map()),
+    removeAllMedia: jest.fn().mockResolvedValue(undefined),
+  };
+
   let service: DeleteVisitMaterialPageService;
 
   beforeEach(async () => {
@@ -35,6 +45,7 @@ describe("DeleteVisitMaterialPageService", () => {
       providers: [
         DeleteVisitMaterialPageService,
         { provide: VisitMaterialsPageRepository, useValue: repository },
+        { provide: VisitMaterialSectionsService, useValue: sectionsService },
         { provide: GetVisitMaterialPageService, useValue: getService },
         { provide: VisitMaterialMediaService, useValue: mediaService },
         { provide: MediaItemProcessor, useValue: mediaItemProcessor },

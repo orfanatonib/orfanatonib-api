@@ -1,6 +1,8 @@
 import { MediaType } from "src/shared/media/media-item/media-item.entity";
 import { toVisitMaterialsPageResponseDto } from "./visit-material-page.mapper";
 import { TestamentType } from "../enums/testament-type.enum";
+import { VisitMaterialCategory } from "../enums/visit-material-category.enum";
+import { VisitMaterialSectionEntity } from "../entities/visit-material-section.entity";
 import {
   buildMediaEntity,
   buildPageEntity,
@@ -29,6 +31,7 @@ describe("toVisitMaterialsPageResponseDto", () => {
         type: "page",
         public: true,
       },
+      sections: [],
       videos: [],
       documents: [],
       images: [],
@@ -80,5 +83,39 @@ describe("toVisitMaterialsPageResponseDto", () => {
     expect(dto.route).not.toHaveProperty("current");
     expect(dto.route).not.toHaveProperty("entityId");
     expect(dto.route).not.toHaveProperty("image");
+  });
+
+  it("groups each section's media and orders the sections by category", () => {
+    const section = (id: string, category: VisitMaterialCategory) =>
+      Object.assign(new VisitMaterialSectionEntity(), {
+        id,
+        pageId: "page-id",
+        category,
+        title: null,
+        description: "Para os maiores",
+        position: 0,
+      });
+
+    const dto = toVisitMaterialsPageResponseDto(
+      buildPageEntity(),
+      [],
+      [
+        {
+          section: section("s-teen", VisitMaterialCategory.TEEN),
+          media: [
+            buildMediaEntity({ id: "d1", mediaType: MediaType.DOCUMENT }),
+          ],
+        },
+        { section: section("s-baby", VisitMaterialCategory.BABY), media: [] },
+      ],
+    );
+
+    expect(dto.sections.map((item) => item.category)).toEqual([
+      VisitMaterialCategory.BABY,
+      VisitMaterialCategory.TEEN,
+    ]);
+    expect(dto.sections[1].documents.map((item) => item.id)).toEqual(["d1"]);
+    expect(dto.sections[1].description).toBe("Para os maiores");
+    expect(dto.sections[0].title).toBeNull();
   });
 });
