@@ -29,7 +29,7 @@ import { RequestStageImagesService } from "./request-stage-images.service";
 import { ContentStageType } from "../enums/content-stage-type.enum";
 import { validateStructuredContent } from "../ai/utils/structured-content-policy.util";
 import { CONTENT_STUDIO_CATALOG_VERSION } from "../constants";
-import type { StartedGenerationJob } from "../types";
+import type { StartedGenerationJob, TextJobStep } from "../types";
 import { AiJobOutcome, AiQueueJob } from "../queue/ai-job-queue.port";
 import {
   DEFAULT_RETRY_POLICY,
@@ -125,6 +125,9 @@ export class ProcessGenerationJobService {
       return { outcome: { status: "done" }, ran: false, errorCode: null };
 
     let where = `job=${job.jobId} pacote=${job.packageId} etapa=${job.stageId}`;
+    const startedAt = new Date().toISOString();
+    const step = (name: TextJobStep) =>
+      this.reportStep(job.jobId, name, startedAt);
     if (job.capability === AiGenerationCapability.IMAGE_GENERATION) {
       try {
         await this.images.process(job);
@@ -141,6 +144,7 @@ export class ProcessGenerationJobService {
         );
       }
 
+      await step("PREPARING");
       const context = await this.generations.loadStageGenerationContext(
         job.stageId,
         job.jobId,
@@ -161,6 +165,7 @@ export class ProcessGenerationJobService {
       this.logger.log(
         `Geração iniciada ${where} tentativa=${job.attempts} prompt=${built.promptVersion}`,
       );
+      await step("WRITING");
       const result = await this.gateway.generateStructuredText({
         correlationId: job.jobId,
         instructions: built.instructions,
@@ -169,6 +174,7 @@ export class ProcessGenerationJobService {
         maxOutputTokens: STAGE_MAX_OUTPUT_TOKENS,
       });
 
+      await step("VALIDATING");
       const { content: generated, internal } = validateStageOutput(
         context.stageType,
         context.audience,
@@ -182,6 +188,7 @@ export class ProcessGenerationJobService {
         ? { ...generated, visualConfig: context.visualConfig }
         : generated;
       const serialized = validateStructuredContent(content);
+      await step("SAVING");
       await this.stageContents.saveStageContent({
         packageId: job.packageId,
         stageId: job.stageId,
@@ -219,6 +226,23 @@ export class ProcessGenerationJobService {
     }
   }
 
+  /** Anota a fase atual no job (a tela mostra por SSE) e renova o lease; falhar aqui nunca derruba a geração. */
+  private async reportStep(
+    jobId: string,
+    step: TextJobStep,
+    startedAt: string,
+  ): Promise<void> {
+    try {
+      await this.generations.updateJobProgress(
+        jobId,
+        { phase: "TEXT", step, startedAt },
+        GENERATION_LEASE_MS,
+      );
+    } catch {
+      /* só informativo */
+    }
+  }
+
   /** Depois do plano dos visuais, cria o job que desenha as imagens (falhar aqui não perde o texto já salvo). */
   private async enqueueImages(
     job: StartedGenerationJob,
@@ -243,6 +267,7 @@ export class ProcessGenerationJobService {
         versionId,
         requestedById: job.requestedById,
         idempotencyKey: `img-${job.jobId}`,
+        skipCapacityCheck: true,
       });
     } catch (error: unknown) {
       this.logger.error(

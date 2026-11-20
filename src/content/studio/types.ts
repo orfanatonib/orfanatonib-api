@@ -199,6 +199,8 @@ export interface RequestContentStageImagesInput {
   readonly instructions?: string | null;
   readonly idempotencyKey: string;
   readonly requestedById: string;
+  /** Só o encadeamento automático texto → imagens: a geração de texto já ocupa a vaga da categoria. */
+  readonly skipCapacityCheck?: boolean;
 }
 
 /** O que o worker de imagens precisa da versão atual da etapa. */
@@ -209,6 +211,16 @@ export interface StageImageContext {
   readonly audience: string;
   readonly versionId: string;
   readonly content: Record<string, unknown>;
+}
+
+/** Fases de um job de TEXTO, na ordem em que acontecem (a tela desenha a linha do tempo com elas). */
+export type TextJobStep = "PREPARING" | "WRITING" | "VALIDATING" | "SAVING";
+
+/** Andamento de um job de texto: a fase atual e quando a execução começou (a tela estima o progresso com isso). */
+export interface TextJobProgress {
+  readonly phase: "TEXT";
+  readonly step: TextJobStep;
+  readonly startedAt: string;
 }
 
 export interface ImageJobProgress {

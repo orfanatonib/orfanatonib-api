@@ -1,11 +1,16 @@
 import { AiGenerationCapability } from "../ai/enums/ai-generation-capability.enum";
 import type {
   ImageJobProgress,
+  TextJobProgress,
   RequestContentStageImagesInput,
   StageImageContext,
 } from "../types";
 import type { VisualConfig } from "../dto/visual-config.dto";
 import { assertVisualConfig } from "./content-visual-config.helpers";
+import {
+  assertGenerationCapacity,
+  withGenerationCapacityLock,
+} from "./generation-capacity.helpers";
 import { Injectable } from "@nestjs/common";
 import { DataSource, In } from "typeorm";
 
@@ -42,6 +47,15 @@ export class ContentGenerationRepository {
   constructor(private readonly dataSource: DataSource) {}
 
   async requestStageGeneration(
+    input: RequestContentStageGenerationInput,
+  ): Promise<ContentGenerationJobEntity> {
+    // A checagem de capacidade + a criação do job são uma região crítica global (todos os administradores).
+    return withGenerationCapacityLock(this.dataSource, () =>
+      this.requestStageGenerationLocked(input),
+    );
+  }
+
+  private async requestStageGenerationLocked(
     input: RequestContentStageGenerationInput,
   ): Promise<ContentGenerationJobEntity> {
     return this.dataSource.transaction(async (manager) => {
@@ -88,6 +102,11 @@ export class ContentGenerationRepository {
           },
         );
       }
+
+      await assertGenerationCapacity(manager, {
+        packageId: contentPackage.id,
+        trackId: stage.track.id,
+      });
 
       assertDependenciesReady(stage, trackStages);
       assertVisualConfig(stage.stageType, stage.track.audience, input);
@@ -343,6 +362,16 @@ export class ContentGenerationRepository {
   async requestStageImages(
     input: RequestContentStageImagesInput,
   ): Promise<ContentGenerationJobEntity> {
+    // O encadeamento automático (texto → imagens) segue a geração que já ocupa a vaga; só o pedido avulso passa pela trava.
+    if (input.skipCapacityCheck) return this.requestStageImagesLocked(input);
+    return withGenerationCapacityLock(this.dataSource, () =>
+      this.requestStageImagesLocked(input),
+    );
+  }
+
+  private async requestStageImagesLocked(
+    input: RequestContentStageImagesInput,
+  ): Promise<ContentGenerationJobEntity> {
     return this.dataSource.transaction(async (manager) => {
       const jobRepo = manager.getRepository(ContentGenerationJobEntity);
       const { contentPackage, stage } = await findStageContextOrFail(
@@ -370,6 +399,11 @@ export class ContentGenerationRepository {
         throw new ResourceConflictException(
           "A versão da etapa mudou; atualize a página e tente de novo",
         );
+      if (!input.skipCapacityCheck)
+        await assertGenerationCapacity(manager, {
+          packageId: contentPackage.id,
+          trackId: stage.track.id,
+        });
       return jobRepo.save(
         jobRepo.create({
           stageId: stage.id,
@@ -434,7 +468,7 @@ export class ContentGenerationRepository {
   /** Andamento das imagens (aparece na tela por SSE) e renovação do lease: o worker está vivo. */
   async updateJobProgress(
     jobId: string,
-    progress: ImageJobProgress,
+    progress: ImageJobProgress | TextJobProgress,
     leaseMs: number,
     now: Date = new Date(),
   ): Promise<void> {

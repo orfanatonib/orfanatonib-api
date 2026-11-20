@@ -10,6 +10,9 @@ import { AiJobQueuePort } from "./queue/ai-job-queue.port";
 import { AiUsageRepository } from "./ai-management/ai-usage.repository";
 import { GetAiUsageService } from "./ai-management/services/get-ai-usage.service";
 import { ContentStudioGenerationStreamController } from "./content-studio-generation-stream.controller";
+import { ContentStudioActivityController } from "./content-studio-activity.controller";
+import { GenerationActivityRepository } from "./repositories/generation-activity.repository";
+import { GetGenerationActivityService } from "./services/get-generation-activity.service";
 import { GenerationStreamRepository } from "./repositories/generation-stream.repository";
 import { GenerationStreamService } from "./services/generation-stream.service";
 import { ContentStudioPromptPreferencesController } from "./content-studio-prompt-preferences.controller";
@@ -104,6 +107,7 @@ const FAKE_AI_DEFAULT_QUOTA_TOKENS = 500_000;
     ContentStudioExportController,
     ContentStudioPublicationController,
     ContentStudioGenerationStreamController,
+    ContentStudioActivityController,
     ContentStudioPromptPreferencesController,
   ],
   providers: [
@@ -118,6 +122,8 @@ const FAKE_AI_DEFAULT_QUOTA_TOKENS = 500_000;
     CreatePublicationPageService,
     BuildPublicationDocumentsService,
     GenerationStreamRepository,
+    GenerationActivityRepository,
+    GetGenerationActivityService,
     ContentPromptPreferenceRepository,
     ListPromptPreferencesService,
     SavePromptPreferenceService,

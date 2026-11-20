@@ -28,6 +28,8 @@ export class RequestStageImagesService {
     requestedById: string;
     /** Chave estável (a geração de texto que originou o pedido); sem ela, cada pedido é novo. */
     idempotencyKey?: string;
+    /** Encadeamento automático depois do texto: não passa pela trava de capacidade (a vaga já é dele). */
+    skipCapacityCheck?: boolean;
   }): Promise<ContentGenerationJobEntity> {
     const instructions = input.instructions?.trim() || null;
     if (instructions && containsSensitiveContentInstruction(instructions))
@@ -43,6 +45,7 @@ export class RequestStageImagesService {
       instructions,
       idempotencyKey: input.idempotencyKey ?? `img-${randomUUID()}`,
       requestedById: input.requestedById,
+      skipCapacityCheck: input.skipCapacityCheck,
     });
     if (job.status === ContentGenerationJobStatus.PENDING)
       await this.queue.enqueue({ jobId: job.id });

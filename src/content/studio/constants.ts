@@ -87,3 +87,17 @@ export const GENERATION_STREAM = {
   /** Sem geração ativa por este tempo, a conexão é encerrada. */
   idleMs: 30_000,
 } as const;
+
+/**
+ * Capacidade de geração do Estúdio, valendo para TODOS os administradores juntos:
+ * uma geração ativa por categoria (faixa etária) de um material e, no máximo, dois materiais com geração ativa.
+ * Com 4 categorias por material, são no máximo 8 gerações simultâneas.
+ */
+export const GENERATION_CAPACITY = {
+  maxPerCategory: 1,
+  maxPackages: 2,
+  maxTotal: 8,
+  /** Trava nomeada do MySQL que serializa a checagem + criação do job (vale entre várias instâncias da API). */
+  lockName: "content-studio:generation-capacity",
+  lockWaitSeconds: 10,
+} as const;
