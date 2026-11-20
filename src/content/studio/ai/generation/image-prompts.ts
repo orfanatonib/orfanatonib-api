@@ -1,3 +1,7 @@
+import {
+  VERSE_CARD_LOOK_AUDIENCE_RULES,
+  findVerseCardLook,
+} from "./verse-card-looks.constants";
 import { ContentAudience } from "../../enums/content-audience.enum";
 import { ContentStageType } from "../../enums/content-stage-type.enum";
 import type { VisualConfig } from "../../dto/visual-config.dto";
@@ -122,6 +126,9 @@ export function verseCardImageSpecs(
     ? (content.palette as unknown[]).map(text).filter(Boolean)
     : [];
   const direction = text(content.styleDirection);
+  // A direção registrada na geração (Adolescentes e Adultos); conteúdo antigo, sem `lookId`, mantém o visual único.
+  const assigned = findVerseCardLook(audience, content.lookId);
+  const look = assigned ?? AUDIENCE_VERSE_CARD_LOOK[audience];
   const cards = list(content.cards).map((card) => ({
     slot: text(card.id),
     title: text(card.text),
@@ -154,22 +161,27 @@ export function verseCardImageSpecs(
       title: item.title,
       size: "1536x1024" as const,
       instructions: [
-        `CARTÃO TIPOGRÁFICO DO VERSÍCULO. ${AUDIENCE_VISUAL_ART[audience].verseCardStyle}`,
-        ...AUDIENCE_VERSE_CARD_RULES[audience],
-        `LETRAS: ${AUDIENCE_VERSE_CARD_LOOK[audience].lettering}`,
+        `CARTÃO TIPOGRÁFICO DO VERSÍCULO. ${assigned ? assigned.style : AUDIENCE_VISUAL_ART[audience].verseCardStyle}`,
+        ...(assigned
+          ? [
+              VERSE_CARD_LOOK_AUDIENCE_RULES[audience] ?? "",
+              `COMPOSIÇÃO DA FOLHA: ${assigned.composition}`,
+            ].filter(Boolean)
+          : AUDIENCE_VERSE_CARD_RULES[audience]),
+        `LETRAS: ${look.lettering}`,
         VERSE_CARD_WEIGHT_RULE,
         VERSE_CARD_CONTRAST_RULE,
         VERSE_CARD_MARGIN_RULE,
         ...(item.isReference ? [VERSE_REFERENCE_LAYOUT_RULE] : []),
-        `FUNDO: ${AUDIENCE_VERSE_CARD_LOOK[audience].background}`,
-        `PEQUENAS ILUSTRAÇÕES (estilo desta categoria): ${AUDIENCE_VERSE_CARD_LOOK[audience].illustrations}`,
+        `FUNDO: ${look.background}`,
+        `PEQUENAS ILUSTRAÇÕES (estilo desta categoria): ${look.illustrations}`,
         VERSE_CARD_LAYOUT_RULE,
         ...(palette.length
           ? [
               `PALETA ÚNICA (a mesma em todos os cartões da sequência, no máximo três cores; só variações de luminosidade e saturação): ${palette.join(", ")}.`,
             ]
           : []),
-        `CORES: ${AUDIENCE_VERSE_CARD_LOOK[audience].colors}`,
+        `CORES: ${look.colors}`,
         ...(direction ? [`DIREÇÃO DE ARTE: ${direction}`] : []),
         `TEXTO A ESCREVER NA IMAGEM — copie caractere por caractere, em português correto, com todos os acentos e a pontuação exatamente assim, sem acrescentar, trocar nem repetir nenhuma palavra: "${item.written}"`,
         ...(item.brief ? [`O QUE DESENHAR: ${item.brief}`] : []),

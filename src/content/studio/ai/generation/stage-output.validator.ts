@@ -1,3 +1,4 @@
+import { verseCardLookIds } from "./verse-card-looks.constants";
 import { ContentAudience } from "../../enums/content-audience.enum";
 import { ContentStageType } from "../../enums/content-stage-type.enum";
 import { AUDIENCE_PROFILES } from "./audience-profiles.constants";
@@ -520,6 +521,12 @@ function audienceRules(
     });
     const palette = list("palette");
     inRange("palette", palette.length, 1, 3, issues);
+    // Categorias com direções visuais: o modelo precisa registrar uma direção válida (as imagens usam exatamente ela).
+    const lookIds = verseCardLookIds(audience);
+    if (lookIds.length > 0 && !lookIds.includes(asText(content.lookId)))
+      issues.push(
+        `lookId deve ser um destes: ${lookIds.join(", ")} (a direção atribuída no prompt)`,
+      );
     cards.forEach((card, i) => {
       if (card.id !== `verso-${String(i + 1).padStart(2, "0")}`)
         issues.push(

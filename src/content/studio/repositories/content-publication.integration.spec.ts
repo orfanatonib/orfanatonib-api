@@ -156,6 +156,90 @@ async function readyPackage(): Promise<string> {
   return created.id;
 }
 
+/** Pacote com BABY e CHILD, nada produzido ainda (para os cenários da publicação por categoria). */
+async function twoTrackPackage(): Promise<string> {
+  const created = await packages.createWithCatalog({
+    theme: `it-inc-${randomUUID().slice(0, 8)}`,
+    biblicalReferences: "Salmos 23",
+    canonicalObjective: "Confiar em Deus",
+    canonicalNotes: null,
+    templateCatalogVersion: CONTENT_STUDIO_CATALOG_VERSION,
+    createdById: USER_ID,
+    audiences: CONTENT_AUDIENCE_CATALOG.filter(
+      (item) =>
+        item.audience === ContentAudience.BABY ||
+        item.audience === ContentAudience.CHILD,
+    ),
+  });
+  createdPackageIds.push(created.id);
+  return created.id;
+}
+
+const stageIdsOf = async (
+  packageId: string,
+  audience: ContentAudience,
+): Promise<string[]> =>
+  (
+    (await dataSource.query(
+      "SELECT s.id AS id FROM content_stages s JOIN content_tracks t ON t.id = s.track_id WHERE t.package_id = ? AND t.audience = ? ORDER BY s.position",
+      [packageId, audience],
+    )) as Array<{ id: string }>
+  ).map((row) => row.id);
+
+/** A produção conclui as 5 etapas de uma categoria. */
+async function produceTrack(
+  packageId: string,
+  audience: ContentAudience,
+): Promise<void> {
+  for (const stageId of await stageIdsOf(packageId, audience)) {
+    await stageContent.saveStageContent({
+      packageId,
+      stageId,
+      structuredContent: { title: "Texto" },
+      contentChecksum: randomUUID()
+        .replace(/-/g, "")
+        .padEnd(64, "0")
+        .slice(0, 64),
+      templateVersion: CONTENT_STUDIO_CATALOG_VERSION,
+      generationSnapshot: null,
+      createdById: USER_ID,
+    });
+    await stageContent.completeProductionStage({ packageId, stageId });
+  }
+}
+
+/** O revisor aprova as 5 etapas de uma categoria já enviada. */
+async function approveTrack(
+  packageId: string,
+  audience: ContentAudience,
+): Promise<void> {
+  for (const stageId of await stageIdsOf(packageId, audience)) {
+    const [row] = (await dataSource.query(
+      "SELECT s.lockVersion AS lockVersion, s.current_version_id AS versionId, v.contentChecksum AS checksum FROM content_stages s JOIN content_versions v ON v.id = s.current_version_id WHERE s.id = ?",
+      [stageId],
+    )) as Array<{ lockVersion: number; versionId: string; checksum: string }>;
+    await review.approveReviewStage({
+      packageId,
+      stageId,
+      versionId: row.versionId,
+      lockVersion: row.lockVersion,
+      contentChecksum: row.checksum,
+      reviewerId: USER_ID,
+    });
+  }
+}
+
+const trackPublishedAt = async (
+  packageId: string,
+  audience: ContentAudience,
+): Promise<Date | null> =>
+  (
+    (await dataSource.query(
+      "SELECT published_at AS publishedAt FROM content_tracks WHERE package_id = ? AND audience = ?",
+      [packageId, audience],
+    )) as Array<{ publishedAt: Date | null }>
+  )[0].publishedAt;
+
 suite("Atomicidade da publicação (MySQL real)", () => {
   beforeAll(async () => {
     dataSource = new DataSource(
@@ -315,5 +399,256 @@ suite("Atomicidade da publicação (MySQL real)", () => {
     );
     expect(error?.message).toContain(INJECTED);
     expect(await state(id)).toEqual(before);
+  });
+
+  describe("publicação incremental por categoria", () => {
+    const { BABY, CHILD } = ContentAudience;
+
+    it("histórico: enviar, pedir ajuste, ajustar e reenviar ficam registrados em ordem, com a versão e o autor", async () => {
+      const id = await twoTrackPackage();
+      await produceTrack(id, BABY);
+      await review.submitPackageForReview(id, [BABY], "producer-1");
+      const ids = await stageIdsOf(id, BABY);
+      const lastStageId = ids[ids.length - 1];
+      const [row] = (await dataSource.query(
+        "SELECT s.lockVersion AS lockVersion, s.current_version_id AS versionId, v.contentChecksum AS checksum FROM content_stages s JOIN content_versions v ON v.id = s.current_version_id WHERE s.id = ?",
+        [lastStageId],
+      )) as Array<{ lockVersion: number; versionId: string; checksum: string }>;
+      await review.requestStageChanges({
+        packageId: id,
+        stageId: lastStageId,
+        versionId: row.versionId,
+        lockVersion: row.lockVersion,
+        contentChecksum: row.checksum,
+        authorId: USER_ID,
+        blockKey: null,
+        message: "Trocar o objeto da brincadeira",
+      });
+      // A produção ajusta (nova versão) e reenvia.
+      await stageContent.saveStageContent({
+        packageId: id,
+        stageId: lastStageId,
+        structuredContent: { title: "Ajustada" },
+        contentChecksum: randomUUID()
+          .replace(/-/g, "")
+          .padEnd(64, "0")
+          .slice(0, 64),
+        templateVersion: CONTENT_STUDIO_CATALOG_VERSION,
+        generationSnapshot: null,
+        createdById: USER_ID,
+      });
+      await stageContent.completeProductionStage({
+        packageId: id,
+        stageId: lastStageId,
+      });
+      await review.submitPackageForReview(id, [BABY], "producer-2");
+
+      const history = (await dataSource.query(
+        "SELECT d.decision AS decision, d.reviewerId AS actor, v.versionNumber AS versionNumber FROM content_review_decisions d JOIN content_versions v ON v.id = d.version_id WHERE d.stage_id = ? ORDER BY d.decidedAt, d.createdAt",
+        [lastStageId],
+      )) as Array<{ decision: string; actor: string; versionNumber: number }>;
+      expect(history.map((item) => item.decision)).toEqual([
+        "SUBMITTED",
+        "CHANGES_REQUESTED",
+        "SUBMITTED",
+      ]);
+      expect(history.map((item) => item.actor)).toEqual([
+        "producer-1",
+        USER_ID,
+        "producer-2",
+      ]);
+      // O reenvio é de uma versão NOVA, diferente da primeira.
+      expect(history[2].versionNumber).toBeGreaterThan(
+        history[0].versionNumber,
+      );
+      // Só os itens realmente enviados geram evento (os demais itens já estavam em revisão e não repetem).
+      const firstStageEvents = (await dataSource.query(
+        "SELECT COUNT(*) AS total FROM content_review_decisions WHERE stage_id = ? AND decision = 'SUBMITTED'",
+        [ids[0]],
+      )) as Array<{ total: string }>;
+      expect(Number(firstStageEvents[0].total)).toBe(1);
+    });
+
+    it("só o BABY enviado e aprovado: o pacote fica pronto e a publicação leva SÓ o BABY; depois volta à produção com o BABY travado", async () => {
+      const id = await twoTrackPackage();
+      await produceTrack(id, BABY);
+      await review.submitPackageForReview(id, [BABY]);
+      await approveTrack(id, BABY);
+      // CHILD segue em produção e não impede a publicação do BABY
+      expect(await packageStatus(id)).toBe(
+        ContentPackageStatus.READY_FOR_PUBLICATION,
+      );
+
+      const begun = await publications.begin(id, `k-${randomUUID()}`, USER_ID);
+      expect(begun.snapshot.tracks.map((track) => track.audience)).toEqual([
+        BABY,
+      ]);
+      expect(begun.publication.audiences).toEqual([BABY]);
+      // o material completo só existe quando todas as categorias estão na página
+      expect(begun.snapshot.includeCompleteMaterial).toBe(false);
+
+      const done = await publications.complete(
+        begun.publication.id,
+        id,
+        PAGE_ID,
+      );
+      expect(done.status).toBe(ContentPublicationStatus.PUBLISHED);
+      expect(await packageStatus(id)).toBe(ContentPackageStatus.IN_PROGRESS);
+      expect(await trackPublishedAt(id, BABY)).not.toBeNull();
+      expect(await trackPublishedAt(id, CHILD)).toBeNull();
+
+      // BABY publicado fica travado: não se edita nem se reenvia
+      const [babyStage] = await stageIdsOf(id, BABY);
+      await expect(
+        stageContent.saveStageContent({
+          packageId: id,
+          stageId: babyStage,
+          structuredContent: { title: "mudou" },
+          contentChecksum: "0".repeat(64),
+          templateVersion: CONTENT_STUDIO_CATALOG_VERSION,
+          generationSnapshot: null,
+          createdById: USER_ID,
+        }),
+      ).rejects.toBeInstanceOf(ResourceConflictException);
+      await expect(
+        review.submitPackageForReview(id, [BABY]),
+      ).rejects.toBeInstanceOf(Error);
+    });
+
+    it("depois, só as crianças: enviar, aprovar e publicar sem tocar no BABY; completa o pacote e gera o material completo", async () => {
+      const id = await twoTrackPackage();
+      await produceTrack(id, BABY);
+      await review.submitPackageForReview(id, [BABY]);
+      await approveTrack(id, BABY);
+      const first = await publications.begin(id, `k-${randomUUID()}`, USER_ID);
+      await publications.complete(first.publication.id, id, PAGE_ID);
+      const babyPublishedAt = await trackPublishedAt(id, BABY);
+
+      await produceTrack(id, CHILD);
+      await review.submitPackageForReview(id, [CHILD]);
+      await approveTrack(id, CHILD);
+      expect(await packageStatus(id)).toBe(
+        ContentPackageStatus.READY_FOR_PUBLICATION,
+      );
+
+      const second = await publications.begin(id, `k-${randomUUID()}`, USER_ID);
+      expect(second.snapshot.tracks.map((track) => track.audience)).toEqual([
+        CHILD,
+      ]);
+      expect(second.publication.audiences).toEqual([CHILD]);
+      // agora todas as categorias ficam na página
+      expect(second.snapshot.includeCompleteMaterial).toBe(true);
+      await publications.complete(second.publication.id, id, PAGE_ID);
+
+      expect(await packageStatus(id)).toBe(ContentPackageStatus.PUBLISHED);
+      expect(await trackPublishedAt(id, CHILD)).not.toBeNull();
+      // o BABY continua com a data da primeira publicação (nada foi refeito)
+      expect(await trackPublishedAt(id, BABY)).toEqual(babyPublishedAt);
+    });
+
+    it("com o BABY aprovado (pronto para publicar), as crianças ainda podem ser enviadas e o BABY continua publicável", async () => {
+      const id = await twoTrackPackage();
+      await produceTrack(id, BABY);
+      await review.submitPackageForReview(id, [BABY]);
+      await approveTrack(id, BABY);
+      expect(await packageStatus(id)).toBe(
+        ContentPackageStatus.READY_FOR_PUBLICATION,
+      );
+
+      await produceTrack(id, CHILD);
+      await review.submitPackageForReview(id, [CHILD]);
+
+      // O envio das crianças não esconde o que já está pronto: continua publicável, e as crianças em revisão.
+      expect(await packageStatus(id)).toBe(
+        ContentPackageStatus.READY_FOR_PUBLICATION,
+      );
+      const begun = await publications.begin(id, `k-${randomUUID()}`, USER_ID);
+      expect(begun.snapshot.tracks.map((track) => track.audience)).toEqual([
+        BABY,
+      ]);
+      await publications.complete(begun.publication.id, id, PAGE_ID);
+      // publicado o BABY, o pacote segue o caminho das crianças (em revisão)
+      expect(await packageStatus(id)).toBe(ContentPackageStatus.IN_REVIEW);
+    });
+
+    it("editar outra categoria na produção NÃO tira o material da fila: a categoria aprovada segue publicável (e decidível)", async () => {
+      const id = await twoTrackPackage();
+      await produceTrack(id, BABY);
+      await review.submitPackageForReview(id, [BABY]);
+      await approveTrack(id, BABY);
+      expect(await packageStatus(id)).toBe(
+        ContentPackageStatus.READY_FOR_PUBLICATION,
+      );
+
+      // A produção mexe numa categoria que não é a do BABY: o material continua pronto para publicar (não cai para produção)
+      const [childStage] = await stageIdsOf(id, CHILD);
+      await stageContent.saveStageContent({
+        packageId: id,
+        stageId: childStage,
+        structuredContent: { title: "rascunho" },
+        contentChecksum: "1".repeat(64),
+        templateVersion: CONTENT_STUDIO_CATALOG_VERSION,
+        generationSnapshot: null,
+        createdById: USER_ID,
+      });
+      expect(await packageStatus(id)).toBe(
+        ContentPackageStatus.READY_FOR_PUBLICATION,
+      );
+
+      // ...e o BABY aprovado publica: o que vale é o estado da categoria, não o status do pacote
+      const begun = await publications.begin(id, `k-${randomUUID()}`, USER_ID);
+      expect(begun.snapshot.tracks.map((track) => track.audience)).toEqual([
+        BABY,
+      ]);
+      await publications.complete(begun.publication.id, id, PAGE_ID);
+      expect(await trackPublishedAt(id, BABY)).not.toBeNull();
+    });
+
+    it("sem categoria aprovada e ainda não publicada não há o que publicar (409)", async () => {
+      const id = await twoTrackPackage();
+      await produceTrack(id, BABY);
+      await review.submitPackageForReview(id, [BABY]);
+      // BABY ainda em revisão: pacote em IN_REVIEW, não READY
+      await expect(
+        publications.begin(id, `k-${randomUUID()}`, USER_ID),
+      ).rejects.toBeInstanceOf(ResourceConflictException);
+    });
+
+    it("categoria devolvida não esconde a que já está pronta; e devolver mantém o pacote publicável", async () => {
+      const id = await twoTrackPackage();
+      await produceTrack(id, BABY);
+      await produceTrack(id, CHILD);
+      await review.submitPackageForReview(id);
+      await approveTrack(id, BABY);
+      expect(await packageStatus(id)).toBe(
+        ContentPackageStatus.READY_FOR_PUBLICATION,
+      );
+      const [childStage] = await stageIdsOf(id, CHILD);
+      const [row] = (await dataSource.query(
+        "SELECT s.lockVersion AS lockVersion, s.current_version_id AS versionId, v.contentChecksum AS checksum FROM content_stages s JOIN content_versions v ON v.id = s.current_version_id WHERE s.id = ?",
+        [childStage],
+      )) as Array<{ lockVersion: number; versionId: string; checksum: string }>;
+      await review.requestStageChanges({
+        packageId: id,
+        stageId: childStage,
+        versionId: row.versionId,
+        lockVersion: row.lockVersion,
+        contentChecksum: row.checksum,
+        blockKey: null,
+        message: "Ajustar o texto",
+        authorId: USER_ID,
+      });
+      // CHILD devolvida, BABY pronta: o pacote segue publicável
+      expect(await packageStatus(id)).toBe(
+        ContentPackageStatus.READY_FOR_PUBLICATION,
+      );
+      const begun = await publications.begin(id, `k-${randomUUID()}`, USER_ID);
+      expect(begun.snapshot.tracks.map((track) => track.audience)).toEqual([
+        BABY,
+      ]);
+      await publications.complete(begun.publication.id, id, PAGE_ID);
+      // depois de publicar o BABY, o pacote segue o caminho da CHILD: ainda há etapas dela esperando o revisor
+      expect(await packageStatus(id)).toBe(ContentPackageStatus.IN_REVIEW);
+    });
   });
 });

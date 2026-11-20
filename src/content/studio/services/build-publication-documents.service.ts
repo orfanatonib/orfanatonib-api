@@ -1,6 +1,13 @@
-import { Injectable } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  UnprocessableEntityException,
+} from "@nestjs/common";
 
-import { CONTENT_PUBLICATION_FULL_PACKAGE_LABEL } from "../constants/content-publication.constants";
+import {
+  CONTENT_PUBLICATION_FULL_PACKAGE_LABEL,
+  CONTENT_PUBLICATION_STAGE_LABELS,
+} from "../constants/content-publication.constants";
 import type {
   PublicationDocumentFile,
   PublicationPackageSnapshot,
@@ -10,25 +17,17 @@ import {
   StudioExportService,
   type StudioExportFile,
 } from "../export/studio-export.service";
-import { describeTrackAges } from "../utils/content-publication.util";
-
-const FORMAT_LABELS: Readonly<Record<StudioExportFormat, string>> = {
-  [StudioExportFormat.DOCX]: "DOCX",
-  [StudioExportFormat.PDF]: "PDF",
-};
-
-const FORMATS: readonly StudioExportFormat[] = [
-  StudioExportFormat.PDF,
-  StudioExportFormat.DOCX,
-];
 
 /**
  * Renders the documents of the page from the CURRENT saved versions, which are the approved ones: approval is of the
  * current version and any later save moves the stage out of APPROVED (so the package leaves READY_FOR_PUBLICATION).
- * One PDF + one DOCX per track, plus the complete material when there is more than one track.
+ * Tudo é PDF, e UM PDF POR ITEM de cada categoria (Lição, Visuais da lição, Visual do versículo, Fixação, Brincadeira),
+ * na ordem do material; mais o material completo (PDF) só quando esta publicação deixa todas as categorias na página.
  */
 @Injectable()
 export class BuildPublicationDocumentsService {
+  private readonly logger = new Logger(BuildPublicationDocumentsService.name);
+
   constructor(private readonly exports: StudioExportService) {}
 
   async execute(
@@ -36,35 +35,53 @@ export class BuildPublicationDocumentsService {
   ): Promise<PublicationDocumentFile[]> {
     const documents: PublicationDocumentFile[] = [];
     for (const track of snapshot.tracks) {
-      for (const format of FORMATS) {
-        const file = await this.exports.exportTrack(
-          snapshot.packageId,
-          track.audience,
-          format,
-        );
-        documents.push(
-          this.toDocument(
+      let published = 0;
+      for (const stage of track.stages) {
+        let file: StudioExportFile;
+        try {
+          file = await this.exports.exportStage(
+            snapshot.packageId,
+            stage.id,
+            StudioExportFormat.PDF,
+          );
+        } catch (error) {
+          // Item sem nada para imprimir (ex.: visuais sem imagem): não vira documento vazio e não barra os demais.
+          if (error instanceof UnprocessableEntityException) {
+            this.logger.warn(
+              `Item ${stage.stageType} de ${track.audienceName} sem conteúdo para PDF: não entra na página (${snapshot.packageId})`,
+            );
+            continue;
+          }
+          throw error;
+        }
+        published += 1;
+        documents.push({
+          ...this.toDocument(
             file,
-            `${track.audienceName} (${FORMAT_LABELS[format]})`,
-            `${track.audienceName} · ${describeTrackAges(track)}`,
+            CONTENT_PUBLICATION_STAGE_LABELS[stage.stageType],
+            track.audienceName,
           ),
+          audience: track.audience,
+        });
+      }
+      if (published === 0) {
+        throw new UnprocessableEntityException(
+          `Nenhum item de ${track.audienceName} tem conteúdo para publicar`,
         );
       }
     }
-    if (snapshot.tracks.length > 1) {
-      for (const format of FORMATS) {
-        const file = await this.exports.exportPackage(
-          snapshot.packageId,
-          format,
-        );
-        documents.push(
-          this.toDocument(
-            file,
-            `${CONTENT_PUBLICATION_FULL_PACKAGE_LABEL} (${FORMAT_LABELS[format]})`,
-            snapshot.biblicalReferences,
-          ),
-        );
-      }
+    if (snapshot.includeCompleteMaterial) {
+      const file = await this.exports.exportPackage(
+        snapshot.packageId,
+        StudioExportFormat.PDF,
+      );
+      documents.push(
+        this.toDocument(
+          file,
+          CONTENT_PUBLICATION_FULL_PACKAGE_LABEL,
+          snapshot.biblicalReferences,
+        ),
+      );
     }
     return documents;
   }

@@ -21,6 +21,7 @@ import {
   ApproveContentStageInput,
   RequestContentStageChangesInput,
 } from "../types";
+import { isReadyForPublication } from "../utils/content-publication-tracks.util";
 import {
   canTransitionContentPackage,
   canTransitionContentStage,
@@ -32,17 +33,19 @@ import {
 } from "./content-package-graph.helpers";
 import {
   COMPLETED_STAGE_STATUSES,
-  areAllRequiredStagesApproved,
   assertPackageCanReview,
+  assertTrackNotPublished,
   assertReviewVersionCurrent,
 } from "./content-package-rules.helpers";
 
-/** Situações do material em que ainda é possível enviar um público para revisão. */
-const SUBMITTABLE_PACKAGE_STATUSES: readonly ContentPackageStatus[] = [
-  ContentPackageStatus.IN_PROGRESS,
-  ContentPackageStatus.PACKAGE_READY,
-  ContentPackageStatus.IN_REVIEW,
-  ContentPackageStatus.CHANGES_REQUESTED,
+/**
+ * Situações em que NÃO se envia mais nada para a revisão. Todas as outras valem (a decisão é por categoria): usar uma
+ * lista do que vale esquecia estados (ex.: com uma categoria pronta para publicar, o botão de enviar as demais sumia).
+ */
+const NOT_SUBMITTABLE_PACKAGE_STATUSES: readonly ContentPackageStatus[] = [
+  ContentPackageStatus.PUBLISHING,
+  ContentPackageStatus.PUBLISHED,
+  ContentPackageStatus.ARCHIVED,
 ];
 
 /** Etapas que já estão prontas (ou já enviadas) para a revisão do público. */
@@ -51,6 +54,9 @@ const REVIEWABLE_STAGE_STATUSES: readonly ContentStageStatus[] = [
   ContentStageStatus.IN_REVIEW,
   ContentStageStatus.APPROVED,
 ];
+
+/** Autor registrado quando o envio não vem de um usuário autenticado (rotinas e testes). */
+const SYSTEM_ACTOR_ID = "system";
 
 @Injectable()
 export class ContentReviewRepository {
@@ -64,17 +70,19 @@ export class ContentReviewRepository {
   async submitPackageForReview(
     packageId: string,
     audiences?: readonly ContentAudience[],
+    actorId: string = SYSTEM_ACTOR_ID,
   ): Promise<ContentPackageEntity> {
     return this.dataSource.transaction(async (manager) => {
       const packageRepo = manager.getRepository(ContentPackageEntity);
       const stageRepo = manager.getRepository(ContentStageEntity);
+      const decisionRepo = manager.getRepository(ContentReviewDecisionEntity);
       await lockPackageOrFail(manager, packageId);
       const contentPackage = await findPackageGraphOrFail(
         packageRepo,
         packageId,
       );
 
-      if (!SUBMITTABLE_PACKAGE_STATUSES.includes(contentPackage.status)) {
+      if (NOT_SUBMITTABLE_PACKAGE_STATUSES.includes(contentPackage.status)) {
         throw new ResourceConflictException(
           `O pacote não pode ser enviado para revisão a partir de ${contentPackage.status}`,
         );
@@ -90,6 +98,7 @@ export class ContentReviewRepository {
 
       const toSubmit: ContentStageEntity[] = [];
       for (const track of selected) {
+        assertTrackNotPublished(track, contentPackage.status);
         const required = (track.stages ?? []).filter((stage) => stage.required);
         const pending = required.find(
           (stage) => !REVIEWABLE_STAGE_STATUSES.includes(stage.status),
@@ -116,16 +125,34 @@ export class ContentReviewRepository {
         ) {
           stage.status = ContentStageStatus.IN_REVIEW;
           await stageRepo.save(stage);
+          // Histórico: cada envio (e reenvio, depois de um ajuste) fica registrado com a versão enviada.
+          if (stage.currentVersionId) {
+            await decisionRepo.save(
+              decisionRepo.create({
+                packageId,
+                stageId: stage.id,
+                versionId: stage.currentVersionId,
+                contentChecksum: stage.currentVersion?.contentChecksum ?? "",
+                decision: ContentReviewDecisionType.SUBMITTED,
+                reviewerId: actorId,
+                relatedCommentId: null,
+                decidedAt: new Date(),
+              }),
+            );
+          }
         }
       }
 
+      // Com uma categoria já aprovada e ainda não publicada o pacote segue publicável (as outras seguem em revisão).
+      const graph = await findPackageGraphOrFail(packageRepo, packageId);
+      const target = isReadyForPublication(graph.tracks ?? [], graph.status)
+        ? ContentPackageStatus.READY_FOR_PUBLICATION
+        : ContentPackageStatus.IN_REVIEW;
       if (
-        canTransitionContentPackage(
-          contentPackage.status,
-          ContentPackageStatus.IN_REVIEW,
-        )
+        contentPackage.status !== target &&
+        canTransitionContentPackage(contentPackage.status, target)
       ) {
-        contentPackage.status = ContentPackageStatus.IN_REVIEW;
+        contentPackage.status = target;
         await packageRepo.save(contentPackage);
       }
 
@@ -191,7 +218,10 @@ export class ContentReviewRepository {
         packageRepo,
         contentPackage.id,
       );
-      if (areAllRequiredStagesApproved(packageGraph)) {
+      // Publicação por categoria: basta uma categoria aprovada e ainda não publicada.
+      if (
+        isReadyForPublication(packageGraph.tracks ?? [], packageGraph.status)
+      ) {
         if (
           canTransitionContentPackage(
             packageGraph.status,
@@ -282,13 +312,19 @@ export class ContentReviewRepository {
       stage.status = ContentStageStatus.CHANGES_REQUESTED;
       await stageRepo.save(stage);
 
+      // Devolver uma categoria não esconde as que já estão aprovadas e prontas para a página.
+      const graph = await findPackageGraphOrFail(
+        packageRepo,
+        contentPackage.id,
+      );
+      const target = isReadyForPublication(graph.tracks ?? [], graph.status)
+        ? ContentPackageStatus.READY_FOR_PUBLICATION
+        : ContentPackageStatus.CHANGES_REQUESTED;
       if (
-        canTransitionContentPackage(
-          contentPackage.status,
-          ContentPackageStatus.CHANGES_REQUESTED,
-        )
+        contentPackage.status !== target &&
+        canTransitionContentPackage(contentPackage.status, target)
       ) {
-        contentPackage.status = ContentPackageStatus.CHANGES_REQUESTED;
+        contentPackage.status = target;
         await packageRepo.save(contentPackage);
       }
 

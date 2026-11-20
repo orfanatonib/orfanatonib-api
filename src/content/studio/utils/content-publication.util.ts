@@ -7,7 +7,6 @@ import type { ContentPublicationEntity } from "../entities/content-publication.e
 import { ContentPublicationStatus } from "../enums/content-publication-status.enum";
 import type {
   PublicationDocumentFile,
-  PublicationTrackSnapshot,
 } from "../content-publication.types";
 
 /** True for the MySQL unique-key violation (driver error shape: `code`/`errno 1062`). */
@@ -47,12 +46,6 @@ export function needsReconciliation(
     publication.status === ContentPublicationStatus.UNCERTAIN ||
     isPublicationStale(publication, now)
   );
-}
-
-export function describeTrackAges(track: PublicationTrackSnapshot): string {
-  return track.maximumAge === null
-    ? `a partir de ${track.minimumAge} anos`
-    : `${track.minimumAge} a ${track.maximumAge} anos`;
 }
 
 /** Stable, ASCII-only multipart field name for the n-th generated document. */

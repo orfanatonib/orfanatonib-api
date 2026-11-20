@@ -30,6 +30,8 @@ entity "content_tracks" as tracks {
   audienceName : varchar(80)
   minimumAge : smallint
   maximumAge : smallint?
+  published_at : datetime?  <<categoria publicada: travada>>
+  publication_id : uuid?
   createdAt : datetime
   updatedAt : datetime
 }
@@ -122,8 +124,8 @@ entity "content_review_decisions" as decisions {
   stage_id : uuid
   version_id : uuid
   contentChecksum : char(64)
-  decision : enum
-  reviewerId : uuid
+  decision : enum SUBMITTED|APPROVED|CHANGES_REQUESTED
+  reviewerId : uuid (quem decidiu; em SUBMITTED, quem enviou)
   related_comment_id : uuid?
   decidedAt : datetime
   createdAt : datetime
@@ -138,6 +140,7 @@ entity "content_publications" as publications {
   targetType : enum
   status : enum
   approvedVersions : json
+  audiences : json?  <<categorias levadas à página>>
   asset_id : uuid?
   errorCode : varchar(80)?
   publishedAt : datetime?

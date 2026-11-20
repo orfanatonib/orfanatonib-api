@@ -60,6 +60,8 @@ import {
 } from "./services/get-stage-images.service";
 import { RequestStageImagesService } from "./services/request-stage-images.service";
 import { RuleException } from "src/common/exceptions";
+import { RegeneratePackageCoverDto } from "./dto/regenerate-package-cover.dto";
+import { GeneratePackageCoverService } from "./services/generate-package-cover.service";
 
 @Controller("content-studio")
 @UseGuards(JwtAuthGuard, AdminRoleGuard)
@@ -81,6 +83,7 @@ export class ContentStudioController {
     private readonly latestGeneration: GetLatestStageGenerationService,
     private readonly getStageImages: GetStageImagesService,
     private readonly requestImages: RequestStageImagesService,
+    private readonly covers: GeneratePackageCoverService,
   ) {}
 
   @Get("catalog")
@@ -101,7 +104,9 @@ export class ContentStudioController {
       dto,
       this.authenticatedUserId(request),
     );
-    return ContentPackageResponseDto.fromEntity(contentPackage);
+    // A capa nasce junto com o material (segundo plano; sem revisão). Se falhar, a tela oferece "Gerar de novo".
+    this.covers.start(contentPackage.id);
+    return ContentPackageResponseDto.fromEntity(contentPackage, true);
   }
 
   @Get("packages")
@@ -128,7 +133,29 @@ export class ContentStudioController {
     @Param("id", new ParseUUIDPipe()) id: string,
   ): Promise<ContentPackageResponseDto> {
     const contentPackage = await this.getPackages.findOne(id);
-    return ContentPackageResponseDto.fromEntity(contentPackage);
+    return ContentPackageResponseDto.fromEntity(
+      contentPackage,
+      this.covers.isGenerating(id),
+    );
+  }
+
+  /**
+   * Refaz a capa (imagem de apresentação) do material. Não passa por revisão. 202: desenha em segundo plano; a tela
+   * consulta o pacote até `coverGenerating` voltar a `false`.
+   */
+  @Post("packages/:packageId/cover/regenerate")
+  @HttpCode(HttpStatus.ACCEPTED)
+  @FeatureFlag([
+    FeatureFlagKeys.CONTENT_STUDIO,
+    FeatureFlagKeys.CONTENT_STUDIO_GENERATION,
+  ])
+  @UseGuards(FeatureFlagGuard)
+  async regenerateCover(
+    @Param("packageId", new ParseUUIDPipe()) packageId: string,
+    @Body() dto: RegeneratePackageCoverDto,
+  ): Promise<{ coverGenerating: true }> {
+    await this.covers.request(packageId, dto.instructions);
+    return { coverGenerating: true };
   }
 
   @Get("dashboard")
@@ -287,10 +314,12 @@ export class ContentStudioController {
   async submitPackageReview(
     @Param("packageId", new ParseUUIDPipe()) packageId: string,
     @Body() dto: SubmitPackageReviewDto,
+    @Req() request: AuthenticatedRequest,
   ): Promise<ContentPackageResponseDto> {
     const contentPackage = await this.submitReview.execute(
       packageId,
       dto.audiences,
+      this.authenticatedUserId(request),
     );
     return ContentPackageResponseDto.fromEntity(contentPackage);
   }

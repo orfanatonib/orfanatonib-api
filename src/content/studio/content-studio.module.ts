@@ -70,6 +70,7 @@ import { ApproveReviewStageService } from "./services/approve-review-stage.servi
 import { ArchiveContentPackageService } from "./services/archive-content-package.service";
 import { CompleteProductionStageService } from "./services/complete-production-stage.service";
 import { CreateContentPackageService } from "./services/create-content-package.service";
+import { GeneratePackageCoverService } from "./services/generate-package-cover.service";
 import { GetContentStudioCatalogService } from "./services/get-content-studio-catalog.service";
 import { GetContentPackagesService } from "./services/get-content-packages.service";
 import { GetContentStudioDashboardService } from "./services/get-content-studio-dashboard.service";
@@ -138,6 +139,7 @@ const FAKE_AI_DEFAULT_QUOTA_TOKENS = 500_000;
     CreateContentPackageService,
     GetContentStudioCatalogService,
     GetContentPackagesService,
+    GeneratePackageCoverService,
     GetContentStudioDashboardService,
     RequestStageGenerationService,
     CancelStageGenerationService,

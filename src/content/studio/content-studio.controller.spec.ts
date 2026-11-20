@@ -264,11 +264,14 @@ describe("ContentStudioController", () => {
     const res = await controller.submitPackageReview(
       "c3f8f118-20ab-48d6-96a2-9476b70125a4",
       {},
+      mockReq("producer-1"),
     );
     expect(res.id).toBe(pkg.id);
+    // Quem enviou fica no histórico da revisão.
     expect(mockSubmitReview.execute).toHaveBeenCalledWith(
       "c3f8f118-20ab-48d6-96a2-9476b70125a4",
       undefined,
+      "producer-1",
     );
   });
 
@@ -277,10 +280,12 @@ describe("ContentStudioController", () => {
     await controller.submitPackageReview(
       "c3f8f118-20ab-48d6-96a2-9476b70125a4",
       { audiences: [ContentAudience.TEEN] },
+      mockReq("producer-1"),
     );
     expect(mockSubmitReview.execute).toHaveBeenLastCalledWith(
       "c3f8f118-20ab-48d6-96a2-9476b70125a4",
       [ContentAudience.TEEN],
+      "producer-1",
     );
   });
 

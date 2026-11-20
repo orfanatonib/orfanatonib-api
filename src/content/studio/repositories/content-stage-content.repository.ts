@@ -32,6 +32,7 @@ import {
 import {
   areAllRequiredStagesCompleted,
   assertPackageCanProduce,
+  assertTrackNotPublished,
 } from "./content-package-rules.helpers";
 
 const MANUAL_CONTENT_ALLOWED_STATUSES: readonly ContentStageStatus[] = [
@@ -60,6 +61,7 @@ export class ContentStageContentRepository {
       const { contentPackage, stage, trackStages } =
         await findStageContextOrFail(manager, input.packageId, input.stageId);
       assertPackageCanProduce(contentPackage);
+      assertTrackNotPublished(stage.track, contentPackage.status);
 
       if (!MANUAL_CONTENT_ALLOWED_STATUSES.includes(stage.status)) {
         throw new ResourceConflictException(
@@ -146,6 +148,7 @@ export class ContentStageContentRepository {
         input.stageId,
       );
       assertPackageCanProduce(contentPackage);
+      assertTrackNotPublished(stage.track, contentPackage.status);
 
       if (!stage.currentVersionId) {
         throw new RuleException(

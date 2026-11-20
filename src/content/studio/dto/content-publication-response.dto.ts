@@ -1,4 +1,5 @@
 import type { ContentPublicationEntity } from "../entities/content-publication.entity";
+import type { ContentAudience } from "../enums/content-audience.enum";
 import { ContentPublicationStatus } from "../enums/content-publication-status.enum";
 import { ContentPublicationTargetType } from "../enums/content-publication-target-type.enum";
 import { CONTENT_PUBLICATION_ERROR_MESSAGES } from "../constants/content-publication.constants";
@@ -10,6 +11,8 @@ export class ContentPublicationResponseDto {
   status: ContentPublicationStatus;
   targetType: ContentPublicationTargetType;
   visitMaterialPageId: string | null;
+  /** Categorias que esta publicação levou à página (`null` = publicação antiga, que levava o pacote inteiro). */
+  audiences: ContentAudience[] | null;
   /** Public route path of the page (without leading slash handling: use as stored). */
   visitMaterialPagePath: string | null;
   publishedAt: Date | null;
@@ -28,6 +31,7 @@ export class ContentPublicationResponseDto {
       status: entity.status,
       targetType: entity.targetType,
       visitMaterialPageId: entity.visitMaterialPageId,
+      audiences: entity.audiences ?? null,
       visitMaterialPagePath: pagePath,
       publishedAt: entity.publishedAt,
       errorCode: entity.errorCode,

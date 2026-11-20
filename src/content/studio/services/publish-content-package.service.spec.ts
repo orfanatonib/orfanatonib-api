@@ -25,8 +25,10 @@ const snapshot: PublicationPackageSnapshot = {
       audienceName: "Child",
       minimumAge: 6,
       maximumAge: 10,
+      stages: [],
     },
   ],
+  includeCompleteMaterial: false,
 };
 
 function publication(
@@ -39,6 +41,7 @@ function publication(
     targetType: ContentPublicationTargetType.VISIT_MATERIAL_PAGE,
     status: ContentPublicationStatus.PUBLISHING,
     approvedVersions: {},
+    audiences: [ContentAudience.CHILD],
     assetId: null,
     visitMaterialPageId: null,
     errorCode: null,
@@ -61,7 +64,7 @@ describe("PublishContentPackageService", () => {
     markUncertain: jest.fn(),
   };
   const documents = { execute: jest.fn() };
-  const createPage = { execute: jest.fn() };
+  const createPage = { execute: jest.fn(), append: jest.fn() };
   const pages = { findBySourcePackageId: jest.fn(), findPathById: jest.fn() };
   let service: PublishContentPackageService;
 
@@ -90,6 +93,12 @@ describe("PublishContentPackageService", () => {
     createPage.execute.mockResolvedValue({
       id: PAGE_ID,
       path: "materiais_visita_esperanca",
+      categories: ["CHILD"],
+    });
+    createPage.append.mockResolvedValue({
+      id: PAGE_ID,
+      path: "materiais_visita_esperanca",
+      categories: ["BABY", "CHILD"],
     });
     repo.complete.mockImplementation(async () =>
       publication({
@@ -269,7 +278,11 @@ describe("PublishContentPackageService", () => {
       createPage.execute.mockRejectedValue(new Error("timeout"));
       pages.findBySourcePackageId
         .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce({ id: PAGE_ID, path: "p" });
+        .mockResolvedValueOnce({
+          id: PAGE_ID,
+          path: "p",
+          categories: ["CHILD"],
+        });
 
       const result = await service.execute(
         PACKAGE_ID,
@@ -316,7 +329,11 @@ describe("PublishContentPackageService", () => {
     });
 
     it("a page already existing for the package is reused, not duplicated", async () => {
-      pages.findBySourcePackageId.mockResolvedValue({ id: PAGE_ID, path: "p" });
+      pages.findBySourcePackageId.mockResolvedValue({
+        id: PAGE_ID,
+        path: "p",
+        categories: ["CHILD"],
+      });
 
       const result = await service.execute(
         PACKAGE_ID,
@@ -331,12 +348,170 @@ describe("PublishContentPackageService", () => {
     });
   });
 
+  describe("publicação incremental por categoria", () => {
+    const babyTrack = {
+      audience: ContentAudience.BABY,
+      audienceName: "Baby",
+      minimumAge: 0,
+      maximumAge: 2,
+      stages: [],
+    };
+
+    it("primeira publicação (só o BABY): cria a página com o BABY, sem material completo", async () => {
+      repo.begin.mockResolvedValue({
+        publication: publication({ audiences: [ContentAudience.BABY] }),
+        snapshot: { ...snapshot, tracks: [babyTrack] },
+      });
+      createPage.execute.mockResolvedValue({
+        id: PAGE_ID,
+        path: "p",
+        categories: ["BABY"],
+      });
+
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
+
+      expect(createPage.execute).toHaveBeenCalledTimes(1);
+      expect(createPage.append).not.toHaveBeenCalled();
+      expect(documents.execute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tracks: [babyTrack],
+          includeCompleteMaterial: false,
+        }),
+      );
+      expect(result.status).toBe(ContentPublicationStatus.PUBLISHED);
+    });
+
+    it("publicação seguinte (crianças): ACRESCENTA à página que já tem o BABY e não recria nada", async () => {
+      pages.findBySourcePackageId.mockResolvedValue({
+        id: PAGE_ID,
+        path: "p",
+        categories: ["BABY"],
+      });
+
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
+
+      expect(createPage.execute).not.toHaveBeenCalled();
+      expect(createPage.append).toHaveBeenCalledWith(
+        PAGE_ID,
+        expect.objectContaining({ tracks: snapshot.tracks }),
+        expect.any(Array),
+      );
+      expect(repo.complete).toHaveBeenCalledWith("pub-1", PACKAGE_ID, PAGE_ID);
+      expect(result.status).toBe(ContentPublicationStatus.PUBLISHED);
+    });
+
+    it("só acrescenta as categorias que a página ainda não tem (o BABY já publicado não é refeito)", async () => {
+      repo.begin.mockResolvedValue({
+        publication: publication({
+          audiences: [ContentAudience.BABY, ContentAudience.CHILD],
+        }),
+        snapshot: { ...snapshot, tracks: [babyTrack, snapshot.tracks[0]] },
+      });
+      pages.findBySourcePackageId.mockResolvedValue({
+        id: PAGE_ID,
+        path: "p",
+        categories: ["BABY"],
+      });
+
+      await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+
+      const [, appended] = createPage.append.mock.calls[0] as [
+        string,
+        PublicationPackageSnapshot,
+      ];
+      expect(appended.tracks.map((track) => track.audience)).toEqual([
+        ContentAudience.CHILD,
+      ]);
+    });
+
+    it("o material completo só é gerado quando esta publicação completa todas as categorias", async () => {
+      repo.begin.mockResolvedValue({
+        publication: publication(),
+        snapshot: { ...snapshot, includeCompleteMaterial: true },
+      });
+      pages.findBySourcePackageId.mockResolvedValue({
+        id: PAGE_ID,
+        path: "p",
+        categories: ["BABY"],
+      });
+
+      await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+
+      expect(documents.execute).toHaveBeenCalledWith(
+        expect.objectContaining({ includeCompleteMaterial: true }),
+      );
+    });
+
+    it("falha ao acrescentar e a página continua sem a categoria => FAILED, sem completar", async () => {
+      pages.findBySourcePackageId.mockResolvedValue({
+        id: PAGE_ID,
+        path: "p",
+        categories: ["BABY"],
+      });
+      createPage.append.mockRejectedValue(new Error("s3 down"));
+
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
+
+      expect(repo.complete).not.toHaveBeenCalled();
+      expect(repo.fail).toHaveBeenCalledWith(
+        "pub-1",
+        PACKAGE_ID,
+        ContentPublicationErrorCode.PAGE_CREATION_FAILED,
+      );
+      expect(result.status).toBe(ContentPublicationStatus.FAILED);
+    });
+
+    it("reconciliação: a página precisa ter TODAS as categorias da publicação, senão é interrompida", async () => {
+      repo.findByIdempotencyKey.mockResolvedValue(
+        publication({
+          status: ContentPublicationStatus.UNCERTAIN,
+          audiences: [ContentAudience.CHILD],
+        }),
+      );
+      pages.findBySourcePackageId.mockResolvedValue({
+        id: PAGE_ID,
+        path: "p",
+        categories: ["BABY"],
+      });
+
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
+
+      expect(repo.complete).not.toHaveBeenCalled();
+      expect(repo.fail).toHaveBeenCalledWith(
+        "pub-1",
+        PACKAGE_ID,
+        ContentPublicationErrorCode.INTERRUPTED,
+      );
+      expect(result.status).toBe(ContentPublicationStatus.FAILED);
+    });
+  });
+
   describe("reconciliation by sourceLessonId", () => {
     it("UNCERTAIN publication replayed with its key and the page exists => PUBLISHED", async () => {
       repo.findByIdempotencyKey.mockResolvedValue(
         publication({ status: ContentPublicationStatus.UNCERTAIN }),
       );
-      pages.findBySourcePackageId.mockResolvedValue({ id: PAGE_ID, path: "p" });
+      pages.findBySourcePackageId.mockResolvedValue({
+        id: PAGE_ID,
+        path: "p",
+        categories: ["CHILD"],
+      });
 
       const result = await service.execute(
         PACKAGE_ID,
@@ -387,7 +562,11 @@ describe("PublishContentPackageService", () => {
       repo.findLatestByPackageId.mockResolvedValue(
         publication({ status: ContentPublicationStatus.UNCERTAIN }),
       );
-      pages.findBySourcePackageId.mockResolvedValue({ id: PAGE_ID, path: "p" });
+      pages.findBySourcePackageId.mockResolvedValue({
+        id: PAGE_ID,
+        path: "p",
+        categories: ["CHILD"],
+      });
 
       const result = await service.execute(
         PACKAGE_ID,

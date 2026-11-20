@@ -1,3 +1,4 @@
+import { isTrackPublished } from "../utils/content-publication-tracks.util";
 import { ContentPackageEntity } from "../entities/content-package.entity";
 import { ContentStageEntity } from "../entities/content-stage.entity";
 import { ContentTrackEntity } from "../entities/content-track.entity";
@@ -142,6 +143,8 @@ export class ContentTrackResponseDto {
   audienceName: string;
   minimumAge: number;
   maximumAge: number | null;
+  /** Quando a categoria foi publicada em Materiais de Visita (`null` = ainda não); publicada fica travada. */
+  publishedAt: Date | null;
   stages: ContentStageResponseDto[];
   createdAt: Date;
   updatedAt: Date;
@@ -157,6 +160,7 @@ export class ContentTrackResponseDto {
       audienceName: entity.audienceName,
       minimumAge: entity.minimumAge,
       maximumAge: entity.maximumAge,
+      publishedAt: entity.publishedAt ?? null,
       stages: stages.map(ContentStageResponseDto.fromEntity),
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,
@@ -170,6 +174,10 @@ export class ContentPackageResponseDto {
   biblicalReferences: string;
   canonicalObjective: string;
   canonicalNotes: string | null;
+  /** Imagem de apresentação (capa) do material; `null` até ser gerada. */
+  coverImageUrl: string | null;
+  /** A capa está sendo desenhada agora (a tela espera e consulta de novo). */
+  coverGenerating: boolean;
   templateCatalogVersion: string;
   status: ContentPackageStatus;
   createdById: string;
@@ -179,7 +187,10 @@ export class ContentPackageResponseDto {
   createdAt: Date;
   updatedAt: Date;
 
-  static fromEntity(entity: ContentPackageEntity): ContentPackageResponseDto {
+  static fromEntity(
+    entity: ContentPackageEntity,
+    coverGenerating = false,
+  ): ContentPackageResponseDto {
     const tracks = [...(entity.tracks ?? [])].sort(
       (left, right) => left.minimumAge - right.minimumAge,
     );
@@ -190,6 +201,8 @@ export class ContentPackageResponseDto {
       biblicalReferences: entity.biblicalReferences,
       canonicalObjective: entity.canonicalObjective,
       canonicalNotes: entity.canonicalNotes,
+      coverImageUrl: entity.coverImageUrl ?? null,
+      coverGenerating,
       templateCatalogVersion: entity.templateCatalogVersion,
       status: entity.status,
       createdById: entity.createdById,
@@ -218,6 +231,11 @@ export class ContentPackageListItemResponseDto {
   tracksCount: number;
   /** Faixas etárias do material, da mais nova para a mais velha (para o cartão da listagem). */
   audiences: ContentAudience[];
+  /**
+   * Faixas já publicadas em Materiais de Visita (da mais nova à mais velha). Pacote antigo `PUBLISHED` publicou
+   * todas. As listagens usam isto para dizer "publicado em parte" e continuar a produção das que faltam.
+   */
+  publishedAudiences: ContentAudience[];
   stagesCount: number;
   requiredStagesCount: number;
   approvedStagesCount: number;
@@ -245,6 +263,10 @@ export class ContentPackageListItemResponseDto {
       createdById: entity.createdById,
       tracksCount: tracks.length,
       audiences: [...tracks]
+        .sort((a, b) => a.minimumAge - b.minimumAge)
+        .map((track) => track.audience),
+      publishedAudiences: [...tracks]
+        .filter((track) => isTrackPublished(track, entity.status))
         .sort((a, b) => a.minimumAge - b.minimumAge)
         .map((track) => track.audience),
       stagesCount: stages.length,

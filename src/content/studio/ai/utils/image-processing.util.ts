@@ -95,3 +95,33 @@ export async function imageDimensions(
   if (!width || !height) throw new Error("Imagem inválida");
   return { width, height };
 }
+
+/** Proporção (largura / altura) da capa do card do material. */
+export const COVER_RATIO = 3 / 2;
+
+/** Recorte central para a proporção 3:2 da capa; devolve PNG. Nada é esticado. */
+export async function cropToCover(input: Uint8Array): Promise<ProcessedImage> {
+  const image = sharp(Buffer.from(input));
+  const { width = 0, height = 0 } = await image.metadata();
+  if (!width || !height) throw new Error("Imagem inválida");
+  let cropWidth = width;
+  let cropHeight = height;
+  if (width / height > COVER_RATIO)
+    cropWidth = Math.round(height * COVER_RATIO);
+  else cropHeight = Math.round(width / COVER_RATIO);
+  const { data, info } = await image
+    .extract({
+      left: Math.floor((width - cropWidth) / 2),
+      top: Math.floor((height - cropHeight) / 2),
+      width: cropWidth,
+      height: cropHeight,
+    })
+    .png()
+    .toBuffer({ resolveWithObject: true });
+  return {
+    bytes: data,
+    width: info.width,
+    height: info.height,
+    mediaType: "image/png",
+  };
+}

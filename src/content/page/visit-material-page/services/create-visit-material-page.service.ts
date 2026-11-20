@@ -79,7 +79,7 @@ export class CreateVisitMaterialPageService {
           entityId: page.id,
           idToFetch: page.id,
           entityType: VISIT_MATERIAL_ROUTE_ENTITY_TYPE,
-          image: VISIT_MATERIAL_ROUTE_CARD_IMAGE_URL,
+          image: dto.coverImageUrl || VISIT_MATERIAL_ROUTE_CARD_IMAGE_URL,
           public: true,
           current: false,
         });

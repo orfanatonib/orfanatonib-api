@@ -3,6 +3,7 @@ import { ContentStageType } from "../../enums/content-stage-type.enum";
 import type { VisualConfig } from "../../dto/visual-config.dto";
 import { ContentVisualOrientation } from "../../enums/content-visual.enums";
 import { cutoutKitPromptRules } from "./cutout-kit.constants";
+import type { VerseCardLookVariant } from "./verse-card-looks.constants";
 import { VISUAL_STYLES } from "./visual-styles.constants";
 import {
   CHILD_GAME_AGE_GROUPS,
@@ -194,9 +195,14 @@ function lessonVisualsPrompt(
   ].join("\n");
 }
 
-function verseVisualsPrompt(p: AudienceProfile): string {
+function verseVisualsPrompt(
+  p: AudienceProfile,
+  assigned?: VerseCardLookVariant | null,
+): string {
   const art = AUDIENCE_VISUAL_ART[p.audience];
-  const look = AUDIENCE_VERSE_CARD_LOOK[p.audience];
+  // Direção atribuída a esta geração (Adolescentes e Adultos); sem ela, vale o visual único da categoria.
+  const look = assigned ?? AUDIENCE_VERSE_CARD_LOOK[p.audience];
+  const style = assigned ? assigned.style : art.verseCardStyle;
   return [
     `Produza somente os VISUAIS DO VERSÍCULO PRINCIPAL para ${p.label.toLowerCase()}, como uma sequência de cartões tipográficos imprimíveis, com um prompt pronto para o gerador de imagens em cada cartão. Não é brincadeira nem a fixação divertida.`,
     "",
@@ -209,7 +215,13 @@ function verseVisualsPrompt(p: AudienceProfile): string {
     "- Justifique a quebra em splitRationale.",
     "",
     "ARTE DOS CARTÕES (ESTILO DESTE PÚBLICO)",
-    `- ${art.verseCardStyle}`,
+    ...(assigned
+      ? [
+          `- DIREÇÃO VISUAL ATRIBUÍDA A ESTA GERAÇÃO: "${assigned.name}" (lookId = ${assigned.id}). Use EXATAMENTE esta direção em todos os cartões (é ela que garante que cada material tenha uma cara própria, em vez de repetir sempre o mesmo visual) e copie ${assigned.id} em lookId. Não troque por outra e não misture com outras direções.`,
+          `- COMPOSIÇÃO DA FOLHA nesta direção: ${assigned.composition}`,
+        ]
+      : ['- lookId: escreva "padrao" (esta categoria usa um visual único).']),
+    `- ${style}`,
     `- ${p.verseCardArt}`,
     `- Defina em palette uma única paleta de no máximo três cores nomeadas para toda a sequência (${look.colors}); texto, fundo, contornos, sombras e detalhes usam só essas cores (variações de luminosidade e saturação são permitidas). Não mude a paleta entre cartões nem escolha uma cor para cada letra. Fundo escolhido a partir do sentido do versículo, com bom contraste com o texto.`,
     "- REGRA DE OURO DO CARTÃO: o texto ocupa cerca de 90% de toda a imagem, em letras gigantes e MUITO destacadas (contorno, sombra, contraste); os outros 10% são pequenas ilustrações nas sobras (cantos, bordas e vãos entre as linhas). Tudo para imprimir em folha A4 na horizontal (paisagem).",
@@ -250,7 +262,7 @@ function funPrompt(p: AudienceProfile, fixation: boolean): string {
           "- Todo passo é AÇÃO divertida (nada de passo só de preparar, acomodar ou explicar); a preparação já está em preparation. A primeira ação já começa a brincadeira.",
           ...(p.audience === ContentAudience.BABY
             ? [
-                "- BEBÊS: use pelo menos três passos e um OBJETO SENSORIAL grande e seguro (pano leve, chocalho de tecido, espelho inquebrável, cesto de objetos macios e grandes, fita de cetim presa na mão do adulto), alternando ao menos dois estímulos (tato, som ou visão) e fechando com um carinho. O cuidador conduz, o bebê reage; sem competição.",
+                "- BEBÊS: use pelo menos três passos e um OBJETO SENSORIAL grande e seguro (por exemplo chocalho de tecido, espelho inquebrável, fita de cetim presa na mão do adulto, cesto de objetos macios e grandes, bola macia grande, livro de tecido, fantoche de dedo grande: são só exemplos, escolha um diferente a cada vez), alternando ao menos dois estímulos (tato, som ou visão) e fechando com um carinho. O cuidador conduz, o bebê reage; sem competição.",
               ]
             : []),
           `- ESPAÇO PEQUENO (obrigatório): ${p.gameSpace}. Nada que peça corrida, percurso, pista, circuito, estafeta, quadra ou pátio; preencha spaceNeeded com o espaço usado, curto.`,
@@ -279,6 +291,10 @@ function funPrompt(p: AudienceProfile, fixation: boolean): string {
           "- Repita o versículo em mais de um momento (no mínimo três vezes ao longo da brincadeira) e termine com ele dito por todos; quem ainda não lê aprende por fala, gesto e ajuda do grupo.",
         ]
       : []),
+    "",
+    "VARIEDADE (evite o óbvio e o repetido)",
+    "- A lição aprovada já usou os objetos dos materiais de apoio e do quebra-gelo (por exemplo pano, fio, almofada): prefira OUTRO objeto e OUTRA ação, para esta etapa não parecer cópia da lição. Pode ligar-se ao tema, mas o objeto e a ação devem ser novos.",
+    "- Não caia no primeiro objeto que vier à cabeça; pense em três ideias diferentes e escolha a mais divertida e original que cumpra as regras de segurança e de espaço.",
     "",
     "SEGURANÇA OBRIGATÓRIA (ninguém se machuca nem se constrange)",
     "- Espaço livre de obstáculos e piso seguro; nada cortante, pontudo, quente nem pesado; sem fogo, escada ou altura; sem venda nos olhos; sem alimento ou coisa para pôr na boca (alergias); sem empurrões, puxões nem contato brusco; sem correria em piso escorregadio.",
@@ -320,6 +336,7 @@ export function stageBasePrompt(
   profile: AudienceProfile,
   theme?: string,
   visualConfig?: VisualConfig | null,
+  verseLook?: VerseCardLookVariant | null,
 ): string {
   switch (stage) {
     case ContentStageType.LESSON:
@@ -327,7 +344,7 @@ export function stageBasePrompt(
     case ContentStageType.LESSON_VISUALS:
       return lessonVisualsPrompt(profile, visualConfig);
     case ContentStageType.VERSE_VISUALS:
-      return verseVisualsPrompt(profile);
+      return verseVisualsPrompt(profile, verseLook);
     case ContentStageType.VERSE_FIXATION:
       return funPrompt(profile, true);
     case ContentStageType.STANDARD_GAME:

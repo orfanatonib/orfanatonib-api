@@ -11,6 +11,7 @@ import { ContentPackageStatus } from "../enums/content-package-status.enum";
 import { ContentStageStatus } from "../enums/content-stage-status.enum";
 import { ContentStageType } from "../enums/content-stage-type.enum";
 import { ACTIVE_CONTENT_GENERATION_JOB_STATUSES } from "../types";
+import { workingPackageStatus } from "../utils/content-publication-tracks.util";
 import {
   canTransitionContentPackage,
   canTransitionContentStage,
@@ -120,17 +121,22 @@ export async function markDependentStagesStale(
   }
 }
 
+/**
+ * A produção mexeu em um item: o pacote assume a situação das categorias ainda não publicadas (em geral "em produção",
+ * mas continua "pronto para publicar" ou "em revisão" se outra categoria está nesse ponto). Antes ele ia SEMPRE para
+ * "em produção", o que tirava da fila de revisão uma categoria já aprovada só porque outra estava sendo produzida.
+ */
 export async function movePackageToInProgress(
   packageRepo: Repository<ContentPackageEntity>,
   contentPackage: ContentPackageEntity,
 ): Promise<void> {
+  const graph = await findPackageGraphOrFail(packageRepo, contentPackage.id);
+  const target = workingPackageStatus(graph.tracks ?? [], graph.status);
   if (
-    canTransitionContentPackage(
-      contentPackage.status,
-      ContentPackageStatus.IN_PROGRESS,
-    )
+    graph.status !== target &&
+    canTransitionContentPackage(graph.status, target)
   ) {
-    contentPackage.status = ContentPackageStatus.IN_PROGRESS;
+    contentPackage.status = target;
     await packageRepo.save(contentPackage);
   }
 }

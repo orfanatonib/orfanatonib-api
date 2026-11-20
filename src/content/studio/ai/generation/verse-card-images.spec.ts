@@ -6,6 +6,10 @@ import { validateStageOutput } from "./stage-output.validator";
 import { fakeStageContent } from "./fake-stage-content";
 import { funSummaryImageSpecs, verseCardImageSpecs } from "./image-prompts";
 import {
+  VERSE_CARD_LOOK_AUDIENCE_RULES,
+  findVerseCardLook,
+} from "./verse-card-looks.constants";
+import {
   AUDIENCE_FUN_IMAGE_RULES,
   COMPILED_SLOT,
   AUDIENCE_VERSE_CARD_LOOK,
@@ -33,8 +37,14 @@ describe("cartões do versículo como imagens", () => {
       expect(first).toContain("copie caractere por caractere");
       expect(first).toContain("FOLHA A4 SEM BORDA");
       expect(first).toContain("PALETA ÚNICA");
-      expect(first).toContain(AUDIENCE_VISUAL_ART[audience].verseCardStyle);
-      for (const rule of AUDIENCE_VERSE_CARD_RULES[audience])
+      // Adolescentes e Adultos: a direção registrada em lookId; as demais categorias: o visual único.
+      const variant = findVerseCardLook(audience, content.lookId);
+      expect(first).toContain(
+        variant ? variant.style : AUDIENCE_VISUAL_ART[audience].verseCardStyle,
+      );
+      for (const rule of variant
+        ? [VERSE_CARD_LOOK_AUDIENCE_RULES[audience] ?? ""]
+        : AUDIENCE_VERSE_CARD_RULES[audience])
         expect(first).toContain(rule);
       expect(specs.every((spec) => spec.size === "1536x1024")).toBe(true);
     },
@@ -99,9 +109,12 @@ describe("cartões do versículo como imagens", () => {
       expect(text).toContain("cerca de 90% de TODA a área");
       expect(text).toContain("10% restantes são PEQUENAS ILUSTRAÇÕES");
       expect(text).toContain("destaque máximo");
-      expect(text).toContain(AUDIENCE_VERSE_CARD_LOOK[audience].lettering);
-      expect(text).toContain(AUDIENCE_VERSE_CARD_LOOK[audience].background);
-      expect(text).toContain(AUDIENCE_VERSE_CARD_LOOK[audience].illustrations);
+      const look =
+        findVerseCardLook(audience, plan(audience).lookId) ??
+        AUDIENCE_VERSE_CARD_LOOK[audience];
+      expect(text).toContain(look.lettering);
+      expect(text).toContain(look.background);
+      expect(text).toContain(look.illustrations);
     },
   );
 
@@ -149,12 +162,18 @@ describe("cartões do versículo como imagens", () => {
       plan(ContentAudience.ADULT),
       ContentAudience.ADULT,
     )[0].instructions.join("\n");
+    // Em qualquer direção (clara ou escura) a paleta é contida: poucas cores nomeadas e contraste forte exigido.
     for (const text of [teen, adult]) {
-      expect(text).toMatch(/contida e sóbria/i);
-      expect(text).toContain("Nada de");
+      expect(text).toContain("CONTRASTE: o texto tem contraste FORTE");
+      expect(text).toContain("PALETA ÚNICA");
     }
-    expect(teen).toContain("UMA única cor de acento");
-    expect(adult).toContain("UM acento suave");
+    for (const [audience, text] of [
+      [ContentAudience.TEEN, teen],
+      [ContentAudience.ADULT, adult],
+    ] as const) {
+      const look = findVerseCardLook(audience, plan(audience).lookId)!;
+      expect(text).toContain(look.colors);
+    }
     expect(
       verseCardImageSpecs(
         plan(ContentAudience.CHILD),

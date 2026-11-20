@@ -1,4 +1,4 @@
-import { UnprocessableEntityException } from "@nestjs/common";
+import { Logger, UnprocessableEntityException } from "@nestjs/common";
 
 import { ResourceNotFoundException } from "src/common/exceptions";
 import { ContentAudience } from "../enums/content-audience.enum";
@@ -51,20 +51,30 @@ function setup(
   const pdf = {
     convertDocxToPdf: jest.fn().mockResolvedValue(Buffer.from("%PDF-1.7 x")),
   };
+  const assets = {
+    listForVersion: jest.fn().mockResolvedValue(assetRows),
+    findStagePdf: jest.fn().mockResolvedValue(null),
+    replaceStagePdf: jest.fn().mockResolvedValue([]),
+  };
+  const s3 = {
+    getEnvironment: jest.fn().mockReturnValue("test"),
+    buildUrl: jest.fn((key: string) => `https://bucket/${key}`),
+    downloadOwned: jest.fn().mockResolvedValue(imageBytes),
+    putObject: jest.fn().mockResolvedValue(undefined),
+    deleteKey: jest.fn().mockResolvedValue(undefined),
+  };
   return {
     repo,
     docx,
     pdf,
+    assets,
+    s3,
     svc: new StudioExportService(
       repo as never,
       docx as never,
       pdf as never,
-      { listForVersion: jest.fn().mockResolvedValue(assetRows) } as never,
-      {
-        getEnvironment: jest.fn(),
-        buildUrl: jest.fn((key: string) => `https://bucket/${key}`),
-        downloadOwned: jest.fn().mockResolvedValue(imageBytes),
-      } as never,
+      assets as never,
+      s3 as never,
     ),
   };
 }
@@ -324,5 +334,164 @@ describe("StudioExportService.stageDocumentFor", () => {
         svc.exportStage("p1", "sv", StudioExportFormat.PDF),
       ).rejects.toThrow(/Ainda não há conteúdo/);
     });
+  });
+});
+
+describe("PDF da etapa guardado (a revisão lê um arquivo pronto, não monta na hora)", () => {
+  const lesson = stage("s1", ContentStageType.LESSON, 1, version());
+  const graph = () => pkg([track(ContentAudience.CHILD, [lesson])]);
+
+  it("1ª vez: monta o PDF e o guarda com a chave de conteúdo (a mesma do conversor)", async () => {
+    const { svc, docx, pdf, assets, s3 } = setup(graph());
+
+    const file = await svc.exportStage("p1", "s1", StudioExportFormat.PDF);
+
+    expect(file.buffer.toString()).toContain("%PDF");
+    expect(docx.build).toHaveBeenCalledTimes(1);
+    const cacheKey = pdf.convertDocxToPdf.mock.calls[0][1] as string;
+    expect(assets.findStagePdf).toHaveBeenCalledWith("v1", cacheKey);
+    expect(s3.putObject).toHaveBeenCalledWith(
+      expect.stringContaining("/content-studio/p1/s1/v1/stage-pdf-"),
+      expect.any(Buffer),
+      "application/pdf",
+    );
+    expect(assets.replaceStagePdf).toHaveBeenCalledWith(
+      expect.objectContaining({
+        packageId: "p1",
+        stageId: "s1",
+        versionId: "v1",
+        slot: "stage-pdf",
+        checksum: cacheKey,
+      }),
+    );
+  });
+
+  it("já guardado: serve o arquivo e NÃO monta documento nem chama o LibreOffice", async () => {
+    const first = setup(graph());
+    await first.svc.exportStage("p1", "s1", StudioExportFormat.PDF);
+    const key = first.assets.findStagePdf.mock.calls[0][1] as string;
+
+    const { svc, docx, pdf, assets, s3 } = setup(graph());
+    assets.findStagePdf.mockResolvedValue({
+      storageKey: "test/x.pdf",
+      checksum: key,
+    });
+    s3.downloadOwned.mockResolvedValue(Buffer.from("%PDF-GUARDADO"));
+
+    const file = await svc.exportStage("p1", "s1", StudioExportFormat.PDF);
+
+    expect(file.buffer.toString()).toBe("%PDF-GUARDADO");
+    expect(file.fileName).toBe("esperanca-fe-criancas-licao.pdf");
+    expect(docx.build).not.toHaveBeenCalled();
+    expect(pdf.convertDocxToPdf).not.toHaveBeenCalled();
+    expect(s3.putObject).not.toHaveBeenCalled();
+  });
+
+  it("nova versão ou novo conteúdo => outra chave (nunca serve PDF velho)", async () => {
+    const a = setup(graph());
+    await a.svc.exportStage("p1", "s1", StudioExportFormat.PDF);
+    const other = stage(
+      "s1",
+      ContentStageType.LESSON,
+      1,
+      version({ id: "v2", contentChecksum: "zzz" }),
+    );
+    const b = setup(pkg([track(ContentAudience.CHILD, [other])]));
+    await b.svc.exportStage("p1", "s1", StudioExportFormat.PDF);
+    expect(a.assets.findStagePdf.mock.calls[0][1]).not.toBe(
+      b.assets.findStagePdf.mock.calls[0][1],
+    );
+    expect(b.assets.findStagePdf.mock.calls[0][0]).toBe("v2");
+  });
+
+  it("DOCX nunca é guardado nem lido do arquivo", async () => {
+    const { svc, assets, s3 } = setup(graph());
+    await svc.exportStage("p1", "s1", StudioExportFormat.DOCX);
+    expect(assets.findStagePdf).not.toHaveBeenCalled();
+    expect(s3.putObject).not.toHaveBeenCalled();
+  });
+
+  it("falha ao guardar não derruba a exportação: o PDF sai e a próxima abertura tenta de novo", async () => {
+    const { svc, s3 } = setup(graph());
+    s3.putObject.mockRejectedValue(new Error("s3 fora"));
+    const file = await svc.exportStage("p1", "s1", StudioExportFormat.PDF);
+    expect(file.buffer.toString()).toContain("%PDF");
+  });
+
+  it("arquivo guardado ilegível: monta de novo", async () => {
+    const { svc, docx, assets, s3 } = setup(graph());
+    assets.findStagePdf.mockResolvedValue({ storageKey: "test/x.pdf" });
+    s3.downloadOwned.mockRejectedValue(new Error("404"));
+    const file = await svc.exportStage("p1", "s1", StudioExportFormat.PDF);
+    expect(docx.build).toHaveBeenCalledTimes(1);
+    expect(file.buffer.toString()).toContain("%PDF");
+  });
+
+  it("troca de PDF apaga o antigo do bucket, sem falhar se não conseguir apagar", async () => {
+    const { svc, assets, s3 } = setup(graph());
+    assets.replaceStagePdf.mockResolvedValue(["test/antigo.pdf"]);
+    s3.deleteKey.mockRejectedValue(new Error("sem permissão"));
+    await expect(
+      svc.exportStage("p1", "s1", StudioExportFormat.PDF),
+    ).resolves.toBeDefined();
+    expect(s3.deleteKey).toHaveBeenCalledWith("test/antigo.pdf");
+  });
+
+  it("pré-geração: gera uma etapa por vez e uma falha não impede as seguintes", async () => {
+    const two = stage(
+      "s2",
+      ContentStageType.LESSON_VISUALS,
+      2,
+      version({ id: "v2" }),
+    );
+    const { svc, pdf } = setup(
+      pkg([track(ContentAudience.CHILD, [lesson, two])]),
+    );
+    // s2 (visuais) não tem imagens => 422; s1 ainda assim é gerada
+    await expect(
+      svc.pregenerateStagePdfs("p1", ["s2", "s1"]),
+    ).resolves.toBeUndefined();
+    expect(pdf.convertDocxToPdf).toHaveBeenCalledTimes(1);
+  });
+
+  it("dois pedidos ao mesmo tempo montam UM só PDF (o segundo espera e reaproveita)", async () => {
+    const { svc, docx, pdf, assets } = setup(graph());
+    const [a, b] = await Promise.all([
+      svc.exportStage("p1", "s1", StudioExportFormat.PDF),
+      svc.exportStage("p1", "s1", StudioExportFormat.PDF),
+    ]);
+    expect(docx.build).toHaveBeenCalledTimes(1);
+    expect(pdf.convertDocxToPdf).toHaveBeenCalledTimes(1);
+    expect(assets.replaceStagePdf).toHaveBeenCalledTimes(1);
+    expect(a.buffer.toString()).toBe(b.buffer.toString());
+  });
+
+  it("registro já criado por outro processo (chave duplicada) não é erro nem vai para o log de erro", async () => {
+    const { svc, assets } = setup(graph());
+    assets.replaceStagePdf.mockRejectedValue({ code: "ER_DUP_ENTRY" });
+    const error = jest
+      .spyOn(Logger.prototype, "error")
+      .mockImplementation(() => undefined);
+    try {
+      const file = await svc.exportStage("p1", "s1", StudioExportFormat.PDF);
+      expect(file.buffer.toString()).toContain("%PDF");
+      expect(error).not.toHaveBeenCalled();
+    } finally {
+      error.mockRestore();
+    }
+  });
+
+  it("falha diferente de chave duplicada continua indo para o log de erro", async () => {
+    const { svc, assets } = setup(graph());
+    assets.replaceStagePdf.mockRejectedValue(new Error("banco caiu"));
+    const error = jest
+      .spyOn(Logger.prototype, "error")
+      .mockImplementation(() => undefined);
+    try {
+      await svc.exportStage("p1", "s1", StudioExportFormat.PDF);
+      expect(error).toHaveBeenCalledTimes(1);
+    } finally {
+      error.mockRestore();
+    }
   });
 });

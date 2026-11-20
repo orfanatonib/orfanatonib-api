@@ -1,6 +1,7 @@
 import {
   IsEnum,
   IsUUID,
+  MaxLength,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -19,6 +20,12 @@ export class CreateVisitMaterialsPageDto extends VisitMaterialMediaInputDto {
   @IsOptional()
   @IsUUID()
   sourceLessonId?: string;
+
+  /** Imagem de apresentação do card do material (a capa feita no Estúdio); sem ela, vale a imagem padrão. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  coverImageUrl?: string;
 
   @IsString({ message: 'O campo "pageTitle" deve ser uma string.' })
   @IsNotEmpty({ message: 'O campo "pageTitle" é obrigatório.' })

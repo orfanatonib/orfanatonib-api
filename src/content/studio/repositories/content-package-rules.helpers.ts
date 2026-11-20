@@ -3,7 +3,10 @@ import {
   RuleException,
 } from "src/common/exceptions";
 
+import { CONTENT_PUBLICATION_MESSAGES } from "../constants/content-publication.constants";
 import { ContentPackageEntity } from "../entities/content-package.entity";
+import { ContentTrackEntity } from "../entities/content-track.entity";
+import { isTrackPublished } from "../utils/content-publication-tracks.util";
 import { ContentStageEntity } from "../entities/content-stage.entity";
 import { ContentPackageStatus } from "../enums/content-package-status.enum";
 import { ContentStageStatus } from "../enums/content-stage-status.enum";
@@ -107,13 +110,32 @@ export function assertPackageCanProduce(
   }
 }
 
+/**
+ * Categoria já publicada em Materiais de Visita fica travada: a página mostra a versão aprovada e publicada, então não
+ * se edita, gera, conclui nem reenvia essa categoria.
+ */
+export function assertTrackNotPublished(
+  track: ContentTrackEntity,
+  packageStatus: ContentPackageStatus,
+): void {
+  if (isTrackPublished(track, packageStatus)) {
+    throw new ResourceConflictException(
+      CONTENT_PUBLICATION_MESSAGES.TRACK_ALREADY_PUBLISHED(track.audienceName),
+    );
+  }
+}
+
 export function assertPackageCanReview(
   contentPackage: ContentPackageEntity,
 ): void {
+  // As categorias são independentes: o pacote pode ter sido rebaixado por uma edição na produção enquanto outra
+  // categoria segue em revisão. O guarda real é o status da ETAPA (só IN_REVIEW aceita decisão).
   if (
-    ![
-      ContentPackageStatus.IN_REVIEW,
-      ContentPackageStatus.CHANGES_REQUESTED,
+    [
+      ContentPackageStatus.DRAFT,
+      ContentPackageStatus.PUBLISHING,
+      ContentPackageStatus.PUBLISHED,
+      ContentPackageStatus.ARCHIVED,
     ].includes(contentPackage.status)
   ) {
     throw new ResourceConflictException(

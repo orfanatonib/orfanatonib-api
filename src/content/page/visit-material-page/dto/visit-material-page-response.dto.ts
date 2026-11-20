@@ -51,6 +51,8 @@ export class VisitMaterialsPageResponseDTO {
   description: string;
   currentWeek: boolean;
   route: VisitRouteResponseDTO;
+  /** Imagem de apresentação (capa) do card; `null` enquanto vale a imagem padrão. */
+  coverImageUrl: string | null;
   /** Seções por categoria (vazio nas páginas antigas, cujas mídias ficam nas listas abaixo, como "Geral"). */
   sections: VisitMaterialSectionResponseDTO[];
   videos: VisitMediaItemResponseDTO[];

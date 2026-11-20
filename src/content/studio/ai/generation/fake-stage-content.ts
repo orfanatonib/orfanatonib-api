@@ -1,3 +1,4 @@
+import { verseCardLookIds } from "./verse-card-looks.constants";
 import { ContentAudience } from "../../enums/content-audience.enum";
 import { ContentStageType } from "../../enums/content-stage-type.enum";
 import { AUDIENCE_PROFILES } from "./audience-profiles.constants";
@@ -125,6 +126,7 @@ export function fakeStageContent(
         title: `Versículo — ${p.label}`,
         verse,
         splitRationale: "Dividido em unidades de sentido.",
+        lookId: verseCardLookIds(audience)[0] ?? "padrao",
         styleDirection: "Fundo quente, até três cores.",
         palette: ["laranja-sol", "marrom-café", "creme"],
         cards: [

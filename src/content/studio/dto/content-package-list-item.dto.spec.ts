@@ -73,4 +73,29 @@ describe("ContentPackageListItemResponseDto.fromEntity", () => {
       "ADULT:LESSON:FAILED",
     ]);
   });
+
+  it("publishedAudiences: só as faixas publicadas, da mais nova à mais velha; pacote antigo PUBLISHED publicou todas", () => {
+    const published = {
+      ...entity,
+      tracks: [
+        { ...(entity.tracks ?? [])[0], publishedAt: new Date(1) },
+        { ...(entity.tracks ?? [])[1], publishedAt: null },
+      ],
+    } as unknown as ContentPackageEntity;
+    expect(
+      ContentPackageListItemResponseDto.fromEntity(published)
+        .publishedAudiences,
+    ).toEqual([ContentAudience.ADULT]);
+    // sem o campo (não publicada) e pacote em andamento: nenhuma
+    expect(
+      ContentPackageListItemResponseDto.fromEntity(entity).publishedAudiences,
+    ).toEqual([]);
+    const legacy = {
+      ...entity,
+      status: "PUBLISHED",
+    } as unknown as ContentPackageEntity;
+    expect(
+      ContentPackageListItemResponseDto.fromEntity(legacy).publishedAudiences,
+    ).toEqual([ContentAudience.BABY, ContentAudience.ADULT]);
+  });
 });

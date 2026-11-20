@@ -85,7 +85,7 @@ export class RouteService {
   async updateRoute(
     id: string,
     updateData: Partial<
-      Pick<RouteEntity, "title" | "description" | "path" | "subtitle">
+      Pick<RouteEntity, "title" | "description" | "path" | "subtitle" | "image">
     >,
   ): Promise<RouteEntity> {
     const route = await this.routeRepo.findOne({ where: { id } });

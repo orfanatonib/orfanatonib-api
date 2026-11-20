@@ -164,7 +164,8 @@ export class UpdateVisitMaterialPageService {
       current: route.current,
       type: RouteType.PAGE,
       path: VISIT_MATERIAL_ROUTE_PATH_PREFIX,
-      image: VISIT_MATERIAL_ROUTE_CARD_IMAGE_URL,
+      // Editar o texto da página não pode apagar a capa que o Estúdio gerou.
+      image: route.image || VISIT_MATERIAL_ROUTE_CARD_IMAGE_URL,
     });
   }
 }

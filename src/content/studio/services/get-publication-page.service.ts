@@ -15,7 +15,13 @@ export class GetPublicationPageService {
     packageId: string,
   ): Promise<PublishedPageRef | null> {
     const page = await this.pages.findBySourceLessonId(packageId);
-    return page ? { id: page.id, path: page.route?.path ?? null } : null;
+    return page
+      ? {
+          id: page.id,
+          path: page.route?.path ?? null,
+          categories: (page.sections ?? []).map((section) => section.category),
+        }
+      : null;
   }
 
   /** Public route path of a page; `null` when the page no longer exists. */

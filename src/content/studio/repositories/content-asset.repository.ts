@@ -5,6 +5,9 @@ import { DataSource } from "typeorm";
 import { ContentAssetEntity } from "../entities/content-asset.entity";
 import { ContentAssetKind } from "../enums/content-asset-kind.enum";
 
+/** Slot do PDF guardado de uma etapa (um por versão; o `checksum` é a chave de conteúdo: versão + imagens). */
+export const STAGE_PDF_SLOT = "stage-pdf";
+
 export interface StoreAssetInput {
   readonly packageId: string;
   readonly stageId: string;
@@ -42,6 +45,50 @@ export class ContentAssetRepository {
           versionId: input.versionId,
           slot: input.slot,
           kind: ContentAssetKind.GENERATED_IMAGE,
+          storageKey: input.storageKey,
+          mediaType: input.mediaType,
+          sizeBytes: String(input.sizeBytes),
+          checksum: input.checksum,
+        }),
+      );
+      return old.map((asset) => asset.storageKey);
+    });
+  }
+
+  /** PDF já guardado da etapa para ESTA versão e ESTE conteúdo (`checksum`), ou `null` se ainda não foi gerado. */
+  async findStagePdf(
+    versionId: string,
+    checksum: string,
+  ): Promise<ContentAssetEntity | null> {
+    return this.dataSource.getRepository(ContentAssetEntity).findOne({
+      where: {
+        versionId,
+        slot: STAGE_PDF_SLOT,
+        kind: ContentAssetKind.EXPORT_PDF,
+        checksum,
+      },
+    });
+  }
+
+  /** Guarda o PDF da etapa e devolve as chaves dos PDFs antigos da mesma versão (o chamador os apaga do bucket depois). */
+  async replaceStagePdf(input: StoreAssetInput): Promise<string[]> {
+    return this.dataSource.transaction(async (manager) => {
+      const repo = manager.getRepository(ContentAssetEntity);
+      const old = await repo.find({
+        where: {
+          versionId: input.versionId,
+          slot: STAGE_PDF_SLOT,
+          kind: ContentAssetKind.EXPORT_PDF,
+        },
+      });
+      if (old.length) await repo.remove(old);
+      await repo.save(
+        repo.create({
+          packageId: input.packageId,
+          stageId: input.stageId,
+          versionId: input.versionId,
+          slot: STAGE_PDF_SLOT,
+          kind: ContentAssetKind.EXPORT_PDF,
           storageKey: input.storageKey,
           mediaType: input.mediaType,
           sizeBytes: String(input.sizeBytes),

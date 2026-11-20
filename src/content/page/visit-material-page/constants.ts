@@ -35,6 +35,9 @@ export const VISIT_MATERIAL_MESSAGES = {
   DELETE_FAILED: "Erro ao remover a página de materiais.",
   DUPLICATE_CATEGORY: (category: string): string =>
     `A categoria "${category}" aparece mais de uma vez na página.`,
+  SECTION_ALREADY_EXISTS: (category: string): string =>
+    `A página já tem a seção da categoria "${category}"; ela não é alterada ao acrescentar seções.`,
+  APPEND_FAILED: "Erro ao acrescentar as seções à página de materiais.",
   MISSING_FIELD_KEY: (title: string): string =>
     `fieldKey ausente para o item de mídia "${title}".`,
   MISSING_FILE: (title: string): string =>

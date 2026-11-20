@@ -2,6 +2,7 @@ import type { VisualConfig } from "../../dto/visual-config.dto";
 import { ContentAudience } from "../../enums/content-audience.enum";
 import { ContentStageType } from "../../enums/content-stage-type.enum";
 import { AUDIENCE_PROFILES } from "./audience-profiles.constants";
+import { assignVerseCardLook } from "./verse-card-looks.constants";
 import { sensitiveWordsPrompt } from "./sensitive-words.constants";
 import { STAGE_OUTPUT_SCHEMAS } from "./stage-output-schemas";
 import {
@@ -87,6 +88,13 @@ export function buildStageRequest(
       profile,
       context.theme,
       context.visualConfig,
+      context.stageType === ContentStageType.VERSE_VISUALS
+        ? assignVerseCardLook(
+            context.audience,
+            `${context.theme}|${context.biblicalReferences}`,
+            context.previousVariants.length,
+          )
+        : null,
     ),
   ];
 

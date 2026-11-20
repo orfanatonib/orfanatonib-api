@@ -40,6 +40,7 @@ import {
 import {
   assertDependenciesReady,
   assertPackageCanProduce,
+  assertTrackNotPublished,
 } from "./content-package-rules.helpers";
 
 @Injectable()
@@ -65,6 +66,7 @@ export class ContentGenerationRepository {
       const { contentPackage, stage, trackStages } =
         await findStageContextOrFail(manager, input.packageId, input.stageId);
       assertPackageCanProduce(contentPackage);
+      assertTrackNotPublished(stage.track, contentPackage.status);
 
       const existingIdempotentJob = await jobRepo.findOne({
         where: { idempotencyKey: input.idempotencyKey },
@@ -380,6 +382,7 @@ export class ContentGenerationRepository {
         input.stageId,
       );
       assertPackageCanProduce(contentPackage);
+      assertTrackNotPublished(stage.track, contentPackage.status);
       const existing = await jobRepo.findOne({
         where: { idempotencyKey: input.idempotencyKey },
       });

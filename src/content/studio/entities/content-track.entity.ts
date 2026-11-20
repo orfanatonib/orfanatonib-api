@@ -30,6 +30,22 @@ export class ContentTrackEntity extends BaseEntity {
   @Column({ type: "smallint", unsigned: true, nullable: true })
   maximumAge: number | null;
 
+  /**
+   * Quando a categoria foi publicada na página de Materiais de Visita; `null` enquanto não foi. Categoria publicada
+   * fica travada: não se edita, gera, conclui nem reenvia (a página já mostra essa versão aprovada).
+   */
+  @Column({ name: "published_at", type: "datetime", nullable: true })
+  publishedAt: Date | null;
+
+  /** Publicação (`content_publications`) que levou a categoria à página. */
+  @Column({
+    name: "publication_id",
+    type: "varchar",
+    length: 36,
+    nullable: true,
+  })
+  publicationId: string | null;
+
   @ManyToOne(
     () => ContentPackageEntity,
     (contentPackage) => contentPackage.tracks,

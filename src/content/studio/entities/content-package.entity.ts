@@ -19,6 +19,10 @@ export class ContentPackageEntity extends BaseEntity {
   @Column({ type: "text", nullable: true })
   canonicalNotes: string | null;
 
+  /** Imagem de apresentação do material (card em Materiais de Visita). Não passa por revisão; pode ser refeita. */
+  @Column({ type: "varchar", length: 500, nullable: true })
+  coverImageUrl: string | null;
+
   @Column({ type: "varchar", length: 64 })
   templateCatalogVersion: string;
 

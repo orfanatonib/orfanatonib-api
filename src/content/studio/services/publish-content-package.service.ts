@@ -118,10 +118,17 @@ export class PublishContentPackageService {
       );
     }
 
-    if (!page) {
+    // Primeira publicação: cria a página. Seguintes: acrescenta só as categorias que a página ainda não tem.
+    const missing = page
+      ? snapshot.tracks.filter(
+          (track) => !page?.categories.includes(track.audience),
+        )
+      : snapshot.tracks;
+    if (missing.length > 0) {
+      const toPublish = { ...snapshot, tracks: missing };
       let documents: PublicationDocumentFile[];
       try {
-        documents = await this.documents.execute(snapshot);
+        documents = await this.documents.execute(toPublish);
       } catch (error) {
         this.logger.error(
           `Render dos documentos do material ${snapshot.packageId} falhou`,
@@ -134,7 +141,9 @@ export class PublishContentPackageService {
         );
       }
       try {
-        page = await this.createPage.execute(snapshot, testament, documents);
+        page = page
+          ? await this.createPage.append(page.id, toPublish, documents)
+          : await this.createPage.execute(toPublish, testament, documents);
       } catch (error) {
         this.logger.error(
           `Criação da página do material ${snapshot.packageId} falhou`,
@@ -142,6 +151,7 @@ export class PublishContentPackageService {
         );
         const recovered = await this.recoverPageAfterFailure(
           snapshot.packageId,
+          snapshot.tracks.map((track) => track.audience),
         );
         if (recovered === undefined)
           return this.markUncertain(publication, null);
@@ -154,6 +164,14 @@ export class PublishContentPackageService {
         page = recovered;
       }
     }
+
+    // Sem categoria a acrescentar a página existe; com categoria a criar ela acaba de ser criada. Defesa de tipo.
+    if (!page)
+      return this.publications.fail(
+        publication.id,
+        snapshot.packageId,
+        ContentPublicationErrorCode.PAGE_CREATION_FAILED,
+      );
 
     try {
       const completed = await this.publications.complete(
@@ -171,12 +189,19 @@ export class PublishContentPackageService {
     }
   }
 
-  /** `undefined` = could not check (uncertain); `null` = no page exists; otherwise the page that exists. */
+  /**
+   * `undefined` = could not check (uncertain); `null` = a página não tem (todas) as categorias desta publicação;
+   * otherwise the page that already has them.
+   */
   private async recoverPageAfterFailure(
     packageId: string,
+    audiences: readonly string[],
   ): Promise<PublishedPageRef | null | undefined> {
     try {
-      return await this.pages.findBySourcePackageId(packageId);
+      const page = await this.pages.findBySourcePackageId(packageId);
+      return page && audiences.every((a) => page.categories.includes(a))
+        ? page
+        : null;
     } catch {
       return undefined;
     }
@@ -210,7 +235,9 @@ export class PublishContentPackageService {
       const page = await this.pages.findBySourcePackageId(
         publication.packageId,
       );
-      if (page)
+      // Publicação anterior ao recurso (sem `audiences`) levava o pacote inteiro: basta a página existir.
+      const audiences = publication.audiences ?? [];
+      if (page && audiences.every((a) => page.categories.includes(a)))
         return await this.publications.complete(
           publication.id,
           publication.packageId,

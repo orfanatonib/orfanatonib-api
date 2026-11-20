@@ -14,11 +14,16 @@ import type {
 } from "../content-publication.types";
 import { ContentPackageEntity } from "../entities/content-package.entity";
 import { ContentPublicationEntity } from "../entities/content-publication.entity";
+import { ContentTrackEntity } from "../entities/content-track.entity";
 import { ContentPackageStatus } from "../enums/content-package-status.enum";
 import { ContentPublicationErrorCode } from "../enums/content-publication-error-code.enum";
 import { ContentPublicationStatus } from "../enums/content-publication-status.enum";
 import { ContentPublicationTargetType } from "../enums/content-publication-target-type.enum";
-import { ContentStageStatus } from "../enums/content-stage-status.enum";
+import {
+  areAllTracksPublishedAfter,
+  publishableTracks,
+  statusAfterPublication,
+} from "../utils/content-publication-tracks.util";
 import { canTransitionContentPackage } from "../utils/content-state-transition.util";
 import {
   findPackageGraphOrFail,
@@ -65,8 +70,9 @@ export class ContentPublicationRepository {
     return this.dataSource.transaction(async (manager) => {
       const packageRepo = manager.getRepository(ContentPackageEntity);
       const locked = await lockPackageOrFail(manager, packageId);
+      // O que decide é haver categoria aprovada e não publicada (abaixo); o status do pacote só não pode ser de
+      // encerramento/outra publicação em andamento.
       if (
-        locked.status !== ContentPackageStatus.READY_FOR_PUBLICATION ||
         !canTransitionContentPackage(
           locked.status,
           ContentPackageStatus.PUBLISHING,
@@ -79,27 +85,24 @@ export class ContentPublicationRepository {
 
       const graph = await findPackageGraphOrFail(packageRepo, packageId);
       const tracks = graph.tracks ?? [];
-      const stages = tracks.flatMap((track) => track.stages ?? []);
-      const required = stages.filter((stage) => stage.required);
-      if (
-        required.length === 0 ||
-        required.some(
-          (stage) =>
-            stage.status !== ContentStageStatus.APPROVED ||
-            !stage.currentVersionId,
-        )
-      ) {
+      // A publicação é por categoria: leva as aprovadas e ainda não publicadas; as demais seguem o seu caminho.
+      const publishable = publishableTracks(tracks, locked.status);
+      if (publishable.length === 0) {
         throw new ResourceConflictException(
           CONTENT_PUBLICATION_MESSAGES.STAGES_NOT_APPROVED,
         );
       }
+      const audiences = publishable.map((track) => track.audience);
 
       locked.status = ContentPackageStatus.PUBLISHING;
       await packageRepo.save(locked);
 
       const approvedVersions: Record<string, string> = {};
-      for (const stage of required)
-        approvedVersions[stage.id] = stage.currentVersionId as string;
+      for (const track of publishable)
+        for (const stage of (track.stages ?? []).filter(
+          (item) => item.required,
+        ))
+          approvedVersions[stage.id] = stage.currentVersionId as string;
 
       const publication = await manager
         .getRepository(ContentPublicationEntity)
@@ -110,6 +113,7 @@ export class ContentPublicationRepository {
             targetType: ContentPublicationTargetType.VISIT_MATERIAL_PAGE,
             status: ContentPublicationStatus.PUBLISHING,
             approvedVersions,
+            audiences,
             assetId: null,
             visitMaterialPageId: null,
             errorCode: null,
@@ -123,20 +127,33 @@ export class ContentPublicationRepository {
         theme: graph.theme,
         biblicalReferences: graph.biblicalReferences,
         canonicalObjective: graph.canonicalObjective,
-        tracks: [...tracks]
+        coverImageUrl: graph.coverImageUrl ?? null,
+        tracks: [...publishable]
           .sort((a, b) => a.minimumAge - b.minimumAge)
           .map((track) => ({
             audience: track.audience,
             audienceName: track.audienceName,
             minimumAge: track.minimumAge,
             maximumAge: track.maximumAge,
+            stages: (track.stages ?? [])
+              .filter((stage) => stage.required)
+              .sort((a, b) => a.position - b.position)
+              .map((stage) => ({ id: stage.id, stageType: stage.stageType })),
           })),
+        // O material completo só existe quando, depois desta publicação, todas as categorias estão na página.
+        includeCompleteMaterial:
+          tracks.length > 1 &&
+          areAllTracksPublishedAfter(tracks, locked.status, audiences),
       };
       return { publication, snapshot };
     });
   }
 
-  /** PUBLISHING -> PUBLISHED on both the package and the publication, atomically. */
+  /**
+   * Fim da publicação, atomicamente: marca as categorias publicadas (travando-as), grava a publicação como PUBLISHED e
+   * leva o pacote a PUBLISHED (todas as categorias na página) ou de volta ao caminho das que faltam.
+   * Publicação anterior ao recurso (`audiences` nulo) levava o pacote inteiro.
+   */
   async complete(
     publicationId: string,
     packageId: string,
@@ -145,27 +162,37 @@ export class ContentPublicationRepository {
     return this.dataSource.transaction(async (manager) => {
       const packageRepo = manager.getRepository(ContentPackageEntity);
       const publicationRepo = manager.getRepository(ContentPublicationEntity);
+      const trackRepo = manager.getRepository(ContentTrackEntity);
       const locked = await lockPackageOrFail(manager, packageId);
       const publication = await publicationRepo.findOne({
         where: { id: publicationId },
       });
       if (!publication)
         throw new ResourceNotFoundException("Publicação não encontrada");
-      if (
-        !canTransitionContentPackage(
-          locked.status,
-          ContentPackageStatus.PUBLISHED,
-        )
-      ) {
+
+      const graph = await findPackageGraphOrFail(packageRepo, packageId);
+      const tracks = graph.tracks ?? [];
+      const published = publication.audiences ?? tracks.map((t) => t.audience);
+      const now = new Date();
+      for (const track of tracks) {
+        if (published.includes(track.audience) && !track.publishedAt) {
+          track.publishedAt = now;
+          track.publicationId = publication.id;
+          await trackRepo.save(track);
+        }
+      }
+
+      const next = statusAfterPublication(tracks, locked.status, published);
+      if (!canTransitionContentPackage(locked.status, next)) {
         throw new ResourceConflictException(
           CONTENT_PUBLICATION_MESSAGES.PACKAGE_NOT_READY(locked.status),
         );
       }
-      locked.status = ContentPackageStatus.PUBLISHED;
+      locked.status = next;
       await packageRepo.save(locked);
       publication.status = ContentPublicationStatus.PUBLISHED;
       publication.visitMaterialPageId = visitMaterialPageId;
-      publication.publishedAt = new Date();
+      publication.publishedAt = now;
       publication.errorCode = null;
       return publicationRepo.save(publication);
     });

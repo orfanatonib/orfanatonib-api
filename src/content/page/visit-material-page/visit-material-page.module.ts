@@ -11,10 +11,12 @@ import { VisitMaterialSectionRepository } from "./repositories/visit-material-se
 import { VisitMaterialSectionsService } from "./services/visit-material-sections.service";
 import { VisitMaterialsPageRepository } from "./repositories/visit-material-page.repository";
 import { CreateVisitMaterialPageService } from "./services/create-visit-material-page.service";
+import { AppendVisitMaterialSectionsService } from "./services/append-visit-material-sections.service";
 import { GetVisitMaterialPageService } from "./services/get-visit-material-page.service";
 import { UpdateVisitMaterialPageService } from "./services/update-visit-material-page.service";
 import { DeleteVisitMaterialPageService } from "./services/delete-visit-material-page.service";
 import { SetCurrentVisitMaterialPageService } from "./services/set-current-visit-material-page.service";
+import { SetVisitMaterialPageCoverService } from "./services/set-visit-material-page-cover.service";
 import { VisitMaterialMediaService } from "./services/visit-material-media.service";
 
 @Module({
@@ -34,15 +36,19 @@ import { VisitMaterialMediaService } from "./services/visit-material-media.servi
     VisitMaterialSectionRepository,
     VisitMaterialSectionsService,
     CreateVisitMaterialPageService,
+    AppendVisitMaterialSectionsService,
     GetVisitMaterialPageService,
     UpdateVisitMaterialPageService,
     DeleteVisitMaterialPageService,
     SetCurrentVisitMaterialPageService,
+    SetVisitMaterialPageCoverService,
   ],
   exports: [
     TypeOrmModule,
     CreateVisitMaterialPageService,
+    AppendVisitMaterialSectionsService,
     GetVisitMaterialPageService,
+    SetVisitMaterialPageCoverService,
   ],
 })
 export class VisitMaterialsPageModule {}

@@ -101,7 +101,7 @@ export const AUDIENCE_PROFILES: Readonly<
       "Letras enormes e arredondadas, poucas palavras por cartão, cores suaves e fundo liso.",
     verseFixation:
       "Brincadeira sensorial de colo e musicalidade em que o cuidador repete o versículo (ou uma frase-síntese dele) cantando, balançando, batendo palminhas ou fazendo gestos. O bebê participa pelo corpo; o cuidador memoriza pela repetição.",
-    game: "Brincadeira sensorial e de vínculo para o colo ou o tapete: esconde-esconde com pano, cantiga com gestos, balançar no colo, cesto de objetos macios e grandes, espelho inquebrável, chocalho grande. Dura poucos minutos e pode ser repetida.",
+    game: "Brincadeira sensorial e de vínculo para o colo ou o tapete: cantiga com gestos, balançar no colo, esconde-esconde com as mãos, espelho inquebrável, chocalho grande de tecido, fita de cetim na mão do adulto, cesto de objetos macios e grandes, bola macia grande, fantoche de dedo grande (são só exemplos: invente, sem repetir sempre o mesmo objeto). Dura poucos minutos e pode ser repetida.",
     gameForbidden:
       "competição, tempo cronometrado, placar, correria, objetos pequenos que caibam na boca, sons altos ou luzes fortes, fila ou espera de vez",
     adaptations: {

@@ -96,7 +96,7 @@ export const AUDIENCE_VISUAL_ART: Readonly<
     verseCardStyle:
       "Cartão de versículo para bebês: balões de letra fofos, cores de doce e muito carinho, pensado para o cuidador mostrar e repetir cantando.",
     funInfographicStyle:
-      "Infográfico vertical (retrato, A4) muito simples e acolhedor, no traço fofo e arredondado do público: poucos painéis grandes (no máximo quatro), cada um com UM gesto de carinho entre uma mulher cuidadora genérica e um bebê genérico (colo, cantiga, bolhas, pano). Texto mínimo e grande: título e passos de uma ou duas palavras. Cores suaves, sem competição, placar ou correria na arte.",
+      "Infográfico vertical (retrato, A4) muito simples e acolhedor, no traço fofo e arredondado do público: poucos painéis grandes (no máximo quatro), cada um com UM gesto de carinho entre uma mulher cuidadora genérica e um bebê genérico (colo, cantiga, balanço, um objeto macio e grande). Texto mínimo e grande: título e passos de uma ou duas palavras. Cores suaves, sem competição, placar ou correria na arte.",
     verseCardCount: { min: 1, max: 2 },
     verseCardWords: { min: 1, max: 5 },
   },

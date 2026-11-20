@@ -8,6 +8,7 @@ import {
   VersionColumn,
 } from "typeorm";
 
+import { ContentAudience } from "../enums/content-audience.enum";
 import { ContentPublicationStatus } from "../enums/content-publication-status.enum";
 import { ContentPublicationTargetType } from "../enums/content-publication-target-type.enum";
 import { ContentAssetEntity } from "./content-asset.entity";
@@ -39,6 +40,13 @@ export class ContentPublicationEntity extends BaseEntity {
 
   @Column({ type: "json" })
   approvedVersions: Record<string, string>;
+
+  /**
+   * Categorias levadas à página por esta publicação (a publicação é incremental: BABY primeiro, as demais depois).
+   * `null` = publicação anterior a este recurso, que sempre levava o pacote inteiro.
+   */
+  @Column({ type: "json", nullable: true })
+  audiences: ContentAudience[] | null;
 
   @Column({ name: "asset_id", type: "varchar", length: 36, nullable: true })
   assetId: string | null;

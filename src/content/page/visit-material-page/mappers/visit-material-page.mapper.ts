@@ -3,6 +3,7 @@ import {
   MediaItemEntity,
   MediaType,
 } from "src/shared/media/media-item/media-item.entity";
+import { VISIT_MATERIAL_ROUTE_CARD_IMAGE_URL } from "../constants";
 import { VisitMaterialsPageEntity } from "../entities/visit-material-page.entity";
 import { TestamentType } from "../enums/testament-type.enum";
 import { VISIT_MATERIAL_CATEGORY_ORDER } from "../enums/visit-material-category.enum";
@@ -23,6 +24,11 @@ const toRouteDto = (route: RouteEntity): VisitRouteResponseDTO => ({
   type: route.type,
   public: route.public,
 });
+
+const coverImageOf = (route: RouteEntity): string | null =>
+  route.image && route.image !== VISIT_MATERIAL_ROUTE_CARD_IMAGE_URL
+    ? route.image
+    : null;
 
 const toMediaDto = (item: MediaItemEntity): VisitMediaItemResponseDTO => ({
   id: item.id,
@@ -82,6 +88,7 @@ export const toVisitMaterialsPageResponseDto = (
   description: entity.description,
   currentWeek: entity.currentWeek,
   route: toRouteDto(entity.route),
+  coverImageUrl: coverImageOf(entity.route),
   sections: sortedSections(sections),
   videos: bucket(mediaItems, MediaType.VIDEO),
   documents: bucket(mediaItems, MediaType.DOCUMENT),

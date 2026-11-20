@@ -22,6 +22,7 @@ describe("toVisitMaterialsPageResponseDto", () => {
       description: "Descrição",
       testament: TestamentType.OLD_TESTAMENT,
       currentWeek: false,
+      coverImageUrl: "https://example.test/card.png",
       route: {
         id: "route-id",
         path: "materiais_visita_semana-1",

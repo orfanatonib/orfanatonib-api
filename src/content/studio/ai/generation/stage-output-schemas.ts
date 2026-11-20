@@ -243,6 +243,9 @@ export const STAGE_OUTPUT_SCHEMAS: Readonly<Record<ContentStageType, Schema>> =
       splitRationale: str(
         "Por que o versículo foi dividido assim, em uma ou duas frases.",
       ),
+      lookId: str(
+        'Identificador da direção visual atribuída a esta geração (copie exatamente o id indicado no prompt; "padrao" quando o prompt não atribuir nenhuma).',
+      ),
       styleDirection: str(
         "Fundo e paleta únicos (até três cores) escolhidos a partir do sentido do versículo.",
       ),

@@ -1,6 +1,10 @@
 import { createHash } from "crypto";
 
-import { Injectable, UnprocessableEntityException } from "@nestjs/common";
+import {
+  Injectable,
+  Logger,
+  UnprocessableEntityException,
+} from "@nestjs/common";
 
 import { ResourceNotFoundException } from "src/common/exceptions";
 import { ContentAudience } from "../enums/content-audience.enum";
@@ -16,7 +20,11 @@ import {
 } from "./stage-document.builder";
 import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { plannedImageSlots } from "../services/get-stage-images.service";
-import { ContentAssetRepository } from "../repositories/content-asset.repository";
+import {
+  ContentAssetRepository,
+  STAGE_PDF_SLOT,
+} from "../repositories/content-asset.repository";
+import { isDuplicateKeyError } from "../utils/content-publication.util";
 import { imageDimensions } from "../ai/utils/image-processing.util";
 import { StudioDocxService, type StudioDocxStage } from "./studio-docx.service";
 import type { TiptapDocument } from "./tiptap.types";
@@ -33,7 +41,19 @@ export interface StudioExportFile {
 }
 
 /** Teto de cada imagem lida do bucket para a exportação (as geradas ficam bem abaixo). */
+/** Etapas só de imagens (uma por página) e etapas com documento + imagem compilada (a mesma regra do `render`). */
+const IMAGE_ONLY_STAGE_TYPES: readonly ContentStageType[] = [
+  ContentStageType.LESSON_VISUALS,
+  ContentStageType.VERSE_VISUALS,
+];
+const FUN_STAGE_TYPES: readonly ContentStageType[] = [
+  ContentStageType.VERSE_FIXATION,
+  ContentStageType.STANDARD_GAME,
+];
+
 const MAX_EXPORT_IMAGE_BYTES = 15 * 1024 * 1024;
+const MAX_STORED_PDF_BYTES = 80 * 1024 * 1024;
+const STAGE_PDF_MEDIA_TYPE = "application/pdf";
 
 const CONTENT_TYPES: Record<StudioExportFormat, string> = {
   [StudioExportFormat.DOCX]:
@@ -68,6 +88,10 @@ const ageRange = (track: ContentTrackEntity): string =>
  */
 @Injectable()
 export class StudioExportService {
+  private readonly logger = new Logger(StudioExportService.name);
+  /** PDFs que estão sendo montados agora (etapa + conteúdo): quem chega junto espera e reaproveita, sem montar de novo. */
+  private readonly inflightPdf = new Map<string, Promise<StudioExportFile>>();
+
   constructor(
     private readonly packages: ContentPackagesRepository,
     private readonly docx: StudioDocxService,
@@ -88,17 +112,178 @@ export class StudioExportService {
     const stage = track?.stages?.find((item) => item.id === stageId);
     if (!track || !stage)
       throw new ResourceNotFoundException("Etapa do material não encontrada");
-    return this.render(
-      contentPackage,
-      [{ track, stage }],
-      `${track.audienceName} · ${ageRange(track)}`,
-      format,
-      [
-        contentPackage.theme,
-        track.audienceName,
-        STAGE_DOCUMENT_TITLES[stage.stageType],
-      ],
-    );
+    const fileNameParts = [
+      contentPackage.theme,
+      track.audienceName,
+      STAGE_DOCUMENT_TITLES[stage.stageType],
+    ];
+    // PDF de etapa: a versão (e as imagens) não mudam, então o PDF é montado UMA vez e guardado; depois só se lê.
+    const contentKey =
+      format === StudioExportFormat.PDF ? await this.stagePdfKey(stage) : null;
+    if (contentKey && stage.currentVersion) {
+      const stored = await this.readStoredPdf(
+        stage.currentVersion.id,
+        contentKey,
+      );
+      if (stored)
+        return {
+          buffer: stored,
+          fileName: exportFileName(fileNameParts, format),
+          contentType: CONTENT_TYPES[format],
+        };
+    }
+    const build = async (): Promise<StudioExportFile> => {
+      const file = await this.render(
+        contentPackage,
+        [{ track, stage }],
+        `${track.audienceName} · ${ageRange(track)}`,
+        format,
+        fileNameParts,
+      );
+      if (contentKey && stage.currentVersion)
+        await this.storePdf(contentPackage.id, stage, contentKey, file.buffer);
+      return file;
+    };
+    if (!contentKey) return build();
+    // Dois pedidos juntos (ex.: a pré-geração do envio e alguém abrindo a prévia) montam UM só PDF.
+    const flightKey = `${stage.id}:${contentKey}`;
+    const running = this.inflightPdf.get(flightKey);
+    if (running) return running;
+    const work = build();
+    this.inflightPdf.set(flightKey, work);
+    try {
+      return await work;
+    } finally {
+      this.inflightPdf.delete(flightKey);
+    }
+  }
+
+  /**
+   * Gera (e guarda) os PDFs das etapas, um de cada vez, sem derrubar quem chamou: usado quando a categoria vai para a
+   * revisão, para o revisor abrir um PDF que já existe. Falha de uma etapa é registrada e o PDF sai na 1ª abertura.
+   */
+  async pregenerateStagePdfs(
+    packageId: string,
+    stageIds: readonly string[],
+  ): Promise<void> {
+    for (const stageId of stageIds) {
+      try {
+        await this.exportStage(packageId, stageId, StudioExportFormat.PDF);
+      } catch (error) {
+        this.logger.error(
+          `Não foi possível pré-gerar o PDF da etapa ${stageId} do material ${packageId}`,
+          error,
+        );
+      }
+    }
+  }
+
+  /**
+   * Chave de conteúdo do PDF de UMA etapa (versão + imagens), calculada só com dados do banco: sem baixar imagem nem
+   * montar documento. `null` quando não há o que exportar. É a mesma chave que o conversor usa como cache.
+   */
+  private async stagePdfKey(stage: ContentStageEntity): Promise<string | null> {
+    const version = stage.currentVersion;
+    if (!version) return null;
+    const imageStage = IMAGE_ONLY_STAGE_TYPES.includes(stage.stageType);
+    const funStage = FUN_STAGE_TYPES.includes(stage.stageType);
+    let key: string;
+    if (imageStage || funStage) {
+      const fingerprint = await this.imageFingerprint(stage);
+      if (imageStage) {
+        if (!fingerprint) return null;
+        key = `${stage.id}:${version.id}:${fingerprint}`;
+      } else {
+        if (!this.stageDocument(stage) && !fingerprint) return null;
+        key = `${stage.id}:${version.id}:${version.contentChecksum}:${fingerprint ?? ""}`;
+      }
+    } else {
+      if (!this.stageDocument(stage)) return null;
+      key = `${stage.id}:${version.id}:${version.contentChecksum}`;
+    }
+    return createHash("sha256").update(key).digest("hex");
+  }
+
+  /** Impressão digital das imagens planejadas da etapa (checksums, na ordem do plano), sem baixar nenhuma. */
+  private async imageFingerprint(
+    stage: ContentStageEntity,
+  ): Promise<string | null> {
+    const version = stage.currentVersion;
+    if (!version) return null;
+    const stored = await this.assets.listForVersion(version.id);
+    const bySlot = new Map(stored.map((asset) => [asset.slot, asset]));
+    const checksums = plannedImageSlots(
+      stage.stageType as ContentStageType,
+      version.structuredContent ?? {},
+    )
+      .map((item) => bySlot.get(item.slot)?.checksum)
+      .filter((checksum): checksum is string => Boolean(checksum));
+    return checksums.length === 0
+      ? null
+      : createHash("sha256").update(checksums.join(",")).digest("hex");
+  }
+
+  private async readStoredPdf(
+    versionId: string,
+    contentKey: string,
+  ): Promise<Buffer | null> {
+    try {
+      const asset = await this.assets.findStagePdf(versionId, contentKey);
+      if (!asset) return null;
+      return Buffer.from(
+        await this.s3.downloadOwned(
+          this.s3.buildUrl(asset.storageKey),
+          MAX_STORED_PDF_BYTES,
+        ),
+      );
+    } catch (error) {
+      // PDF guardado ilegível: monta de novo (e guarda outra vez).
+      this.logger.warn(
+        `PDF guardado indisponível (${String(error)}); será refeito`,
+      );
+      return null;
+    }
+  }
+
+  private async storePdf(
+    packageId: string,
+    stage: ContentStageEntity,
+    contentKey: string,
+    buffer: Buffer,
+  ): Promise<void> {
+    const version = stage.currentVersion;
+    if (!version) return;
+    try {
+      const storageKey = `${this.s3.getEnvironment()}/content-studio/${packageId}/${stage.id}/${version.id}/stage-pdf-${contentKey.slice(0, 12)}.pdf`;
+      await this.s3.putObject(storageKey, buffer, STAGE_PDF_MEDIA_TYPE);
+      const stale = await this.assets.replaceStagePdf({
+        packageId,
+        stageId: stage.id,
+        versionId: version.id,
+        slot: STAGE_PDF_SLOT,
+        storageKey,
+        mediaType: STAGE_PDF_MEDIA_TYPE,
+        sizeBytes: buffer.length,
+        checksum: contentKey,
+      });
+      for (const key of stale) {
+        try {
+          await this.s3.deleteKey(key);
+        } catch (error) {
+          this.logger.warn(
+            `Não foi possível apagar o PDF antigo ${key}: ${String(error)}`,
+          );
+        }
+      }
+    } catch (error) {
+      // Outro processo guardou este mesmo PDF primeiro: está guardado, não é erro.
+      if (isDuplicateKeyError(error)) return;
+      // O PDF segue servido (montado agora); só não ficou guardado: a próxima abertura tenta de novo.
+      this.logger.error(
+        `Não foi possível guardar o PDF da etapa ${stage.id}`,
+        error,
+      );
+    }
   }
 
   /** Documento da versão atual da etapa (para o editor): o editado à mão ou, se não houver, o montado dos campos. */

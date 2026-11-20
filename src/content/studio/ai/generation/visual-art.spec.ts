@@ -1,3 +1,4 @@
+import { VERSE_CARD_LOOK_VARIANTS } from "./verse-card-looks.constants";
 import { ContentAudience } from "../../enums/content-audience.enum";
 import { ContentStageType } from "../../enums/content-stage-type.enum";
 import { fakeStageContent } from "./fake-stage-content";
@@ -58,7 +59,13 @@ describe("direção de arte por público", () => {
     "%s: cartões do versículo usam o estilo do público",
     (a) => {
       const text = request(a, ContentStageType.VERSE_VISUALS);
-      expect(text).toContain(AUDIENCE_VISUAL_ART[a].verseCardStyle);
+      // Adolescentes e Adultos recebem uma direção visual (lookId); as demais categorias, o visual único.
+      const variants = VERSE_CARD_LOOK_VARIANTS[a];
+      expect(text).toContain(
+        variants
+          ? variants.find((item) => text.includes(item.style))!.style
+          : AUDIENCE_VISUAL_ART[a].verseCardStyle,
+      );
       expect(text).toContain("FOLHA A4 SEM BORDA");
     },
   );
