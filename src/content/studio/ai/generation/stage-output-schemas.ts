@@ -1,4 +1,5 @@
 import { ContentStageType } from "../../enums/content-stage-type.enum";
+import { CutoutCategory, VisualItemSize } from "./visual-art.constants";
 
 type Schema = Record<string, unknown>;
 
@@ -40,144 +41,239 @@ const memoryVerse = obj({
 
 const imageIdea = obj({
   id: str("Identificador sequencial: visual-01, visual-02…"),
-  title: str("Título curto do apoio visual."),
+  title: str("Título curto do visual."),
   description: str(
     "Descrição objetiva do que mostrar, usada depois para criar a imagem (sem texto dentro da imagem).",
   ),
   altText: str("Texto alternativo para acessibilidade."),
   sourceExcerpt: str(
-    "Trecho da lição aprovada que este visual ilustra; vazio só em apoios genéricos.",
+    "Trecho da lição aprovada que este visual ilustra; vazio só em elementos neutros de céu e natureza.",
+  ),
+  category: {
+    type: "string",
+    enum: Object.values(CutoutCategory),
+    description:
+      "Categoria do elemento no kit de recortes; SCENE quando o formato do público é de cenas completas.",
+  },
+  size: {
+    type: "string",
+    enum: Object.values(VisualItemSize),
+    description: "Tamanho relativo do elemento (LARGE nas cenas completas).",
+  },
+  variantOf: str(
+    "id do item de que este é variante de pose ou estado; vazio quando não for variante.",
+  ),
+  layoutPlan: str(
+    "Kit: tamanho relativo e posição de cada elemento na prancha. Cena: o enquadramento da imagem.",
+  ),
+  elements: {
+    type: "array",
+    description:
+      "Kit de recortes: um elemento por peça da prancha. Cenas completas: lista vazia.",
+    items: obj({
+      label: str("Legenda curta da peça."),
+      description: str("O que a peça mostra."),
+      category: {
+        type: "string",
+        enum: Object.values(CutoutCategory).filter(
+          (value) => value !== CutoutCategory.SCENE,
+        ),
+        description: "Categoria da peça.",
+      },
+      size: {
+        type: "string",
+        enum: Object.values(VisualItemSize),
+        description: "Tamanho relativo.",
+      },
+      storyEvidence: str(
+        "Trecho literal da lição que justifica a peça; vazio só em céu e natureza neutros.",
+      ),
+      variantOf: str(
+        "Rótulo da peça de que esta é variante; vazio se não for.",
+      ),
+    }),
+  },
+  imagePrompt: str(
+    "Prompt autossuficiente para o gerador de imagens: só o que entra nesta imagem, com a aparência fixa de quem aparece e a direção de arte; sem citar outras imagens.",
   ),
 });
 
+const verseCard = obj({
+  id: str("Identificador sequencial: verso-01, verso-02…"),
+  text: str(
+    "Trecho exato do versículo neste cartão, sem alterar nenhuma palavra.",
+  ),
+  concept: str(
+    "De seis a dez ilustrações minúsculas e variadas, do vocabulário da categoria, ligadas ao sentido do trecho (os 10% restantes da imagem); nunca pessoas ou cenas.",
+  ),
+  imagePrompt: str(
+    "Prompt autossuficiente do cartão: cita o texto exatamente como está em text e descreve tipografia, paleta, fundo e detalhes do estilo do público.",
+  ),
+  altText: str("Texto alternativo para acessibilidade."),
+});
+
+/** Brincadeira e fixação do versículo compartilham a forma do documento de uma página. */
+const funCore = {
+  name: str("Nome curto, de até 5 palavras, com cara de jogo."),
+  objective: str("Objetivo em uma frase."),
+  funMechanics: strList(
+    "Duas ou três mecânicas divertidas, de até 6 palavras cada.",
+  ),
+  materials: strList("Até 6 materiais baratos e seguros, com quantidade."),
+  preparation: str("Preparação em no máximo duas frases."),
+  steps: strList("Passo a passo: cada item é um comando curto."),
+  safetyRules: strList(
+    "Até 4 regras curtas de segurança, incluindo como se vence ou se encerra.",
+  ),
+  durationMinutes: {
+    type: "integer",
+    description: "Duração prevista em minutos.",
+  },
+  ageAdaptations: strList(
+    "Exatamente duas frases: a simplificação para o grupo mais novo e o desafio extra para o mais velho, nesta ordem.",
+  ),
+  biblicalConnection: str(
+    "Princípio bíblico em até duas frases, para dizer depois de brincar.",
+  ),
+  stepTitles: strList(
+    "Título curto de cada passo, na mesma ordem e quantidade de steps (no máximo 5 palavras cada): vai escrito na imagem compilada, ao lado do número do passo.",
+  ),
+  closingPhrase: str(
+    "Frase curta de encerramento (no máximo 12 palavras) para o quadro final da imagem compilada.",
+  ),
+  imagePrompt: str(
+    "Prompt autossuficiente da imagem-resumo (compilado-01) para o gerador, no estilo do público, com os textos que vão escritos na arte.",
+  ),
+  visualSummary: str(
+    "Descrição da UMA imagem-resumo (compilado-01): materiais, preparação, passo a passo em painéis na ordem de leitura e encerramento, com pessoas genéricas do público; sem cenas bíblicas.",
+  ),
+};
+
+const funProperties = { centralMessage, ...funCore };
+
+/** Brincadeira: além do plano comum, o espaço que ocupa e (só para crianças) a segunda brincadeira, de 9 a 11 anos. */
+const gameCore = {
+  ...funCore,
+  spaceNeeded: str(
+    "Espaço que a brincadeira ocupa, curto (ex.: 'uma mesa', 'roda de 3 m × 3 m', 'um tapete de 2 m × 2 m'). Pequeno: nunca quadra, pátio ou percurso.",
+  ),
+};
+const gameProperties = {
+  centralMessage,
+  ...gameCore,
+  extraGames: {
+    type: "array",
+    description:
+      "Brincadeiras extras, cada uma com os mesmos campos da principal e DIFERENTE dela. Para crianças: exatamente uma, a de 9 a 11 anos (a principal é a de 3 a 8 anos). Para as demais categorias: lista vazia.",
+    items: obj(gameCore),
+  },
+};
+
 export const STAGE_OUTPUT_SCHEMAS: Readonly<Record<ContentStageType, Schema>> =
   {
-    [ContentStageType.CANONICAL_BASE]: obj({
-      centralMessage,
-      title: str("Título do tema em linguagem simples."),
-      biblicalReference: str("Passagem(ns) base, exatamente como informadas."),
-      memoryVerse,
-      keyEvents: strList(
-        "Acontecimentos essenciais da passagem, em ordem, em uma frase cada.",
-      ),
-      theologicalFocus: str(
-        "O que a passagem ensina sobre Deus, Jesus e a salvação, em até três frases.",
-      ),
-      audienceNotes: strList(
-        "Cuidados de linguagem e sensibilidade que valem para os quatro públicos (bebê, criança, adolescente, adulto).",
-      ),
-      reviewerNotes,
-    }),
-
     [ContentStageType.LESSON]: obj({
       centralMessage,
       title: str("Título da lição."),
-      biblicalReference: str("Passagem(ns) base."),
-      purpose: str(
-        "Propósito: o que este público deve compreender e viver. Curto e específico.",
+      biblicalReference: str("Passagem(ns) base, exatamente como informadas."),
+      characters: strList(
+        'PERSONAGENS: um item por personagem da história, no formato "Nome — contexto em uma frase".',
       ),
-      memoryVerse,
-      songs: strList(
-        "Sugestões de músicas simples adequadas ao público (vazio se não fizer sentido).",
+      locations: strList(
+        "LOCAIS: os lugares onde a história acontece, em nomes curtos (ex.: Israel, Ramá). Vazio só se a passagem não citar lugares.",
       ),
-      opening: str("Abertura participativa ligada ao cotidiano do público."),
-      principle: str("Explicação do princípio bíblico, com exemplo concreto."),
+      supportMaterials: strList(
+        'MATERIAIS DE APOIO: objetos simples e baratos no formato "Objeto — o que ele representa na história". Cada um é usado em uma marcação de ação.',
+      ),
+      icebreaker: str(
+        "QUEBRA-GELO: abertura participativa, com ao menos uma marcação de ação do condutor, ligada ao tema.",
+      ),
       story: {
         type: "array",
         description:
-          "Narrativa ou estudo, em blocos na ordem. Cada bloco tem um subtítulo curto e o texto.",
+          "HISTÓRIA BÍBLICA em blocos na ordem, cada um com subtítulo curto e o texto falado, com as marcações de ação nos momentos em que um material de apoio entra.",
         items: obj({
           heading: str("Subtítulo curto."),
           body: str("Texto do bloco, desenvolvido, sem Markdown."),
         }),
       },
       application: str(
-        "Aplicação prática e, quando couber, convite voluntário a seguir Jesus.",
+        "APLICAÇÃO E APELO, com convite voluntário, terminando com a oração entre aspas.",
       ),
       reviewQuestions: {
         type: "array",
-        description: "Perguntas de revisão com gabarito; vazio para bebês.",
+        description:
+          "LIÇÃO: perguntas com resposta, cobrindo fatos, ensino e objeto de apoio. Lista vazia para bebês.",
         items: obj({
           question: str("Pergunta."),
           answer: str("Resposta esperada."),
         }),
       },
-      closingPrayer: str("Oração final curta; vazio quando não solicitada."),
-      reviewerNotes,
-    }),
-
-    [ContentStageType.DISCUSSION]: obj({
-      centralMessage,
-      title: str("Título da discussão."),
-      introduction: str("Como abrir a conversa em um ou dois parágrafos."),
-      questions: {
-        type: "array",
-        description: "Perguntas em ordem crescente de profundidade.",
-        items: obj({
-          question: str("Pergunta aberta."),
-          purpose: str("O que a pergunta busca despertar."),
-          followUps: strList("Duas perguntas de aprofundamento, no máximo."),
-        }),
-      },
-      reflection: str("Fechamento reflexivo: o que levar para a semana."),
-      groupAgreements: strList(
-        "Combinados de respeito para a conversa (ex.: compartilhar é voluntário).",
+      memoryVerse,
+      verseOptions: strList(
+        'VERSÍCULOS: duas opções no formato "Opção N (foco em …): “texto” (Referência)"; a opção 1 é igual a memoryVerse.',
+      ),
+      visitObjectives: str(
+        'OBJETIVOS DA VISITA: duas ou três frases curtas, no estilo "Mostrar que com Deus podemos…. Mostrar que em Jesus podemos…. Deus tem propósito!", resumindo o que esta lição quer despertar nas pessoas.',
       ),
       reviewerNotes,
     }),
 
-    [ContentStageType.ACTIVITY]: obj({
+    [ContentStageType.LESSON_VISUALS]: obj({
       centralMessage,
-      name: str("Nome curto e acolhedor da atividade."),
-      objective: str("Objetivo em uma frase."),
-      materials: strList("Materiais baratos e seguros, com quantidade."),
-      preparation: str("Preparação em poucas frases."),
-      steps: strList("Passo a passo, cada item um comando curto."),
-      safetyRules: strList("Regras de segurança e cuidado."),
-      durationMinutes: {
-        type: "integer",
-        description: "Duração prevista em minutos.",
-      },
-      ageAdaptations: strList(
-        "Adaptações para facilitar ou aprofundar conforme a idade dentro do público.",
-      ),
-      biblicalConnection: str(
-        "Como a atividade se liga ao princípio da lição, em até duas frases.",
-      ),
-      reviewerNotes,
-    }),
-
-    [ContentStageType.VISUAL]: obj({
-      centralMessage,
-      title: str("Título do conjunto de apoios visuais."),
+      title: str("Título do conjunto de visuais da lição."),
       styleDirection: str(
-        "Direção de arte: estilo, paleta e tom adequados ao público.",
+        "Direção de arte: estilo, paleta e tom adequados ao público, iguais em todos os itens.",
+      ),
+      characterSheets: strList(
+        'Uma ficha por personagem ou animal que aparece: "Nome — idade aparente, pele, cabelo, roupas com cores, acessórios, altura relativa". Valem para todos os itens.',
       ),
       items: {
         type: "array",
-        description: "Apoios visuais em ordem.",
+        description:
+          "Visuais da lição em ordem (cenas ou elementos para recorte).",
         items: imageIdea,
       },
       reviewerNotes,
     }),
 
-    [ContentStageType.FACILITATOR_GUIDANCE]: obj({
+    [ContentStageType.VERSE_VISUALS]: obj({
       centralMessage,
-      overview: str("Visão geral da visita para quem vai conduzir."),
-      preparationChecklist: strList("Lista de preparação antes da visita."),
-      timeline: {
-        type: "array",
-        description: "Roteiro da visita com tempo estimado por momento.",
-        items: obj({
-          minutes: { type: "integer", description: "Minutos." },
-          moment: str("O que acontece neste momento."),
-        }),
-      },
-      tips: strList("Dicas práticas de condução."),
-      sensitivityNotes: strList(
-        "Cuidados de acolhimento para este público (sem expor histórias pessoais).",
+      title: str("Título dos cartões do versículo."),
+      verse: memoryVerse,
+      splitRationale: str(
+        "Por que o versículo foi dividido assim, em uma ou duas frases.",
       ),
-      followUp: str("Como acompanhar depois da visita."),
+      styleDirection: str(
+        "Fundo e paleta únicos (até três cores) escolhidos a partir do sentido do versículo.",
+      ),
+      palette: strList(
+        "Paleta única da sequência: de uma a três cores nomeadas.",
+      ),
+      cards: {
+        type: "array",
+        description:
+          "Um cartão por trecho, na ordem; juntos reconstroem exatamente o texto do versículo.",
+        items: verseCard,
+      },
+      referenceCard: obj({
+        text: str("Somente a referência completa, igual a verse.reference."),
+        imagePrompt: str(
+          "Prompt autossuficiente do cartão da referência, citando o texto exatamente.",
+        ),
+        altText: str("Texto alternativo para acessibilidade."),
+      }),
+      reviewerNotes,
+    }),
+
+    [ContentStageType.VERSE_FIXATION]: obj({
+      ...funProperties,
+      verse: memoryVerse,
+      evaluation: str("Como avaliar em uma frase, sem constrangimento."),
+      reviewerNotes,
+    }),
+
+    [ContentStageType.STANDARD_GAME]: obj({
+      ...gameProperties,
       reviewerNotes,
     }),
   };

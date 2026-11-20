@@ -87,3 +87,13 @@ export const formatDayBR = (value: string): string => {
     ? value
     : parsed.toLocaleDateString("pt-BR");
 };
+
+/** Dates are calendar days; a meeting and visit of the same schedule are filtered independently. */
+export const occurrenceInPeriod = (
+  occurrence: ScheduleOccurrence,
+  period: import("../dto/attendance-filters.dto").AttendancePeriodDto,
+): boolean =>
+  (!period.startDate ||
+    occurrence.date.slice(0, 10) >= period.startDate.slice(0, 10)) &&
+  (!period.endDate ||
+    occurrence.date.slice(0, 10) <= period.endDate.slice(0, 10));

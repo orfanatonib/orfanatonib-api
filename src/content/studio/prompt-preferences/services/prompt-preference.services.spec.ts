@@ -50,7 +50,7 @@ describe("prompt preferences", () => {
       lockVersion: 2,
     });
     expect(lesson.effectivePrompt).toContain("PERSONALIZAÇÃO DO ADMINISTRADOR");
-    const other = items.find((i) => i.stage === "ACTIVITY")!;
+    const other = items.find((i) => i.stage === "STANDARD_GAME")!;
     expect(other).toMatchObject({
       customPrompt: null,
       lockVersion: null,

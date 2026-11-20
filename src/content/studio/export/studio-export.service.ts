@@ -14,6 +14,10 @@ import {
   STAGE_DOCUMENT_TITLES,
   buildStageDocument,
 } from "./stage-document.builder";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { plannedImageSlots } from "../services/get-stage-images.service";
+import { ContentAssetRepository } from "../repositories/content-asset.repository";
+import { imageDimensions } from "../ai/utils/image-processing.util";
 import { StudioDocxService, type StudioDocxStage } from "./studio-docx.service";
 import type { TiptapDocument } from "./tiptap.types";
 
@@ -27,6 +31,9 @@ export interface StudioExportFile {
   fileName: string;
   contentType: string;
 }
+
+/** Teto de cada imagem lida do bucket para a exportação (as geradas ficam bem abaixo). */
+const MAX_EXPORT_IMAGE_BYTES = 15 * 1024 * 1024;
 
 const CONTENT_TYPES: Record<StudioExportFormat, string> = {
   [StudioExportFormat.DOCX]:
@@ -65,6 +72,8 @@ export class StudioExportService {
     private readonly packages: ContentPackagesRepository,
     private readonly docx: StudioDocxService,
     private readonly pdf: PdfLibreOfficeService,
+    private readonly assets: ContentAssetRepository,
+    private readonly s3: AwsS3Service,
   ) {}
 
   async exportStage(
@@ -194,6 +203,57 @@ export class StudioExportService {
     return document.content.length > 0 ? document : null;
   }
 
+  /** Imagens da versão atual, na ordem do plano, prontas para virar uma página cada. */
+  private async visualPages(stage: ContentStageEntity): Promise<{
+    pages: NonNullable<StudioDocxStage["imagePages"]>;
+    fingerprint: string;
+  } | null> {
+    const version = stage.currentVersion;
+    if (!version) return null;
+    const content = version.structuredContent as {
+      visualConfig?: { orientation?: string };
+    };
+    const verse = stage.stageType === ContentStageType.VERSE_VISUALS;
+    const fun =
+      stage.stageType === ContentStageType.VERSE_FIXATION ||
+      stage.stageType === ContentStageType.STANDARD_GAME;
+    const stored = await this.assets.listForVersion(version.id);
+    const bySlot = new Map(stored.map((asset) => [asset.slot, asset]));
+    const order = plannedImageSlots(
+      stage.stageType as ContentStageType,
+      version.structuredContent ?? {},
+    ).map((item) => item.slot);
+    const images: NonNullable<
+      StudioDocxStage["imagePages"]
+    >["images"][number][] = [];
+    const checksums: string[] = [];
+    for (const slot of order) {
+      const asset = bySlot.get(slot);
+      if (!asset) continue;
+      const bytes = await this.s3.downloadOwned(
+        this.s3.buildUrl(asset.storageKey),
+        MAX_EXPORT_IMAGE_BYTES,
+      );
+      const size = await imageDimensions(bytes);
+      images.push({ bytes, ...size });
+      checksums.push(asset.checksum);
+    }
+    if (images.length === 0) return null;
+    return {
+      pages: {
+        images,
+        // Cartões do versículo são sempre paisagem; os visuais da lição seguem a escolha do admin.
+        orientation:
+          fun || (!verse && content.visualConfig?.orientation === "PORTRAIT")
+            ? "PORTRAIT"
+            : "LANDSCAPE",
+      },
+      fingerprint: createHash("sha256")
+        .update(checksums.join(","))
+        .digest("hex"),
+    };
+  }
+
   private async render(
     contentPackage: ContentPackageEntity,
     entries: ReadonlyArray<{
@@ -208,12 +268,52 @@ export class StudioExportService {
     const sections: StudioDocxStage[] = [];
     const versionKeys: string[] = [];
     for (const { track, stage } of entries) {
+      // Visuais da lição e do versículo: sem documento de texto; só as imagens, uma por página.
+      if (
+        stage.stageType === ContentStageType.LESSON_VISUALS ||
+        stage.stageType === ContentStageType.VERSE_VISUALS
+      ) {
+        const pages = await this.visualPages(stage);
+        if (!pages) continue;
+        sections.push({
+          title: STAGE_DOCUMENT_TITLES[stage.stageType],
+          audienceName: track.audienceName,
+          document: { type: "doc", content: [] },
+          imagePages: pages.pages,
+        });
+        versionKeys.push(
+          `${stage.id}:${stage.currentVersion?.id}:${pages.fingerprint}`,
+        );
+        continue;
+      }
+      // Fixação e brincadeira: o documento E, no fim, a imagem compilada (infográfico) em uma página de retrato.
+      if (
+        stage.stageType === ContentStageType.VERSE_FIXATION ||
+        stage.stageType === ContentStageType.STANDARD_GAME
+      ) {
+        const doc = this.stageDocument(stage);
+        const pages = await this.visualPages(stage);
+        if (!doc && !pages) continue;
+        sections.push({
+          title: multiTrack
+            ? `${track.audienceName.toUpperCase()} · ${STAGE_DOCUMENT_TITLES[stage.stageType]}`
+            : STAGE_DOCUMENT_TITLES[stage.stageType],
+          audienceName: track.audienceName,
+          document: doc ?? { type: "doc", content: [] },
+          ...(pages ? { imagePages: pages.pages } : {}),
+        });
+        versionKeys.push(
+          `${stage.id}:${stage.currentVersion?.id}:${stage.currentVersion?.contentChecksum}:${pages?.fingerprint ?? ""}`,
+        );
+        continue;
+      }
       const document = this.stageDocument(stage);
       if (!document) continue;
       sections.push({
         title: multiTrack
           ? `${track.audienceName.toUpperCase()} · ${STAGE_DOCUMENT_TITLES[stage.stageType]}`
           : STAGE_DOCUMENT_TITLES[stage.stageType],
+        audienceName: track.audienceName,
         document,
       });
       versionKeys.push(

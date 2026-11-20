@@ -15,5 +15,7 @@ export enum AiProviderErrorKind {
   CONTEXT_LENGTH = "CONTEXT_LENGTH",
   /** O provedor recusou o pedido por parâmetros inválidos (4xx que não é nenhum dos acima). */
   INVALID_REQUEST = "INVALID_REQUEST",
+  /** A resposta foi cortada pelo limite de tokens de saída (o raciocínio do modelo conta nele). */
+  OUTPUT_TRUNCATED = "OUTPUT_TRUNCATED",
   UNKNOWN = "UNKNOWN",
 }

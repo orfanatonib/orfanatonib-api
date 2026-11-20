@@ -80,26 +80,22 @@ export class RegisterAttendanceService {
       memberUsersOf(team).map((user) => [user.id, user]),
     );
     const category = dto.category ?? ATTENDANCE_DEFAULT_CATEGORY;
-    const saved: AttendanceEntity[] = [];
-
-    for (const entry of dto.attendances) {
+    // Validate the entire payload before starting any writes.
+    const entries = dto.attendances.map((entry) => {
       const member = membersById.get(entry.memberId);
-      if (!member) {
+      if (!member)
         throw new RuleException(
           ATTENDANCE_MESSAGES.MEMBER_NOT_IN_TEAM(entry.memberId),
         );
-      }
-
-      saved.push(
-        await this.upsert(
-          member,
-          schedule,
-          category,
-          entry.type,
-          entry.comment,
-        ),
-      );
-    }
+      return {
+        member,
+        schedule,
+        category,
+        type: entry.type,
+        comment: entry.comment,
+      };
+    });
+    const saved = await this.repository.saveBatch(entries);
 
     this.logger.log(AttendanceLogs.TEAM_REGISTERED(dto.teamId, saved.length));
     return saved.map(toAttendanceResponseDto);

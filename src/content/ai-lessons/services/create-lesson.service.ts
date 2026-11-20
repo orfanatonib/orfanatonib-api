@@ -1,18 +1,18 @@
-import { Injectable } from '@nestjs/common';
-import { GenerateLessonRequestDto } from '../dto/generate-lesson-request.dto';
-import { LessonEntity } from '../entities/lesson.entity';
+import { Injectable } from "@nestjs/common";
+import { GenerateLessonRequestDto } from "../dto/generate-lesson-request.dto";
+import { LessonEntity } from "../entities/lesson.entity";
 import {
   getLessonStageOrder,
-  LessonCategory,
   LessonStageStatus,
   LessonStatus,
-} from '../enums/lesson.enums';
-import { LessonWorkflowAction } from '../enums/lesson-failure-code.enum';
-import { AiLessonsRepository } from '../repositories/ai-lessons.repository';
-import { getLessonTemplate } from '../templates/special-lesson-templates';
-import { templateChecksum } from '../templates/lesson-templates';
-import { GetLessonService } from './get-lesson.service';
-import { LessonStudioSupportService } from './lesson-studio-support.service';
+  DEFAULT_LESSON_CATEGORY,
+} from "../enums/lesson.enums";
+import { LessonWorkflowAction } from "../enums/lesson-failure-code.enum";
+import { AiLessonsRepository } from "../repositories/ai-lessons.repository";
+import { getLessonTemplate } from "../templates/lesson-template-resolver";
+import { templateChecksum } from "../templates/lesson-templates";
+import { GetLessonService } from "./get-lesson.service";
+import { LessonStudioSupportService } from "./lesson-studio-support.service";
 
 /** Creates a lesson package and its stages in a single transaction. */
 @Injectable()
@@ -27,7 +27,7 @@ export class CreateLessonService {
     dto: GenerateLessonRequestDto,
     userId: string,
   ): Promise<LessonEntity> {
-    const category = dto.category ?? LessonCategory.REGULAR;
+    const category = dto.category ?? DEFAULT_LESSON_CATEGORY;
     const lesson = await this.repo.runInTransaction(async (manager) => {
       const created = await this.repo.saveLesson(
         this.repo.createLesson({
@@ -35,10 +35,7 @@ export class CreateLessonService {
           biblicalReference: dto.biblicalReference.trim(),
           weekNumber: dto.weekNumber ?? null,
           category,
-          specialContext:
-            category === LessonCategory.SPECIAL
-              ? (dto.specialContext ?? null)
-              : null,
+          specialContext: null,
           editorialPurpose: dto.editorialPurpose,
           status: LessonStatus.DRAFT,
           createdById: userId,

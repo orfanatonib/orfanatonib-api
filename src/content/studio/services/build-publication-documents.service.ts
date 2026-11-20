@@ -1,8 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import {
-  CONTENT_PUBLICATION_FULL_PACKAGE_LABEL,
-} from "../constants/content-publication.constants";
+import { CONTENT_PUBLICATION_FULL_PACKAGE_LABEL } from "../constants/content-publication.constants";
 import type {
   PublicationDocumentFile,
   PublicationPackageSnapshot,

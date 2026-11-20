@@ -1,42 +1,45 @@
-import { LessonImageBriefOrigin } from '../enums/lesson-image-brief.enum';
-import { LessonCategory, LessonStageType } from '../enums/lesson.enums';
+import { LessonImageBriefOrigin } from "../enums/lesson-image-brief.enum";
+import {
+  LessonStageType,
+  DEFAULT_LESSON_CATEGORY,
+} from "../enums/lesson.enums";
 import type {
   LessonLlmGenerationInput,
   LessonLlmProviderContract,
-} from '../providers/lesson-llm.types';
-import { readImageBrief } from '../utils/lesson-image-brief.utils';
-import { LessonImageBriefService } from './lesson-image-brief.service';
+} from "../providers/lesson-llm.types";
+import { readImageBrief } from "../utils/lesson-image-brief.utils";
+import { LessonImageBriefService } from "./lesson-image-brief.service";
 
 const TYPE = LessonStageType.VERSE_FIXATION;
 const content = () => ({
-  name: 'Corrida do versículo',
+  name: "Corrida do versículo",
   assets: [
-    { id: '1', prompt: 'Crianças em fila', url: 'u1' },
-    { id: '2', prompt: 'Criança com cartão', url: 'u2' },
+    { id: "1", prompt: "Crianças em fila", url: "u1" },
+    { id: "2", prompt: "Criança com cartão", url: "u2" },
   ],
 });
-const answer = (ids: string[] = ['1', '2']) => ({
+const answer = (ids: string[] = ["1", "2"]) => ({
   content: {
-    artDirection: 'Traço limpo, cores vivas.',
-    cast: [{ name: 'Ana', appearance: 'Menina de 8 anos, vestido amarelo.' }],
+    artDirection: "Traço limpo, cores vivas.",
+    cast: [{ name: "Ana", appearance: "Menina de 8 anos, vestido amarelo." }],
     settings: [],
     parts: ids.map((assetId) => ({
       assetId,
       prompt: `Cena da imagem ${assetId} com detalhes suficientes.`,
-      cast: ['Ana'],
+      cast: ["Ana"],
       settings: [],
     })),
   },
-  responseId: 'resp-brief',
+  responseId: "resp-brief",
 });
 const generationInput = {
-  theme: 'Tema',
-  biblicalReference: 'João 3:16',
-  category: LessonCategory.REGULAR,
+  theme: "Tema",
+  biblicalReference: "João 3:16",
+  category: DEFAULT_LESSON_CATEGORY,
   stage: TYPE,
 } as LessonLlmGenerationInput;
 
-describe('LessonImageBriefService', () => {
+describe("LessonImageBriefService", () => {
   const service = new LessonImageBriefService();
   const generateStructured = jest.fn();
   const llm = { generateStructured } as unknown as LessonLlmProviderContract;
@@ -48,15 +51,15 @@ describe('LessonImageBriefService', () => {
     service.ensure(provider, {
       type,
       content: value,
-      canonicalLesson: { story: 'História', memoryVerse: { text: 'Verso' } },
-      adminPrompt: 'BASE + ORIENTAÇÃO',
+      canonicalLesson: { story: "História", memoryVerse: { text: "Verso" } },
+      adminPrompt: "BASE + ORIENTAÇÃO",
       generationInput,
       origin: LessonImageBriefOrigin.GENERATION,
     });
 
   beforeEach(() => jest.resetAllMocks());
 
-  it('escreve o prompt mestre uma vez, a partir de base, orientação e lição', async () => {
+  it("escreve o prompt mestre uma vez, a partir de base, orientação e lição", async () => {
     generateStructured.mockResolvedValue(answer());
 
     const result = await ensure();
@@ -65,12 +68,12 @@ describe('LessonImageBriefService', () => {
     const [request] = generateStructured.mock.calls[0] as [
       { system: string; user: string },
     ];
-    expect(request.user).toContain('BASE + ORIENTAÇÃO');
-    expect(request.user).toContain('História');
+    expect(request.user).toContain("BASE + ORIENTAÇÃO");
+    expect(request.user).toContain("História");
     expect(readImageBrief(TYPE, result)?.parts).toHaveLength(2);
   });
 
-  it('reaproveita o prompt que a versão já tem, sem nova chamada', async () => {
+  it("reaproveita o prompt que a versão já tem, sem nova chamada", async () => {
     generateStructured.mockResolvedValue(answer());
     const first = await ensure();
     generateStructured.mockClear();
@@ -81,9 +84,9 @@ describe('LessonImageBriefService', () => {
     expect(second).toBe(first);
   });
 
-  it('tenta de novo quando a resposta não cobre todas as imagens', async () => {
+  it("tenta de novo quando a resposta não cobre todas as imagens", async () => {
     generateStructured
-      .mockResolvedValueOnce(answer(['1']))
+      .mockResolvedValueOnce(answer(["1"]))
       .mockResolvedValueOnce(answer());
 
     const result = await ensure();
@@ -92,8 +95,8 @@ describe('LessonImageBriefService', () => {
     expect(readImageBrief(TYPE, result)).not.toBeNull();
   });
 
-  it('nunca derruba a geração: sem prompt mestre, devolve o conteúdo como veio', async () => {
-    generateStructured.mockRejectedValue(new Error('provedor fora do ar'));
+  it("nunca derruba a geração: sem prompt mestre, devolve o conteúdo como veio", async () => {
+    generateStructured.mockRejectedValue(new Error("provedor fora do ar"));
     const original = content();
 
     const result = await ensure(original);
@@ -102,8 +105,8 @@ describe('LessonImageBriefService', () => {
     expect(result).toBe(original);
   });
 
-  it('não chama a IA para itens sem imagens, fora do escopo ou sem suporte', async () => {
-    const noImages = { name: 'Sem arte' };
+  it("não chama a IA para itens sem imagens, fora do escopo ou sem suporte", async () => {
+    const noImages = { name: "Sem arte" };
     expect(await ensure(noImages)).toBe(noImages);
     const older = content();
     expect(await ensure(older, llm, LessonStageType.MEDITATION_OLDER)).toBe(

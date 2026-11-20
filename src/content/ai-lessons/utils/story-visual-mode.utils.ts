@@ -2,23 +2,21 @@ import {
   A4_COMPOSITION_RULE,
   DEFAULT_LESSON_VISUAL_STYLE,
   LESSON_VISUAL_STYLE_PROMPTS,
-} from '../constants/lesson-visual-style.constants';
+} from "../constants/lesson-visual-style.constants";
 import {
   LessonCategory,
   LessonVisualStyle,
   LessonVisualType,
-} from '../enums/lesson.enums';
+} from "../enums/lesson.enums";
 
 /**
- * Whether the story visuals are a cutout kit. Special lessons always use
- * scenes; a weekly lesson follows the chosen type and, without one (older
- * requests), the kit.
+ * Whether the story visuals are a cutout kit: follows the chosen type and,
+ * without one, the kit.
  */
 export function isCutoutKitVisuals(
-  category: LessonCategory | null | undefined,
+  _category: LessonCategory | null | undefined,
   visualType?: string | null,
 ): boolean {
-  if (category === LessonCategory.SPECIAL) return false;
   return !visualType || visualType === String(LessonVisualType.CUTOUT_KIT);
 }
 

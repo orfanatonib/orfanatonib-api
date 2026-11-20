@@ -62,11 +62,17 @@ export class PublishContentPackageService {
 
     let begun: BegunPublication;
     try {
-      begun = await this.publications.begin(packageId, dto.idempotencyKey, actorId);
+      begun = await this.publications.begin(
+        packageId,
+        dto.idempotencyKey,
+        actorId,
+      );
     } catch (error) {
       if (!isDuplicateKeyError(error)) throw error;
       // Same key won the race: answer with its publication.
-      const winner = await this.publications.findByIdempotencyKey(dto.idempotencyKey);
+      const winner = await this.publications.findByIdempotencyKey(
+        dto.idempotencyKey,
+      );
       if (!winner) throw error;
       return this.replay(winner, packageId);
     }
@@ -101,7 +107,10 @@ export class PublishContentPackageService {
     try {
       page = await this.pages.findBySourcePackageId(snapshot.packageId);
     } catch (error) {
-      this.logger.error(`Lookup da página do material ${snapshot.packageId} falhou`, error);
+      this.logger.error(
+        `Lookup da página do material ${snapshot.packageId} falhou`,
+        error,
+      );
       return this.publications.fail(
         publication.id,
         snapshot.packageId,
@@ -114,7 +123,10 @@ export class PublishContentPackageService {
       try {
         documents = await this.documents.execute(snapshot);
       } catch (error) {
-        this.logger.error(`Render dos documentos do material ${snapshot.packageId} falhou`, error);
+        this.logger.error(
+          `Render dos documentos do material ${snapshot.packageId} falhou`,
+          error,
+        );
         return this.publications.fail(
           publication.id,
           snapshot.packageId,
@@ -124,9 +136,15 @@ export class PublishContentPackageService {
       try {
         page = await this.createPage.execute(snapshot, testament, documents);
       } catch (error) {
-        this.logger.error(`Criação da página do material ${snapshot.packageId} falhou`, error);
-        const recovered = await this.recoverPageAfterFailure(snapshot.packageId);
-        if (recovered === undefined) return this.markUncertain(publication, null);
+        this.logger.error(
+          `Criação da página do material ${snapshot.packageId} falhou`,
+          error,
+        );
+        const recovered = await this.recoverPageAfterFailure(
+          snapshot.packageId,
+        );
+        if (recovered === undefined)
+          return this.markUncertain(publication, null);
         if (recovered === null)
           return this.publications.fail(
             publication.id,
@@ -145,7 +163,10 @@ export class PublishContentPackageService {
       );
       return completed;
     } catch (error) {
-      this.logger.error(`Finalização da publicação ${publication.id} falhou`, error);
+      this.logger.error(
+        `Finalização da publicação ${publication.id} falhou`,
+        error,
+      );
       return this.markUncertain(publication, page.id);
     }
   }
@@ -173,7 +194,10 @@ export class PublishContentPackageService {
       );
     } catch (error) {
       // The row stays PUBLISHING; it becomes reconcilable once stale.
-      this.logger.error(`Não foi possível marcar ${publication.id} como incerta`, error);
+      this.logger.error(
+        `Não foi possível marcar ${publication.id} como incerta`,
+        error,
+      );
       return publication;
     }
   }
@@ -183,7 +207,9 @@ export class PublishContentPackageService {
     publication: ContentPublicationEntity,
   ): Promise<ContentPublicationEntity> {
     try {
-      const page = await this.pages.findBySourcePackageId(publication.packageId);
+      const page = await this.pages.findBySourcePackageId(
+        publication.packageId,
+      );
       if (page)
         return await this.publications.complete(
           publication.id,
@@ -197,7 +223,9 @@ export class PublishContentPackageService {
       );
     } catch (error) {
       // Could not decide: keep the doubt instead of guessing.
-      this.logger.warn(`Reconciliação da publicação ${publication.id} falhou: ${String(error)}`);
+      this.logger.warn(
+        `Reconciliação da publicação ${publication.id} falhou: ${String(error)}`,
+      );
       return publication;
     }
   }

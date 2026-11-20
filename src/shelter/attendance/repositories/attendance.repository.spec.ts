@@ -69,6 +69,78 @@ describe("AttendanceRepository", () => {
   let visitReportRepo: Record<string, jest.Mock>;
   let repository: AttendanceRepository;
 
+  it("uses only the transaction repository for the full batch and clears old comments", async () => {
+    const existing = buildAttendance({ comment: "old" });
+    const tx = {
+      findOne: jest
+        .fn()
+        .mockResolvedValueOnce(existing)
+        .mockResolvedValueOnce(null),
+      create: jest.fn(() => new AttendanceEntity()),
+      save: jest.fn(async (entity: AttendanceEntity) => entity),
+    };
+    const getRepository = jest.fn(() => tx);
+    const transaction = jest.fn(
+      async (
+        work: (manager: {
+          getRepository: typeof getRepository;
+        }) => Promise<AttendanceEntity[]>,
+      ) => work({ getRepository }),
+    );
+    Object.assign(attendanceRepo, { manager: { transaction } });
+    const sample = buildAttendance();
+    const result = await repository.saveBatch([
+      {
+        member: sample.member,
+        schedule: sample.shelterSchedule,
+        category: sample.category,
+        type: sample.type,
+        comment: "",
+      },
+      {
+        member: sample.member,
+        schedule: sample.shelterSchedule,
+        category: sample.category,
+        type: sample.type,
+      },
+    ]);
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(getRepository).toHaveBeenCalledWith(AttendanceEntity);
+    expect(tx.save).toHaveBeenCalledTimes(2);
+    expect(attendanceRepo.save).not.toHaveBeenCalled();
+    expect(result[0].comment).toBe("");
+  });
+
+  it("propagates a batch failure to the transaction boundary", async () => {
+    const failure = new Error("write failed");
+    const tx = {
+      findOne: jest.fn().mockResolvedValue(null),
+      create: jest.fn(() => new AttendanceEntity()),
+      save: jest.fn().mockRejectedValue(failure),
+    };
+    const getRepository = jest.fn(() => tx);
+    const transaction = jest.fn(
+      async (
+        work: (manager: {
+          getRepository: typeof getRepository;
+        }) => Promise<AttendanceEntity[]>,
+      ) => work({ getRepository }),
+    );
+    Object.assign(attendanceRepo, { manager: { transaction } });
+    const sample = buildAttendance();
+    await expect(
+      repository.saveBatch([
+        {
+          member: sample.member,
+          schedule: sample.shelterSchedule,
+          category: sample.category,
+          type: sample.type,
+        },
+      ]),
+    ).rejects.toThrow(failure);
+    expect(attendanceRepo.save).not.toHaveBeenCalled();
+  });
+
   const clauses = (): WhereCall[] => [
     ...(qb.where.mock.calls as WhereCall[]),
     ...(qb.andWhere.mock.calls as WhereCall[]),

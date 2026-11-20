@@ -79,9 +79,18 @@ describe("PublishContentPackageService", () => {
     pages.findBySourcePackageId.mockResolvedValue(null);
     pages.findPathById.mockResolvedValue("materiais_visita_esperanca");
     documents.execute.mockResolvedValue([
-      { title: "d", description: "d", fileName: "a.pdf", contentType: "application/pdf", buffer: Buffer.from("x") },
+      {
+        title: "d",
+        description: "d",
+        fileName: "a.pdf",
+        contentType: "application/pdf",
+        buffer: Buffer.from("x"),
+      },
     ]);
-    createPage.execute.mockResolvedValue({ id: PAGE_ID, path: "materiais_visita_esperanca" });
+    createPage.execute.mockResolvedValue({
+      id: PAGE_ID,
+      path: "materiais_visita_esperanca",
+    });
     repo.complete.mockImplementation(async () =>
       publication({
         status: ContentPublicationStatus.PUBLISHED,
@@ -89,15 +98,20 @@ describe("PublishContentPackageService", () => {
         publishedAt: new Date(),
       }),
     );
-    repo.fail.mockImplementation(async (_id, _pkg, code: ContentPublicationErrorCode) =>
-      publication({ status: ContentPublicationStatus.FAILED, errorCode: code }),
+    repo.fail.mockImplementation(
+      async (_id, _pkg, code: ContentPublicationErrorCode) =>
+        publication({
+          status: ContentPublicationStatus.FAILED,
+          errorCode: code,
+        }),
     );
-    repo.markUncertain.mockImplementation(async (_id, code: ContentPublicationErrorCode, pageId: string | null) =>
-      publication({
-        status: ContentPublicationStatus.UNCERTAIN,
-        errorCode: code,
-        visitMaterialPageId: pageId,
-      }),
+    repo.markUncertain.mockImplementation(
+      async (_id, code: ContentPublicationErrorCode, pageId: string | null) =>
+        publication({
+          status: ContentPublicationStatus.UNCERTAIN,
+          errorCode: code,
+          visitMaterialPageId: pageId,
+        }),
     );
   });
 
@@ -133,20 +147,36 @@ describe("PublishContentPackageService", () => {
   });
 
   it("never returns the raw entity (no idempotencyKey, requestedById or approvedVersions)", async () => {
-    const result = await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+    const result = await service.execute(
+      PACKAGE_ID,
+      { idempotencyKey: KEY },
+      "admin",
+    );
     expect(result).not.toBeInstanceOf(ContentPublicationEntity);
     expect(Object.keys(result)).not.toEqual(
-      expect.arrayContaining(["idempotencyKey", "requestedById", "approvedVersions", "lockVersion"]),
+      expect.arrayContaining([
+        "idempotencyKey",
+        "requestedById",
+        "approvedVersions",
+        "lockVersion",
+      ]),
     );
   });
 
   describe("idempotency", () => {
     it("the same key returns the same publication without touching the package or the page", async () => {
       repo.findByIdempotencyKey.mockResolvedValue(
-        publication({ status: ContentPublicationStatus.PUBLISHED, visitMaterialPageId: PAGE_ID }),
+        publication({
+          status: ContentPublicationStatus.PUBLISHED,
+          visitMaterialPageId: PAGE_ID,
+        }),
       );
 
-      const result = await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
 
       expect(result.id).toBe("pub-1");
       expect(result.status).toBe(ContentPublicationStatus.PUBLISHED);
@@ -156,7 +186,9 @@ describe("PublishContentPackageService", () => {
     });
 
     it("a key already used by another package is a 409", async () => {
-      repo.findByIdempotencyKey.mockResolvedValue(publication({ packageId: "other" }));
+      repo.findByIdempotencyKey.mockResolvedValue(
+        publication({ packageId: "other" }),
+      );
       await expect(
         service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin"),
       ).rejects.toBeInstanceOf(ResourceConflictException);
@@ -165,10 +197,16 @@ describe("PublishContentPackageService", () => {
     it("a concurrent request with the same key (duplicate key on insert) answers with the winner", async () => {
       repo.findByIdempotencyKey
         .mockResolvedValueOnce(null)
-        .mockResolvedValueOnce(publication({ status: ContentPublicationStatus.PUBLISHING }));
+        .mockResolvedValueOnce(
+          publication({ status: ContentPublicationStatus.PUBLISHING }),
+        );
       repo.begin.mockRejectedValue({ code: "ER_DUP_ENTRY" });
 
-      const result = await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
 
       expect(result.id).toBe("pub-1");
       expect(createPage.execute).not.toHaveBeenCalled();
@@ -177,7 +215,9 @@ describe("PublishContentPackageService", () => {
 
   describe("states", () => {
     it("a package outside READY_FOR_PUBLICATION is a 409 and nothing is rendered or created", async () => {
-      repo.begin.mockRejectedValue(new ResourceConflictException("não está pronto"));
+      repo.begin.mockRejectedValue(
+        new ResourceConflictException("não está pronto"),
+      );
       await expect(
         service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin"),
       ).rejects.toBeInstanceOf(ResourceConflictException);
@@ -190,7 +230,11 @@ describe("PublishContentPackageService", () => {
     it("document rendering failure => FAILED and the package goes back to READY (via repository.fail)", async () => {
       documents.execute.mockRejectedValue(new Error("soffice missing"));
 
-      const result = await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
 
       expect(repo.fail).toHaveBeenCalledWith(
         "pub-1",
@@ -207,7 +251,11 @@ describe("PublishContentPackageService", () => {
     it("page creation failure with no page left => FAILED", async () => {
       createPage.execute.mockRejectedValue(new Error("s3 down"));
 
-      const result = await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
 
       expect(repo.fail).toHaveBeenCalledWith(
         "pub-1",
@@ -223,7 +271,11 @@ describe("PublishContentPackageService", () => {
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({ id: PAGE_ID, path: "p" });
 
-      const result = await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
 
       expect(repo.complete).toHaveBeenCalledWith("pub-1", PACKAGE_ID, PAGE_ID);
       expect(result.status).toBe(ContentPublicationStatus.PUBLISHED);
@@ -235,7 +287,11 @@ describe("PublishContentPackageService", () => {
         .mockResolvedValueOnce(null)
         .mockRejectedValueOnce(new Error("db down"));
 
-      const result = await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
 
       expect(repo.fail).not.toHaveBeenCalled();
       expect(result.status).toBe(ContentPublicationStatus.UNCERTAIN);
@@ -244,7 +300,11 @@ describe("PublishContentPackageService", () => {
     it("page created but final status not saved => UNCERTAIN with the page id", async () => {
       repo.complete.mockRejectedValue(new Error("commit failed"));
 
-      const result = await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
 
       expect(repo.markUncertain).toHaveBeenCalledWith(
         "pub-1",
@@ -258,7 +318,11 @@ describe("PublishContentPackageService", () => {
     it("a page already existing for the package is reused, not duplicated", async () => {
       pages.findBySourcePackageId.mockResolvedValue({ id: PAGE_ID, path: "p" });
 
-      const result = await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
 
       expect(createPage.execute).not.toHaveBeenCalled();
       expect(documents.execute).not.toHaveBeenCalled();
@@ -274,7 +338,11 @@ describe("PublishContentPackageService", () => {
       );
       pages.findBySourcePackageId.mockResolvedValue({ id: PAGE_ID, path: "p" });
 
-      const result = await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
 
       expect(repo.complete).toHaveBeenCalledWith("pub-1", PACKAGE_ID, PAGE_ID);
       expect(result.status).toBe(ContentPublicationStatus.PUBLISHED);
@@ -283,11 +351,17 @@ describe("PublishContentPackageService", () => {
     it("stale PUBLISHING with no page => FAILED(INTERRUPTED) and the package returns to READY", async () => {
       repo.findByIdempotencyKey.mockResolvedValue(
         publication({
-          updatedAt: new Date(Date.now() - CONTENT_PUBLICATION_STALE_AFTER_MS - 1000),
+          updatedAt: new Date(
+            Date.now() - CONTENT_PUBLICATION_STALE_AFTER_MS - 1000,
+          ),
         }),
       );
 
-      const result = await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
 
       expect(repo.fail).toHaveBeenCalledWith(
         "pub-1",
@@ -299,7 +373,11 @@ describe("PublishContentPackageService", () => {
 
     it("a recent PUBLISHING publication is not reconciled (still in progress)", async () => {
       repo.findByIdempotencyKey.mockResolvedValue(publication());
-      const result = await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
       expect(repo.fail).not.toHaveBeenCalled();
       expect(repo.complete).not.toHaveBeenCalled();
       expect(result.status).toBe(ContentPublicationStatus.PUBLISHING);
@@ -311,7 +389,11 @@ describe("PublishContentPackageService", () => {
       );
       pages.findBySourcePackageId.mockResolvedValue({ id: PAGE_ID, path: "p" });
 
-      const result = await service.execute(PACKAGE_ID, { idempotencyKey: "new-key" }, "admin");
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: "new-key" },
+        "admin",
+      );
 
       expect(result.status).toBe(ContentPublicationStatus.PUBLISHED);
       expect(repo.begin).not.toHaveBeenCalled();
@@ -323,7 +405,11 @@ describe("PublishContentPackageService", () => {
       );
       pages.findBySourcePackageId.mockRejectedValue(new Error("db down"));
 
-      const result = await service.execute(PACKAGE_ID, { idempotencyKey: KEY }, "admin");
+      const result = await service.execute(
+        PACKAGE_ID,
+        { idempotencyKey: KEY },
+        "admin",
+      );
 
       expect(result.status).toBe(ContentPublicationStatus.UNCERTAIN);
       expect(repo.fail).not.toHaveBeenCalled();

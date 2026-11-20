@@ -39,6 +39,8 @@ interface OpenAiErrorBody {
 }
 
 interface OpenAiResponseBody {
+  status?: string;
+  incomplete_details?: { reason?: string } | null;
   output?: Array<{
     type?: string;
     content?: Array<{ type?: string; text?: string }>;
@@ -54,8 +56,19 @@ interface OpenAiImageBody {
   data?: Array<{ b64_json?: string }>;
 }
 
+/** Uma lição longa com raciocínio leva de 30 s a mais de 2 min: o limite antigo (60 s) cortava a geração de adultos. */
+const DEFAULT_PROVIDER_TIMEOUT_MS = 180_000;
+const MAX_PROVIDER_TIMEOUT_MS = 300_000;
+
 export class AiProviderRequestError extends Error {
-  constructor(readonly kind: AiProviderErrorKind) {
+  /**
+   * `detail` é um código curto e seguro da causa (ex.: `incomplete:max_output_tokens`), para log e auditoria;
+   * nunca carrega prompt, conteúdo gerado nem a mensagem crua do provedor.
+   */
+  constructor(
+    readonly kind: AiProviderErrorKind,
+    readonly detail?: string,
+  ) {
     super(REDACTED_AI_ERROR_MESSAGE);
     this.name = "AiProviderRequestError";
   }
@@ -108,13 +121,21 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
     const contentItems =
       payload.output?.flatMap((item) => item.content ?? []) ?? [];
     if (contentItems.some((item) => item.type === "refusal"))
-      throw new AiProviderRequestError(AiProviderErrorKind.SAFETY);
+      throw new AiProviderRequestError(AiProviderErrorKind.SAFETY, "refusal");
+    if (payload.status === "incomplete")
+      throw new AiProviderRequestError(
+        AiProviderErrorKind.OUTPUT_TRUNCATED,
+        `incomplete:${payload.incomplete_details?.reason ?? "unknown"}`,
+      );
     const outputText = contentItems
       .filter((item) => item.type === "output_text")
       .map((item) => item.text ?? "")
       .join("");
     if (!outputText)
-      throw new AiProviderRequestError(AiProviderErrorKind.SCHEMA);
+      throw new AiProviderRequestError(
+        AiProviderErrorKind.SCHEMA,
+        "empty_output",
+      );
 
     let output: Record<string, unknown>;
     try {
@@ -124,12 +145,18 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
       }
       output = parsed as Record<string, unknown>;
     } catch {
-      throw new AiProviderRequestError(AiProviderErrorKind.SCHEMA);
+      throw new AiProviderRequestError(
+        AiProviderErrorKind.SCHEMA,
+        "invalid_json",
+      );
     }
     try {
       validateStructuredContent(output);
     } catch {
-      throw new AiProviderRequestError(AiProviderErrorKind.SAFETY);
+      throw new AiProviderRequestError(
+        AiProviderErrorKind.SAFETY,
+        "unsafe_output",
+      );
     }
 
     return {
@@ -162,7 +189,7 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
         body: JSON.stringify({
           model,
           prompt: [
-            "Crie somente ilustração genérica, sem rostos, sem pessoas reais ou identificáveis e sem texto incorporado.",
+            "Crie uma ilustração para material bíblico impresso. Personagens bíblicos são desenhados de forma estilizada (podem ter rosto); nunca retrate pessoas reais ou identificáveis. Não escreva texto na imagem, a menos que o pedido peça expressamente.",
             ...request.instructions,
             JSON.stringify(request.input),
           ].join("\n\n"),
@@ -299,12 +326,13 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
   ): Promise<T> {
     const abortController = new AbortController();
     const configuredTimeout = Number(
-      this.config.get<string>("CONTENT_STUDIO_PROVIDER_TIMEOUT_MS") ?? 60_000,
+      this.config.get<string>("CONTENT_STUDIO_PROVIDER_TIMEOUT_MS") ??
+        DEFAULT_PROVIDER_TIMEOUT_MS,
     );
     const timeoutMs =
       Number.isFinite(configuredTimeout) && configuredTimeout > 0
-        ? Math.min(configuredTimeout, 120_000)
-        : 60_000;
+        ? Math.min(configuredTimeout, MAX_PROVIDER_TIMEOUT_MS)
+        : DEFAULT_PROVIDER_TIMEOUT_MS;
     const timeout = setTimeout(
       () => abortController.abort(),
       Math.max(1_000, timeoutMs),

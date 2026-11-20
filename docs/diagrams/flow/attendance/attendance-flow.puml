@@ -80,11 +80,17 @@ note right of Register
   Evento de outra equipe = 403.
 end note
 Register -> Scope : assertBelongs | assertLeads
+alt registro em lote
+  Register -> Register : validar TODOS os membros antes de gravar
+  Register -> Repo : saveBatch(entries)
+  Repo -> Repo : transação única com EntityManager\nupsert de cada membro; rollback em falha
+else registro individual
 Register -> Repo : findOneAttendance(membro, encontro, categoria)
 alt já existe
   Register -> Repo : save (corrige, não duplica)
 else
   Register -> Repo : create + save
+end
 end
 note right of Repo
   O membro entra inteiro, não só

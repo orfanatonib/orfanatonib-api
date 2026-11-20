@@ -3,6 +3,7 @@ import {
   BorderStyle,
   ExternalHyperlink,
   HeadingLevel,
+  ImageRun,
   Paragraph,
   ParagraphChild,
   Table,
@@ -12,6 +13,7 @@ import {
   WidthType,
 } from "docx";
 
+import { BRAND_IMAGES, BrandImageName } from "./brand-images.constants";
 import {
   DOCUMENT_CODE_FONT,
   DOCUMENT_DEFAULT_COLOR,
@@ -37,6 +39,24 @@ import type { DocxInlineOptions, DocxListContext } from "./docx.types";
 
 type Json = Record<string, unknown>;
 type Alignment = (typeof AlignmentType)[keyof typeof AlignmentType];
+
+/** Faixa do título da meditação (preto, vermelho, branco, amarelo, verde). */
+const COLOR_BARS = ["000000", "FF3B30", "FFFFFF", "FFD400", "00B050"] as const;
+
+/** Corpo do texto: 11 pt, com recuo de primeira linha de 1 cm. */
+const BODY_FONT_SIZE = 22;
+const BODY_FIRST_LINE_INDENT = 567;
+/** Cabeçalhos de tabela: amarelo do ministério, com borda preta. */
+const TABLE_HEADER_FILL = "FFD400";
+const TABLE_BORDER = { style: BorderStyle.SINGLE, size: 6, color: "000000" };
+const TABLE_BORDERS = {
+  top: TABLE_BORDER,
+  bottom: TABLE_BORDER,
+  left: TABLE_BORDER,
+  right: TABLE_BORDER,
+  insideHorizontal: TABLE_BORDER,
+  insideVertical: TABLE_BORDER,
+};
 
 const asObject = (value: unknown): Json =>
   value && typeof value === "object" && !Array.isArray(value)
@@ -94,11 +114,15 @@ export class TiptapDocxRenderer {
       if (type === "heading") {
         const attrs = asObject(node.attrs);
         const level = Number(attrs.level) || 1;
-        const alignment = this.getAlignment(attrs, AlignmentType.CENTER);
+        // Identidade do Orfanato (modelo SAICA/Pequeno Nazareno): título grande, preto, à esquerda.
+        const alignment = this.getAlignment(
+          attrs,
+          level === 1 ? AlignmentType.CENTER : AlignmentType.LEFT,
+        );
         const runs = this.convertInlineNodesToTextRuns(
           Array.isArray(node.content) ? node.content : [],
           {
-            size: level === 1 ? 36 : level === 2 ? 26 : 24,
+            size: level === 1 ? 52 : level === 2 ? 56 : 28,
             defaultBold: true,
             defaultColor: "000000",
           },
@@ -114,7 +138,13 @@ export class TiptapDocxRenderer {
                     : HeadingLevel.HEADING_3,
               alignment,
               children: runs,
-              spacing: documentLineSpacing(attrs, { before: 240, after: 120 }),
+              keepNext: true,
+              spacing: documentLineSpacing(
+                attrs,
+                level === 2
+                  ? { before: 360, after: 140 }
+                  : { before: 240, after: 100 },
+              ),
             }),
           );
         }
@@ -128,6 +158,25 @@ export class TiptapDocxRenderer {
 
       if (type === "table") {
         this.renderTable(out, node);
+        continue;
+      }
+
+      if (type === "pageBreak") {
+        out.push(new Paragraph({ pageBreakBefore: true, children: [] }));
+        continue;
+      }
+
+      if (type === "brandLogo") {
+        const name = asString(asObject(node.attrs).name) as BrandImageName;
+        if (BRAND_IMAGES[name]) out.push(this.brandImageParagraph(name));
+        continue;
+      }
+
+      if (type === "colorBars") {
+        out.push(
+          this.colorBarsTable(),
+          new Paragraph({ spacing: { after: 60 }, children: [] }),
+        );
         continue;
       }
 
@@ -147,7 +196,7 @@ export class TiptapDocxRenderer {
         const runs = this.convertInlineNodesToTextRuns(
           Array.isArray(node.content) ? node.content : [],
           {
-            size: DOCUMENT_DEFAULT_FONT_SIZE,
+            size: BODY_FONT_SIZE,
             defaultColor: DOCUMENT_DEFAULT_COLOR,
             defaultFont: type === "codeBlock" ? DOCUMENT_CODE_FONT : undefined,
           },
@@ -156,7 +205,11 @@ export class TiptapDocxRenderer {
           out.push(
             new Paragraph({
               alignment,
-              spacing: documentLineSpacing(attrs, { after: 140, line: 276 }),
+              // Recuo de primeira linha, como nas lições impressas do ministério.
+              indent: listContext
+                ? undefined
+                : { firstLine: BODY_FIRST_LINE_INDENT },
+              spacing: documentLineSpacing(attrs, { after: 160, line: 276 }),
               children: runs.length ? runs : [new TextRun("")],
             }),
           );
@@ -283,6 +336,56 @@ export class TiptapDocxRenderer {
     }
   }
 
+  /** Arte fixa do ministério (logo "Foi por você", "7 passos da salvação"), centralizada e embutida no código. */
+  private brandImageParagraph(name: BrandImageName): Paragraph {
+    const image = BRAND_IMAGES[name];
+    return new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { before: 120, after: 160 },
+      keepNext: true,
+      children: [
+        new ImageRun({
+          type: "png",
+          data: Buffer.from(image.base64, "base64"),
+          transformation: {
+            width: image.widthPx,
+            height: Math.round(image.widthPx / image.aspect),
+          },
+        }),
+      ],
+    });
+  }
+
+  /** Faixa de cinco cores, sem bordas, que abre e fecha o título "Meditando e organizando". */
+  private colorBarsTable(): Table {
+    const none = { style: BorderStyle.NONE, size: 0, color: "FFFFFF" };
+    return new Table({
+      width: { size: 100, type: WidthType.PERCENTAGE },
+      borders: {
+        top: none,
+        bottom: none,
+        left: none,
+        right: none,
+        insideHorizontal: none,
+        insideVertical: none,
+      },
+      rows: [
+        new TableRow({
+          height: { value: 260, rule: "exact" },
+          children: COLOR_BARS.map(
+            (fill) =>
+              new TableCell({
+                width: { size: 20, type: WidthType.PERCENTAGE },
+                shading: { fill },
+                borders: { top: none, bottom: none, left: none, right: none },
+                children: [new Paragraph({ children: [] })],
+              }),
+          ),
+        }),
+      ],
+    });
+  }
+
   private renderTable(out: (Paragraph | Table)[], tableNode: Json): void {
     const tableContent = Array.isArray(tableNode.content)
       ? tableNode.content
@@ -349,7 +452,9 @@ export class TiptapDocxRenderer {
               ? { size: cellWidth, type: WidthType.DXA }
               : undefined,
             shading:
-              cellType === "tableHeader" ? { fill: "F1F5F9" } : undefined,
+              cellType === "tableHeader"
+                ? { fill: TABLE_HEADER_FILL }
+                : undefined,
             margins: { top: 100, bottom: 100, left: 140, right: 140 },
           }),
         );
@@ -362,8 +467,10 @@ export class TiptapDocxRenderer {
       out.push(
         new Table({
           width: { size: 100, type: WidthType.PERCENTAGE },
+          borders: TABLE_BORDERS,
           rows,
         }),
+        new Paragraph({ spacing: { after: 120 }, children: [] }),
       );
     }
   }

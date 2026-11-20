@@ -15,7 +15,7 @@ import {
   ATTENDANCE_SORT_COLUMNS,
   ATTENDANCE_LIMIT_DEFAULT,
 } from "../constants";
-import { AttendanceRecordsFilters } from "../types";
+import { AttendanceBatchEntry, AttendanceRecordsFilters } from "../types";
 import { isoDay } from "../utils/attendance-occurrence.util";
 
 const TEAM_WITH_MEMBERS = ["shelter", "members", "members.user"];
@@ -34,6 +34,33 @@ export class AttendanceRepository {
     @InjectRepository(VisitReportEntity)
     private readonly visitReportRepo: Repository<VisitReportEntity>,
   ) {}
+
+  /** All writes use the transaction repository; failure rolls back the entire sheet. */
+  async saveBatch(
+    entries: AttendanceBatchEntry[],
+  ): Promise<AttendanceEntity[]> {
+    return this.attendanceRepo.manager.transaction(async (manager) => {
+      const repository = manager.getRepository(AttendanceEntity);
+      const saved: AttendanceEntity[] = [];
+      for (const entry of entries) {
+        const existing = await repository.findOne({
+          where: {
+            member: { id: entry.member.id },
+            shelterSchedule: { id: entry.schedule.id },
+            category: entry.category,
+          },
+        });
+        const entity = existing ?? repository.create();
+        entity.member = entry.member;
+        entity.shelterSchedule = entry.schedule;
+        entity.category = entry.category;
+        entity.type = entry.type;
+        if (entry.comment !== undefined) entity.comment = entry.comment;
+        saved.push(await repository.save(entity));
+      }
+      return saved;
+    });
+  }
 
   // ------------------------------------------------------------- usuário
 

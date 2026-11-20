@@ -56,7 +56,11 @@ async function withFault<T>(
       if (fault === "first-write" && writes === 1)
         return Promise.reject(new Error(INJECTED));
     }
-    if (this.isTransactionActive && fault === "commit" && /^\s*COMMIT\b/i.test(query))
+    if (
+      this.isTransactionActive &&
+      fault === "commit" &&
+      /^\s*COMMIT\b/i.test(query)
+    )
       return Promise.reject(new Error(INJECTED));
     return (original as (...args: unknown[]) => Promise<unknown>).call(
       this,
@@ -77,7 +81,10 @@ async function withFault<T>(
 async function state(packageId: string): Promise<unknown> {
   return {
     status: (
-      (await dataSource.query("SELECT status, lockVersion FROM content_packages WHERE id = ?", [packageId])) as unknown[]
+      (await dataSource.query(
+        "SELECT status, lockVersion FROM content_packages WHERE id = ?",
+        [packageId],
+      )) as unknown[]
     )[0],
     publications: await dataSource.query(
       "SELECT id, status, errorCode, visit_material_page_id, publishedAt FROM content_publications WHERE package_id = ? ORDER BY id",
@@ -88,7 +95,10 @@ async function state(packageId: string): Promise<unknown> {
 
 const packageStatus = async (packageId: string): Promise<string> =>
   (
-    (await dataSource.query("SELECT status FROM content_packages WHERE id = ?", [packageId])) as Array<{ status: string }>
+    (await dataSource.query(
+      "SELECT status FROM content_packages WHERE id = ?",
+      [packageId],
+    )) as Array<{ status: string }>
   )[0].status;
 
 async function readyPackage(): Promise<string> {
@@ -99,7 +109,9 @@ async function readyPackage(): Promise<string> {
     canonicalNotes: null,
     templateCatalogVersion: CONTENT_STUDIO_CATALOG_VERSION,
     createdById: USER_ID,
-    audiences: CONTENT_AUDIENCE_CATALOG.filter((item) => item.audience === ContentAudience.CHILD),
+    audiences: CONTENT_AUDIENCE_CATALOG.filter(
+      (item) => item.audience === ContentAudience.CHILD,
+    ),
   });
   createdPackageIds.push(created.id);
   const stages = (created.tracks ?? [])
@@ -110,12 +122,18 @@ async function readyPackage(): Promise<string> {
       packageId: created.id,
       stageId: stage.id,
       structuredContent: { title: "Texto" },
-      contentChecksum: randomUUID().replace(/-/g, "").padEnd(64, "0").slice(0, 64),
+      contentChecksum: randomUUID()
+        .replace(/-/g, "")
+        .padEnd(64, "0")
+        .slice(0, 64),
       templateVersion: CONTENT_STUDIO_CATALOG_VERSION,
       generationSnapshot: null,
       createdById: USER_ID,
     });
-    await stageContent.completeProductionStage({ packageId: created.id, stageId: stage.id });
+    await stageContent.completeProductionStage({
+      packageId: created.id,
+      stageId: stage.id,
+    });
   }
   await review.submitPackageForReview(created.id);
   for (const stage of stages) {
@@ -132,7 +150,9 @@ async function readyPackage(): Promise<string> {
       reviewerId: USER_ID,
     });
   }
-  expect(await packageStatus(created.id)).toBe(ContentPackageStatus.READY_FOR_PUBLICATION);
+  expect(await packageStatus(created.id)).toBe(
+    ContentPackageStatus.READY_FOR_PUBLICATION,
+  );
   return created.id;
 }
 
@@ -162,9 +182,18 @@ suite("Atomicidade da publicação (MySQL real)", () => {
 
   afterAll(async () => {
     for (const id of createdPackageIds) {
-      await dataSource.query("DELETE FROM content_publications WHERE package_id = ?", [id]);
-      await dataSource.query("DELETE FROM content_review_comments WHERE package_id = ?", [id]);
-      await dataSource.query("DELETE FROM content_review_decisions WHERE package_id = ?", [id]);
+      await dataSource.query(
+        "DELETE FROM content_publications WHERE package_id = ?",
+        [id],
+      );
+      await dataSource.query(
+        "DELETE FROM content_review_comments WHERE package_id = ?",
+        [id],
+      );
+      await dataSource.query(
+        "DELETE FROM content_review_decisions WHERE package_id = ?",
+        [id],
+      );
       await dataSource.query(
         "DELETE v FROM content_versions v JOIN content_stages s ON s.id = v.stage_id JOIN content_tracks t ON t.id = s.track_id WHERE t.package_id = ?",
         [id],
@@ -181,7 +210,10 @@ suite("Atomicidade da publicação (MySQL real)", () => {
         "DELETE s FROM content_stages s JOIN content_tracks t ON t.id = s.track_id WHERE t.package_id = ?",
         [id],
       );
-      await dataSource.query("DELETE FROM content_tracks WHERE package_id = ?", [id]);
+      await dataSource.query(
+        "DELETE FROM content_tracks WHERE package_id = ?",
+        [id],
+      );
       await dataSource.query("DELETE FROM content_packages WHERE id = ?", [id]);
     }
     await dataSource.destroy();
@@ -192,7 +224,9 @@ suite("Atomicidade da publicação (MySQL real)", () => {
     const begun = await publications.begin(id, `k-${randomUUID()}`, USER_ID);
     expect(await packageStatus(id)).toBe(ContentPackageStatus.PUBLISHING);
     expect(begun.snapshot.tracks).toHaveLength(1);
-    expect(Object.keys(begun.publication.approvedVersions).length).toBeGreaterThan(0);
+    expect(
+      Object.keys(begun.publication.approvedVersions).length,
+    ).toBeGreaterThan(0);
 
     const done = await publications.complete(begun.publication.id, id, PAGE_ID);
     expect(done.status).toBe(ContentPublicationStatus.PUBLISHED);
@@ -203,7 +237,9 @@ suite("Atomicidade da publicação (MySQL real)", () => {
   it("begin com a 1ª escrita falhando: material segue READY e nenhuma publicação nasce", async () => {
     const id = await readyPackage();
     const before = await state(id);
-    const error = await withFault("first-write", () => publications.begin(id, `k-${randomUUID()}`, USER_ID));
+    const error = await withFault("first-write", () =>
+      publications.begin(id, `k-${randomUUID()}`, USER_ID),
+    );
     expect(error?.message).toContain(INJECTED);
     expect(await state(id)).toEqual(before);
   });
@@ -211,7 +247,9 @@ suite("Atomicidade da publicação (MySQL real)", () => {
   it("begin com falha no COMMIT: tudo desfeito", async () => {
     const id = await readyPackage();
     const before = await state(id);
-    const error = await withFault("commit", () => publications.begin(id, `k-${randomUUID()}`, USER_ID));
+    const error = await withFault("commit", () =>
+      publications.begin(id, `k-${randomUUID()}`, USER_ID),
+    );
     expect(error?.message).toContain(INJECTED);
     expect(await state(id)).toEqual(before);
   });
@@ -230,9 +268,9 @@ suite("Atomicidade da publicação (MySQL real)", () => {
     const id = await readyPackage();
     await publications.begin(id, `k-${randomUUID()}`, USER_ID);
     const before = await state(id);
-    await expect(publications.begin(id, `k-${randomUUID()}`, USER_ID)).rejects.toBeInstanceOf(
-      ResourceConflictException,
-    );
+    await expect(
+      publications.begin(id, `k-${randomUUID()}`, USER_ID),
+    ).rejects.toBeInstanceOf(ResourceConflictException);
     expect(await state(id)).toEqual(before);
   });
 
@@ -240,7 +278,9 @@ suite("Atomicidade da publicação (MySQL real)", () => {
     const id = await readyPackage();
     const begun = await publications.begin(id, `k-${randomUUID()}`, USER_ID);
     const before = await state(id);
-    const error = await withFault("commit", () => publications.complete(begun.publication.id, id, PAGE_ID));
+    const error = await withFault("commit", () =>
+      publications.complete(begun.publication.id, id, PAGE_ID),
+    );
     expect(error?.message).toContain(INJECTED);
     expect(await state(id)).toEqual(before);
   });
@@ -248,10 +288,18 @@ suite("Atomicidade da publicação (MySQL real)", () => {
   it("fail: publicação FAILED e o material volta a READY_FOR_PUBLICATION (e pode publicar de novo)", async () => {
     const id = await readyPackage();
     const begun = await publications.begin(id, `k-${randomUUID()}`, USER_ID);
-    const failed = await publications.fail(begun.publication.id, id, ContentPublicationErrorCode.PAGE_CREATION_FAILED);
+    const failed = await publications.fail(
+      begun.publication.id,
+      id,
+      ContentPublicationErrorCode.PAGE_CREATION_FAILED,
+    );
     expect(failed.status).toBe(ContentPublicationStatus.FAILED);
-    expect(await packageStatus(id)).toBe(ContentPackageStatus.READY_FOR_PUBLICATION);
-    await expect(publications.begin(id, `k-${randomUUID()}`, USER_ID)).resolves.toBeDefined();
+    expect(await packageStatus(id)).toBe(
+      ContentPackageStatus.READY_FOR_PUBLICATION,
+    );
+    await expect(
+      publications.begin(id, `k-${randomUUID()}`, USER_ID),
+    ).resolves.toBeDefined();
   });
 
   it("fail com falha no COMMIT: nada muda", async () => {
@@ -259,7 +307,11 @@ suite("Atomicidade da publicação (MySQL real)", () => {
     const begun = await publications.begin(id, `k-${randomUUID()}`, USER_ID);
     const before = await state(id);
     const error = await withFault("commit", () =>
-      publications.fail(begun.publication.id, id, ContentPublicationErrorCode.INTERRUPTED),
+      publications.fail(
+        begun.publication.id,
+        id,
+        ContentPublicationErrorCode.INTERRUPTED,
+      ),
     );
     expect(error?.message).toContain(INJECTED);
     expect(await state(id)).toEqual(before);

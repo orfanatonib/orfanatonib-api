@@ -13,11 +13,19 @@ export function runAuditedJob<T>(
   jobName: string,
   execute: () => Promise<T>,
   outcomeOf: (result: T) => AuditOutcome | null = () => AuditOutcome.Succeeded,
+  resource?: { resourceType: string; resourceId: string },
+  errorCodeFor?: (result: T) => string | null,
 ): Promise<T> {
   if (!boundary) return execute();
   return boundary.run(
-    { actionType: AuditActionType.ScheduledJob, actionName: jobName, jobName },
+    {
+      actionType: AuditActionType.ScheduledJob,
+      actionName: jobName,
+      jobName,
+      ...resource,
+    },
     execute,
     outcomeOf,
+    errorCodeFor,
   );
 }

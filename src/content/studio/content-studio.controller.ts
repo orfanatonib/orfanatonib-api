@@ -24,6 +24,7 @@ import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.gua
 
 import { ContentStudioCatalogResponseDto } from "./dto/content-studio-catalog-response.dto";
 import { ContentStudioDashboardResponseDto } from "./dto/content-studio-dashboard-response.dto";
+import { SubmitPackageReviewDto } from "./dto/submit-package-review.dto";
 import { ApproveReviewStageDto } from "./dto/approve-review-stage.dto";
 import { ContentGenerationJobResponseDto } from "./dto/content-generation-job-response.dto";
 import {
@@ -52,6 +53,14 @@ import { RequestStageGenerationService } from "./services/request-stage-generati
 import { SaveStageContentService } from "./services/save-stage-content.service";
 import { SubmitPackageReviewService } from "./services/submit-package-review.service";
 
+import { RegenerateStageImagesDto } from "./dto/regenerate-stage-images.dto";
+import {
+  GetStageImagesService,
+  type StageImagesResponse,
+} from "./services/get-stage-images.service";
+import { RequestStageImagesService } from "./services/request-stage-images.service";
+import { RuleException } from "src/common/exceptions";
+
 @Controller("content-studio")
 @UseGuards(JwtAuthGuard, AdminRoleGuard)
 export class ContentStudioController {
@@ -70,6 +79,8 @@ export class ContentStudioController {
     private readonly archivePackage: ArchiveContentPackageService,
     private readonly cancelGeneration: CancelStageGenerationService,
     private readonly latestGeneration: GetLatestStageGenerationService,
+    private readonly getStageImages: GetStageImagesService,
+    private readonly requestImages: RequestStageImagesService,
   ) {}
 
   @Get("catalog")
@@ -163,6 +174,48 @@ export class ContentStudioController {
     return ContentGenerationJobResponseDto.fromEntity(job);
   }
 
+  /** Imagens da versão atual da etapa (URL assinada por item). */
+  @Get("packages/:packageId/stages/:stageId/images")
+  @FeatureFlag(FeatureFlagKeys.CONTENT_STUDIO)
+  @UseGuards(FeatureFlagGuard)
+  async stageImages(
+    @Param("packageId", new ParseUUIDPipe()) packageId: string,
+    @Param("stageId", new ParseUUIDPipe()) stageId: string,
+  ): Promise<StageImagesResponse> {
+    return this.getStageImages.execute(packageId, stageId);
+  }
+
+  /** Refaz uma ou mais imagens da versão atual (o texto não muda). 202: o job entra na fila. */
+  @Post("packages/:packageId/stages/:stageId/images/regenerate")
+  @HttpCode(HttpStatus.ACCEPTED)
+  @FeatureFlag([
+    FeatureFlagKeys.CONTENT_STUDIO,
+    FeatureFlagKeys.CONTENT_STUDIO_GENERATION,
+  ])
+  @UseGuards(FeatureFlagGuard)
+  async regenerateStageImages(
+    @Param("packageId", new ParseUUIDPipe()) packageId: string,
+    @Param("stageId", new ParseUUIDPipe()) stageId: string,
+    @Body() dto: RegenerateStageImagesDto,
+    @Req() request: AuthenticatedRequest,
+  ): Promise<ContentGenerationJobResponseDto> {
+    const images = await this.getStageImages.execute(packageId, stageId);
+    if (!images.versionId)
+      throw new RuleException("A etapa ainda não tem conteúdo gerado");
+    const missing = images.items
+      .filter((item) => !item.assetId)
+      .map((item) => item.slot);
+    const job = await this.requestImages.execute({
+      packageId,
+      stageId,
+      versionId: images.versionId,
+      slots: dto.slots?.length ? dto.slots : missing.length ? missing : null,
+      instructions: dto.instructions,
+      requestedById: this.authenticatedUserId(request),
+    });
+    return ContentGenerationJobResponseDto.fromEntity(job);
+  }
+
   /** Andamento da última geração da etapa; `204` quando nunca houve. */
   @Get("packages/:packageId/stages/:stageId/generations/latest")
   @FeatureFlag([
@@ -233,8 +286,12 @@ export class ContentStudioController {
   @UseGuards(FeatureFlagGuard)
   async submitPackageReview(
     @Param("packageId", new ParseUUIDPipe()) packageId: string,
+    @Body() dto: SubmitPackageReviewDto,
   ): Promise<ContentPackageResponseDto> {
-    const contentPackage = await this.submitReview.execute(packageId);
+    const contentPackage = await this.submitReview.execute(
+      packageId,
+      dto.audiences,
+    );
     return ContentPackageResponseDto.fromEntity(contentPackage);
   }
 

@@ -1,23 +1,24 @@
-import { LessonEntity } from '../entities/lesson.entity';
-import { LessonStageEntity } from '../entities/lesson-stage.entity';
-import { LessonVersionEntity } from '../entities/lesson-version.entity';
+import { LessonEntity } from "../entities/lesson.entity";
+import { LessonStageEntity } from "../entities/lesson-stage.entity";
+import { LessonVersionEntity } from "../entities/lesson-version.entity";
 import {
   LessonCategory,
   LessonStageStatus,
   LessonStageType,
   LessonStatus,
-} from '../enums/lesson.enums';
-import type { LessonGenerationProgress } from '../types/lesson-generation-progress.types';
-import { generationOfLesson } from '../utils/lesson-generation-progress.utils';
+  DEFAULT_LESSON_CATEGORY,
+} from "../enums/lesson.enums";
+import type { LessonGenerationProgress } from "../types/lesson-generation-progress.types";
+import { generationOfLesson } from "../utils/lesson-generation-progress.utils";
 import {
   LessonGenerationProgressResponseDto,
   toGenerationProgressResponse,
-} from './lesson-generation-progress.dto';
+} from "./lesson-generation-progress.dto";
 import {
   LessonPublicationState,
   LessonView,
-} from '../enums/lesson-failure-code.enum';
-import { withoutLeakedImageBrief } from '../utils/lesson-image-brief-document.utils';
+} from "../enums/lesson-failure-code.enum";
+import { withoutLeakedImageBrief } from "../utils/lesson-image-brief-document.utils";
 
 export class LessonVersionResponseDto {
   id: string;
@@ -186,7 +187,7 @@ export const toLessonResponse = (
     theme: lesson.theme,
     biblicalReference: lesson.biblicalReference,
     weekNumber: lesson.weekNumber ?? null,
-    category: lesson.category ?? LessonCategory.REGULAR,
+    category: lesson.category ?? DEFAULT_LESSON_CATEGORY,
     specialContext: lesson.specialContext ?? null,
     editorialPurpose: lesson.editorialPurpose ?? null,
     status: lesson.status,

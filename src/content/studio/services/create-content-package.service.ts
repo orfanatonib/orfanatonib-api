@@ -51,11 +51,8 @@ export class CreateContentPackageService {
       canonicalNotes,
       templateCatalogVersion: CONTENT_STUDIO_CATALOG_VERSION,
       createdById,
-      audiences: dto.audience
-        ? CONTENT_AUDIENCE_CATALOG.filter(
-            (definition) => definition.audience === dto.audience,
-          )
-        : CONTENT_AUDIENCE_CATALOG,
+      // Um material nasce sempre com os quatro públicos (abas no detalhe).
+      audiences: CONTENT_AUDIENCE_CATALOG,
     });
   }
 }

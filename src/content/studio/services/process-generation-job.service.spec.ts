@@ -2,6 +2,8 @@
 import { ContentAudience } from "../enums/content-audience.enum";
 import { ContentStageType } from "../enums/content-stage-type.enum";
 import { AiGenerationCapability } from "../ai/enums/ai-generation-capability.enum";
+import { AiProviderErrorKind } from "../ai/enums/ai-provider-error-kind.enum";
+import { AiProviderRequestError } from "../ai/openai-generation.gateway";
 import { FakeAiGenerationGateway } from "../ai/fake-ai-generation.gateway";
 import { ProcessGenerationJobService } from "./process-generation-job.service";
 
@@ -44,14 +46,21 @@ function setup(gatewayDirective?: string, attempts = 1, quota?: number) {
     loadStageGenerationContext: jest.fn().mockResolvedValue(context()),
     saveStageContent: jest.fn().mockResolvedValue({}),
     failGenerationJob: jest.fn().mockResolvedValue(undefined),
+    currentVersionIdOf: jest.fn().mockResolvedValue("ver-9"),
   };
+  const images = { process: jest.fn().mockResolvedValue({}) };
+  const requestImages = { execute: jest.fn().mockResolvedValue({}) };
   return {
     packages,
     gateway,
+    images,
+    requestImages,
     service: new ProcessGenerationJobService(
       packages as never,
       packages as never,
       gateway,
+      images as never,
+      requestImages as never,
     ),
   };
 }
@@ -141,15 +150,82 @@ describe("ProcessGenerationJobService (provedor simulado)", () => {
     });
   });
 
-  it("capacidade de imagem ainda não é suportada pelo worker: falha definitiva", async () => {
-    const { service, packages } = setup();
+  it("job de imagens: delega ao serviço de imagens (não gera texto) e conclui", async () => {
+    const { service, packages, images, gateway } = setup();
+    const text = jest.spyOn(gateway, "generateStructuredText");
     packages.startGenerationJob.mockResolvedValue(
       started(1, AiGenerationCapability.IMAGE_GENERATION),
     );
     expect(await service.handle({ jobId: "job-1" })).toEqual({
-      status: "failed",
-      reason: "SCHEMA",
+      status: "done",
     });
+    expect(images.process).toHaveBeenCalledTimes(1);
+    expect(text).not.toHaveBeenCalled();
+    expect(packages.saveStageContent).not.toHaveBeenCalled();
+  });
+
+  it("job de imagens que falha: a etapa NÃO é derrubada (o texto já está aprovado) e o motivo é gravado", async () => {
+    const { service, packages, images } = setup();
+    packages.startGenerationJob.mockResolvedValue(
+      started(3, AiGenerationCapability.IMAGE_GENERATION),
+    );
+    images.process.mockRejectedValue(
+      new AiProviderRequestError(AiProviderErrorKind.SAFETY, "refusal"),
+    );
+    const out = await service.handle({ jobId: "job-1" });
+    expect(out).toEqual({ status: "failed", reason: "SAFETY" });
+    expect(packages.failGenerationJob).toHaveBeenCalledWith(
+      expect.objectContaining({
+        keepStage: true,
+        errorCode: "SAFETY",
+        errorMessage: expect.stringContaining("refusal"),
+      }),
+    );
+  });
+
+  it("visuais da lição: grava as escolhas na versão e enfileira o job de imagens depois do plano", async () => {
+    const { service, packages, requestImages } = setup();
+    const cfg = {
+      quantity: 4,
+      format: "CUTOUT_KIT",
+      style: "CUTE_CARTOON",
+      orientation: "LANDSCAPE",
+    };
+    packages.loadStageGenerationContext.mockResolvedValue({
+      ...context(ContentAudience.CHILD),
+      stageType: ContentStageType.LESSON_VISUALS,
+      visualConfig: cfg,
+    });
+    await service.handle({ jobId: "job-1" });
+    const saved = packages.saveStageContent.mock.calls[0][0];
+    expect(saved.structuredContent.visualConfig).toEqual(cfg);
+    expect(saved.structuredContent.items).toHaveLength(4);
+    expect(requestImages.execute).toHaveBeenCalledWith(
+      expect.objectContaining({
+        stageId: "stage-1",
+        versionId: "ver-9",
+        idempotencyKey: "img-job-1",
+      }),
+    );
+  });
+
+  it("o texto dos visuais não se perde se o job de imagens não puder ser criado", async () => {
+    const { service, packages, requestImages } = setup();
+    packages.loadStageGenerationContext.mockResolvedValue({
+      ...context(ContentAudience.CHILD),
+      stageType: ContentStageType.LESSON_VISUALS,
+      visualConfig: {
+        quantity: 4,
+        format: "CUTOUT_KIT",
+        style: "CUTE_CARTOON",
+        orientation: "LANDSCAPE",
+      },
+    });
+    requestImages.execute.mockRejectedValue(new Error("fila fora do ar"));
+    expect(await service.handle({ jobId: "job-1" })).toEqual({
+      status: "done",
+    });
+    expect(packages.saveStageContent).toHaveBeenCalledTimes(1);
   });
 
   it("conflito ao gravar (job cancelado no meio) vira falha sem vazar mensagem do provedor", async () => {
@@ -160,7 +236,9 @@ describe("ProcessGenerationJobService (provedor simulado)", () => {
     const out = await service.handle({ jobId: "job-1" });
     expect(out.status).toBe("retry");
     expect(packages.failGenerationJob).toHaveBeenCalledWith(
-      expect.objectContaining({ errorMessage: "Falha do provedor: UNKNOWN" }),
+      expect.objectContaining({
+        errorMessage: "Falha do provedor: UNKNOWN (Error)",
+      }),
     );
   });
 
@@ -181,7 +259,7 @@ describe("ProcessGenerationJobService (provedor simulado)", () => {
       expect(saved.generationSnapshot).toMatchObject({
         audience,
         stageType: "LESSON",
-        promptVersion: "orfanato.studio.prompts/1.0.0",
+        promptVersion: "orfanato.studio.prompts/2.3.0",
       });
       // notas internas ficam no snapshot, fora do conteúdo editável
       expect(saved.structuredContent).not.toHaveProperty("reviewerNotes");

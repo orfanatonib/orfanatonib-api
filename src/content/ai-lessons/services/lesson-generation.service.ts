@@ -7,22 +7,22 @@ import {
   Logger,
   OnApplicationBootstrap,
   OnApplicationShutdown,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { Interval } from '@nestjs/schedule';
-import { createHash, randomUUID } from 'node:crypto';
-import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { Interval } from "@nestjs/schedule";
+import { createHash, randomUUID } from "node:crypto";
+import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import {
   AppBusinessException,
   AppConflictException,
   AppException,
   ErrorCode,
-} from 'src/content/ai-lessons/compat/exceptions';
+} from "src/content/ai-lessons/compat/exceptions";
 import {
   CUTOUT_KIT_CORRECTION_INSTRUCTIONS,
   STORY_VISUAL_CORRECTION_INSTRUCTIONS,
   STORY_VISUAL_MAX_CORRECTIONS,
-} from '../constants/story-visual-quality.constants';
+} from "../constants/story-visual-quality.constants";
 import {
   LESSON_CHANGE_SUMMARY_MAX_LENGTH,
   LESSON_DERIVED_VERSE_STAGES,
@@ -31,13 +31,13 @@ import {
   LESSON_GENERATION,
   LESSON_GENERATION_BLOCKED_STATUSES,
   LESSON_REGENERATION_LOCKED_STAGE_STATUSES,
-} from '../constants/lesson-workflow.constants';
+} from "../constants/lesson-workflow.constants";
 import {
   GenerateStageRequestDto,
   RegenerateStageImagesRequestDto,
-} from '../dto/generate-stage-request.dto';
-import { LessonEntity } from '../entities/lesson.entity';
-import { LessonStageEntity } from '../entities/lesson-stage.entity';
+} from "../dto/generate-stage-request.dto";
+import { LessonEntity } from "../entities/lesson.entity";
+import { LessonStageEntity } from "../entities/lesson-stage.entity";
 import {
   getLessonStageOrder,
   LessonCategory,
@@ -45,12 +45,12 @@ import {
   LessonStageType,
   LessonVersionSource,
   LessonVisualType,
-} from '../enums/lesson.enums';
+} from "../enums/lesson.enums";
 import {
   LessonFailureCode,
   LessonWorkflowAction,
-} from '../enums/lesson-failure-code.enum';
-import { LESSON_LLM_PROVIDER } from '../providers/lesson-llm.constants';
+} from "../enums/lesson-failure-code.enum";
+import { LESSON_LLM_PROVIDER } from "../providers/lesson-llm.constants";
 import {
   LessonAttemptProviderMetadata,
   LessonLlmGenerationInput,
@@ -58,32 +58,32 @@ import {
   LessonLlmProvider,
   LessonLlmProviderContract,
   LessonLlmUsage,
-} from '../providers/lesson-llm.types';
-import { AiLessonsRepository } from '../repositories/ai-lessons.repository';
-import { getLessonTemplate } from '../templates/special-lesson-templates';
-import { templateChecksum } from '../templates/lesson-templates';
+} from "../providers/lesson-llm.types";
+import { AiLessonsRepository } from "../repositories/ai-lessons.repository";
+import { getLessonTemplate } from "../templates/lesson-template-resolver";
+import { templateChecksum } from "../templates/lesson-templates";
 import type {
   LessonActiveGeneration,
   LessonGenerationCheckpoint,
   LessonGenerationRequest,
   LessonJsonObject,
-} from '../types/lesson-generation.types';
-import { lessonString } from '../utils';
+} from "../types/lesson-generation.types";
+import { lessonString } from "../utils";
 import {
   describeAiFailure,
   LessonGenerationAbortedError,
   LessonGenerationAttemptsExhaustedError,
-} from '../utils/lesson-ai-failure.utils';
+} from "../utils/lesson-ai-failure.utils";
 import {
   isNewGameFromHistory,
   validateCanonicalContent,
   validateVisualConfig,
-} from '../utils/lesson-generation-validation.utils';
-import { lessonContentToTiptap } from '../utils/lesson-tiptap.utils';
+} from "../utils/lesson-generation-validation.utils";
+import { lessonContentToTiptap } from "../utils/lesson-tiptap.utils";
 import {
   canonicalVerseFromLesson,
   lockDerivedVerse,
-} from '../utils/lesson-verse.utils';
+} from "../utils/lesson-verse.utils";
 import {
   assertLessonDependency,
   assertPreviousStageCompleted,
@@ -91,23 +91,23 @@ import {
   lessonContentAssetUrls,
   lessonContentChecksum,
   lessonCurrentContent,
-} from '../utils/lesson-workflow.utils';
+} from "../utils/lesson-workflow.utils";
 import {
   createOlderMeditation,
   createOlderMeditationImages,
-} from '../utils/older-meditation-generation.utils';
-import { olderMeditationLessonSource } from '../utils/older-meditation-quality.utils';
+} from "../utils/older-meditation-generation.utils";
+import { olderMeditationLessonSource } from "../utils/older-meditation-quality.utils";
 import {
   manualWorkPreviousScenes,
   manualWorkSceneFocus,
-} from '../utils/manual-work-scene.utils';
-import { AdminLessonPromptService } from './admin-lesson-prompt.service';
-import { GetLessonService } from './get-lesson.service';
-import { LessonStudioSupportService } from './lesson-studio-support.service';
-import { LessonAssetGenerationService } from './lesson-asset-generation.service';
-import { GenerateLessonCoverService } from './generate-lesson-cover.service';
-import { LessonImageBriefService } from './lesson-image-brief.service';
-import { withoutImageBrief } from '../utils/lesson-image-brief.utils';
+} from "../utils/manual-work-scene.utils";
+import { AdminLessonPromptService } from "./admin-lesson-prompt.service";
+import { GetLessonService } from "./get-lesson.service";
+import { LessonStudioSupportService } from "./lesson-studio-support.service";
+import { LessonAssetGenerationService } from "./lesson-asset-generation.service";
+import { GenerateLessonCoverService } from "./generate-lesson-cover.service";
+import { LessonImageBriefService } from "./lesson-image-brief.service";
+import { withoutImageBrief } from "../utils/lesson-image-brief.utils";
 import {
   imageRegenerationSummary,
   imageSelectionOutdated,
@@ -116,15 +116,15 @@ import {
   planImageRegeneration,
   regeneratesEveryImage,
   visualChoicesOfContent,
-} from '../utils/lesson-image-regeneration.utils';
-import { LessonGenerationProgressService } from './lesson-generation-progress.service';
-import { LessonGenerationPhase } from '../enums/lesson-generation-phase.enum';
+} from "../utils/lesson-image-regeneration.utils";
+import { LessonGenerationProgressService } from "./lesson-generation-progress.service";
+import { LessonGenerationPhase } from "../enums/lesson-generation-phase.enum";
 import {
   lessonAssetListKey,
   lessonNotFound,
   stageNotFound,
   throwIfGenerationAborted,
-} from '../utils/lesson-studio-errors.utils';
+} from "../utils/lesson-studio-errors.utils";
 
 /** Background generation of stages: request, database lease, heartbeat, resume, checkpoints and commit. */
 @Injectable()
@@ -212,7 +212,7 @@ export class LessonGenerationService
   }
 
   private generationKey(
-    stage: Pick<LessonStageEntity, 'lessonId' | 'type'>,
+    stage: Pick<LessonStageEntity, "lessonId" | "type">,
   ): string {
     return `${stage.lessonId}:${stage.type}`;
   }
@@ -299,7 +299,7 @@ export class LessonGenerationService
           status: LessonStageStatus.FAILED,
           failureCode: LessonFailureCode.GENERATION_REQUEST_MISSING,
           failureMessage:
-            'A geração interrompida não possuía dados para retomada. Tente novamente.',
+            "A geração interrompida não possuía dados para retomada. Tente novamente.",
           generationRequestJson: null,
           generationRequestedById: null,
           generationLeaseOwner: null,
@@ -322,11 +322,10 @@ export class LessonGenerationService
     if (!getLessonStageOrder(header.category).includes(type))
       throw new AppBusinessException(
         ErrorCode.LESSON_INVALID_REQUEST,
-        'Esta etapa não pertence a este tipo de material.',
+        "Esta etapa não pertence a este tipo de material.",
       );
     // Input errors are answered now (400), never as a failed background job.
-    if (type === LessonStageType.LESSON_VISUALS)
-      validateVisualConfig(dto, header.category);
+    if (type === LessonStageType.LESSON_VISUALS) validateVisualConfig(dto);
     const { frozenAdminPrompt, frozenProvider } =
       await this.freezeGenerationContext(
         userId,
@@ -373,7 +372,7 @@ export class LessonGenerationService
     if (stage.status === LessonStageStatus.STALE)
       throw new AppConflictException(
         ErrorCode.LESSON_STAGE_STALE_UPSTREAM,
-        'Este item está desatualizado em relação aos anteriores. Gere o item novamente por completo.',
+        "Este item está desatualizado em relação aos anteriores. Gere o item novamente por completo.",
       );
     const content = lessonCurrentContent(stage);
     const plan = planImageRegeneration(type, content, dto.assetIds);
@@ -409,7 +408,7 @@ export class LessonGenerationService
           content: regeneratesEveryImage(plan)
             ? withoutImageBrief(content as LessonJsonObject)
             : (content as LessonJsonObject),
-          responseId: '',
+          responseId: "",
           assetUrls: plan.keptAssetUrls,
         },
         previousState: { status: lockedStage.status },
@@ -500,7 +499,7 @@ export class LessonGenerationService
       if (lockedStage.status === LessonStageStatus.GENERATING)
         throw new AppConflictException(
           ErrorCode.LESSON_GENERATION_IN_PROGRESS,
-          'Esta etapa já está sendo gerada.',
+          "Esta etapa já está sendo gerada.",
         );
       if (
         locked.stages.some(
@@ -509,12 +508,12 @@ export class LessonGenerationService
       )
         throw new AppConflictException(
           ErrorCode.LESSON_GENERATION_IN_PROGRESS,
-          'Já existe uma etapa sendo gerada nesta lição.',
+          "Já existe uma etapa sendo gerada nesta lição.",
         );
       if (LESSON_GENERATION_BLOCKED_STATUSES.includes(locked.status))
         throw new AppConflictException(
           ErrorCode.LESSON_INVALID_STATE,
-          'A produção não pode ser regenerada durante ou depois da revisão final.',
+          "A produção não pode ser regenerada durante ou depois da revisão final.",
         );
       // An item the reviewer holds or approved is shielded: it must be
       // returned or reopened before a new generation replaces it.
@@ -524,8 +523,8 @@ export class LessonGenerationService
         throw new AppConflictException(
           ErrorCode.LESSON_INVALID_STATE,
           lockedStage.status === LessonStageStatus.APPROVED
-            ? 'Este item já foi aprovado e está protegido. Reabra o item na revisão antes de gerar novamente.'
-            : 'Este item está em revisão. Devolva o item com um pedido de ajustes antes de gerar novamente.',
+            ? "Este item já foi aprovado e está protegido. Reabra o item na revisão antes de gerar novamente."
+            : "Este item está em revisão. Devolva o item com um pedido de ajustes antes de gerar novamente.",
         );
       assertPreviousStageCompleted(locked, type);
       const request = buildRequest(lockedStage);
@@ -586,7 +585,7 @@ export class LessonGenerationService
       );
       throw new AppException(
         ErrorCode.LESSON_PROVIDER_SNAPSHOT_UNAVAILABLE,
-        'Não foi possível carregar as configurações de IA para iniciar a geração. Verifique a configuração de provedores e tente novamente.',
+        "Não foi possível carregar as configurações de IA para iniciar a geração. Verifique a configuração de provedores e tente novamente.",
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
@@ -799,7 +798,7 @@ export class LessonGenerationService
       );
       const visualConfig =
         type === LessonStageType.LESSON_VISUALS
-          ? validateVisualConfig(request, lesson.category)
+          ? validateVisualConfig(request)
           : null;
       const attemptSnapshot = await this.resolveAttemptProvider(
         request.frozenProvider,
@@ -869,7 +868,7 @@ export class LessonGenerationService
       // checkpoint there is nothing to keep, so the request fails instead.
       if (isImageRegeneration(request) && !checkpoint)
         throw new ConflictException(
-          'Os itens anteriores mudaram enquanto as imagens eram regeradas. Gere o item novamente por completo.',
+          "Os itens anteriores mudaram enquanto as imagens eram regeradas. Gere o item novamente por completo.",
         );
       if (request.checkpoint && !checkpoint)
         await persistRequest({ ...request, checkpoint: null });
@@ -889,7 +888,7 @@ export class LessonGenerationService
               LESSON_GAME_RETRY_INSTRUCTION,
             ]
               .filter(Boolean)
-              .join('\n'),
+              .join("\n"),
           });
         }
         if (type === LessonStageType.MEDITATION_OLDER)
@@ -920,7 +919,7 @@ export class LessonGenerationService
           !isNewGameFromHistory(previousGameVariants, normalized)
         )
           throw new ConflictException(
-            'A IA repetiu a dinâmica anterior mesmo após uma nova tentativa. Gere novamente para obter uma brincadeira totalmente nova.',
+            "A IA repetiu a dinâmica anterior mesmo após uma nova tentativa. Gere novamente para obter uma brincadeira totalmente nova.",
           );
         if (visualConfig) {
           const assets = Array.isArray(normalized.assets)
@@ -1053,7 +1052,6 @@ export class LessonGenerationService
           content,
           type === LessonStageType.LESSON ? lesson.weekNumber : undefined,
           type,
-          lesson.category,
         ),
         docxS3Key: null,
         pdfS3Key: null,
@@ -1075,16 +1073,16 @@ export class LessonGenerationService
         createdById: userId,
         openAiResponseId: textCheckpoint.responseId || null,
         adminPromptSnapshot: adminPrompt,
-        adminPromptChecksum: createHash('sha256')
+        adminPromptChecksum: createHash("sha256")
           .update(adminPrompt)
-          .digest('hex'),
+          .digest("hex"),
         contentChecksum: lessonContentChecksum(content),
       });
 
       const trackedUploads = (): string[] => [
         ...new Set([...(request.uploadedAssetUrls ?? []), ...freshUploads]),
       ];
-      let outcome: 'COMMITTED' | 'UPSTREAM_CHANGED' | 'NOT_OWNER' = 'NOT_OWNER';
+      let outcome: "COMMITTED" | "UPSTREAM_CHANGED" | "NOT_OWNER" = "NOT_OWNER";
       let previousCoverUrl: string | null = null;
       await this.repo.runInTransaction(async (manager) => {
         const locked = await this.repo.findLessonByIdForUpdate(id, manager);
@@ -1127,7 +1125,7 @@ export class LessonGenerationService
               status: LessonStageStatus.FAILED,
               failureCode: LessonFailureCode.UPSTREAM_CHANGED,
               failureMessage:
-                'O conteúdo da etapa anterior foi alterado durante a geração. Gere esta etapa novamente para usar o novo conteúdo.',
+                "O conteúdo da etapa anterior foi alterado durante a geração. Gere esta etapa novamente para usar o novo conteúdo.",
               generationRequestJson: null,
               generationRequestedById: null,
               generationLeaseOwner: null,
@@ -1136,7 +1134,7 @@ export class LessonGenerationService
             manager,
           );
           await this.support.syncLessonStatus(locked, manager);
-          outcome = 'UPSTREAM_CHANGED';
+          outcome = "UPSTREAM_CHANGED";
           return;
         }
 
@@ -1173,14 +1171,14 @@ export class LessonGenerationService
           manager,
           previousStatus,
         );
-        outcome = 'COMMITTED';
+        outcome = "COMMITTED";
       });
 
       const finalOutcome = outcome as
-        | 'COMMITTED'
-        | 'UPSTREAM_CHANGED'
-        | 'NOT_OWNER';
-      if (finalOutcome === 'COMMITTED') {
+        | "COMMITTED"
+        | "UPSTREAM_CHANGED"
+        | "NOT_OWNER";
+      if (finalOutcome === "COMMITTED") {
         const kept = new Set(lessonContentAssetUrls(content));
         if (coverUrl) kept.add(coverUrl);
         // The replaced cover is only the lesson's: nothing else points to it.
@@ -1192,7 +1190,7 @@ export class LessonGenerationService
           ...trackedUploads().filter((url) => !kept.has(url)),
           ...replacedCover,
         ]);
-      } else if (finalOutcome === 'UPSTREAM_CHANGED') {
+      } else if (finalOutcome === "UPSTREAM_CHANGED") {
         await this.support.discardUploads(trackedUploads());
       } else {
         // The current owner decides the fate of what the request recorded.
@@ -1223,8 +1221,8 @@ export class LessonGenerationService
   ): string {
     const providerLabel =
       metadata?.provider === String(LessonLlmProvider.GEMINI)
-        ? 'Gemini'
-        : 'OpenAI';
+        ? "Gemini"
+        : "OpenAI";
     const model = usage?.model || metadata?.textModel;
     const details = [
       model,
@@ -1235,7 +1233,7 @@ export class LessonGenerationService
       guidedByReview
         ? `Regeneração orientada por revisão via ${providerLabel}`
         : `Geração via ${providerLabel}`
-    }${details.length ? ` (${details.join('; ')})` : ''}`;
+    }${details.length ? ` (${details.join("; ")})` : ""}`;
     return summary.slice(0, LESSON_CHANGE_SUMMARY_MAX_LENGTH);
   }
 
@@ -1252,7 +1250,7 @@ export class LessonGenerationService
     const story = lessonString(source?.story).trim();
     if (!story)
       throw new ConflictException(
-        'A lição aprovada precisa conter a narrativa completa antes de gerar os visuais.',
+        "A lição aprovada precisa conter a narrativa completa antes de gerar os visuais.",
       );
     let corrected = generated;
     for (let attempt = 0; ; attempt++) {
@@ -1289,7 +1287,7 @@ export class LessonGenerationService
             `VERSÃO A CORRIGIR:\n${JSON.stringify(corrected.content)}`,
           ]
             .filter(Boolean)
-            .join('\n'),
+            .join("\n"),
         });
       }
     }

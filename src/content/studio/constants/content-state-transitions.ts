@@ -10,6 +10,7 @@ export const CONTENT_PACKAGE_TRANSITIONS: Readonly<
   ],
   [ContentPackageStatus.IN_PROGRESS]: [
     ContentPackageStatus.PACKAGE_READY,
+    ContentPackageStatus.IN_REVIEW,
     ContentPackageStatus.ARCHIVED,
   ],
   [ContentPackageStatus.PACKAGE_READY]: [

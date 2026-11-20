@@ -67,7 +67,10 @@ export class ContentPublicationRepository {
       const locked = await lockPackageOrFail(manager, packageId);
       if (
         locked.status !== ContentPackageStatus.READY_FOR_PUBLICATION ||
-        !canTransitionContentPackage(locked.status, ContentPackageStatus.PUBLISHING)
+        !canTransitionContentPackage(
+          locked.status,
+          ContentPackageStatus.PUBLISHING,
+        )
       ) {
         throw new ResourceConflictException(
           CONTENT_PUBLICATION_MESSAGES.PACKAGE_NOT_READY(locked.status),
@@ -149,7 +152,10 @@ export class ContentPublicationRepository {
       if (!publication)
         throw new ResourceNotFoundException("Publicação não encontrada");
       if (
-        !canTransitionContentPackage(locked.status, ContentPackageStatus.PUBLISHED)
+        !canTransitionContentPackage(
+          locked.status,
+          ContentPackageStatus.PUBLISHED,
+        )
       ) {
         throw new ResourceConflictException(
           CONTENT_PUBLICATION_MESSAGES.PACKAGE_NOT_READY(locked.status),
@@ -209,7 +215,8 @@ export class ContentPublicationRepository {
       throw new ResourceNotFoundException("Publicação não encontrada");
     publication.status = ContentPublicationStatus.UNCERTAIN;
     publication.errorCode = errorCode;
-    if (visitMaterialPageId) publication.visitMaterialPageId = visitMaterialPageId;
+    if (visitMaterialPageId)
+      publication.visitMaterialPageId = visitMaterialPageId;
     return this.publications.save(publication);
   }
 }

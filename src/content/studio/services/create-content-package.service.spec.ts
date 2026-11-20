@@ -61,29 +61,7 @@ describe("CreateContentPackageService", () => {
     );
   });
 
-  it.each(Object.values(ContentAudience))(
-    "creates only the selected %s track",
-    async (audience) => {
-      await service.execute(
-        {
-          audience,
-          theme: "Esperança",
-          biblicalReferences: "Salmos 23",
-          canonicalObjective: "Conhecer o cuidado de Deus",
-        },
-        "admin",
-      );
-      expect(repository.createWithCatalog).toHaveBeenCalledWith(
-        expect.objectContaining({
-          audiences: CONTENT_AUDIENCE_CATALOG.filter(
-            (definition) => definition.audience === audience,
-          ),
-        }),
-      );
-    },
-  );
-
-  it("preserves legacy four-track creation when audience is omitted", async () => {
+  it("always creates the four audiences, each with the five stages in order", async () => {
     await service.execute(
       {
         theme: "Esperança",
@@ -92,9 +70,23 @@ describe("CreateContentPackageService", () => {
       },
       "admin",
     );
-    expect(repository.createWithCatalog).toHaveBeenCalledWith(
-      expect.objectContaining({ audiences: CONTENT_AUDIENCE_CATALOG }),
-    );
+    const input = repository.createWithCatalog.mock.calls[0][0] as {
+      audiences: typeof CONTENT_AUDIENCE_CATALOG;
+    };
+    expect(input.audiences.map((item) => item.audience)).toEqual([
+      ContentAudience.BABY,
+      ContentAudience.CHILD,
+      ContentAudience.TEEN,
+      ContentAudience.ADULT,
+    ]);
+    for (const definition of input.audiences)
+      expect(definition.stages.map((stage) => stage.type)).toEqual([
+        "LESSON",
+        "LESSON_VISUALS",
+        "VERSE_VISUALS",
+        "VERSE_FIXATION",
+        "STANDARD_GAME",
+      ]);
   });
 
   it("rejects personal information before persisting a package", async () => {

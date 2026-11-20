@@ -13,10 +13,17 @@ import type {
 /** True for the MySQL unique-key violation (driver error shape: `code`/`errno 1062`). */
 export function isDuplicateKeyError(error: unknown): boolean {
   if (typeof error !== "object" || error === null) return false;
-  const candidate = error as { code?: unknown; errno?: unknown; driverError?: unknown };
+  const candidate = error as {
+    code?: unknown;
+    errno?: unknown;
+    driverError?: unknown;
+  };
   if (candidate.code === MYSQL_DUPLICATE_ENTRY_CODE || candidate.errno === 1062)
     return true;
-  return candidate.driverError !== undefined && isDuplicateKeyError(candidate.driverError);
+  return (
+    candidate.driverError !== undefined &&
+    isDuplicateKeyError(candidate.driverError)
+  );
 }
 
 /** A PUBLISHING row nobody finished (crash, restart): must be reconciled instead of waited for. */

@@ -15,6 +15,8 @@ export class ContentGenerationJobResponseDto {
   heartbeatAt: Date | null;
   errorCode: string | null;
   errorMessage: string | null;
+  /** Fase de imagens: { phase, done, total, failed } (vazio nos jobs de texto). */
+  progress: Record<string, unknown> | null;
   requestedById: string;
   createdAt: Date;
   updatedAt: Date;
@@ -35,6 +37,7 @@ export class ContentGenerationJobResponseDto {
       heartbeatAt: entity.heartbeatAt,
       errorCode: entity.errorCode,
       errorMessage: entity.errorMessage,
+      progress: entity.progress ?? null,
       requestedById: entity.requestedById,
       createdAt: entity.createdAt,
       updatedAt: entity.updatedAt,

@@ -29,6 +29,7 @@ describe("RegisterAttendanceService", () => {
     findOneAttendance: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
+    saveBatch: jest.fn(),
   };
   const scopeService = {
     resolve: jest.fn(),
@@ -64,6 +65,20 @@ describe("RegisterAttendanceService", () => {
     repository.findOneAttendance.mockResolvedValue(null);
     repository.create.mockImplementation((data: Partial<AttendanceEntity>) =>
       Object.assign(new AttendanceEntity(), data),
+    );
+    repository.saveBatch.mockImplementation(
+      (entries: import("../types").AttendanceBatchEntry[]) =>
+        Promise.resolve(
+          entries.map((entry) =>
+            Object.assign(buildAttendance(), {
+              member: entry.member,
+              shelterSchedule: entry.schedule,
+              category: entry.category,
+              type: entry.type,
+              comment: entry.comment,
+            }),
+          ),
+        ),
     );
     repository.save.mockImplementation((entity: AttendanceEntity) =>
       Promise.resolve(Object.assign(buildAttendance(), entity)),
@@ -155,9 +170,9 @@ describe("RegisterAttendanceService", () => {
         "team-id",
       );
       expect(result).toHaveLength(1);
-      expect(repository.create).toHaveBeenCalledWith(
+      expect(repository.saveBatch).toHaveBeenCalledWith([
         expect.objectContaining({ category: AttendanceCategory.MEETING }),
-      );
+      ]);
     });
 
     it("recusa membro que não é da equipe", async () => {
@@ -169,6 +184,20 @@ describe("RegisterAttendanceService", () => {
       ).rejects.toThrow(
         new RuleException(ATTENDANCE_MESSAGES.MEMBER_NOT_IN_TEAM("estranho")),
       );
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it("does not persist an earlier valid entry when a later member is invalid", async () => {
+      await expect(
+        service.registerTeam(buildActor(), {
+          ...dto,
+          attendances: [
+            { memberId: "member-user-id", type: AttendanceType.PRESENT },
+            { memberId: "outside-team", type: AttendanceType.ABSENT },
+          ],
+        }),
+      ).rejects.toThrow(RuleException);
+      expect(repository.saveBatch).not.toHaveBeenCalled();
       expect(repository.save).not.toHaveBeenCalled();
     });
 
@@ -220,7 +249,8 @@ describe("RegisterAttendanceService", () => {
       });
 
       expect(result).toHaveLength(2);
-      expect(repository.save).toHaveBeenCalledTimes(2);
+      expect(repository.saveBatch).toHaveBeenCalledTimes(1);
+      expect(repository.saveBatch.mock.calls[0][0]).toHaveLength(2);
     });
   });
 });

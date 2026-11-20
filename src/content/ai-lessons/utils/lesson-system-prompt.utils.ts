@@ -1,20 +1,29 @@
-import { OLDER_MEDITATION_REVIEW_PROMPT } from '../constants/older-meditation-contract.constants';
+import { OLDER_MEDITATION_REVIEW_PROMPT } from "../constants/older-meditation-contract.constants";
 import {
   LESSON_GAME_STAGES,
   LESSON_PROMPT_LIMITS,
   LESSON_SYSTEM_PROMPT as P,
   LESSON_VERSE_PRODUCT_STAGES,
-} from '../constants/lesson-system-prompt.constants';
-import { cutoutKitPromptRules } from '../constants/story-visual-quality.constants';
-import { LessonCategory, LessonStageType } from '../enums/lesson.enums';
-import { OlderMeditationReviewPhase } from '../enums/older-meditation.enums';
-import { LessonLlmGenerationInput } from '../providers/lesson-llm.types';
-import { serializeTemplate } from '../templates/lesson-templates';
-import { getLessonTemplate } from '../templates/special-lesson-templates';
+} from "../constants/lesson-system-prompt.constants";
+import { cutoutKitPromptRules } from "../constants/story-visual-quality.constants";
+import {
+  LessonCategory,
+  LessonStageType,
+  DEFAULT_LESSON_CATEGORY,
+} from "../enums/lesson.enums";
+import { OlderMeditationReviewPhase } from "../enums/older-meditation.enums";
+import { LessonLlmGenerationInput } from "../providers/lesson-llm.types";
+import { serializeTemplate } from "../templates/lesson-templates";
+import { lessonCategoryProfile } from "../constants/lesson-category-profiles.constants";
 import {
   isCutoutKitVisuals,
   lessonVisualStylePrompt,
-} from './story-visual-mode.utils';
+} from "./story-visual-mode.utils";
+
+function lessonNarrative(category?: LessonCategory | null): string {
+  const profile = lessonCategoryProfile(category);
+  return `Escreva a lição com narrativa pedagógica autoral e linguagem adaptada para ${profile.audience}. Não transcreva nem recite capítulos inteiros da Bíblia palavra por palavra no texto narrativo; mantenha a fidelidade aos fatos bíblicos usando palavras próprias adequadas ao público.`;
+}
 
 /**
  * System prompt shared by OpenAI and Gemini. Only the rules of the requested
@@ -31,21 +40,18 @@ export function buildLessonSystemPrompt(
       P.nvi,
       P.inputIsData,
       P.reviewOutput,
-    ].join('\n\n');
-  const special = input.category === LessonCategory.SPECIAL;
+    ].join("\n\n");
   const stage = input.stage;
   return [
     P.role,
     P.templateContract,
-    serializeTemplate(
-      special ? getLessonTemplate(stage, input.category) : input.template,
-    ),
+    serializeTemplate(input.template),
     P.archive,
     P.singleProduct,
     P.adminPrompt,
     P.inputIsData,
     stage === LessonStageType.LESSON ? P.nviLesson : P.nvi,
-    P.narrative,
+    lessonNarrative(input.category),
     ...(stage === LessonStageType.LESSON_VISUALS
       ? [
           P.storyVisualsSource,
@@ -95,7 +101,7 @@ export function buildLessonSystemPrompt(
         ]
       : []),
     P.output,
-  ].join('\n\n');
+  ].join("\n\n");
 }
 
 /**
@@ -128,8 +134,7 @@ export function buildLessonUserPayload(
     theme: input.theme,
     biblicalReference: input.biblicalReference,
     weekNumber: input.weekNumber,
-    category: input.category ?? LessonCategory.REGULAR,
-    specialContext: input.specialContext ?? null,
+    category: input.category ?? DEFAULT_LESSON_CATEGORY,
     stage: input.stage,
     approvedUpstream: input.approvedUpstream,
     previousVariants: boundedPreviousVariants(input.previousVariants ?? []),
@@ -147,9 +152,9 @@ export function lessonOperationLabel(input: LessonLlmGenerationInput): string {
   if (input.structuredRequest) return input.structuredRequest.label;
   if (input.olderMeditationReview)
     return input.olderMeditationReview.images.length
-      ? 'revisão de imagens'
-      : 'revisão textual';
+      ? "revisão de imagens"
+      : "revisão textual";
   return input.revisionInstructions
-    ? 'geração com instruções de revisão'
-    : 'geração';
+    ? "geração com instruções de revisão"
+    : "geração";
 }

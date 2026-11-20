@@ -1,146 +1,141 @@
-import { LessonStageType } from '../enums/lesson.enums';
-import type { CanonicalSectionField } from '../types/lesson-canonical-content.types';
-import { CanonicalSectionKind } from '../enums/lesson-canonical-content.enums';
+import { LessonStageType } from "../enums/lesson.enums";
+import type { CanonicalSectionField } from "../types/lesson-canonical-content.types";
+import { CanonicalSectionKind } from "../enums/lesson-canonical-content.enums";
 
 /** Bible version required for the lesson's main verse. */
-export const LESSON_REQUIRED_BIBLE_VERSION = 'NVI';
+export const LESSON_REQUIRED_BIBLE_VERSION = "NVI";
 
 /** Separator between table cells when a table is flattened to canonical text. */
-export const CANONICAL_TABLE_CELL_SEPARATOR = ' | ';
+export const CANONICAL_TABLE_CELL_SEPARATOR = " | ";
 
 /** Upper bound accepted for an edited game duration. */
 export const GAME_MAX_DURATION_MINUTES = 600;
 
 /** Legacy sub-headings once rendered inside VERSÍCULO PARA MEMORIZAR. */
 export const LESSON_VERSE_SUBHEADINGS = {
-  text: ['TEXTO DO VERSÍCULO'],
-  reference: ['REFERÊNCIA', 'REFERÊNCIA DO VERSÍCULO'],
-  version: ['VERSÃO', 'VERSÃO BÍBLICA'],
+  text: ["TEXTO DO VERSÍCULO"],
+  reference: ["REFERÊNCIA", "REFERÊNCIA DO VERSÍCULO"],
+  version: ["VERSÃO", "VERSÃO BÍBLICA"],
 } as const;
 
 /** Editorial sections of item 1, in the order rendered by the editor. */
 export const LESSON_CANONICAL_SECTIONS: readonly CanonicalSectionField[] = [
   {
-    key: 'biblicalReference',
-    headings: ['TEXTO BÍBLICO'],
-    kind: CanonicalSectionKind.TEXT,
-  },
-  { key: 'purpose', headings: ['PROPÓSITO'], kind: CanonicalSectionKind.TEXT },
-  { key: 'songs', headings: ['MÚSICAS'], kind: CanonicalSectionKind.LIST },
-  {
-    key: 'memoryVerse',
-    headings: ['VERSÍCULO PARA MEMORIZAR'],
-    kind: CanonicalSectionKind.VERSE,
-  },
-  {
-    key: 'principleExplanation',
-    headings: ['EXPLICAÇÃO DO PRINCÍPIO'],
+    key: "biblicalReference",
+    headings: ["TEXTO BÍBLICO"],
     kind: CanonicalSectionKind.TEXT,
   },
   {
-    key: 'story',
-    headings: [
-      'LIÇÃO BÍBLICA',
-      'HISTÓRIA BÍBLICA',
-      'HISTÓRIA E CONEXÃO BÍBLICA',
-    ],
+    key: "characters",
+    headings: ["PERSONAGENS"],
+    kind: CanonicalSectionKind.LIST,
+  },
+  {
+    key: "supportMaterials",
+    headings: ["MATERIAIS DE APOIO", "SUGESTÕES DE MATERIAIS DE APOIO"],
+    kind: CanonicalSectionKind.LIST,
+  },
+  {
+    key: "icebreaker",
+    headings: ["QUEBRA-GELO", "QUEBRA GELO"],
     kind: CanonicalSectionKind.TEXT,
   },
   {
-    key: 'applicationAndAppeal',
-    headings: ['APLICAÇÃO E APELO'],
+    key: "story",
+    headings: ["HISTÓRIA BÍBLICA", "LIÇÃO BÍBLICA"],
     kind: CanonicalSectionKind.TEXT,
   },
   {
-    key: 'counseling',
-    headings: [
-      'ACONSELHAMENTO / CANTINHO DO ACONSELHAMENTO',
-      'CANTINHO DO ACONSELHAMENTO',
-      'ACONSELHAMENTO',
-    ],
+    key: "applicationAndAppeal",
+    headings: ["APLICAÇÃO E APELO"],
     kind: CanonicalSectionKind.TEXT,
   },
   {
-    key: 'reviewQuestions',
-    headings: ['PERGUNTAS DA LIÇÃO'],
+    key: "reviewQuestions",
+    headings: ["PERGUNTAS DA LIÇÃO", "LIÇÃO (PERGUNTAS E RESPOSTAS)"],
     kind: CanonicalSectionKind.QUESTIONS,
   },
   {
-    key: 'closingPrayer',
-    headings: ['FALANDO COM DEUS'],
-    kind: CanonicalSectionKind.TEXT,
+    key: "memoryVerse",
+    headings: ["VERSÍCULO PARA MEMORIZAR"],
+    kind: CanonicalSectionKind.VERSE,
+  },
+  {
+    key: "verseOptions",
+    headings: ["OPÇÕES DE VERSÍCULO", "VERSÍCULOS"],
+    kind: CanonicalSectionKind.LIST,
   },
 ];
 
 /** Editorial sections of the game and verse-fixation items (3 and 5). */
 export const GAME_CANONICAL_SECTIONS: readonly CanonicalSectionField[] = [
-  { key: 'name', headings: ['NOME'], kind: CanonicalSectionKind.TEXT },
-  { key: 'objective', headings: ['OBJETIVO'], kind: CanonicalSectionKind.TEXT },
+  { key: "name", headings: ["NOME"], kind: CanonicalSectionKind.TEXT },
+  { key: "objective", headings: ["OBJETIVO"], kind: CanonicalSectionKind.TEXT },
   {
-    key: 'durationMinutes',
-    headings: ['DURAÇÃO EM MINUTOS', 'DURAÇÃO'],
+    key: "durationMinutes",
+    headings: ["DURAÇÃO EM MINUTOS", "DURAÇÃO"],
     kind: CanonicalSectionKind.NUMBER,
   },
   {
-    key: 'ageGroup',
-    headings: ['FAIXA ETÁRIA'],
+    key: "ageGroup",
+    headings: ["FAIXA ETÁRIA"],
     kind: CanonicalSectionKind.TEXT,
   },
   {
-    key: 'funMechanics',
-    headings: ['MECÂNICAS DIVERTIDAS', 'FUN MECHANICS'],
+    key: "funMechanics",
+    headings: ["MECÂNICAS DIVERTIDAS", "FUN MECHANICS"],
     kind: CanonicalSectionKind.TEXT_OR_LIST,
   },
   {
-    key: 'materials',
-    headings: ['MATERIAIS'],
+    key: "materials",
+    headings: ["MATERIAIS"],
     kind: CanonicalSectionKind.LIST,
   },
   {
-    key: 'preparation',
-    headings: ['PREPARAÇÃO'],
+    key: "preparation",
+    headings: ["PREPARAÇÃO"],
     kind: CanonicalSectionKind.TEXT_OR_LIST,
   },
   {
-    key: 'steps',
-    headings: ['PASSO A PASSO'],
+    key: "steps",
+    headings: ["PASSO A PASSO"],
     kind: CanonicalSectionKind.LIST,
   },
   {
-    key: 'rulesAndSafety',
-    headings: ['REGRAS E SEGURANÇA'],
+    key: "rulesAndSafety",
+    headings: ["REGRAS E SEGURANÇA"],
     kind: CanonicalSectionKind.TEXT_OR_LIST,
   },
   {
-    key: 'biblicalPrinciple',
-    headings: ['PRINCÍPIO BÍBLICO'],
+    key: "biblicalPrinciple",
+    headings: ["PRINCÍPIO BÍBLICO"],
     kind: CanonicalSectionKind.TEXT,
   },
   {
-    key: 'splitRationale',
-    headings: ['CRITÉRIO DA DIVISÃO'],
+    key: "splitRationale",
+    headings: ["CRITÉRIO DA DIVISÃO"],
     kind: CanonicalSectionKind.TEXT,
   },
   {
-    key: 'evaluation',
-    headings: ['COMO AVALIAR'],
+    key: "evaluation",
+    headings: ["COMO AVALIAR"],
     kind: CanonicalSectionKind.TEXT,
   },
 ];
 
-export const GAME_AGE_ADAPTATIONS_KEY = 'ageAdaptations';
-export const GAME_AGE_ADAPTATIONS_HEADINGS = ['ADAPTAÇÕES POR IDADE'] as const;
+export const GAME_AGE_ADAPTATIONS_KEY = "ageAdaptations";
+export const GAME_AGE_ADAPTATIONS_HEADINGS = ["ADAPTAÇÕES POR IDADE"] as const;
 
 /** Sub-sections rendered under ADAPTAÇÕES POR IDADE. */
 export const GAME_AGE_ADAPTATION_SECTIONS: readonly CanonicalSectionField[] = [
   {
-    key: 'ages5To7',
-    headings: ['CRIANÇAS DE 5 A 7 ANOS', 'AGES5TO7'],
+    key: "ages5To7",
+    headings: ["CRIANÇAS DE 5 A 7 ANOS", "AGES5TO7"],
     kind: CanonicalSectionKind.TEXT,
   },
   {
-    key: 'ages8To11',
-    headings: ['CRIANÇAS DE 8 A 11 ANOS', 'AGES8TO11'],
+    key: "ages8To11",
+    headings: ["CRIANÇAS DE 8 A 11 ANOS", "AGES8TO11"],
     kind: CanonicalSectionKind.TEXT,
   },
 ];

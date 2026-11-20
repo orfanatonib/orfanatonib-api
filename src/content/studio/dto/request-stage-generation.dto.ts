@@ -1,12 +1,15 @@
+import { Type } from "class-transformer";
 import {
   IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
+  ValidateNested,
 } from "class-validator";
 
 import { AiGenerationCapability } from "../ai/enums/ai-generation-capability.enum";
+import { VisualConfigDto } from "./visual-config.dto";
 
 export class RequestStageGenerationDto {
   @IsEnum(AiGenerationCapability)
@@ -25,4 +28,10 @@ export class RequestStageGenerationDto {
   @IsString()
   @MaxLength(2000)
   revisionInstructions?: string;
+
+  /** Escolhas dos visuais (obrigatório na etapa "Visuais da lição"): quantidade, tipo, desenho e formato. */
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => VisualConfigDto)
+  visualConfig?: VisualConfigDto;
 }

@@ -152,3 +152,10 @@ sucesso que sumia antes de ser lida.
 - `getTeamAttendanceStats` conta `totalEvents` como agendamentos, não como
   encontros — um agendamento com visita e reunião conta uma vez. O
   comportamento foi preservado como estava.
+
+## Atualização mobile — novembro de 2026
+
+- `POST /attendance/register/team` valida todos os membros antes de persistir e grava o lote em uma única transação. Uma falha desfaz o lote, sem presença parcialmente salva. O corpo e a resposta permanecem compatíveis.
+- A resposta do POST é o estado persistido utilizado pelo formulário; não é necessário um GET adicional para confirmar o salvamento.
+- `GET /attendance/team/:teamId/schedules` e `GET /attendance/sheets/hierarchical` filtram cada ocorrência pela sua própria data: uma reunião fora do período não aparece só porque a visita está dentro.
+- As permissões de admin/líder, os vínculos de equipe e as feature flags permanecem exigidos pela API.

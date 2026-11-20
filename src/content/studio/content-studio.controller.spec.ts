@@ -1,3 +1,6 @@
+import { GetStageImagesService } from "./services/get-stage-images.service";
+import { RequestStageImagesService } from "./services/request-stage-images.service";
+import { ContentAudience } from "./enums/content-audience.enum";
 import { Test, TestingModule } from "@nestjs/testing";
 
 import { UnauthenticatedException } from "src/common/exceptions";
@@ -96,6 +99,11 @@ describe("ContentStudioController", () => {
         },
         {
           provide: GetLatestStageGenerationService,
+          useValue: { execute: jest.fn() },
+        },
+        { provide: GetStageImagesService, useValue: { execute: jest.fn() } },
+        {
+          provide: RequestStageImagesService,
           useValue: { execute: jest.fn() },
         },
       ],
@@ -255,8 +263,25 @@ describe("ContentStudioController", () => {
 
     const res = await controller.submitPackageReview(
       "c3f8f118-20ab-48d6-96a2-9476b70125a4",
+      {},
     );
     expect(res.id).toBe(pkg.id);
+    expect(mockSubmitReview.execute).toHaveBeenCalledWith(
+      "c3f8f118-20ab-48d6-96a2-9476b70125a4",
+      undefined,
+    );
+  });
+
+  it("should submit only the selected audiences for review", async () => {
+    mockSubmitReview.execute.mockResolvedValue(samplePackage());
+    await controller.submitPackageReview(
+      "c3f8f118-20ab-48d6-96a2-9476b70125a4",
+      { audiences: [ContentAudience.TEEN] },
+    );
+    expect(mockSubmitReview.execute).toHaveBeenLastCalledWith(
+      "c3f8f118-20ab-48d6-96a2-9476b70125a4",
+      [ContentAudience.TEEN],
+    );
   });
 
   it("should approve stage", async () => {

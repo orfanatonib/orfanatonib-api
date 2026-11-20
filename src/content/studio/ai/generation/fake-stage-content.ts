@@ -1,6 +1,12 @@
 import { ContentAudience } from "../../enums/content-audience.enum";
 import { ContentStageType } from "../../enums/content-stage-type.enum";
 import { AUDIENCE_PROFILES } from "./audience-profiles.constants";
+import {
+  AUDIENCE_VISUAL_ART,
+  CutoutCategory,
+  LessonVisualFormat,
+  VisualItemSize,
+} from "./visual-art.constants";
 
 const filler = (words: number, seed: string): string =>
   Array.from({ length: words }, (_, i) =>
@@ -15,43 +21,45 @@ export function fakeStageContent(
   stage: ContentStageType,
   audience: ContentAudience,
   theme: string,
+  visualConfig?: { quantity?: number; format?: string } | null,
 ): Record<string, unknown> {
   const p = AUDIENCE_PROFILES[audience];
-  const notes = "";
   const verse = {
     text: "Porque Deus tanto amou o mundo.",
     reference: "João 3.16",
   };
   const central = `Mensagem central simulada (${p.label}).`;
+  const action = (n: number): string =>
+    `(${p.facilitatorAction}: mostre o material ${n}.)`;
 
   switch (stage) {
-    case ContentStageType.CANONICAL_BASE:
-      return {
-        centralMessage: central,
-        title: `Base: ${theme}`,
-        biblicalReference: "João 3.16",
-        memoryVerse: verse,
-        keyEvents: ["Acontecimento um.", "Acontecimento dois."],
-        theologicalFocus: "Deus ama e salva.",
-        audienceNotes: ["Linguagem simples.", "Acolhimento para todos."],
-        reviewerNotes: notes,
-      };
     case ContentStageType.LESSON: {
       const words = Math.round((p.lessonWords.min + p.lessonWords.max) / 2);
+      const blocks = Math.ceil(words / 350);
       return {
         centralMessage: central,
-        title: `${p.label}: ${theme}`,
+        title: theme.includes(":") ? theme : `${theme}: Deus cuida e salva`,
         biblicalReference: "João 3.16",
-        purpose: `Propósito para ${p.label.toLowerCase()}.`,
-        memoryVerse: verse,
-        songs: [],
-        opening: `Abertura para ${p.label.toLowerCase()}.`,
-        principle: "Princípio simulado.",
-        story: Array.from({ length: Math.ceil(words / 350) }, (_, i) => ({
+        characters: [
+          "Jesus — O Filho de Deus.",
+          "Nicodemos — Um líder curioso.",
+        ],
+        locations: ["Israel", "Jerusalém"],
+        supportMaterials: Array.from(
+          { length: p.supportMaterials.min },
+          (_, i) =>
+            `Objeto ${i + 1} — representa a ideia ${i + 1} da história.`,
+        ),
+        icebreaker: `Abertura para ${p.label.toLowerCase()}. ${action(1)}`,
+        story: Array.from({ length: blocks }, (_, i) => ({
           heading: `Parte ${i + 1}`,
-          body: filler(Math.min(350, words - i * 350), p.label.toLowerCase()),
+          body: `${filler(Math.min(350, words - i * 350), p.label.toLowerCase())}${
+            i === 0
+              ? ` ${Array.from({ length: Math.max(0, p.teacherActions.min - 1) }, (_, n) => action(n + 2)).join(" ")} ${Array.from({ length: p.minQuotes }, () => "“Fala.”").join(" ")}`
+              : ""
+          }`,
         })),
-        application: "Aplicação simulada.",
+        application: `Aplicação simulada. "Deus, obrigado pelo teu amor. Amém."`,
         reviewQuestions: Array.from(
           { length: p.reviewQuestions.min },
           (_, i) => ({
@@ -59,71 +67,147 @@ export function fakeStageContent(
             answer: `Resposta ${i + 1}.`,
           }),
         ),
-        closingPrayer: "",
-        reviewerNotes: notes,
+        visitObjectives:
+          "Mostrar que com Deus podemos vencer o mal. Mostrar que em Jesus podemos ser salvos.",
+        memoryVerse: verse,
+        verseOptions: [
+          `Opção 1 (foco no amor): “${verse.text}” (${verse.reference})`,
+          "Opção 2 (foco na salvação): “Quem crê tem a vida.” (João 3.36)",
+        ],
+        reviewerNotes: "",
       };
     }
-    case ContentStageType.DISCUSSION:
+    case ContentStageType.LESSON_VISUALS: {
+      const scenes = visualConfig?.format
+        ? String(visualConfig.format) ===
+          String(LessonVisualFormat.STORY_SCENES)
+        : AUDIENCE_VISUAL_ART[audience].format ===
+          LessonVisualFormat.STORY_SCENES;
+      const quantity =
+        typeof visualConfig?.quantity === "number"
+          ? visualConfig.quantity
+          : p.visualItems.min;
       return {
         centralMessage: central,
-        title: `Discussão ${p.label}`,
-        introduction: "Introdução simulada.",
-        questions: Array.from(
-          { length: p.discussionQuestions.min },
-          (_, i) => ({
-            question: `Pergunta aberta ${i + 1}?`,
-            purpose: "Despertar reflexão.",
-            followUps: ["E se fosse com você?"],
-          }),
-        ),
-        reflection: "Reflexão simulada.",
-        groupAgreements: ["Compartilhar é voluntário."],
-        reviewerNotes: notes,
-      };
-    case ContentStageType.ACTIVITY:
-      return {
-        centralMessage: central,
-        name: `Atividade ${p.label}`,
-        objective: "Objetivo simulado.",
-        materials: ["1 manta", "2 bolas macias"],
-        preparation: "Preparação simulada.",
-        steps: Array.from(
-          { length: p.activitySteps.min },
-          (_, i) => `Passo ${i + 1}.`,
-        ),
-        safetyRules: ["Supervisão constante."],
-        durationMinutes: Math.min(
-          10,
-          Math.max(5, Math.round(p.sessionMinutes / 5)),
-        ),
-        ageAdaptations: ["Simplifique para os menores."],
-        biblicalConnection: "Liga-se ao princípio.",
-        reviewerNotes: notes,
-      };
-    case ContentStageType.VISUAL:
-      return {
-        centralMessage: central,
-        title: `Visuais ${p.label}`,
+        title: `Visuais da lição — ${p.label}`,
         styleDirection: "Cores vivas e formas simples.",
-        items: Array.from({ length: p.visualItems.min }, (_, i) => ({
+        characterSheets: ["Personagem — adulto, pele morena, túnica azul."],
+        items: Array.from({ length: quantity }, (_, i) => ({
           id: `visual-${String(i + 1).padStart(2, "0")}`,
           title: `Imagem ${i + 1}`,
           description: "Cena simples da passagem.",
           altText: "Ilustração.",
-          sourceExcerpt: "",
+          sourceExcerpt: "Trecho da lição.",
+          category: scenes ? CutoutCategory.SCENE : CutoutCategory.CHARACTERS,
+          size: scenes ? VisualItemSize.LARGE : VisualItemSize.MEDIUM,
+          variantOf: "",
+          layoutPlan: "Elementos grandes e separados.",
+          elements: scenes
+            ? []
+            : [
+                {
+                  label: "Personagem",
+                  description: "Personagem da passagem.",
+                  category: CutoutCategory.CHARACTERS,
+                  size: VisualItemSize.MEDIUM,
+                  storyEvidence: "Trecho da lição.",
+                  variantOf: "",
+                },
+              ],
+          imagePrompt: `Imagem simulada ${i + 1} no estilo do público ${p.label}.`,
         })),
-        reviewerNotes: notes,
+        reviewerNotes: "",
       };
-    case ContentStageType.FACILITATOR_GUIDANCE:
+    }
+    case ContentStageType.VERSE_VISUALS:
       return {
         centralMessage: central,
-        overview: `Visão geral para ${p.deliveredBy}.`,
-        preparationChecklist: ["Separar materiais."],
-        timeline: [{ minutes: p.sessionMinutes, moment: "Visita completa." }],
-        tips: ["Acolha cada pessoa."],
-        sensitivityNotes: ["Não peça que ninguém conte a própria história."],
-        followUp: "Acompanhe na semana.",
-        reviewerNotes: notes,
+        title: `Versículo — ${p.label}`,
+        verse,
+        splitRationale: "Dividido em unidades de sentido.",
+        styleDirection: "Fundo quente, até três cores.",
+        palette: ["laranja-sol", "marrom-café", "creme"],
+        cards: [
+          {
+            id: "verso-01",
+            text: "Porque Deus tanto",
+            concept: "Pequenos corações.",
+            imagePrompt: 'Cartão com o texto exato "Porque Deus tanto".',
+            altText: "Cartão um.",
+          },
+          {
+            id: "verso-02",
+            text: "amou o mundo.",
+            concept: "Pequeno globo.",
+            imagePrompt: 'Cartão com o texto exato "amou o mundo.".',
+            altText: "Cartão dois.",
+          },
+        ],
+        referenceCard: {
+          text: verse.reference,
+          imagePrompt: `Cartão com o texto exato "${verse.reference}".`,
+          altText: "Referência.",
+        },
+        reviewerNotes: "",
       };
+    case ContentStageType.VERSE_FIXATION:
+    case ContentStageType.STANDARD_GAME: {
+      const fixation = stage === ContentStageType.VERSE_FIXATION;
+      const plan = (name: string) => ({
+        name,
+        objective: "Objetivo simulado.",
+        funMechanics:
+          audience === ContentAudience.BABY
+            ? ["Cantiga com gestos", "Balanço suave no colo"]
+            : fixation
+              ? ["Revezamento em equipes", "Desafio dos trechos"]
+              : ["Pontaria em equipes", "Torre de copos"],
+        materials: ["1 manta", "2 bolas macias"],
+        preparation: "Preparação simulada.",
+        steps: Array.from({ length: p.activitySteps.min }, (_, i) =>
+          i === 0 && fixation
+            ? `Todos dizem juntos: ${verse.text} (${verse.reference}).`
+            : `Passo ${i + 1}.`,
+        ),
+        safetyRules: ["Supervisão constante."],
+        durationMinutes: p.gameMinutes.min,
+        ageAdaptations: [
+          `${p.adaptations.younger}: simplifique.`,
+          `${p.adaptations.older}: desafie.`,
+        ],
+        biblicalConnection: "Liga-se ao princípio.",
+        stepTitles: Array.from(
+          { length: p.activitySteps.min },
+          (_, i) => `Passo ${i + 1}`,
+        ),
+        closingPhrase: "Todos juntos repetem o versículo!",
+        visualSummary: "Imagem-resumo (compilado-01) da dinâmica.",
+        imagePrompt: `Infográfico simulado da dinâmica no estilo do público ${p.label}.`,
+      });
+      if (fixation)
+        return {
+          centralMessage: central,
+          ...plan(`Corrida do versículo ${p.label}`),
+          verse,
+          evaluation: "Cada equipe recita sem ajuda.",
+          reviewerNotes: "",
+        };
+      return {
+        centralMessage: central,
+        ...plan(`Gincana ${p.label}`),
+        spaceNeeded: "Uma mesa ou uma roda pequena",
+        // Crianças: uma segunda brincadeira, para 9 a 11 anos.
+        extraGames:
+          audience === ContentAudience.CHILD
+            ? [
+                {
+                  ...plan(`Gincana ${p.label} (9 a 11 anos)`),
+                  spaceNeeded: "Uma mesa",
+                },
+              ]
+            : [],
+        reviewerNotes: "",
+      };
+    }
   }
 }

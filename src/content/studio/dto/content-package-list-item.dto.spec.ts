@@ -35,7 +35,7 @@ describe("ContentPackageListItemResponseDto.fromEntity", () => {
           stage(2, ContentStageType.LESSON, ContentStageStatus.FAILED, null),
           stage(
             1,
-            ContentStageType.CANONICAL_BASE,
+            ContentStageType.LESSON_VISUALS,
             ContentStageStatus.APPROVED,
             "v1",
           ),
@@ -47,7 +47,7 @@ describe("ContentPackageListItemResponseDto.fromEntity", () => {
         stages: [
           stage(
             1,
-            ContentStageType.CANONICAL_BASE,
+            ContentStageType.LESSON_VISUALS,
             ContentStageStatus.GENERATING,
             null,
           ),
@@ -68,8 +68,8 @@ describe("ContentPackageListItemResponseDto.fromEntity", () => {
     expect(
       dto.stageSegments.map((s) => `${s.audience}:${s.stageType}:${s.status}`),
     ).toEqual([
-      "BABY:CANONICAL_BASE:GENERATING",
-      "ADULT:CANONICAL_BASE:APPROVED",
+      "BABY:LESSON_VISUALS:GENERATING",
+      "ADULT:LESSON_VISUALS:APPROVED",
       "ADULT:LESSON:FAILED",
     ]);
   });

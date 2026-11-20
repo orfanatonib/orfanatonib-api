@@ -37,6 +37,13 @@ export class RequestStageGenerationService {
       );
     }
 
+    const extra = dto.visualConfig?.instructions?.trim() || null;
+    if (extra && containsSensitiveContentInstruction(extra)) {
+      throw new RuleException(
+        "A orientação extra não pode conter dados pessoais nem informações sensíveis de pessoas acolhidas",
+        { field: "visualConfig.instructions" },
+      );
+    }
     const job = await this.packages.requestStageGeneration({
       packageId,
       stageId,
@@ -44,6 +51,9 @@ export class RequestStageGenerationService {
       idempotencyKey: dto.idempotencyKey,
       requestedById,
       revisionInstructions,
+      visualConfig: dto.visualConfig
+        ? { ...dto.visualConfig, instructions: extra }
+        : null,
     });
 
     if (job.status === ContentGenerationJobStatus.PENDING) {

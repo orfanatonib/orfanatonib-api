@@ -41,7 +41,11 @@ const pkg = (tracks: object[]) => ({
   tracks,
 });
 
-function setup(graph: unknown) {
+function setup(
+  graph: unknown,
+  assetRows: object[] = [],
+  imageBytes = Buffer.from("PNGBYTES"),
+) {
   const repo = { findByIdWithGraph: jest.fn().mockResolvedValue(graph) };
   const docx = { build: jest.fn().mockResolvedValue(Buffer.from("PKdocx")) };
   const pdf = {
@@ -51,7 +55,17 @@ function setup(graph: unknown) {
     repo,
     docx,
     pdf,
-    svc: new StudioExportService(repo as never, docx as never, pdf as never),
+    svc: new StudioExportService(
+      repo as never,
+      docx as never,
+      pdf as never,
+      { listForVersion: jest.fn().mockResolvedValue(assetRows) } as never,
+      {
+        getEnvironment: jest.fn(),
+        buildUrl: jest.fn((key: string) => `https://bucket/${key}`),
+        downloadOwned: jest.fn().mockResolvedValue(imageBytes),
+      } as never,
+    ),
   };
 }
 
@@ -70,7 +84,7 @@ describe("StudioExportService", () => {
   const lesson = stage("s1", ContentStageType.LESSON, 2, version());
   const base = stage(
     "s0",
-    ContentStageType.CANONICAL_BASE,
+    ContentStageType.LESSON_VISUALS,
     1,
     version({ id: "v0", structuredContent: { title: "Base" } }),
   );
@@ -85,10 +99,8 @@ describe("StudioExportService", () => {
       StudioExportFormat.PDF,
     );
     const [meta, sections] = docx.build.mock.calls[0];
-    expect(sections.map((s: { title: string }) => s.title)).toEqual([
-      "BASE CANÔNICA",
-      "LIÇÃO",
-    ]);
+    // "Visuais da lição" não tem documento de texto: sem imagens geradas, a etapa não entra no arquivo.
+    expect(sections.map((s: { title: string }) => s.title)).toEqual(["LIÇÃO"]);
     expect(meta.audienceLabel).toBe("Crianças · 3 a 11 anos");
     expect(pdf.convertDocxToPdf).toHaveBeenCalledWith(
       expect.any(Buffer),
@@ -236,5 +248,81 @@ describe("StudioExportService.stageDocumentFor", () => {
     await expect(
       none.svc.stageDocumentFor("p1", "nope"),
     ).rejects.toBeInstanceOf(ResourceNotFoundException);
+  });
+
+  describe("Visuais da lição: só imagens, uma por página", () => {
+    // PNG 1x1 válido (o tamanho real vem do arquivo).
+    const png = Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "base64",
+    );
+    const visuals = (orientation: string) =>
+      stage(
+        "sv",
+        ContentStageType.LESSON_VISUALS,
+        2,
+        version({
+          id: "vv",
+          structuredContent: {
+            items: [{ id: "visual-01" }, { id: "visual-02" }],
+            visualConfig: { orientation },
+          },
+        }),
+      );
+    const rows = [
+      { slot: "visual-02", storageKey: "k/2.png", checksum: "bb" },
+      { slot: "visual-01", storageKey: "k/1.png", checksum: "aa" },
+    ];
+
+    it("cada imagem vira uma página, na ordem do plano, na orientação escolhida", async () => {
+      const { svc, docx } = setup(
+        pkg([track(ContentAudience.CHILD, [visuals("PORTRAIT")])]),
+        rows,
+        png,
+      );
+      await svc.exportStage("p1", "sv", StudioExportFormat.DOCX);
+      const sections = docx.build.mock.calls[0][1];
+      expect(sections).toHaveLength(1);
+      expect(sections[0].imagePages.orientation).toBe("PORTRAIT");
+      expect(sections[0].imagePages.images).toHaveLength(2);
+      expect(sections[0].imagePages.images[0]).toMatchObject({
+        width: 1,
+        height: 1,
+      });
+      // nenhum documento de texto
+      expect(sections[0].document.content).toEqual([]);
+    });
+
+    it("paisagem é o padrão, e refazer uma imagem muda a chave de cache do PDF", async () => {
+      const first = setup(
+        pkg([track(ContentAudience.CHILD, [visuals("LANDSCAPE")])]),
+        rows,
+        png,
+      );
+      await first.svc.exportStage("p1", "sv", StudioExportFormat.PDF);
+      expect(first.docx.build.mock.calls[0][1][0].imagePages.orientation).toBe(
+        "LANDSCAPE",
+      );
+      const keyA = first.pdf.convertDocxToPdf.mock.calls[0][1];
+
+      const changed = setup(
+        pkg([track(ContentAudience.CHILD, [visuals("LANDSCAPE")])]),
+        [{ ...rows[0], checksum: "novo" }, rows[1]],
+        png,
+      );
+      await changed.svc.exportStage("p1", "sv", StudioExportFormat.PDF);
+      expect(changed.pdf.convertDocxToPdf.mock.calls[0][1]).not.toBe(keyA);
+    });
+
+    it("sem nenhuma imagem gerada não há o que exportar", async () => {
+      const { svc } = setup(
+        pkg([track(ContentAudience.CHILD, [visuals("LANDSCAPE")])]),
+        [],
+        png,
+      );
+      await expect(
+        svc.exportStage("p1", "sv", StudioExportFormat.PDF),
+      ).rejects.toThrow(/Ainda não há conteúdo/);
+    });
   });
 });

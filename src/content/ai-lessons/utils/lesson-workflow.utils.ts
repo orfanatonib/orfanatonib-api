@@ -1,21 +1,21 @@
-import { createHash } from 'node:crypto';
-import { HttpException, HttpStatus } from '@nestjs/common';
-import { WEEK_MATERIAL_SPECIAL_TAG } from 'src/content/ai-lessons/publication/constants';
+import { createHash } from "node:crypto";
+import { HttpException, HttpStatus } from "@nestjs/common";
+import { lessonCategoryProfile } from "../constants/lesson-category-profiles.constants";
 import {
   AppConflictException,
   AppException,
   ErrorCode,
-} from 'src/content/ai-lessons/compat/exceptions';
-import { LessonEntity } from '../entities/lesson.entity';
-import { LessonStageEntity } from '../entities/lesson-stage.entity';
-import { LessonVersionEntity } from '../entities/lesson-version.entity';
+} from "src/content/ai-lessons/compat/exceptions";
+import { LessonEntity } from "../entities/lesson.entity";
+import { LessonStageEntity } from "../entities/lesson-stage.entity";
+import { LessonVersionEntity } from "../entities/lesson-version.entity";
 import {
   getLessonStageOrder,
   LessonCategory,
   LessonStageStatus,
   LessonStageType,
   LessonStatus,
-} from '../enums/lesson.enums';
+} from "../enums/lesson.enums";
 import {
   LESSON_ASSET_LIST_KEYS,
   LESSON_PUBLICATION,
@@ -24,11 +24,11 @@ import {
   LESSON_STAGE_ITEM_NAMES,
   LESSON_STAGE_PDF,
   LESSON_TERMINAL_STATUSES,
-} from '../constants/lesson-workflow.constants';
-import type { LessonJsonObject } from '../types/lesson-generation.types';
+} from "../constants/lesson-workflow.constants";
+import type { LessonJsonObject } from "../types/lesson-generation.types";
 
 export function lessonAsObject(value: unknown): LessonJsonObject {
-  return value && typeof value === 'object' && !Array.isArray(value)
+  return value && typeof value === "object" && !Array.isArray(value)
     ? (value as LessonJsonObject)
     : {};
 }
@@ -36,8 +36,8 @@ export function lessonAsObject(value: unknown): LessonJsonObject {
 /** JSON with sorted keys: stable across MySQL JSON round-trips. */
 export function lessonStableStringify(value: unknown): string {
   if (Array.isArray(value))
-    return `[${value.map((item) => lessonStableStringify(item)).join(',')}]`;
-  if (value && typeof value === 'object') {
+    return `[${value.map((item) => lessonStableStringify(item)).join(",")}]`;
+  if (value && typeof value === "object") {
     const record = value as LessonJsonObject;
     return `{${Object.keys(record)
       .filter((key) => record[key] !== undefined)
@@ -45,13 +45,13 @@ export function lessonStableStringify(value: unknown): string {
       .map(
         (key) => `${JSON.stringify(key)}:${lessonStableStringify(record[key])}`,
       )
-      .join(',')}}`;
+      .join(",")}}`;
   }
   return JSON.stringify(value ?? null);
 }
 
 export function lessonContentChecksum(value: LessonJsonObject): string {
-  return createHash('sha256').update(JSON.stringify(value)).digest('hex');
+  return createHash("sha256").update(JSON.stringify(value)).digest("hex");
 }
 
 export function lessonCurrentVersion(
@@ -71,7 +71,7 @@ export function lessonCurrentContent(
 
 /** Requires the item right before this one to be concluded by the producer. */
 export function assertPreviousStageCompleted(
-  lesson: Pick<LessonEntity, 'category' | 'stages'>,
+  lesson: Pick<LessonEntity, "category" | "stages">,
   type: LessonStageType,
 ): void {
   const stageOrder = getLessonStageOrder(lesson.category);
@@ -120,7 +120,7 @@ export function assertLessonDependency(
  */
 export function recomputeLessonStatus(
   category: LessonCategory | null | undefined,
-  stages: ReadonlyArray<Pick<LessonStageEntity, 'status' | 'currentVersionId'>>,
+  stages: ReadonlyArray<Pick<LessonStageEntity, "status" | "currentVersionId">>,
   current: LessonStatus,
 ): LessonStatus {
   if (LESSON_TERMINAL_STATUSES.includes(current)) return current;
@@ -152,7 +152,7 @@ export function recomputeLessonStatus(
 
 /** Blocks every mutation while a generation or a publication is running. */
 export function assertLessonMutable(
-  lesson: Pick<LessonEntity, 'status' | 'stages'>,
+  lesson: Pick<LessonEntity, "status" | "stages">,
   message: string,
 ): void {
   if (lesson.status === LessonStatus.PUBLISHING)
@@ -178,7 +178,7 @@ export function lessonContentAssetUrls(content: LessonJsonObject): string[] {
     const items = Array.isArray(content[key]) ? content[key] : [];
     for (const item of items) {
       const url = lessonAsObject(item).url;
-      if (typeof url === 'string' && url.trim()) urls.push(url);
+      if (typeof url === "string" && url.trim()) urls.push(url);
     }
   }
   return urls;
@@ -241,51 +241,41 @@ export function isLessonInReviewCycle(
   );
 }
 
-/** Title of the weekly-material page a lesson is published as. */
+/** Título da página de material de visita em que a lição é publicada. */
 export function lessonPublicationTitle(
-  lesson: Pick<LessonEntity, 'category' | 'weekNumber' | 'theme'>,
+  lesson: Pick<LessonEntity, "category" | "weekNumber" | "theme">,
 ): string {
-  if (lesson.category !== LessonCategory.SPECIAL)
-    return `Semana ${lesson.weekNumber} — ${lesson.theme}`;
+  const label = lessonCategoryProfile(lesson.category).label;
   return lesson.weekNumber
-    ? `Material Especial (Semana ${lesson.weekNumber}) — ${lesson.theme}`
-    : `Material Especial — ${lesson.theme}`;
+    ? `Semana ${lesson.weekNumber} · ${label} — ${lesson.theme}`
+    : `${label} — ${lesson.theme}`;
 }
 
-/**
- * Description of the published page. A Material Especial is a weekly material
- * with its own title and description, told apart by the special tag; the link
- * to the lesson lives in `sourceLessonId`, never in the text.
- */
 export function lessonPublicationDescription(
-  lesson: Pick<LessonEntity, 'category' | 'weekNumber'>,
+  lesson: Pick<LessonEntity, "category" | "weekNumber">,
 ): string {
-  if (lesson.category !== LessonCategory.SPECIAL)
-    return `Material completo da semana ${lesson.weekNumber}, revisado e aprovado.`;
-  return `Material Especial completo (Lição, Visuais da Lição e Visuais do Versículo)${lesson.weekNumber ? ` — Semana ${lesson.weekNumber}` : ''}, revisado e aprovado. ${WEEK_MATERIAL_SPECIAL_TAG}`;
+  const profile = lessonCategoryProfile(lesson.category);
+  return `Material completo para ${profile.audience}${lesson.weekNumber ? ` — semana ${lesson.weekNumber}` : ""}, revisado e aprovado.`;
 }
 
 /**
- * Text the route path of the published page is derived from. A weekly
- * material is addressed by its week alone (`materiais_semanal_semana_27`,
- * then `_1`, `_2` for another material of the same week); a special material
- * keeps deriving the path from its title.
+ * Texto de que sai o caminho da rota da página publicada: semana e público,
+ * para que Crianças e Adultos da mesma semana não colidam.
  */
 export function lessonPublicationRoutePathSource(
-  lesson: Pick<LessonEntity, 'category' | 'weekNumber'>,
+  lesson: Pick<LessonEntity, "category" | "weekNumber">,
 ): string | undefined {
-  return lesson.category !== LessonCategory.SPECIAL && lesson.weekNumber
-    ? `Semana ${lesson.weekNumber}`
+  return lesson.weekNumber
+    ? `Semana ${lesson.weekNumber} ${lessonCategoryProfile(lesson.category).label}`
     : undefined;
 }
 
 export function lessonPdfFileName(
-  lesson: Pick<LessonEntity, 'category' | 'weekNumber'>,
-  prefix = '',
+  lesson: Pick<LessonEntity, "category" | "weekNumber">,
+  prefix = "",
 ): string {
-  return lesson.category === LessonCategory.SPECIAL
-    ? `${prefix}licao-especial${lesson.weekNumber ? `-semana-${lesson.weekNumber}` : ''}.pdf`
-    : `${prefix}${prefix ? '' : 'licao-'}semana-${lesson.weekNumber}.pdf`;
+  const slug = lessonCategoryProfile(lesson.category).slug;
+  return `${prefix}${prefix ? "" : "licao-"}${slug}${lesson.weekNumber ? `-semana-${lesson.weekNumber}` : ""}.pdf`;
 }
 
 /** Escapes LIKE wildcards so user input is matched literally. */

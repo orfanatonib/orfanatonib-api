@@ -47,6 +47,10 @@ export class ContentGenerationJobEntity extends BaseEntity {
   @Column({ type: "datetime", nullable: true })
   heartbeatAt: Date | null;
 
+  /** Andamento da fase de imagens ({ phase, done, total, failed }): o que a tela mostra por SSE. */
+  @Column({ type: "json", nullable: true })
+  progress: Record<string, unknown> | null;
+
   @Column({ type: "varchar", length: 80, nullable: true })
   errorCode: string | null;
 

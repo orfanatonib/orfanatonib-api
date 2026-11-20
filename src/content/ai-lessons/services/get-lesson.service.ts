@@ -1,24 +1,24 @@
-import { Injectable } from '@nestjs/common';
-import { QueryLessonsDto } from '../dto/query-lessons.dto';
-import { LessonEntity } from '../entities/lesson.entity';
+import { Injectable } from "@nestjs/common";
+import { QueryLessonsDto } from "../dto/query-lessons.dto";
+import { LessonEntity } from "../entities/lesson.entity";
 import {
   getLessonStageOrder,
   LessonStageType,
   LessonStatus,
-} from '../enums/lesson.enums';
-import { AiLessonsRepository } from '../repositories/ai-lessons.repository';
+} from "../enums/lesson.enums";
+import { AiLessonsRepository } from "../repositories/ai-lessons.repository";
 import {
   LESSON_DASHBOARD_ACTIVE_LIMIT,
   LESSON_DASHBOARD_FINISHED_STATUSES,
   LESSON_DASHBOARD_RECENT_LIMIT,
-} from '../constants/lesson-repository.constants';
+} from "../constants/lesson-repository.constants";
 import type {
   LessonDashboard,
   LessonDraftPage,
-} from '../types/lesson-generation.types';
-import { normalizeLessonDocumentHeader } from '../utils';
-import { lessonEventDigest } from '../utils/lesson-event-digest.utils';
-import { lessonNotFound } from '../utils/lesson-studio-errors.utils';
+} from "../types/lesson-generation.types";
+import { normalizeLessonDocumentHeader } from "../utils";
+import { lessonEventDigest } from "../utils/lesson-event-digest.utils";
+import { lessonNotFound } from "../utils/lesson-studio-errors.utils";
 
 /** Read operations of the studio. Reads are pure: they never create stages, update templates or revoke approvals. */
 @Injectable()
@@ -76,7 +76,6 @@ export class GetLessonService {
             version.tiptapAstJson = normalizeLessonDocumentHeader(
               version.tiptapAstJson,
               lesson.weekNumber,
-              lesson.category,
             );
     }
     return lesson;

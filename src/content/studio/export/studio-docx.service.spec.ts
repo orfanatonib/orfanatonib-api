@@ -1,3 +1,8 @@
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import * as sharpModule from "sharp";
 import { StudioDocxService } from "./studio-docx.service";
 import {
   document,
@@ -9,6 +14,9 @@ import {
   text,
 } from "./tiptap-nodes.util";
 import type { TiptapDocument } from "./tiptap.types";
+
+const sharp = ((sharpModule as unknown as { default?: typeof sharpModule })
+  .default ?? sharpModule) as unknown as typeof sharpModule.default;
 
 const meta = {
   theme: "Deus cuida de nós",
@@ -74,5 +82,50 @@ describe("StudioDocxService", () => {
     await expect(
       service.build(meta, [{ title: "L", document: dirty }]),
     ).resolves.toBeInstanceOf(Buffer);
+  });
+
+  it("fixação: a imagem compilada vem logo depois do documento da própria etapa, em retrato A4, e não no fim do arquivo", async () => {
+    const png = await sharp({
+      create: {
+        width: 1086,
+        height: 1536,
+        channels: 3,
+        background: { r: 250, g: 240, b: 220 },
+      },
+    })
+      .png()
+      .toBuffer();
+    const buffer = await service.build(meta, [
+      {
+        title: "Fixação",
+        document: document([heading(1, "PRIMEIRO"), paragraph("corpo um")]),
+        imagePages: {
+          orientation: "PORTRAIT",
+          images: [{ bytes: png, width: 1086, height: 1536 }],
+        },
+      },
+      {
+        title: "Brincadeira",
+        document: document([heading(1, "SEGUNDO"), paragraph("corpo dois")]),
+      },
+    ]);
+    const dir = mkdtempSync(join(tmpdir(), "docx-spec-"));
+    const file = join(dir, "out.docx");
+    writeFileSync(file, buffer);
+    const xml = execFileSync("unzip", ["-p", file, "word/document.xml"], {
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    rmSync(dir, { recursive: true, force: true });
+    const first = xml.indexOf("PRIMEIRO");
+    const image = xml.indexOf("<w:drawing>");
+    const second = xml.indexOf("SEGUNDO");
+    expect(first).toBeGreaterThan(-1);
+    expect(image).toBeGreaterThan(first);
+    expect(second).toBeGreaterThan(image); // a imagem fecha o 1º documento, antes do 2º
+    // a seção da imagem é A4 em pé, sem margem
+    const portrait = /<w:pgSz [^>]*w:w="11906"[^>]*w:h="16838"/;
+    expect(xml).toMatch(portrait);
+    expect(xml).toContain('w:top="0"');
   });
 });

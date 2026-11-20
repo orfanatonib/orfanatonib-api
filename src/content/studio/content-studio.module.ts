@@ -23,6 +23,10 @@ import { InMemoryAiJobQueue } from "./queue/in-memory-ai-job-queue";
 import { GetLatestStageGenerationService } from "./services/get-latest-stage-generation.service";
 import { CancelStageGenerationService } from "./services/cancel-stage-generation.service";
 import { GenerationWorkerService } from "./services/generation-worker.service";
+import { ProcessStageImagesService } from "./services/process-stage-images.service";
+import { RequestStageImagesService } from "./services/request-stage-images.service";
+import { GetStageImagesService } from "./services/get-stage-images.service";
+import { ContentAssetRepository } from "./repositories/content-asset.repository";
 import { ProcessGenerationJobService } from "./services/process-generation-job.service";
 import { ConfigService } from "@nestjs/config";
 import { AiGenerationGateway } from "./ai/ai-generation.gateway";
@@ -71,6 +75,9 @@ import { ResolveReviewCommentService } from "./services/resolve-review-comment.s
 import { RequestStageGenerationService } from "./services/request-stage-generation.service";
 import { SaveStageContentService } from "./services/save-stage-content.service";
 import { SubmitPackageReviewService } from "./services/submit-package-review.service";
+
+/** Cota simulada: 4 públicos × 5 etapas são 20 pedidos de ~2 mil tokens por material; o E2E cria vários. */
+const FAKE_AI_DEFAULT_QUOTA_TOKENS = 500_000;
 
 @Module({
   imports: [
@@ -130,6 +137,10 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
     CancelStageGenerationService,
     GetLatestStageGenerationService,
     ProcessGenerationJobService,
+    ProcessStageImagesService,
+    RequestStageImagesService,
+    GetStageImagesService,
+    ContentAssetRepository,
     GenerationWorkerService,
     // Fila em processo (id do job apenas; o banco é a verdade). Um adaptador BullMQ/Redis entra por esta porta.
     {
@@ -183,7 +194,10 @@ import { SubmitPackageReviewService } from "./services/submit-package-review.ser
             ? new FakeAiGenerationGateway(
                 "fake",
                 config.get<string>("ENVIRONMENT"),
-                Number(config.get<string>("FAKE_AI_QUOTA_TOKENS") ?? 20000),
+                Number(
+                  config.get<string>("FAKE_AI_QUOTA_TOKENS") ??
+                    FAKE_AI_DEFAULT_QUOTA_TOKENS,
+                ),
               )
             : undefined,
         ),

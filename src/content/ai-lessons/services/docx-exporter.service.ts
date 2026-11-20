@@ -1,24 +1,23 @@
 import {
   buildManualWorkSheet,
   manualWorkImageHeight,
-} from '../utils/manual-work-layout.utils';
-import { fitManualWorkArt } from '../utils/manual-work-image.utils';
-import { specialPresentationGuide } from '../utils/special-presentation-guide.utils';
-import { MANUAL_WORK_LAYOUT } from '../constants/manual-work-layout.constants';
-import { editedOlderMeditation } from '../utils/older-meditation-content.utils';
-import { buildOlderMeditationSheet } from '../utils/older-meditation-layout.utils';
-import { meditationActivityAsset } from '../utils/meditation-assets.utils';
+} from "../utils/manual-work-layout.utils";
+import { fitManualWorkArt } from "../utils/manual-work-image.utils";
+import { MANUAL_WORK_LAYOUT } from "../constants/manual-work-layout.constants";
+import { editedOlderMeditation } from "../utils/older-meditation-content.utils";
+import { buildOlderMeditationSheet } from "../utils/older-meditation-layout.utils";
+import { meditationActivityAsset } from "../utils/meditation-assets.utils";
 import {
   Injectable,
   Logger,
   OnApplicationBootstrap,
   Optional,
   UnprocessableEntityException,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { readFile } from 'node:fs/promises';
-import { join, resolve } from 'node:path';
-import { AwsS3Service } from 'src/infrastructure/aws/services/aws-s3.service';
+} from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { readFile } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import {
   AlignmentType,
   BorderStyle,
@@ -35,8 +34,8 @@ import {
   ExternalHyperlink,
   ParagraphChild,
   WidthType,
-} from 'docx';
-import { LessonCategory, LessonStageType } from '../enums/lesson.enums';
+} from "docx";
+import { LessonStageType } from "../enums/lesson.enums";
 import {
   documentFontFamily,
   documentFontSize,
@@ -44,18 +43,18 @@ import {
   documentLink,
   documentTableSpan,
   documentCellWidth,
-} from '../lessonDocument.utils';
+} from "../lessonDocument.utils";
 import type {
   LessonAssetPageEntry,
   LessonDocumentBlock,
   LessonImageLoader,
   LessonInlineExportOptions,
   LessonListContext,
-} from '../types/lesson-document.types';
+} from "../types/lesson-document.types";
 import {
   DEFAULT_MAX_IMAGE_ASSET_BYTES,
   IMAGE_DOWNLOAD_CONCURRENCY,
-} from '../constants/asset-download.constants';
+} from "../constants/asset-download.constants";
 import {
   DOCUMENT_BASE_FONT,
   DOCUMENT_CODE_FONT,
@@ -68,27 +67,27 @@ import {
   LEGACY_DOCUMENT_LABELS,
   OLDER_MEDITATION_MAX_ACTIVITIES,
   YOUNGER_MEDITATION_MAX_ACTIVITIES,
-} from '../constants/lesson-document.constants';
+} from "../constants/lesson-document.constants";
 import {
   LESSON_HEADER_ASSETS_DIRECTORY,
   LESSON_HEADER_IMAGES,
   LessonHeaderImage,
-} from '../constants/lesson-header.constants';
-import { LessonVisualOrientation } from '../enums/lesson.enums';
-import { createConcurrencyLimiter } from '../utils/concurrency.utils';
+} from "../constants/lesson-header.constants";
+import { LessonVisualOrientation } from "../enums/lesson.enums";
+import { createConcurrencyLimiter } from "../utils/concurrency.utils";
 import {
   docxTextLines,
   normalizeDocxColor,
   sanitizeDocxText,
-} from '../utils/docx-text.utils';
-import { fitImageInBox } from '../utils/image-dimensions.utils';
-import { YOUNGER_MEDITATION_LAYOUT } from '../constants/younger-meditation-layout.constants';
-import { buildYoungerMeditationSheet } from '../utils/younger-meditation-layout.utils';
-import { editedYoungerMeditation } from '../utils/younger-meditation-content.utils';
-import { downloadSafeImageBuffer } from '../utils/asset-url.utils';
-import { reconcileStageStructuredContent } from '../utils/lesson-canonical-content.utils';
-import { isGameSummaryAssetList } from '../utils/lesson-game-summary.utils';
-import { withoutLeakedImageBrief } from '../utils/lesson-image-brief-document.utils';
+} from "../utils/docx-text.utils";
+import { fitImageInBox } from "../utils/image-dimensions.utils";
+import { YOUNGER_MEDITATION_LAYOUT } from "../constants/younger-meditation-layout.constants";
+import { buildYoungerMeditationSheet } from "../utils/younger-meditation-layout.utils";
+import { editedYoungerMeditation } from "../utils/younger-meditation-content.utils";
+import { downloadSafeImageBuffer } from "../utils/asset-url.utils";
+import { reconcileStageStructuredContent } from "../utils/lesson-canonical-content.utils";
+import { isGameSummaryAssetList } from "../utils/lesson-game-summary.utils";
+import { withoutLeakedImageBrief } from "../utils/lesson-image-brief-document.utils";
 import {
   lessonHeaderLines,
   lessonString,
@@ -96,7 +95,7 @@ import {
   normalizeLessonVerseReference,
   unquoteLessonVerse,
   normalizeLessonDocumentHeader,
-} from '../utils';
+} from "../utils";
 
 type Json = Record<string, unknown>;
 type Alignment = (typeof AlignmentType)[keyof typeof AlignmentType];
@@ -130,7 +129,6 @@ export class DocxExporterService implements OnApplicationBootstrap {
   async buildDocxFromTiptapOrStructuredJson(
     input: Json,
     weekNumber?: number | null,
-    category?: LessonCategory | null,
   ): Promise<Buffer> {
     const children: (Paragraph | Table)[] = [];
     const loadImage = this.createImageLoader();
@@ -140,29 +138,17 @@ export class DocxExporterService implements OnApplicationBootstrap {
       if (lessonDoc) {
         this.addTiptap(
           children,
-          normalizeLessonDocumentHeader(lessonDoc, weekNumber, category),
+          normalizeLessonDocumentHeader(lessonDoc, weekNumber),
         );
       } else {
-        lessonHeaderLines(
-          lessonString(lesson.title),
-          weekNumber,
-          category,
-        ).forEach((line) => this.addHeading(children, line, 1));
-        this.addField(children, 'TEXTO BÍBLICO', lesson.biblicalReference);
-        this.addField(children, 'PROPÓSITO', lesson.purpose);
-        this.addList(children, 'MÚSICAS', lesson.songs);
-        const verse = this.object(lesson.memoryVerse);
-        this.addHeading(children, 'VERSÍCULO PARA MEMORIZAR', 2);
-        this.addText(
-          children,
-          `${lessonString(verse.text)} — ${normalizeLessonVerseReference(verse.reference)} — ${lessonString(verse.version)}`,
+        lessonHeaderLines(lessonString(lesson.title), weekNumber).forEach(
+          (line) => this.addHeading(children, line, 1),
         );
-        this.addField(
-          children,
-          'EXPLICAÇÃO DO PRINCÍPIO',
-          lesson.principleExplanation,
-        );
-        this.addHeading(children, 'LIÇÃO BÍBLICA', 2);
+        this.addField(children, "TEXTO BÍBLICO", lesson.biblicalReference);
+        this.addList(children, "PERSONAGENS", lesson.characters);
+        this.addList(children, "MATERIAIS DE APOIO", lesson.supportMaterials);
+        this.addField(children, "QUEBRA-GELO", lesson.icebreaker);
+        this.addHeading(children, "HISTÓRIA BÍBLICA", 2);
         for (const line of lessonString(lesson.story)
           .split(/\r?\n/)
           .map((text) => text.trim())
@@ -171,31 +157,29 @@ export class DocxExporterService implements OnApplicationBootstrap {
           if (title)
             this.renderTiptapNodes(children, [
               {
-                type: 'heading',
-                attrs: { level: 3, textAlign: 'left' },
-                content: [{ type: 'text', text: title }],
+                type: "heading",
+                attrs: { level: 3, textAlign: "left" },
+                content: [{ type: "text", text: title }],
               },
             ]);
           else this.addText(children, line);
         }
         this.addField(
           children,
-          'APLICAÇÃO E APELO',
+          "APLICAÇÃO E APELO",
           lesson.applicationAndAppeal,
         );
-        this.addField(
-          children,
-          'CANTINHO DO ACONSELHAMENTO',
-          lesson.counseling,
-        );
         this.addQuestions(children, lesson.reviewQuestions);
-        this.addField(children, 'FALANDO COM DEUS', lesson.closingPrayer);
+        const verse = this.object(lesson.memoryVerse);
+        this.addHeading(children, "VERSÍCULO PARA MEMORIZAR", 2);
+        this.addText(
+          children,
+          `${lessonString(verse.text)} — ${normalizeLessonVerseReference(verse.reference)} — ${lessonString(verse.version)}`,
+        );
+        this.addList(children, "OPÇÕES DE VERSÍCULO", lesson.verseOptions);
       }
     }
     const visualStage = this.stageData(input[LessonStageType.LESSON_VISUALS]);
-    if (category === LessonCategory.SPECIAL) {
-      children.push(...specialPresentationGuide(visualStage.assets));
-    }
     const rawGameData = this.stageData(input[LessonStageType.STANDARD_GAME]);
     const gameStage = reconcileStageStructuredContent(
       LessonStageType.STANDARD_GAME,
@@ -251,13 +235,13 @@ export class DocxExporterService implements OnApplicationBootstrap {
 
     this.addEditableStage(
       children,
-      'BRINCADEIRA',
+      "BRINCADEIRA",
       input[LessonStageType.STANDARD_GAME],
       gameStage,
     );
     this.addEditableStage(
       children,
-      'SUGESTÃO DE FIXAÇÃO DO VERSÍCULO',
+      "SUGESTÃO DE FIXAÇÃO DO VERSÍCULO",
       input[LessonStageType.VERSE_FIXATION],
       fixationStage,
     );
@@ -476,7 +460,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
     ];
     if (!sections.length)
       throw new UnprocessableEntityException(
-        'O item não possui conteúdo renderizável para o preview.',
+        "O item não possui conteúdo renderizável para o preview.",
       );
     return Packer.toBuffer(
       new Document({
@@ -516,7 +500,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
       }
     }
     this.logger.error(
-      `Cabeçalho ${env} não encontrado em: ${candidates.join(', ')}`,
+      `Cabeçalho ${env} não encontrado em: ${candidates.join(", ")}`,
     );
     throw new UnprocessableEntityException(
       `Cabeçalho obrigatório ausente (${env}). Avise o suporte técnico.`,
@@ -524,14 +508,14 @@ export class DocxExporterService implements OnApplicationBootstrap {
   }
 
   private object(value: unknown): Json {
-    return value && typeof value === 'object' && !Array.isArray(value)
+    return value && typeof value === "object" && !Array.isArray(value)
       ? (value as Json)
       : {};
   }
 
   private stageData(value: unknown): Json {
     const wrapper = this.object(value);
-    return Object.prototype.hasOwnProperty.call(wrapper, 'structuredDataJson')
+    return Object.prototype.hasOwnProperty.call(wrapper, "structuredDataJson")
       ? this.object(wrapper.structuredDataJson)
       : wrapper;
   }
@@ -541,7 +525,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
     const document = withoutLeakedImageBrief(
       this.object(wrapper.tiptapAstJson),
     );
-    return document.type === 'doc' ? document : null;
+    return document.type === "doc" ? document : null;
   }
 
   private addEditableStage(
@@ -559,7 +543,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
   }
 
   private addTiptap(out: (Paragraph | Table)[], document: Json): void {
-    if (!document || typeof document !== 'object') return;
+    if (!document || typeof document !== "object") return;
     const content = Array.isArray(document.content) ? document.content : [];
     this.renderTiptapNodes(out, content);
   }
@@ -577,35 +561,35 @@ export class DocxExporterService implements OnApplicationBootstrap {
       const node = this.object(raw);
       const type = lessonString(node.type);
 
-      if (type === 'bulletList') {
+      if (type === "bulletList") {
         const listContent = Array.isArray(node.content) ? node.content : [];
         this.renderTiptapNodes(out, listContent, {
-          type: 'bullet',
+          type: "bullet",
           depth: (listContext?.depth ?? 0) + 1,
         });
         continue;
       }
 
-      if (type === 'orderedList') {
+      if (type === "orderedList") {
         const listContent = Array.isArray(node.content) ? node.content : [];
         const start = Number(this.object(node.attrs).start);
         this.renderTiptapNodes(out, listContent, {
-          type: 'ordered',
+          type: "ordered",
           depth: (listContext?.depth ?? 0) + 1,
           start: Number.isInteger(start) && start > 0 ? start : 1,
         });
         continue;
       }
 
-      if (type === 'listItem') {
+      if (type === "listItem") {
         const depth = listContext?.depth ?? 1;
-        const index = listContext?.type === 'ordered' ? orderedIndex++ : 1;
-        const prefix = listContext?.type === 'ordered' ? `${index}. ` : '• ';
+        const index = listContext?.type === "ordered" ? orderedIndex++ : 1;
+        const prefix = listContext?.type === "ordered" ? `${index}. ` : "• ";
         this.renderListItem(out, node, prefix, depth);
         continue;
       }
 
-      if (type === 'heading') {
+      if (type === "heading") {
         const attrs = this.object(node.attrs);
         const level = Number(attrs.level) || 1;
         const alignment = this.getAlignment(attrs, AlignmentType.CENTER);
@@ -614,7 +598,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
           {
             size: level === 1 ? 36 : level === 2 ? 26 : 24,
             defaultBold: true,
-            defaultColor: '000000',
+            defaultColor: "000000",
           },
         );
         if (runs.length) {
@@ -635,27 +619,27 @@ export class DocxExporterService implements OnApplicationBootstrap {
         continue;
       }
 
-      if (type === 'blockquote') {
+      if (type === "blockquote") {
         this.renderBlockquote(out, node);
         continue;
       }
 
-      if (type === 'table') {
+      if (type === "table") {
         this.renderTable(out, node);
         continue;
       }
 
-      if (type === 'horizontalRule') {
+      if (type === "horizontalRule") {
         out.push(
           new Paragraph({
             border: {
-              bottom: { color: 'DDDDDD', style: BorderStyle.SINGLE, size: 6 },
+              bottom: { color: "DDDDDD", style: BorderStyle.SINGLE, size: 6 },
             },
           }),
         );
         continue;
       }
-      if (type === 'paragraph' || type === 'codeBlock') {
+      if (type === "paragraph" || type === "codeBlock") {
         const attrs = this.object(node.attrs);
         const alignment = this.getAlignment(attrs, AlignmentType.JUSTIFIED);
         const runs = this.convertInlineNodesToTextRuns(
@@ -663,15 +647,15 @@ export class DocxExporterService implements OnApplicationBootstrap {
           {
             size: DOCUMENT_DEFAULT_FONT_SIZE,
             defaultColor: DOCUMENT_DEFAULT_COLOR,
-            defaultFont: type === 'codeBlock' ? DOCUMENT_CODE_FONT : undefined,
+            defaultFont: type === "codeBlock" ? DOCUMENT_CODE_FONT : undefined,
           },
         );
-        if (runs.length || type === 'paragraph') {
+        if (runs.length || type === "paragraph") {
           out.push(
             new Paragraph({
               alignment,
               spacing: documentLineSpacing(attrs, { after: 140, line: 276 }),
-              children: runs.length ? runs : [new TextRun('')],
+              children: runs.length ? runs : [new TextRun("")],
             }),
           );
         }
@@ -710,7 +694,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
       const child = this.object(rawChild);
       const childType = lessonString(child.type);
 
-      if (childType === 'paragraph') {
+      if (childType === "paragraph") {
         const attrs = this.object(child.attrs);
         const alignment = this.getAlignment(attrs, AlignmentType.JUSTIFIED);
         const runs = this.convertInlineNodesToTextRuns(
@@ -736,9 +720,9 @@ export class DocxExporterService implements OnApplicationBootstrap {
         out.push(new Paragraph({ indent, children: [marker()] }));
         markerPending = false;
       }
-      if (childType === 'bulletList' || childType === 'orderedList') {
+      if (childType === "bulletList" || childType === "orderedList") {
         // The list branch adds one level itself; passing `depth` avoids doubling.
-        this.renderTiptapNodes(out, [child], { type: 'bullet', depth });
+        this.renderTiptapNodes(out, [child], { type: "bullet", depth });
       } else {
         this.renderTiptapNodes(out, [child]);
       }
@@ -750,20 +734,20 @@ export class DocxExporterService implements OnApplicationBootstrap {
     for (const rawChild of content) {
       const child = this.object(rawChild);
       const childType = lessonString(child.type);
-      if (childType === 'paragraph') {
+      if (childType === "paragraph") {
         const attrs = this.object(child.attrs);
         const alignment = this.getAlignment(attrs, AlignmentType.JUSTIFIED);
         const runs = this.convertInlineNodesToTextRuns(
           Array.isArray(child.content) ? child.content : [],
-          { size: 22, defaultColor: '000000', defaultItalic: true },
+          { size: 22, defaultColor: "000000", defaultItalic: true },
         );
         out.push(
           new Paragraph({
             alignment,
             indent: { left: 360, right: 360 },
-            shading: { fill: 'F5F5F5' },
+            shading: { fill: "F5F5F5" },
             border: {
-              left: { color: '000000', style: BorderStyle.SINGLE, size: 24 },
+              left: { color: "000000", style: BorderStyle.SINGLE, size: 24 },
             },
             spacing: documentLineSpacing(attrs, {
               before: 140,
@@ -776,7 +760,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
       } else {
         const runs = this.convertInlineNodesToTextRuns([child], {
           size: 22,
-          defaultColor: '000000',
+          defaultColor: "000000",
           defaultItalic: true,
         });
         if (runs.length) {
@@ -784,9 +768,9 @@ export class DocxExporterService implements OnApplicationBootstrap {
             new Paragraph({
               alignment: AlignmentType.JUSTIFIED,
               indent: { left: 360, right: 360 },
-              shading: { fill: 'F5F5F5' },
+              shading: { fill: "F5F5F5" },
               border: {
-                left: { color: '000000', style: BorderStyle.SINGLE, size: 24 },
+                left: { color: "000000", style: BorderStyle.SINGLE, size: 24 },
               },
               spacing: { before: 140, after: 140, line: 260 },
               children: runs,
@@ -805,7 +789,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
 
     for (const rawRow of tableContent) {
       const rowNode = this.object(rawRow);
-      if (lessonString(rowNode.type) !== 'tableRow') continue;
+      if (lessonString(rowNode.type) !== "tableRow") continue;
 
       const rowContent = Array.isArray(rowNode.content) ? rowNode.content : [];
       const cells: TableCell[] = [];
@@ -813,7 +797,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
       for (const rawCell of rowContent) {
         const cellNode = this.object(rawCell);
         const cellType = lessonString(cellNode.type);
-        if (cellType !== 'tableCell' && cellType !== 'tableHeader') continue;
+        if (cellType !== "tableCell" && cellType !== "tableHeader") continue;
 
         const cellContent = Array.isArray(cellNode.content)
           ? cellNode.content
@@ -822,15 +806,15 @@ export class DocxExporterService implements OnApplicationBootstrap {
 
         for (const rawPara of cellContent) {
           const paraNode = this.object(rawPara);
-          if (lessonString(paraNode.type) === 'paragraph') {
+          if (lessonString(paraNode.type) === "paragraph") {
             const attrs = this.object(paraNode.attrs);
             const alignment = this.getAlignment(attrs, AlignmentType.LEFT);
             const runs = this.convertInlineNodesToTextRuns(
               Array.isArray(paraNode.content) ? paraNode.content : [],
               {
                 size: 22,
-                defaultColor: '000000',
-                defaultBold: cellType === 'tableHeader',
+                defaultColor: "000000",
+                defaultBold: cellType === "tableHeader",
               },
             );
             cellParagraphs.push(
@@ -839,7 +823,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
                 spacing: documentLineSpacing(attrs, { after: 60, line: 240 }),
                 children: runs.length
                   ? runs
-                  : [new TextRun({ text: '', size: 22 })],
+                  : [new TextRun({ text: "", size: 22 })],
               }),
             );
           } else {
@@ -849,7 +833,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
 
         if (!cellParagraphs.length) {
           cellParagraphs.push(
-            new Paragraph({ children: [new TextRun({ text: '', size: 22 })] }),
+            new Paragraph({ children: [new TextRun({ text: "", size: 22 })] }),
           );
         }
 
@@ -865,7 +849,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
               ? { size: cellWidth, type: WidthType.DXA }
               : undefined,
             shading:
-              cellType === 'tableHeader' ? { fill: 'F1F5F9' } : undefined,
+              cellType === "tableHeader" ? { fill: "F1F5F9" } : undefined,
             margins: { top: 100, bottom: 100, left: 140, right: 140 },
           }),
         );
@@ -900,13 +884,13 @@ export class DocxExporterService implements OnApplicationBootstrap {
       const node = this.object(raw);
       const type = lessonString(node.type);
 
-      if (type === 'hardBreak') {
+      if (type === "hardBreak") {
         runs.push(new TextRun({ break: 1 }));
         continue;
       }
 
-      if (type === 'text') {
-        const rawText = typeof node.text === 'string' ? node.text : '';
+      if (type === "text") {
+        const rawText = typeof node.text === "string" ? node.text : "";
         const text = sanitizeDocxText(
           LEGACY_DOCUMENT_LABELS[rawText] ?? rawText,
         );
@@ -928,16 +912,16 @@ export class DocxExporterService implements OnApplicationBootstrap {
         for (const rawMark of marks) {
           const mark = this.object(rawMark);
           const mType = lessonString(mark.type);
-          if (mType === 'link')
+          if (mType === "link")
             href = documentLink(this.object(mark.attrs).href);
-          if (mType === 'code') font = DOCUMENT_CODE_FONT;
-          if (mType === 'bold') isBold = true;
-          if (mType === 'italic') isItalic = true;
-          if (mType === 'underline') isUnderline = true;
-          if (mType === 'strike') isStrike = true;
-          if (mType === 'subscript') isSubScript = true;
-          if (mType === 'superscript') isSuperScript = true;
-          if (mType === 'textStyle' || mType === 'color') {
+          if (mType === "code") font = DOCUMENT_CODE_FONT;
+          if (mType === "bold") isBold = true;
+          if (mType === "italic") isItalic = true;
+          if (mType === "underline") isUnderline = true;
+          if (mType === "strike") isStrike = true;
+          if (mType === "subscript") isSubScript = true;
+          if (mType === "superscript") isSuperScript = true;
+          if (mType === "textStyle" || mType === "color") {
             const attrs = this.object(mark.attrs);
             font = documentFontFamily(attrs.fontFamily) ?? font;
             size = documentFontSize(attrs.fontSize, defaultSize) ?? size;
@@ -945,7 +929,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
             // value keeps the default instead of breaking the whole document.
             textColor = normalizeDocxColor(attrs.color) ?? textColor;
           }
-          if (mType === 'highlight') {
+          if (mType === "highlight") {
             highlightFill =
               normalizeDocxColor(this.object(mark.attrs).color) ??
               DOCUMENT_DEFAULT_HIGHLIGHT;
@@ -1007,10 +991,10 @@ export class DocxExporterService implements OnApplicationBootstrap {
     defaultAlignment: Alignment = AlignmentType.JUSTIFIED,
   ): Alignment {
     const align = lessonString(nodeAttrs.textAlign).toLowerCase();
-    if (align === 'center') return AlignmentType.CENTER;
-    if (align === 'right') return AlignmentType.RIGHT;
-    if (align === 'left') return AlignmentType.LEFT;
-    if (align === 'justify') return AlignmentType.JUSTIFIED;
+    if (align === "center") return AlignmentType.CENTER;
+    if (align === "right") return AlignmentType.RIGHT;
+    if (align === "left") return AlignmentType.LEFT;
+    if (align === "justify") return AlignmentType.JUSTIFIED;
     return defaultAlignment;
   }
 
@@ -1033,7 +1017,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
   }
 
   private addText(out: (Paragraph | Table)[], value: unknown): void {
-    if (typeof value === 'string' && value.trim()) {
+    if (typeof value === "string" && value.trim()) {
       out.push(
         new Paragraph({
           alignment: AlignmentType.JUSTIFIED,
@@ -1049,7 +1033,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
     label: string,
     value: unknown,
   ): void {
-    if (typeof value !== 'string' || !value.trim()) return;
+    if (typeof value !== "string" || !value.trim()) return;
     out.push(
       new Paragraph({
         alignment: AlignmentType.JUSTIFIED,
@@ -1074,7 +1058,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
 
   private addQuestions(out: (Paragraph | Table)[], value: unknown): void {
     if (!Array.isArray(value)) return;
-    this.addHeading(out, 'PERGUNTAS DA LIÇÃO', 2);
+    this.addHeading(out, "PERGUNTAS DA LIÇÃO", 2);
     value.forEach((item, index) => {
       const q = this.object(item);
       this.addText(
@@ -1092,12 +1076,12 @@ export class DocxExporterService implements OnApplicationBootstrap {
     if (!Object.keys(data).length) return;
     this.addHeading(out, title, 1);
     for (const [key, value] of Object.entries(data)) {
-      if (key === 'assets' || key === 'printableAssets' || key.startsWith('_'))
+      if (key === "assets" || key === "printableAssets" || key.startsWith("_"))
         continue;
-      if (typeof value === 'string') this.addField(out, key, value);
+      if (typeof value === "string") this.addField(out, key, value);
       else if (
         Array.isArray(value) &&
-        value.every((v) => typeof v === 'string')
+        value.every((v) => typeof v === "string")
       )
         this.addList(out, key, value);
     }
@@ -1105,14 +1089,14 @@ export class DocxExporterService implements OnApplicationBootstrap {
 
   /** Legendas do kit de recortes: nomes dos elementos aplicados pelo renderer, nunca embutidos na imagem. */
   private cutoutLegend(asset: Json): string {
-    if (!Array.isArray(asset.items)) return '';
+    if (!Array.isArray(asset.items)) return "";
     return asset.items
       .map((item) => this.object(item).label)
       .filter(
-        (label): label is string => typeof label === 'string' && !!label.trim(),
+        (label): label is string => typeof label === "string" && !!label.trim(),
       )
       .map((label, index) => `${index + 1}. ${label.trim()}`)
-      .join('   ');
+      .join("   ");
   }
 
   /** Assets of a stage, each with the URL the generation must have stored. */
@@ -1120,9 +1104,9 @@ export class DocxExporterService implements OnApplicationBootstrap {
     if (!Array.isArray(rawAssets)) return [];
     return rawAssets.map((raw) => {
       const asset = this.object(raw);
-      if (typeof asset.url !== 'string' || !asset.url.trim())
+      if (typeof asset.url !== "string" || !asset.url.trim())
         throw new UnprocessableEntityException(
-          'Uma imagem obrigatória deste item ainda não foi gerada. Gere o item novamente antes de exportar.',
+          "Uma imagem obrigatória deste item ainda não foi gerada. Gere o item novamente antes de exportar.",
         );
       return asset;
     });
@@ -1154,20 +1138,20 @@ export class DocxExporterService implements OnApplicationBootstrap {
     image: Buffer,
   ): LessonDocumentBlock[] {
     const instruction =
-      typeof asset.instruction === 'string' ? asset.instruction.trim() : '';
+      typeof asset.instruction === "string" ? asset.instruction.trim() : "";
     const instructionWithoutRepeatedNumber = instruction.replace(
       /^\d+\.\s*/,
-      '',
+      "",
     );
     const stepNumber = Number(asset.stepNumber);
     const displayText = imageOnly
-      ? ''
+      ? ""
       : instructionWithoutRepeatedNumber
-        ? `${Number.isInteger(stepNumber) ? `PASSO ${stepNumber} - ` : ''}${instructionWithoutRepeatedNumber}`
-        : typeof asset.displayText === 'string'
+        ? `${Number.isInteger(stepNumber) ? `PASSO ${stepNumber} - ` : ""}${instructionWithoutRepeatedNumber}`
+        : typeof asset.displayText === "string"
           ? asset.displayText.trim()
-          : '';
-    const legend = imageOnly ? '' : this.cutoutLegend(asset);
+          : "";
+    const legend = imageOnly ? "" : this.cutoutLegend(asset);
     const fitted = fitImageInBox(
       image,
       displayText || legend
@@ -1179,10 +1163,10 @@ export class DocxExporterService implements OnApplicationBootstrap {
         ? [
             new Paragraph({
               alignment: AlignmentType.CENTER,
-              children: this.plainRuns(displayText.toLocaleUpperCase('pt-BR'), {
+              children: this.plainRuns(displayText.toLocaleUpperCase("pt-BR"), {
                 bold: true,
                 size: 34,
-                color: '111111',
+                color: "111111",
               }),
               spacing: { before: 0, after: 30 },
               keepNext: true,
@@ -1204,7 +1188,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
         ? [
             new Paragraph({
               alignment: AlignmentType.CENTER,
-              children: this.plainRuns(legend, { size: 20, color: '333333' }),
+              children: this.plainRuns(legend, { size: 20, color: "333333" }),
               spacing: { before: 40, after: 0 },
             }),
           ]
@@ -1341,7 +1325,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
         const asset = meditationActivityAsset(assets, index, activities.length);
         return {
           instruction: lessonString(this.object(raw).instruction),
-          ...(typeof asset.url === 'string' && asset.url.trim()
+          ...(typeof asset.url === "string" && asset.url.trim()
             ? { image: await loadImage(asset.url) }
             : {}),
         };
@@ -1406,7 +1390,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
     );
     if (!asset)
       throw new UnprocessableEntityException(
-        'O trabalho manual ainda não possui a arte para colorir. Gere o item novamente antes de exportar.',
+        "O trabalho manual ainda não possui a arte para colorir. Gere o item novamente antes de exportar.",
       );
     const [image, logo] = await Promise.all([
       loadImage(String(asset.url)),
@@ -1440,7 +1424,7 @@ export class DocxExporterService implements OnApplicationBootstrap {
   private async downloadImage(url: string): Promise<Buffer> {
     const s3 = this.s3;
     return downloadSafeImageBuffer(url, {
-      bucketName: this.config.get<string>('AWS_S3_BUCKET_NAME') ?? undefined,
+      bucketName: this.config.get<string>("AWS_S3_BUCKET_NAME") ?? undefined,
       ...(s3
         ? {
             // Reads through the SDK: works with private buckets and skips DNS.

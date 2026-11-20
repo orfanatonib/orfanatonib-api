@@ -1,4 +1,10 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
+import {
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from "class-validator";
 
 import { TestamentType } from "src/content/page/visit-material-page/enums/testament-type.enum";
 

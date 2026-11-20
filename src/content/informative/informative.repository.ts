@@ -29,7 +29,9 @@ export class InformativeRepository {
     });
   }
 
-  async findAllSorted(query?: QueryInformativeDto): Promise<InformativeEntity[]> {
+  async findAllSorted(
+    query?: QueryInformativeDto,
+  ): Promise<InformativeEntity[]> {
     const search = query?.search?.trim();
     if (search) {
       return this.repo.find({

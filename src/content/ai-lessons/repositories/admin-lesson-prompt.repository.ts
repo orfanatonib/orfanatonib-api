@@ -1,8 +1,12 @@
-import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { AdminLessonPromptEntity } from '../entities/admin-lesson-prompt.entity';
-import { LessonCategory, LessonStageType } from '../enums/lesson.enums';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository } from "typeorm";
+import { AdminLessonPromptEntity } from "../entities/admin-lesson-prompt.entity";
+import {
+  LessonCategory,
+  LessonStageType,
+  DEFAULT_LESSON_CATEGORY,
+} from "../enums/lesson.enums";
 
 @Injectable()
 export class AdminLessonPromptRepository {
@@ -13,7 +17,7 @@ export class AdminLessonPromptRepository {
 
   async findByAdminId(
     adminId: string,
-    category: LessonCategory = LessonCategory.REGULAR,
+    category: LessonCategory = DEFAULT_LESSON_CATEGORY,
   ): Promise<AdminLessonPromptEntity[]> {
     return this.repo.find({ where: { adminId, category } });
   }
@@ -21,7 +25,7 @@ export class AdminLessonPromptRepository {
   async findByAdminIdAndStage(
     adminId: string,
     stage: LessonStageType,
-    category: LessonCategory = LessonCategory.REGULAR,
+    category: LessonCategory = DEFAULT_LESSON_CATEGORY,
   ): Promise<AdminLessonPromptEntity | null> {
     return this.repo.findOne({ where: { adminId, stage, category } });
   }
@@ -48,10 +52,10 @@ export class AdminLessonPromptRepository {
       .update(AdminLessonPromptEntity)
       .set({
         customPrompt,
-        lockVersion: () => 'lock_version + 1',
+        lockVersion: () => "lock_version + 1",
       })
-      .where('id = :id', { id })
-      .andWhere('lock_version = :expectedLockVersion', {
+      .where("id = :id", { id })
+      .andWhere("lock_version = :expectedLockVersion", {
         expectedLockVersion,
       })
       .execute();

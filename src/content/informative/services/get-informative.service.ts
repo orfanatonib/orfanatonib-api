@@ -18,7 +18,9 @@ export class GetInformativeService {
     private readonly informativeRepo: InformativeRepository,
   ) {}
 
-  async findAll(query?: QueryInformativeDto): Promise<InformativeResponseDto[]> {
+  async findAll(
+    query?: QueryInformativeDto,
+  ): Promise<InformativeResponseDto[]> {
     try {
       const list = await this.informativeRepo.findAllSorted(query);
       return list.map((entity) => InformativeResponseDto.fromEntity(entity));

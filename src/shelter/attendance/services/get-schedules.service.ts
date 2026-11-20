@@ -20,7 +20,11 @@ import {
   memberUsersOf,
   toAttendanceRecordDto,
 } from "../mappers/attendance.mapper";
-import { byDateDesc, occurrencesOf } from "../utils/attendance-occurrence.util";
+import {
+  byDateDesc,
+  occurrencesOf,
+  occurrenceInPeriod,
+} from "../utils/attendance-occurrence.util";
 
 @Injectable()
 export class GetSchedulesService {
@@ -53,6 +57,7 @@ export class GetSchedulesService {
 
     return schedules
       .flatMap((schedule) => occurrencesOf(schedule, team))
+      .filter((occurrence) => occurrenceInPeriod(occurrence, period))
       .map((occurrence) => ({
         id: occurrence.scheduleId,
         category: occurrence.category,
@@ -110,7 +115,7 @@ export class GetSchedulesService {
 
       shelter.totalTeams += 1;
       shelter.teams.push(
-        this.toTeamWithSchedules(team, schedules, byOccurrence),
+        this.toTeamWithSchedules(team, schedules, byOccurrence, period),
       );
       byShelter.set(shelterId, shelter);
     }
@@ -122,6 +127,7 @@ export class GetSchedulesService {
     team: TeamEntity,
     schedules: readonly ShelterScheduleEntity[],
     byOccurrence: Map<string, AttendanceEntity[]>,
+    period: AttendancePeriodDto,
   ): TeamWithSchedulesDto {
     const teamSchedules = schedules.filter(
       (schedule) => schedule.team?.id === team.id,
@@ -130,6 +136,7 @@ export class GetSchedulesService {
 
     const withAttendance: ScheduleWithAttendanceDto[] = teamSchedules
       .flatMap((schedule) => occurrencesOf(schedule, team))
+      .filter((occurrence) => occurrenceInPeriod(occurrence, period))
       .map((occurrence) => {
         const records =
           byOccurrence.get(`${occurrence.scheduleId}:${occurrence.category}`) ??

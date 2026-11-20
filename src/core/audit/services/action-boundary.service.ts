@@ -32,6 +32,7 @@ export class ActionBoundaryService {
     descriptor: BoundaryDescriptor,
     execute: () => Promise<T>,
     outcomeOf: (result: T) => AuditOutcome | null,
+    errorCodeFor: (result: T) => string | null = () => null,
   ): Promise<T> {
     const ctx = createExecutionContext(LogSourceType.Job);
     ctx.jobName = descriptor.jobName;
@@ -44,7 +45,7 @@ export class ActionBoundaryService {
         if (outcome) {
           this.audit.recordBoundaryOutcome(ctx, descriptor, {
             outcome,
-            errorCode: null,
+            errorCode: errorCodeFor(result),
             statusCode: null,
           });
         }

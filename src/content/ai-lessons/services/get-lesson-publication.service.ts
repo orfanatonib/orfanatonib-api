@@ -1,13 +1,13 @@
-import { Injectable } from '@nestjs/common';
-import { WeekMaterialsPageGetService } from 'src/content/ai-lessons/publication/services/get-week-material.service';
-import { AppNotFoundException } from 'src/content/ai-lessons/compat/exceptions';
-import { getLessonStageOrder, LessonCategory } from '../enums/lesson.enums';
+import { Injectable } from "@nestjs/common";
+import { WeekMaterialsPageGetService } from "src/content/ai-lessons/publication/services/get-week-material.service";
+import { AppNotFoundException } from "src/content/ai-lessons/compat/exceptions";
+import { getLessonStageOrder } from "../enums/lesson.enums";
 import type {
   LessonPublicationMaterial,
   LessonPublicationPreview,
-} from '../types/lesson-generation.types';
-import { lessonPublicationTitle } from '../utils/lesson-workflow.utils';
-import { GetLessonService } from './get-lesson.service';
+} from "../types/lesson-generation.types";
+import { lessonPublicationTitle } from "../utils/lesson-workflow.utils";
+import { GetLessonService } from "./get-lesson.service";
 
 /** Read side of the publication: what publishing will create and what already exists. */
 @Injectable()
@@ -24,7 +24,6 @@ export class GetLessonPublicationService {
    */
   async preview(id: string): Promise<LessonPublicationPreview> {
     const lesson = await this.lessons.getById(id);
-    const isSpecial = lesson.category === LessonCategory.SPECIAL;
     const title = lessonPublicationTitle(lesson);
     const weekMaterial = lesson.weekMaterialId
       ? await this.linkedMaterial(lesson.weekMaterialId)
@@ -32,12 +31,12 @@ export class GetLessonPublicationService {
     const duplicates = await this.weekMaterialsGet.findPossibleDuplicates({
       title,
       weekNumber: lesson.weekNumber,
-      special: isSpecial,
+      special: false,
       excludePageId: lesson.weekMaterialId,
     });
     return {
       title,
-      isSpecial,
+      isSpecial: false,
       documentCount: getLessonStageOrder(lesson.category).length,
       coverImageUrl: lesson.coverImageUrl ?? null,
       weekMaterial,

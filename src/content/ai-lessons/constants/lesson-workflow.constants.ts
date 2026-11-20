@@ -2,7 +2,7 @@ import {
   LessonStageStatus,
   LessonStageType,
   LessonStatus,
-} from '../enums/lesson.enums';
+} from "../enums/lesson.enums";
 
 /** Background generation: lease, heartbeat and resume policy. */
 export const LESSON_GENERATION = {
@@ -12,7 +12,7 @@ export const LESSON_GENERATION = {
   /** Attempts (first run + resumes) allowed before the stage fails for good. */
   MAX_ATTEMPTS: 3,
   DEFAULT_MAX_CONCURRENT: 3,
-  MAX_CONCURRENT_CONFIG_KEY: 'AI_LESSONS_MAX_CONCURRENT_GENERATIONS',
+  MAX_CONCURRENT_CONFIG_KEY: "AI_LESSONS_MAX_CONCURRENT_GENERATIONS",
 } as const;
 
 /** Weekly-material publication: lease, heartbeat and public failure text. */
@@ -22,18 +22,18 @@ export const LESSON_PUBLICATION = {
   RECONCILE_INTERVAL_MS: 5000,
   FAILURE_MESSAGE_MAX_LENGTH: 500,
   GENERIC_FAILURE_MESSAGE:
-    'Não foi possível publicar o material semanal. Nenhum material foi criado; tente novamente.',
+    "Não foi possível publicar o material semanal. Nenhum material foi criado; tente novamente.",
   INTERRUPTED_MESSAGE:
-    'A publicação anterior foi interrompida antes da criação do material semanal. Você pode publicar novamente.',
+    "A publicação anterior foi interrompida antes da criação do material semanal. Você pode publicar novamente.",
   ORIGIN_MARKER_SEARCH_LIMIT: 5,
   ARCHIVED_MESSAGE:
-    'Uma lição arquivada não pode ser publicada. Restaure a lição antes de publicar.',
+    "Uma lição arquivada não pode ser publicada. Restaure a lição antes de publicar.",
 } as const;
 
 /** Item PDF that could not be produced, at approval or at publication. */
 export const LESSON_STAGE_PDF = {
   UNAVAILABLE_MESSAGE:
-    'não foi possível gerar o PDF deste item no momento. Tente novamente em instantes.',
+    "não foi possível gerar o PDF deste item no momento. Tente novamente em instantes.",
 } as const;
 
 /** Server-sent events stream of a lesson. */
@@ -47,7 +47,7 @@ export const LESSON_STAGE_FAILURE_MESSAGE_MAX_LENGTH = 500;
 
 export const LESSON_VISUAL_QUANTITY = { MIN: 4, MAX: 10 } as const;
 
-export const LESSON_CANONICAL_VERSE_VERSION = 'NVI';
+export const LESSON_CANONICAL_VERSE_VERSION = "NVI";
 
 /** Generated artwork accepted for upload. */
 export const LESSON_GENERATED_IMAGE_MAX_BYTES = 15 * 1024 * 1024;
@@ -55,7 +55,7 @@ export const LESSON_GENERATED_IMAGE_MAX_BYTES = 15 * 1024 * 1024;
 /** Parallel S3 deletions while cleaning up assets. */
 export const LESSON_ASSET_CLEANUP_CONCURRENCY = 4;
 
-export const LESSON_ASSET_LIST_KEYS = ['assets', 'printableAssets'] as const;
+export const LESSON_ASSET_LIST_KEYS = ["assets", "printableAssets"] as const;
 
 export const LESSON_PRINTABLE_ASSET_STAGES: readonly LessonStageType[] = [
   LessonStageType.VERSE_VISUALS,
@@ -79,7 +79,7 @@ export const LESSON_GAME_STAGES: readonly LessonStageType[] = [
  * The fun game (item 3) is a simple document plus ONE image that compiles the
  * whole game; only the verse fixation keeps one instructional image per step.
  */
-export const LESSON_GAME_SUMMARY_ASSET_ID = 'compilado-01';
+export const LESSON_GAME_SUMMARY_ASSET_ID = "compilado-01";
 
 export const LESSON_MEDITATION_STAGES: readonly LessonStageType[] = [
   LessonStageType.MEDITATION_YOUNGER,
@@ -154,18 +154,18 @@ export const LESSON_TERMINAL_STATUSES: readonly LessonStatus[] = [
 ];
 
 export const LESSON_STAGE_ITEM_NAMES: Record<LessonStageType, string> = {
-  [LessonStageType.LESSON]: 'Lição completa',
-  [LessonStageType.LESSON_VISUALS]: 'Visuais da história',
-  [LessonStageType.STANDARD_GAME]: 'Brincadeira',
-  [LessonStageType.VERSE_VISUALS]: 'Visuais do versículo',
-  [LessonStageType.VERSE_FIXATION]: 'Fixação divertida do versículo',
-  [LessonStageType.MEDITATION_YOUNGER]: 'Meditação dos menores',
-  [LessonStageType.MEDITATION_OLDER]: 'Meditação dos maiores',
-  [LessonStageType.MANUAL_WORK]: 'Trabalho manual',
+  [LessonStageType.LESSON]: "Lição completa",
+  [LessonStageType.LESSON_VISUALS]: "Visuais da lição",
+  [LessonStageType.STANDARD_GAME]: "Brincadeira",
+  [LessonStageType.VERSE_VISUALS]: "Visuais do versículo",
+  [LessonStageType.VERSE_FIXATION]: "Fixação divertida do versículo",
+  [LessonStageType.MEDITATION_YOUNGER]: "Meditação dos menores",
+  [LessonStageType.MEDITATION_OLDER]: "Meditação dos maiores",
+  [LessonStageType.MANUAL_WORK]: "Trabalho manual",
 };
 
 export const LESSON_GAME_RETRY_INSTRUCTION =
-  'A tentativa anterior ficou parecida com a brincadeira existente. Gere uma alternativa radicalmente diferente agora, trocando nome, mecânica principal, materiais característicos, organização e sequência de ações.';
+  "A tentativa anterior ficou parecida com a brincadeira existente. Gere uma alternativa radicalmente diferente agora, trocando nome, mecânica principal, materiais característicos, organização e sequência de ações.";
 
 /** Request body limits of the studio endpoints. */
 export const LESSON_CONTENT_LIMITS = {

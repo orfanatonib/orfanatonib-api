@@ -9,7 +9,7 @@ import {
 /** A tabela esperada, escrita à mão: mudar uma transição é decisão explícita, não acidente. */
 const PACKAGE: Record<P, P[]> = {
   [P.DRAFT]: [P.IN_PROGRESS, P.ARCHIVED],
-  [P.IN_PROGRESS]: [P.PACKAGE_READY, P.ARCHIVED],
+  [P.IN_PROGRESS]: [P.PACKAGE_READY, P.IN_REVIEW, P.ARCHIVED],
   [P.PACKAGE_READY]: [P.IN_REVIEW, P.IN_PROGRESS, P.ARCHIVED],
   [P.IN_REVIEW]: [P.CHANGES_REQUESTED, P.READY_FOR_PUBLICATION, P.ARCHIVED],
   [P.CHANGES_REQUESTED]: [P.IN_PROGRESS, P.IN_REVIEW, P.ARCHIVED],

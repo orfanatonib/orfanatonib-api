@@ -7,6 +7,7 @@ import {
   RuleException,
 } from "src/common/exceptions";
 
+import { ContentAudience } from "../enums/content-audience.enum";
 import { ContentPackageEntity } from "../entities/content-package.entity";
 import { ContentReviewCommentEntity } from "../entities/content-review-comment.entity";
 import { ContentReviewDecisionEntity } from "../entities/content-review-decision.entity";
@@ -36,12 +37,33 @@ import {
   assertReviewVersionCurrent,
 } from "./content-package-rules.helpers";
 
+/** Situações do material em que ainda é possível enviar um público para revisão. */
+const SUBMITTABLE_PACKAGE_STATUSES: readonly ContentPackageStatus[] = [
+  ContentPackageStatus.IN_PROGRESS,
+  ContentPackageStatus.PACKAGE_READY,
+  ContentPackageStatus.IN_REVIEW,
+  ContentPackageStatus.CHANGES_REQUESTED,
+];
+
+/** Etapas que já estão prontas (ou já enviadas) para a revisão do público. */
+const REVIEWABLE_STAGE_STATUSES: readonly ContentStageStatus[] = [
+  ContentStageStatus.PRODUCER_APPROVED,
+  ContentStageStatus.IN_REVIEW,
+  ContentStageStatus.APPROVED,
+];
+
 @Injectable()
 export class ContentReviewRepository {
   constructor(private readonly dataSource: DataSource) {}
 
+  /**
+   * Envia para revisão um ou mais públicos (trilhas) do material. Sem `audiences`,
+   * envia todos. Cada trilha enviada precisa ter todas as etapas obrigatórias
+   * concluídas; as demais continuam em produção.
+   */
   async submitPackageForReview(
     packageId: string,
+    audiences?: readonly ContentAudience[],
   ): Promise<ContentPackageEntity> {
     return this.dataSource.transaction(async (manager) => {
       const packageRepo = manager.getRepository(ContentPackageEntity);
@@ -52,32 +74,43 @@ export class ContentReviewRepository {
         packageId,
       );
 
-      if (
-        !canTransitionContentPackage(
-          contentPackage.status,
-          ContentPackageStatus.IN_REVIEW,
-        )
-      ) {
+      if (!SUBMITTABLE_PACKAGE_STATUSES.includes(contentPackage.status)) {
         throw new ResourceConflictException(
-          `O pacote não pode entrar em revisão a partir de ${contentPackage.status}`,
+          `O pacote não pode ser enviado para revisão a partir de ${contentPackage.status}`,
         );
       }
 
-      const stages = (contentPackage.tracks ?? []).flatMap(
-        (track) => track.stages ?? [],
-      );
-      const requiredStages = stages.filter((stage) => stage.required);
-      const allRequiredProduced = requiredStages.every((stage) =>
-        COMPLETED_STAGE_STATUSES.includes(stage.status),
-      );
-
-      if (!allRequiredProduced) {
-        throw new RuleException(
-          "Todas as etapas obrigatórias precisam estar concluídas",
-        );
+      const tracks = contentPackage.tracks ?? [];
+      const selected = audiences?.length
+        ? tracks.filter((track) => audiences.includes(track.audience))
+        : tracks;
+      if (audiences?.length && selected.length !== new Set(audiences).size) {
+        throw new RuleException("Categoria inexistente neste material");
       }
 
-      for (const stage of requiredStages) {
+      const toSubmit: ContentStageEntity[] = [];
+      for (const track of selected) {
+        const required = (track.stages ?? []).filter((stage) => stage.required);
+        const pending = required.find(
+          (stage) => !REVIEWABLE_STAGE_STATUSES.includes(stage.status),
+        );
+        if (pending) {
+          throw new RuleException(
+            `Conclua a etapa "${pending.stageType}" de ${track.audienceName} antes de enviar para revisão`,
+            { audience: track.audience, stageType: pending.stageType },
+          );
+        }
+        toSubmit.push(
+          ...required.filter((stage) =>
+            COMPLETED_STAGE_STATUSES.includes(stage.status),
+          ),
+        );
+      }
+      if (toSubmit.length === 0) {
+        throw new RuleException("Não há etapas concluídas para enviar");
+      }
+
+      for (const stage of toSubmit) {
         if (
           canTransitionContentStage(stage.status, ContentStageStatus.IN_REVIEW)
         ) {
@@ -86,8 +119,15 @@ export class ContentReviewRepository {
         }
       }
 
-      contentPackage.status = ContentPackageStatus.IN_REVIEW;
-      await packageRepo.save(contentPackage);
+      if (
+        canTransitionContentPackage(
+          contentPackage.status,
+          ContentPackageStatus.IN_REVIEW,
+        )
+      ) {
+        contentPackage.status = ContentPackageStatus.IN_REVIEW;
+        await packageRepo.save(contentPackage);
+      }
 
       return findPackageGraphOrFail(packageRepo, packageId);
     });

@@ -162,7 +162,7 @@ export class GeminiGenerationGateway extends AiGenerationGateway {
               parts: [
                 {
                   text: [
-                    "Crie somente ilustração genérica, sem rostos, sem pessoas reais ou identificáveis e sem texto incorporado.",
+                    "Crie uma ilustração para material bíblico impresso. Personagens bíblicos são desenhados de forma estilizada (podem ter rosto); nunca retrate pessoas reais ou identificáveis. Não escreva texto na imagem, a menos que o pedido peça expressamente.",
                     ...request.instructions,
                     JSON.stringify(request.input),
                   ].join("\n\n"),

@@ -1,54 +1,50 @@
-import { ConflictException } from '@nestjs/common';
-import { AppBusinessException, ErrorCode } from 'src/content/ai-lessons/compat/exceptions';
-import { LESSON_FUN_GAME_LIMITS } from '../constants/ai-provider-settings.constants';
+import { ConflictException } from "@nestjs/common";
+import {
+  AppBusinessException,
+  ErrorCode,
+} from "src/content/ai-lessons/compat/exceptions";
+import { LESSON_FUN_GAME_LIMITS } from "../constants/ai-provider-settings.constants";
 import {
   LESSON_INTERNAL_FIELDS,
   LESSON_SCENE_ID_DIGITS,
   LESSON_SCENE_ID_PREFIX,
   LESSON_NARRATIVE_INCOMPLETE_PREFIX,
-} from '../constants/lesson-editorial.constants';
+} from "../constants/lesson-editorial.constants";
 import {
   LESSON_CANONICAL_VERSE_VERSION,
   LESSON_GAME_STAGES,
   LESSON_GAME_SUMMARY_ASSET_ID,
   LESSON_MEDITATION_STAGES,
   LESSON_VISUAL_QUANTITY,
-} from '../constants/lesson-workflow.constants';
-import { LessonEntity } from '../entities/lesson.entity';
-import { withMissingActivityArt } from './meditation-assets.utils';
-import { canonicalVerseFromLesson } from './lesson-verse.utils';
-import {
-  LessonCategory,
-  LessonStageType,
-  LessonVisualType,
-} from '../enums/lesson.enums';
-import { REGULAR_STORY_VISUAL_TYPES } from '../constants/lesson-visual-style.constants';
-import { lessonNarrativeIssue } from '../lessonNarrative.utils';
-import { resolveLessonVisualStyle } from './story-visual-mode.utils';
+} from "../constants/lesson-workflow.constants";
+import { LessonEntity } from "../entities/lesson.entity";
+import { withMissingActivityArt } from "./meditation-assets.utils";
+import { canonicalVerseFromLesson } from "./lesson-verse.utils";
+import { LessonStageType, LessonVisualType } from "../enums/lesson.enums";
+import { REGULAR_STORY_VISUAL_TYPES } from "../constants/lesson-visual-style.constants";
+import { lessonNarrativeIssue } from "../lessonNarrative.utils";
+import { resolveLessonVisualStyle } from "./story-visual-mode.utils";
 import type {
   LessonGenerationRequest,
   LessonJsonObject,
   LessonVisualConfig,
-} from '../types/lesson-generation.types';
-import { lessonString, normalizeLessonVerseReference } from '../utils';
+} from "../types/lesson-generation.types";
+import { lessonString, normalizeLessonVerseReference } from "../utils";
 import {
   markUnsupportedCutoutItemsAsExtra,
   normalizeCutoutKitStructure,
   repairCutoutStoryEvidence,
   validateCutoutKit,
-} from './cutout-kit.utils';
-import { lessonAsObject, lessonCurrentContent } from './lesson-workflow.utils';
+} from "./cutout-kit.utils";
+import { lessonAsObject, lessonCurrentContent } from "./lesson-workflow.utils";
 
 export function validateVisualConfig(
   dto: Pick<
     LessonGenerationRequest,
-    'visualType' | 'visualOrientation' | 'visualQuantity' | 'visualStyle'
+    "visualType" | "visualOrientation" | "visualQuantity" | "visualStyle"
   >,
-  category?: LessonCategory | null,
 ): LessonVisualConfig {
-  const isSpecial = category === LessonCategory.SPECIAL;
-  const visualType =
-    dto.visualType ?? (isSpecial ? undefined : LessonVisualType.CUTOUT_KIT);
+  const visualType = dto.visualType ?? LessonVisualType.CUTOUT_KIT;
   if (
     !visualType ||
     !dto.visualOrientation ||
@@ -59,17 +55,12 @@ export function validateVisualConfig(
   )
     throw new AppBusinessException(
       ErrorCode.LESSON_INVALID_REQUEST,
-      'Escolha o tipo pedagógico, a orientação e a quantidade de 4 a 10 imagens.',
+      "Escolha o tipo pedagógico, a orientação e a quantidade de 4 a 10 imagens.",
     );
-  if (!isSpecial && !REGULAR_STORY_VISUAL_TYPES.includes(visualType))
+  if (!REGULAR_STORY_VISUAL_TYPES.includes(visualType))
     throw new AppBusinessException(
       ErrorCode.LESSON_INVALID_REQUEST,
-      'Na lição semanal, os visuais da história são um kit de recortes (CUTOUT_KIT) ou cenas completas (STORY_SEQUENCE).',
-    );
-  if (isSpecial && visualType === LessonVisualType.CUTOUT_KIT)
-    throw new AppBusinessException(
-      ErrorCode.LESSON_INVALID_REQUEST,
-      'A Lição Especial mantém os cartazes de cena; escolha um tipo de cena.',
+      "Os visuais da lição são um kit de recortes (CUTOUT_KIT) ou cenas completas (STORY_SEQUENCE).",
     );
   return {
     type: visualType,
@@ -93,7 +84,7 @@ export function validateCanonicalContent(
         `${LESSON_NARRATIVE_INCOMPLETE_PREFIX}: ${issue}. Gere novamente para obter uma aula completa.`,
       );
     generated.biblicalReference = lesson.biblicalReference;
-    const themeUpper = (lesson.theme ?? '').trim().toUpperCase();
+    const themeUpper = (lesson.theme ?? "").trim().toUpperCase();
     const titleStr = lessonString(generated.title).trim();
     if (
       themeUpper &&
@@ -111,7 +102,7 @@ export function validateCanonicalContent(
         LESSON_CANONICAL_VERSE_VERSION
     ) {
       throw new ConflictException(
-        'A lição precisa definir um único versículo principal, com texto, referência e versão NVI.',
+        "A lição precisa definir um único versículo principal, com texto, referência e versão NVI.",
       );
     }
     // Scene ids are internal (nothing else references them): renumbering in
@@ -159,27 +150,27 @@ export function validateCanonicalContent(
     const assetIds = assets.map((asset) => lessonString(asset.id).trim());
     if (
       assetIds.some(
-        (id, index) => id !== `visual-${String(index + 1).padStart(2, '0')}`,
+        (id, index) => id !== `visual-${String(index + 1).padStart(2, "0")}`,
       ) ||
       new Set(assetIds).size !== assetIds.length
     ) {
       throw new ConflictException(
-        'Os visuais da história precisam usar IDs sequenciais no formato visual-01, visual-02 e assim por diante.',
+        "Os visuais da história precisam usar IDs sequenciais no formato visual-01, visual-02 e assim por diante.",
       );
     }
     const normalize = (value: string): string =>
-      value.trim().replace(/\s+/g, ' ');
+      value.trim().replace(/\s+/g, " ");
     const reconstructedStory = assets
       .map((asset) => lessonString(asset.sourceExcerpt).trim())
       .filter(Boolean)
-      .join(' ');
+      .join(" ");
     if (
       !completeStory ||
       assets.some((asset) => !lessonString(asset.sourceExcerpt).trim()) ||
       normalize(reconstructedStory) !== normalize(completeStory)
     )
       throw new ConflictException(
-        'A IA precisa dividir toda a LIÇÃO BÍBLICA entre os visuais, na ordem, sem omitir, repetir ou reescrever trechos.',
+        "A IA precisa dividir toda a LIÇÃO BÍBLICA entre os visuais, na ordem, sem omitir, repetir ou reescrever trechos.",
       );
   }
 
@@ -208,7 +199,7 @@ export function validateCanonicalContent(
       lessonString(assets[0].id).trim() !== LESSON_GAME_SUMMARY_ASSET_ID
     )
       throw new ConflictException(
-        'A brincadeira divertida precisa ter o passo a passo no documento e exatamente uma imagem com o compilado de toda a brincadeira.',
+        "A brincadeira divertida precisa ter o passo a passo no documento e exatamente uma imagem com o compilado de toda a brincadeira.",
       );
     return generated;
   }
@@ -241,15 +232,15 @@ export function isNewGame(
 ): boolean {
   const normalize = (value: unknown): string =>
     lessonString(value)
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .toLocaleLowerCase('pt-BR')
-      .replace(/[^a-z0-9]+/g, ' ')
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLocaleLowerCase("pt-BR")
+      .replace(/[^a-z0-9]+/g, " ")
       .trim();
   const listSignature = (value: unknown): string =>
     Array.isArray(value)
-      ? value.map(normalize).filter(Boolean).sort().join('|')
-      : '';
+      ? value.map(normalize).filter(Boolean).sort().join("|")
+      : "";
 
   return (
     normalize(previous.name) !== normalize(candidate.name) &&
@@ -268,5 +259,5 @@ export function isNewGameFromHistory(
 
 /** Stable internal id of the n-th visual scene (0-based): scene-01, scene-02… */
 export function lessonSceneId(index: number): string {
-  return `${LESSON_SCENE_ID_PREFIX}${String(index + 1).padStart(LESSON_SCENE_ID_DIGITS, '0')}`;
+  return `${LESSON_SCENE_ID_PREFIX}${String(index + 1).padStart(LESSON_SCENE_ID_DIGITS, "0")}`;
 }

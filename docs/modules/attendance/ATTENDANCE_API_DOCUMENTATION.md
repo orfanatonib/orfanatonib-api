@@ -1126,3 +1126,10 @@ Use `GET /attendance/pending/all` para obter todas as pendências em uma única 
 11. **Hierarquia Completa:** Endpoint `/attendance/leader/shelters-teams-members` fornece visão completa abrigo→equipe→professores.
 
 12. **Líderes não Registram Presença:** Líderes são excluídos de todos os cálculos de presença, pendências e estatísticas. Apenas professores precisam registrar presença/falta.
+
+## Atualização mobile — novembro de 2026
+
+- `POST /attendance/register/team` valida todos os membros antes de persistir e grava o lote em uma única transação. Uma falha desfaz o lote, sem presença parcialmente salva. O corpo e a resposta permanecem compatíveis.
+- A resposta do POST é o estado persistido utilizado pelo formulário; não é necessário um GET adicional para confirmar o salvamento.
+- `GET /attendance/team/:teamId/schedules` e `GET /attendance/sheets/hierarchical` filtram cada ocorrência pela sua própria data: uma reunião fora do período não aparece só porque a visita está dentro.
+- As permissões de admin/líder, os vínculos de equipe e as feature flags permanecem exigidos pela API.

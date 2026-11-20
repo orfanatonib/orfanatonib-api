@@ -45,6 +45,9 @@ export interface BoundaryDescriptor {
   actionType: AuditActionType;
   actionName: string;
   jobName: string | null;
+  /** Recurso sobre o qual o job agiu (ex.: `content_generation_job` + id); só identificadores, nunca conteúdo. */
+  resourceType?: string;
+  resourceId?: string;
 }
 
 export interface BoundaryOutcomeInput {

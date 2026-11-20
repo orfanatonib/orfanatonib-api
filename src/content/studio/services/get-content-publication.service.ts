@@ -15,7 +15,8 @@ export class GetContentPublicationService {
   async findLatest(
     packageId: string,
   ): Promise<ContentPublicationResponseDto | null> {
-    const publication = await this.publications.findLatestByPackageId(packageId);
+    const publication =
+      await this.publications.findLatestByPackageId(packageId);
     if (!publication) return null;
     const path = publication.visitMaterialPageId
       ? await this.pages.findPathById(publication.visitMaterialPageId)

@@ -11,7 +11,9 @@ export class GetPublicationPageService {
   constructor(private readonly pages: GetVisitMaterialPageService) {}
 
   /** Page already created for this package (`sourceLessonId` = package id), or `null`. */
-  async findBySourcePackageId(packageId: string): Promise<PublishedPageRef | null> {
+  async findBySourcePackageId(
+    packageId: string,
+  ): Promise<PublishedPageRef | null> {
     const page = await this.pages.findBySourceLessonId(packageId);
     return page ? { id: page.id, path: page.route?.path ?? null } : null;
   }

@@ -1,6 +1,8 @@
+import type { VisualConfig } from "../../dto/visual-config.dto";
 import { ContentAudience } from "../../enums/content-audience.enum";
 import { ContentStageType } from "../../enums/content-stage-type.enum";
 import { AUDIENCE_PROFILES } from "./audience-profiles.constants";
+import { sensitiveWordsPrompt } from "./sensitive-words.constants";
 import { STAGE_OUTPUT_SCHEMAS } from "./stage-output-schemas";
 import {
   audienceBlock,
@@ -30,6 +32,10 @@ export interface StageGenerationContext {
   readonly adminPrompt?: string | null;
   /** Instruções do administrador só para esta geração (ex.: "use exemplos do cotidiano de um abrigo"). */
   readonly revisionInstructions?: string | null;
+  /** Escolhas dos visuais (só na etapa "Visuais da lição"). */
+  readonly visualConfig?: VisualConfig | null;
+  /** Por que a tentativa anterior foi recusada pela validação (só em nova tentativa): o modelo corrige. */
+  readonly retryFeedback?: string | null;
 }
 
 export interface BuiltStageRequest {
@@ -74,9 +80,22 @@ export function buildStageRequest(
     system.upstream,
     system.regeneration,
     audienceBlock(profile),
+    ...sensitiveWordsPrompt(),
     "PROMPT EDITORIAL DA ETAPA (imutável). Siga estas regras como parte do contrato:",
-    stageBasePrompt(context.stageType, profile),
+    stageBasePrompt(
+      context.stageType,
+      profile,
+      context.theme,
+      context.visualConfig,
+    ),
   ];
+
+  const retry = context.retryFeedback?.trim();
+  if (retry) {
+    instructions.push(
+      `CORREÇÃO: a tentativa anterior foi recusada pela validação (${retry}). Gere de novo o material completo corrigindo exatamente isso, sem perder o resto.`,
+    );
+  }
 
   const admin = context.adminPrompt?.trim();
   if (admin) {
@@ -109,6 +128,7 @@ export function buildStageRequest(
       : {}),
     approvedUpstream: boundedUpstream(context.upstream),
     previousVariants: context.previousVariants.slice(-MAX_PREVIOUS_VARIANTS),
+    ...(context.visualConfig ? { visualConfig: context.visualConfig } : {}),
   };
 
   return {

@@ -125,10 +125,11 @@ export class FakeAiGenerationGateway extends AiGenerationGateway {
   private stageOutputFor(
     request: StructuredTextGenerationRequest,
   ): Record<string, unknown> | null {
-    const { stage, audience, theme } = request.input as {
+    const { stage, audience, theme, visualConfig } = request.input as {
       stage?: unknown;
       audience?: { key?: unknown };
       theme?: unknown;
+      visualConfig?: { quantity?: number; format?: string };
     };
     const stageType = Object.values(ContentStageType).find(
       (t) => String(t) === stage,
@@ -141,6 +142,7 @@ export class FakeAiGenerationGateway extends AiGenerationGateway {
       stageType,
       audienceKey,
       typeof theme === "string" ? theme : "Tema",
+      visualConfig,
     );
   }
 

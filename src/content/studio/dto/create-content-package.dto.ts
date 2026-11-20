@@ -1,18 +1,6 @@
-import {
-  IsEnum,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
-} from "class-validator";
-
-import { ContentAudience } from "../enums/content-audience.enum";
+import { IsNotEmpty, IsOptional, IsString, MaxLength } from "class-validator";
 
 export class CreateContentPackageDto {
-  @IsOptional()
-  @IsEnum(ContentAudience)
-  audience?: ContentAudience;
-
   @IsString()
   @IsNotEmpty()
   @MaxLength(180)

@@ -92,9 +92,10 @@ export function assertReviewVersionCurrent(
 export function assertPackageCanProduce(
   contentPackage: ContentPackageEntity,
 ): void {
+  // Em revisão o pacote continua produzível: cada público (trilha) é enviado
+  // separadamente e as etapas já enviadas são protegidas pelas transições de etapa.
   if (
     [
-      ContentPackageStatus.IN_REVIEW,
       ContentPackageStatus.PUBLISHING,
       ContentPackageStatus.PUBLISHED,
       ContentPackageStatus.ARCHIVED,

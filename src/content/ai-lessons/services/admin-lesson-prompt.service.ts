@@ -1,26 +1,23 @@
-import { getLessonTemplate } from '../templates/special-lesson-templates';
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from "@nestjs/common";
 import {
   LESSON_SHARED_QUALITY_RULES,
   REGULAR_SCENE_VISUALS_QUALITY_RULE,
   LESSON_STAGE_QUALITY_RULES,
-} from '../constants/lesson-quality.constants';
-import {
-  ADMIN_PROMPT_CONFLICT,
-  LESSON_STAGE_BASE_PROMPTS,
-  REGULAR_SCENE_VISUALS_BASE_PROMPT,
-} from '../constants/lesson-base-prompts.constants';
-import { isCutoutKitVisuals } from '../utils/story-visual-mode.utils';
-import { AdminLessonPromptView } from '../types/admin-lesson-prompt.types';
+} from "../constants/lesson-quality.constants";
+import { ADMIN_PROMPT_CONFLICT } from "../constants/lesson-base-prompts.constants";
+import { lessonStageBasePrompt } from "../constants/lesson-orfanato-prompts.constants";
+import { isCutoutKitVisuals } from "../utils/story-visual-mode.utils";
+import { AdminLessonPromptView } from "../types/admin-lesson-prompt.types";
 
 export { AdminLessonPromptView };
-import { AdminLessonPromptEntity } from '../entities/admin-lesson-prompt.entity';
+import { AdminLessonPromptEntity } from "../entities/admin-lesson-prompt.entity";
 import {
   getLessonStageOrder,
   LessonCategory,
   LessonStageType,
-} from '../enums/lesson.enums';
-import { AdminLessonPromptRepository } from '../repositories/admin-lesson-prompt.repository';
+  DEFAULT_LESSON_CATEGORY,
+} from "../enums/lesson.enums";
+import { AdminLessonPromptRepository } from "../repositories/admin-lesson-prompt.repository";
 
 @Injectable()
 export class AdminLessonPromptService {
@@ -30,7 +27,7 @@ export class AdminLessonPromptService {
 
   async list(
     adminId: string,
-    category: LessonCategory = LessonCategory.REGULAR,
+    category: LessonCategory = DEFAULT_LESSON_CATEGORY,
   ): Promise<AdminLessonPromptView[]> {
     const saved = await this.promptsRepo.findByAdminId(adminId, category);
     return getLessonStageOrder(category).map((stage) =>
@@ -45,7 +42,7 @@ export class AdminLessonPromptService {
   async effective(
     adminId: string,
     stage: LessonStageType,
-    category: LessonCategory = LessonCategory.REGULAR,
+    category: LessonCategory = DEFAULT_LESSON_CATEGORY,
     /** Story visuals only: the chosen format picks the kit or the scenes base. */
     visualType?: string | null,
   ): Promise<string> {
@@ -70,7 +67,7 @@ export class AdminLessonPromptService {
     stage: LessonStageType,
     prompt: string,
     lockVersion?: number,
-    category: LessonCategory = LessonCategory.REGULAR,
+    category: LessonCategory = DEFAULT_LESSON_CATEGORY,
   ): Promise<AdminLessonPromptView> {
     const key = `${adminId}:${category}:${stage}`;
     if (this.inFlightKeys.has(key)) {
@@ -126,11 +123,11 @@ export class AdminLessonPromptService {
         return this.view(stage, saved, category);
       } catch (error: unknown) {
         const code =
-          error && typeof error === 'object' && 'code' in error
+          error && typeof error === "object" && "code" in error
             ? String((error as { code?: unknown }).code)
-            : '';
+            : "";
         const message = error instanceof Error ? error.message : String(error);
-        if (code === 'ER_DUP_ENTRY' || /duplicate/i.test(message)) {
+        if (code === "ER_DUP_ENTRY" || /duplicate/i.test(message)) {
           throw new ConflictException(ADMIN_PROMPT_CONFLICT.save);
         }
         throw error;
@@ -144,7 +141,7 @@ export class AdminLessonPromptService {
     adminId: string,
     stage: LessonStageType,
     lockVersion?: number,
-    category: LessonCategory = LessonCategory.REGULAR,
+    category: LessonCategory = DEFAULT_LESSON_CATEGORY,
   ): Promise<AdminLessonPromptView> {
     const key = `${adminId}:${category}:${stage}`;
     if (this.inFlightKeys.has(key)) {
@@ -167,7 +164,7 @@ export class AdminLessonPromptService {
       const updated = await this.promptsRepo.updatePromptWhereVersion(
         current.id,
         currentLockVersion,
-        '',
+        "",
       );
       if (!updated) throw new ConflictException(ADMIN_PROMPT_CONFLICT.reset);
       return this.view(
@@ -178,7 +175,7 @@ export class AdminLessonPromptService {
           category,
         )) ??
           Object.assign(current, {
-            customPrompt: '',
+            customPrompt: "",
             lockVersion: currentLockVersion + 1,
           }),
         category,
@@ -191,7 +188,7 @@ export class AdminLessonPromptService {
   private view(
     stage: LessonStageType,
     entity: AdminLessonPromptEntity | null,
-    category: LessonCategory = LessonCategory.REGULAR,
+    category: LessonCategory = DEFAULT_LESSON_CATEGORY,
   ): AdminLessonPromptView {
     const customPrompt = entity?.customPrompt?.trim()
       ? entity.customPrompt
@@ -214,23 +211,21 @@ export class AdminLessonPromptService {
 
   private basePrompt(
     stage: LessonStageType,
-    category: LessonCategory = LessonCategory.REGULAR,
+    category: LessonCategory = DEFAULT_LESSON_CATEGORY,
     visualType?: string | null,
   ): string {
-    if (category === LessonCategory.SPECIAL)
-      return getLessonTemplate(stage, category).rules.join('\n\n');
-    if (
-      stage === LessonStageType.LESSON_VISUALS &&
-      !isCutoutKitVisuals(category, visualType)
-    )
-      return `${REGULAR_SCENE_VISUALS_BASE_PROMPT}\n\nCRITÉRIOS GERAIS DE QUALIDADE PARA TODAS AS ETAPAS\n${LESSON_SHARED_QUALITY_RULES.join('\n')}\n\nREVISÃO ESPECÍFICA DA ETAPA\n${REGULAR_SCENE_VISUALS_QUALITY_RULE}`;
-    return `${LESSON_STAGE_BASE_PROMPTS[stage]}\n\nCRITÉRIOS GERAIS DE QUALIDADE PARA TODAS AS ETAPAS\n${LESSON_SHARED_QUALITY_RULES.join('\n')}\n\nREVISÃO ESPECÍFICA DA ETAPA\n${LESSON_STAGE_QUALITY_RULES[stage]}`;
+    const cutoutKit = isCutoutKitVisuals(category, visualType);
+    const stageReview =
+      stage === LessonStageType.LESSON_VISUALS && !cutoutKit
+        ? REGULAR_SCENE_VISUALS_QUALITY_RULE
+        : LESSON_STAGE_QUALITY_RULES[stage];
+    return `${lessonStageBasePrompt(stage, category, cutoutKit)}\n\nCRITÉRIOS GERAIS DE QUALIDADE PARA TODAS AS ETAPAS\n${LESSON_SHARED_QUALITY_RULES.join("\n")}\n\nREVISÃO ESPECÍFICA DA ETAPA\n${stageReview}`;
   }
 
   private composeEffectivePrompt(
     stage: LessonStageType,
     customPrompt: string | null,
-    category: LessonCategory = LessonCategory.REGULAR,
+    category: LessonCategory = DEFAULT_LESSON_CATEGORY,
     visualType?: string | null,
   ): string {
     const basePrompt = this.basePrompt(stage, category, visualType);

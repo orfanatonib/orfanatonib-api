@@ -38,6 +38,9 @@ describe("SubmitPackageReviewService", () => {
     const result = await service.execute("pkg-1");
 
     expect(result).toBe(expectedPkg);
-    expect(repository.submitPackageForReview).toHaveBeenCalledWith("pkg-1");
+    expect(repository.submitPackageForReview).toHaveBeenCalledWith(
+      "pkg-1",
+      undefined,
+    );
   });
 });

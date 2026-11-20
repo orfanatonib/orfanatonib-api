@@ -135,6 +135,25 @@ describe("GetTeamsService", () => {
 });
 
 describe("GetSchedulesService", () => {
+  it("filters visit and meeting dates independently in both endpoints", async () => {
+    repository.findSchedulesForTeams.mockResolvedValue([
+      buildSchedule({ visitDate: "2026-11-01", meetingDate: "2026-10-30" }),
+    ]);
+    const service = await build(GetSchedulesService);
+    const period = { startDate: "2026-11-01", endDate: "2026-11-30" };
+    const schedules = await service.listTeamSchedules(
+      buildActor(),
+      "team-id",
+      period,
+    );
+    expect(schedules.map((item) => item.category)).toEqual([
+      AttendanceCategory.VISIT,
+    ]);
+    const sheets = await service.listSheetsHierarchical(buildActor(), period);
+    expect(sheets[0].teams[0].schedules.map((item) => item.category)).toEqual([
+      AttendanceCategory.VISIT,
+    ]);
+  });
   it("expande um agendamento em visita e reunião", async () => {
     const service = await build(GetSchedulesService);
 

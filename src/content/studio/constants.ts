@@ -1,10 +1,50 @@
 import { ContentAudience } from "./enums/content-audience.enum";
 import { ContentStageType } from "./enums/content-stage-type.enum";
-import type { ContentAudienceDefinition } from "./types";
+import type {
+  ContentAudienceDefinition,
+  ContentStageDefinition,
+} from "./types";
 
-export const CONTENT_STUDIO_CATALOG_VERSION = "2026-10-01.mvp.1";
+export const CONTENT_STUDIO_CATALOG_VERSION = "2026-11-19.five-stages.1";
 
-const COMMON_DEPENDENCY = [ContentStageType.CANONICAL_BASE] as const;
+/** As cinco etapas, iguais para os quatro públicos; só o prompt de cada uma muda por público. */
+const STAGES: readonly ContentStageDefinition[] = [
+  {
+    type: ContentStageType.LESSON,
+    name: "Lição",
+    position: 1,
+    required: true,
+    dependencies: [],
+  },
+  {
+    type: ContentStageType.LESSON_VISUALS,
+    name: "Visuais da lição",
+    position: 2,
+    required: true,
+    dependencies: [ContentStageType.LESSON],
+  },
+  {
+    type: ContentStageType.VERSE_VISUALS,
+    name: "Visual do versículo",
+    position: 3,
+    required: true,
+    dependencies: [ContentStageType.LESSON],
+  },
+  {
+    type: ContentStageType.VERSE_FIXATION,
+    name: "Fixação divertida do versículo",
+    position: 4,
+    required: true,
+    dependencies: [ContentStageType.LESSON],
+  },
+  {
+    type: ContentStageType.STANDARD_GAME,
+    name: "Brincadeira divertida",
+    position: 5,
+    required: true,
+    dependencies: [ContentStageType.LESSON],
+  },
+];
 
 export const CONTENT_AUDIENCE_CATALOG: readonly ContentAudienceDefinition[] = [
   {
@@ -12,172 +52,28 @@ export const CONTENT_AUDIENCE_CATALOG: readonly ContentAudienceDefinition[] = [
     name: "Baby",
     minimumAge: 0,
     maximumAge: 2,
-    stages: [
-      {
-        type: ContentStageType.CANONICAL_BASE,
-        name: "Base canônica",
-        position: 1,
-        required: true,
-        dependencies: [],
-      },
-      {
-        type: ContentStageType.LESSON,
-        name: "Narrativa curta",
-        position: 2,
-        required: true,
-        dependencies: COMMON_DEPENDENCY,
-      },
-      {
-        type: ContentStageType.ACTIVITY,
-        name: "Atividade sensorial",
-        position: 3,
-        required: true,
-        dependencies: [ContentStageType.LESSON],
-      },
-      {
-        type: ContentStageType.VISUAL,
-        name: "Apoio visual",
-        position: 4,
-        required: true,
-        dependencies: [ContentStageType.LESSON],
-      },
-      {
-        type: ContentStageType.FACILITATOR_GUIDANCE,
-        name: "Orientação ao cuidador",
-        position: 5,
-        required: true,
-        dependencies: [ContentStageType.LESSON, ContentStageType.ACTIVITY],
-      },
-    ],
+    stages: STAGES,
   },
   {
     audience: ContentAudience.CHILD,
     name: "Crianças",
     minimumAge: 3,
     maximumAge: 11,
-    stages: [
-      {
-        type: ContentStageType.CANONICAL_BASE,
-        name: "Base canônica",
-        position: 1,
-        required: true,
-        dependencies: [],
-      },
-      {
-        type: ContentStageType.LESSON,
-        name: "Lição",
-        position: 2,
-        required: true,
-        dependencies: COMMON_DEPENDENCY,
-      },
-      {
-        type: ContentStageType.ACTIVITY,
-        name: "Atividade",
-        position: 3,
-        required: true,
-        dependencies: [ContentStageType.LESSON],
-      },
-      {
-        type: ContentStageType.VISUAL,
-        name: "Apoio visual",
-        position: 4,
-        required: true,
-        dependencies: [ContentStageType.LESSON],
-      },
-      {
-        type: ContentStageType.FACILITATOR_GUIDANCE,
-        name: "Orientação ao líder",
-        position: 5,
-        required: true,
-        dependencies: [ContentStageType.LESSON, ContentStageType.ACTIVITY],
-      },
-    ],
+    stages: STAGES,
   },
   {
     audience: ContentAudience.TEEN,
     name: "Adolescentes",
     minimumAge: 12,
     maximumAge: 15,
-    stages: [
-      {
-        type: ContentStageType.CANONICAL_BASE,
-        name: "Base canônica",
-        position: 1,
-        required: true,
-        dependencies: [],
-      },
-      {
-        type: ContentStageType.LESSON,
-        name: "Estudo",
-        position: 2,
-        required: true,
-        dependencies: COMMON_DEPENDENCY,
-      },
-      {
-        type: ContentStageType.DISCUSSION,
-        name: "Discussão",
-        position: 3,
-        required: true,
-        dependencies: [ContentStageType.LESSON],
-      },
-      {
-        type: ContentStageType.ACTIVITY,
-        name: "Dinâmica e aplicação",
-        position: 4,
-        required: true,
-        dependencies: [ContentStageType.DISCUSSION],
-      },
-      {
-        type: ContentStageType.FACILITATOR_GUIDANCE,
-        name: "Orientação ao facilitador",
-        position: 5,
-        required: true,
-        dependencies: [ContentStageType.LESSON, ContentStageType.DISCUSSION],
-      },
-    ],
+    stages: STAGES,
   },
   {
     audience: ContentAudience.ADULT,
     name: "Adultos",
     minimumAge: 16,
     maximumAge: null,
-    stages: [
-      {
-        type: ContentStageType.CANONICAL_BASE,
-        name: "Base canônica",
-        position: 1,
-        required: true,
-        dependencies: [],
-      },
-      {
-        type: ContentStageType.LESSON,
-        name: "Estudo",
-        position: 2,
-        required: true,
-        dependencies: COMMON_DEPENDENCY,
-      },
-      {
-        type: ContentStageType.DISCUSSION,
-        name: "Discussão e reflexão",
-        position: 3,
-        required: true,
-        dependencies: [ContentStageType.LESSON],
-      },
-      {
-        type: ContentStageType.ACTIVITY,
-        name: "Aplicação",
-        position: 4,
-        required: true,
-        dependencies: [ContentStageType.DISCUSSION],
-      },
-      {
-        type: ContentStageType.FACILITATOR_GUIDANCE,
-        name: "Orientação ao facilitador",
-        position: 5,
-        required: true,
-        dependencies: [ContentStageType.LESSON, ContentStageType.DISCUSSION],
-      },
-    ],
+    stages: STAGES,
   },
 ] as const;
 

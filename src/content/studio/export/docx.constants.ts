@@ -12,7 +12,7 @@ export const DOCUMENT_DEFAULT_COLOR = "000000";
 export const DOCUMENT_LINK_COLOR = "0563C1";
 export const DOCUMENT_DEFAULT_HIGHLIGHT = "FFFF00";
 export const DOCUMENT_CODE_FONT = "Courier New";
-export const DOCUMENT_BASE_FONT = "Calibri";
+export const DOCUMENT_BASE_FONT = "Arial";
 /** Twips of indentation added per list nesting level. */
 export const DOCUMENT_LIST_INDENT = 360;
 

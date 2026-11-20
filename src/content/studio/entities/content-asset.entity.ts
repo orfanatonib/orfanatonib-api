@@ -8,6 +8,7 @@ import { ContentVersionEntity } from "./content-version.entity";
 
 @Entity("content_assets")
 @Index(["packageId", "stageId"])
+@Index(["versionId", "slot"])
 export class ContentAssetEntity extends BaseEntity {
   @Column({ name: "package_id", type: "varchar", length: 36 })
   packageId: string;
@@ -20,6 +21,10 @@ export class ContentAssetEntity extends BaseEntity {
 
   @Column({ type: "enum", enum: ContentAssetKind })
   kind: ContentAssetKind;
+
+  /** Item do conteúdo a que a imagem pertence (visual-01, verso-02, compilado-01…); vazio nos demais arquivos. */
+  @Column({ type: "varchar", length: 60, nullable: true })
+  slot: string | null;
 
   @Index({ unique: true })
   @Column({ type: "varchar", length: 500 })

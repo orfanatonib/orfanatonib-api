@@ -1,4 +1,4 @@
-import { Transform } from 'class-transformer';
+import { Transform } from "class-transformer";
 import {
   IsEnum,
   IsInt,
@@ -8,18 +8,17 @@ import {
   MaxLength,
   Min,
   MinLength,
-  ValidateIf,
-} from 'class-validator';
+} from "class-validator";
 import {
   LESSON_EDITORIAL_PURPOSE_MAX_LENGTH,
   LESSON_EDITORIAL_PURPOSE_MIN_LENGTH,
   LESSON_WEEK_NUMBER,
-} from '../constants/lesson-workflow.constants';
-import { LessonCategory } from '../enums/lesson.enums';
+} from "../constants/lesson-workflow.constants";
+import { LessonCategory } from "../enums/lesson.enums";
 
 export class GenerateLessonRequestDto {
   @Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? value.trim() : value,
+    typeof value === "string" ? value.trim() : value,
   )
   @IsString()
   @MinLength(3)
@@ -27,7 +26,7 @@ export class GenerateLessonRequestDto {
   theme: string;
 
   @Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? value.trim() : value,
+    typeof value === "string" ? value.trim() : value,
   )
   @IsString()
   @MinLength(3)
@@ -38,30 +37,15 @@ export class GenerateLessonRequestDto {
   @IsEnum(LessonCategory)
   category?: LessonCategory;
 
-  // Obrigatório no Material Semanal; opcional no Material Especial.
-  @ValidateIf(
-    (o: GenerateLessonRequestDto) =>
-      (o.category ?? LessonCategory.REGULAR) === LessonCategory.REGULAR ||
-      (o.weekNumber !== undefined && o.weekNumber !== null),
-  )
+  // Semana da visita: obrigatória para todos os públicos.
   @IsInt()
   @Min(LESSON_WEEK_NUMBER.MIN)
   @Max(LESSON_WEEK_NUMBER.MAX)
-  weekNumber?: number | null;
+  weekNumber: number;
 
-  @IsOptional()
-  @Transform(({ value }: { value: unknown }) => {
-    if (typeof value !== 'string') return value;
-    const trimmed = value.trim();
-    return trimmed === '' ? null : trimmed;
-  })
-  @IsString()
-  @MaxLength(2000)
-  specialContext?: string | null;
-
-  // Obrigatório nas duas categorias: o propósito que a lição deve ensinar.
+  // Obrigatório em todos os públicos: o propósito que a lição deve ensinar.
   @Transform(({ value }: { value: unknown }) =>
-    typeof value === 'string' ? value.trim() : value,
+    typeof value === "string" ? value.trim() : value,
   )
   @IsString()
   @MinLength(LESSON_EDITORIAL_PURPOSE_MIN_LENGTH)

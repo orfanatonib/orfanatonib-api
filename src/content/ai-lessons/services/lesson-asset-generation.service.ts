@@ -1,32 +1,28 @@
-import { cropToA4Proportion, padToA4Proportion } from '../utils/a4-image.utils';
+import { cropToA4Proportion, padToA4Proportion } from "../utils/a4-image.utils";
 import {
   withA4Composition,
   withLessonVisualStyle,
-} from '../utils/story-visual-mode.utils';
-import { ConflictException, Injectable, Logger } from '@nestjs/common';
-import { AwsS3Service } from 'src/infrastructure/aws/services/aws-s3.service';
+} from "../utils/story-visual-mode.utils";
+import { ConflictException, Injectable, Logger } from "@nestjs/common";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import {
   LESSON_GAME_STAGES,
   LESSON_GAME_SUMMARY_ASSET_ID,
   LESSON_GENERATED_IMAGE_MAX_BYTES,
   LESSON_IDENTITY_REFERENCE_STAGES,
   LESSON_MEDITATION_STAGES,
-} from '../constants/lesson-workflow.constants';
-import { LessonEntity } from '../entities/lesson.entity';
-import {
-  LessonCategory,
-  LessonStageType,
-  LessonVisualType,
-} from '../enums/lesson.enums';
+} from "../constants/lesson-workflow.constants";
+import { LessonEntity } from "../entities/lesson.entity";
+import { LessonStageType, LessonVisualType } from "../enums/lesson.enums";
 import {
   LessonImagePurpose,
   LessonImageReference,
   LessonLlmProviderContract,
-} from '../providers/lesson-llm.types';
+} from "../providers/lesson-llm.types";
 import type {
   LessonAssetCheckpointHooks,
   LessonJsonObject,
-} from '../types/lesson-generation.types';
+} from "../types/lesson-generation.types";
 import {
   buildCutoutKitImagePrompt,
   buildGameInstructionImagePrompt,
@@ -34,41 +30,41 @@ import {
   buildStoryVisualImagePrompt,
   buildVerseVisualImagePrompt,
   lessonString,
-} from '../utils';
-import { LessonImageOrientation } from '../providers/lesson-llm.constants';
-import { VERSE_CARD_A4_RULE } from '../constants/lesson-visual-style.constants';
-import { cutoutKitGenerationOrder } from '../utils/cutout-kit.utils';
-import { attachOwnedAssetUrls } from '../utils/lesson-asset-ownership.utils';
+} from "../utils";
+import { LessonImageOrientation } from "../providers/lesson-llm.constants";
+import { VERSE_CARD_A4_RULE } from "../constants/lesson-visual-style.constants";
+import { cutoutKitGenerationOrder } from "../utils/cutout-kit.utils";
+import { attachOwnedAssetUrls } from "../utils/lesson-asset-ownership.utils";
 import {
   assertLessonUploadImage,
   lessonUploadImageMetadata,
-} from '../utils/lesson-upload-image.utils';
+} from "../utils/lesson-upload-image.utils";
 import {
   lessonAsObject,
   lessonCurrentContent,
-} from '../utils/lesson-workflow.utils';
+} from "../utils/lesson-workflow.utils";
 import {
   keptReferenceIds,
   withImageInstructions,
   withStyleContinuity,
-} from '../utils/lesson-image-regeneration.utils';
+} from "../utils/lesson-image-regeneration.utils";
 import {
   imageBriefPart,
   readImageBrief,
   withImageBriefPart,
-} from '../utils/lesson-image-brief.utils';
-import { randomInt } from 'node:crypto';
-import { MANUAL_WORK_FRAMINGS } from '../constants/manual-work-scene.constants';
+} from "../utils/lesson-image-brief.utils";
+import { randomInt } from "node:crypto";
+import { MANUAL_WORK_FRAMINGS } from "../constants/manual-work-scene.constants";
 import {
   buildManualWorkImagePrompt,
   fitManualWorkArt,
-} from '../utils/manual-work-image.utils';
-import { MANUAL_WORK_LAYOUT } from '../constants/manual-work-layout.constants';
-import { buildMeditationActivityImagePrompt } from '../utils/meditation-image.utils';
+} from "../utils/manual-work-image.utils";
+import { MANUAL_WORK_LAYOUT } from "../constants/manual-work-layout.constants";
+import { buildMeditationActivityImagePrompt } from "../utils/meditation-image.utils";
 import {
   lessonAssetListKey,
   throwIfGenerationAborted,
-} from '../utils/lesson-studio-errors.utils';
+} from "../utils/lesson-studio-errors.utils";
 
 /** Generates, validates and stores the artwork of a stage, reusing uploads checkpointed by an interrupted attempt. */
 @Injectable()
@@ -106,7 +102,7 @@ export class LessonAssetGenerationService {
     const completeStory = lessonString(canonicalLesson?.story).trim();
     if (type === LessonStageType.LESSON_VISUALS && !completeStory)
       throw new ConflictException(
-        'A versão atual da lição precisa conter o tópico LIÇÃO BÍBLICA antes de gerar os visuais.',
+        "A versão atual da lição precisa conter o tópico LIÇÃO BÍBLICA antes de gerar os visuais.",
       );
     const usesIdentityReference =
       LESSON_IDENTITY_REFERENCE_STAGES.includes(type);
@@ -344,8 +340,8 @@ export class LessonAssetGenerationService {
       );
       return buildMeditationActivityImagePrompt(
         type === LessonStageType.MEDITATION_YOUNGER
-          ? '5 a 8 anos'
-          : '8 a 11 anos',
+          ? "5 a 8 anos"
+          : "8 a 11 anos",
         lessonString(activity.instruction),
         lessonString(asset.prompt),
         lessonString(activity.answer),
@@ -474,20 +470,13 @@ export class LessonAssetGenerationService {
         forceReference ? identityReferenceImage : undefined,
         LessonImagePurpose.MANUAL_COLORING,
       );
-    if (lesson.category === LessonCategory.SPECIAL)
-      return llmProvider.generateImage(
-        imagePrompt,
-        orientation,
-        visualType,
-        identityReferenceImage,
-        undefined,
-        { category: LessonCategory.SPECIAL },
-      );
     return llmProvider.generateImage(
       imagePrompt,
       orientation,
       visualType,
       identityReferenceImage,
+      undefined,
+      { category: lesson.category },
     );
   }
 }

@@ -1,3 +1,4 @@
+import type { VisualConfig } from "./dto/visual-config.dto";
 import { ContentGenerationJobStatus } from "./enums/content-generation-job-status.enum";
 import { ContentPackageStatus } from "./enums/content-package-status.enum";
 import { ContentStageType } from "./enums/content-stage-type.enum";
@@ -68,6 +69,8 @@ export interface RequestContentStageGenerationInput {
   readonly idempotencyKey: string;
   readonly requestedById: string;
   readonly revisionInstructions?: string | null;
+  /** Escolhas dos visuais (só na etapa "Visuais da lição"). */
+  readonly visualConfig?: VisualConfig | null;
 }
 
 export interface SaveContentStageVersionInput {
@@ -85,6 +88,10 @@ export interface SaveContentStageVersionInput {
 }
 
 export interface StartedGenerationJob {
+  /** Pedido gravado no job (as chaves variam por capacidade: texto ou imagens). */
+  readonly request?: Record<string, unknown>;
+  /** Motivo da tentativa anterior (só quando for uma nova tentativa): vira aviso ao modelo. */
+  readonly previousError?: string | null;
   readonly jobId: string;
   readonly packageId: string;
   readonly stageId: string;
@@ -98,6 +105,8 @@ export interface StartedGenerationJob {
 export interface FailGenerationJobInput {
   readonly jobId: string;
   readonly retry: boolean;
+  /** Job de imagens: o texto já existe e está aprovado; a falha não derruba a etapa. */
+  readonly keepStage?: boolean;
   readonly availableAt?: Date;
   readonly errorCode: string;
   readonly errorMessage: string;
@@ -179,4 +188,32 @@ export interface ContentReviewDecisionView {
   readonly reviewerId: string;
   readonly relatedCommentId: string | null;
   readonly decidedAt: Date;
+}
+
+/** Pedido de imagens de uma versão (as do texto gerado, ou só algumas para regenerar). */
+export interface RequestContentStageImagesInput {
+  readonly packageId: string;
+  readonly stageId: string;
+  readonly versionId: string;
+  readonly slots?: readonly string[] | null;
+  readonly instructions?: string | null;
+  readonly idempotencyKey: string;
+  readonly requestedById: string;
+}
+
+/** O que o worker de imagens precisa da versão atual da etapa. */
+export interface StageImageContext {
+  readonly packageId: string;
+  readonly stageId: string;
+  readonly stageType: string;
+  readonly audience: string;
+  readonly versionId: string;
+  readonly content: Record<string, unknown>;
+}
+
+export interface ImageJobProgress {
+  readonly phase: "IMAGES";
+  readonly done: number;
+  readonly total: number;
+  readonly failed: readonly string[];
 }

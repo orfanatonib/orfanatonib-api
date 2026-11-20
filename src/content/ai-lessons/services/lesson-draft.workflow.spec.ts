@@ -1,24 +1,25 @@
-import { LessonImageBriefOrigin } from '../enums/lesson-image-brief.enum';
-import { readImageBrief } from '../utils/lesson-image-brief.utils';
-import { LESSON_IMAGE_REGENERATION } from '../constants/lesson-image-regeneration.constants';
-import type { RegenerateStageImagesRequestDto } from '../dto/generate-stage-request.dto';
-import { LessonGenerationPhase } from '../enums/lesson-generation-phase.enum';
-import type { LessonGenerationProgress } from '../types/lesson-generation-progress.types';
-import { ConfigService } from '@nestjs/config';
-import { WeekMaterialsPageCreateService } from 'src/content/ai-lessons/publication/services/create-week-material.service';
-import { WeekMaterialsPageGetService } from 'src/content/ai-lessons/publication/services/get-week-material.service';
-import { AppConflictException, ErrorCode } from 'src/content/ai-lessons/compat/exceptions';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
-import { AiQueueException } from 'src/shared/providers/ai-queue/ai-queue.exception';
-import { AiQueueFailure } from 'src/shared/providers/ai-queue/enums';
-import { AwsS3Service } from 'src/infrastructure/aws/services/aws-s3.service';
+import { LessonImageBriefOrigin } from "../enums/lesson-image-brief.enum";
+import { readImageBrief } from "../utils/lesson-image-brief.utils";
+import { LESSON_IMAGE_REGENERATION } from "../constants/lesson-image-regeneration.constants";
+import type { RegenerateStageImagesRequestDto } from "../dto/generate-stage-request.dto";
+import { ConfigService } from "@nestjs/config";
+import { WeekMaterialsPageCreateService } from "src/content/ai-lessons/publication/services/create-week-material.service";
+import { WeekMaterialsPageGetService } from "src/content/ai-lessons/publication/services/get-week-material.service";
+import {
+  AppConflictException,
+  ErrorCode,
+} from "src/content/ai-lessons/compat/exceptions";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { AiQueueException } from "src/shared/providers/ai-queue/ai-queue.exception";
+import { AiQueueFailure } from "src/shared/providers/ai-queue/enums";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import {
   LESSON_GENERATION,
   LESSON_PUBLICATION,
-} from '../constants/lesson-workflow.constants';
-import { GenerateStageRequestDto } from '../dto/generate-stage-request.dto';
-import { LessonEntity } from '../entities/lesson.entity';
-import { LessonStageEntity } from '../entities/lesson-stage.entity';
+} from "../constants/lesson-workflow.constants";
+import { GenerateStageRequestDto } from "../dto/generate-stage-request.dto";
+import { LessonEntity } from "../entities/lesson.entity";
+import { LessonStageEntity } from "../entities/lesson-stage.entity";
 import {
   LESSON_STAGE_ORDER,
   LessonCategory,
@@ -27,42 +28,44 @@ import {
   LessonStatus,
   LessonVisualOrientation,
   LessonVisualType,
-  SPECIAL_LESSON_STAGE_ORDER,
-} from '../enums/lesson.enums';
-import { LessonFailureCode } from '../enums/lesson-failure-code.enum';
-import { LessonLlmProviderContract } from '../providers/lesson-llm.types';
-import { AiLessonsRepository } from '../repositories/ai-lessons.repository';
+  DEFAULT_LESSON_CATEGORY,
+} from "../enums/lesson.enums";
+import { LessonFailureCode } from "../enums/lesson-failure-code.enum";
+import { LessonLlmProviderContract } from "../providers/lesson-llm.types";
+import { AiLessonsRepository } from "../repositories/ai-lessons.repository";
 import {
   createLessonsRepositoryMock,
   resetLessonsRepositoryMock,
-} from '../testing/lessons-repository.mock';
-import type { LessonGenerationRequest } from '../types/lesson-generation.types';
-import { describeAiFailure } from '../utils/lesson-ai-failure.utils';
+} from "../testing/lessons-repository.mock";
+import type { LessonGenerationRequest } from "../types/lesson-generation.types";
+import { describeAiFailure } from "../utils/lesson-ai-failure.utils";
 import {
-  assertLessonDependency,
   isLessonInReviewCycle,
-  lessonContentChecksum,
   lessonPublicationDescription,
   lessonPublicationRoutePathSource,
   lessonPublicationTitle,
   lessonStableStringify,
   recomputeLessonStatus,
-} from '../utils/lesson-workflow.utils';
-import { AdminLessonPromptService } from './admin-lesson-prompt.service';
-import { DocxExporterService } from './docx-exporter.service';
-import { LessonDraftService } from './lesson-draft.service';
+} from "../utils/lesson-workflow.utils";
+import { AdminLessonPromptService } from "./admin-lesson-prompt.service";
+import { DocxExporterService } from "./docx-exporter.service";
+import { LessonDraftService } from "./lesson-draft.service";
 import {
   createLessonStudio,
   LessonStudioServices,
-} from '../testing/lesson-studio.factory';
-import { PdfLibreOfficeService } from './pdf-libreoffice.service';
+} from "../testing/lesson-studio.factory";
+import { PdfLibreOfficeService } from "./pdf-libreoffice.service";
 
-const LESSON_ID = 'lesson-1';
-const USER_ID = 'admin-1';
+const LESSON_ID = "lesson-1";
+const USER_ID = "admin-1";
 const ASSET_URL =
-  'https://bucket.s3.amazonaws.com/test/uploads/1762700000000_ab12cd34_lesson-1-MANUAL_WORK-manual.png';
+  "https://bucket.s3.amazonaws.com/test/uploads/1762700000000_ab12cd34_lesson-1-MANUAL_WORK-manual.png";
+/** Três primeiras etapas: pacote parcial usado para exercitar estados intermediários. */
+const PARTIAL_STAGE_ORDER: readonly LessonStageType[] =
+  LESSON_STAGE_ORDER.slice(0, 3);
+
 const COVER_URL =
-  'https://bucket.s3.amazonaws.com/test/uploads/1762700000000_ab12cd34_lesson-1-cover.png';
+  "https://bucket.s3.amazonaws.com/test/uploads/1762700000000_ab12cd34_lesson-1-cover.png";
 const PNG = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00]);
 
 type StageFixture = LessonStageEntity & {
@@ -78,13 +81,10 @@ function makeLesson(
 ): LessonEntity & { stages: StageFixture[] } {
   return {
     id: LESSON_ID,
-    theme: 'Tema',
-    biblicalReference: 'João 3:16',
+    theme: "Tema",
+    biblicalReference: "João 3:16",
     weekNumber: 7,
-    category:
-      order === LESSON_STAGE_ORDER
-        ? LessonCategory.REGULAR
-        : LessonCategory.SPECIAL,
+    category: DEFAULT_LESSON_CATEGORY,
     specialContext: null,
     status,
     weekMaterialId: null,
@@ -110,7 +110,7 @@ function makeLesson(
           versionNumber: 1,
           structuredDataJson: {},
           tiptapAstJson: null,
-          contentChecksum: 'checksum',
+          contentChecksum: "checksum",
           createdAt: new Date(Date.UTC(2026, 0, 1, 0, index)),
         },
       ],
@@ -121,7 +121,7 @@ function makeLesson(
 const stageOf = (lesson: LessonEntity, type: LessonStageType): StageFixture =>
   lesson.stages.find((stage) => stage.type === type) as StageFixture;
 
-describe('LessonDraftService studio workflow', () => {
+describe("LessonDraftService studio workflow", () => {
   const repo = createLessonsRepositoryMock();
   const llm = {
     generateStage: jest.fn(),
@@ -149,10 +149,10 @@ describe('LessonDraftService studio workflow', () => {
   const snapshot = {
     provider: llm as unknown as LessonLlmProviderContract,
     metadata: {
-      provider: 'gemini',
-      textModel: 'text-model',
-      imageModel: 'image-model',
-      imageSize: '1K',
+      provider: "gemini",
+      textModel: "text-model",
+      imageModel: "image-model",
+      imageSize: "1K",
     },
   };
   let service: LessonDraftService;
@@ -177,14 +177,14 @@ describe('LessonDraftService studio workflow', () => {
     studio.generation as unknown as GenerationInternals;
   const spyOnRender = () =>
     jest
-      .spyOn(studio.pdfExport, 'renderStagePdf')
-      .mockResolvedValue({ pdfBuffer: Buffer.from('pdf'), fileName: 'a.pdf' });
+      .spyOn(studio.pdfExport, "renderStagePdf")
+      .mockResolvedValue({ pdfBuffer: Buffer.from("pdf"), fileName: "a.pdf" });
 
   beforeEach(() => {
     jest.resetAllMocks();
     resetLessonsRepositoryMock(repo);
     llm.createAttemptProvider.mockResolvedValue(snapshot);
-    adminPrompts.effective.mockResolvedValue('PROMPT EFETIVO');
+    adminPrompts.effective.mockResolvedValue("PROMPT EFETIVO");
     s3.delete.mockResolvedValue(undefined);
     weekMaterialsGet.findAllPaginated.mockResolvedValue({ data: [], total: 0 });
     weekMaterialsGet.findOneBySourceLessonId.mockResolvedValue(null);
@@ -212,19 +212,19 @@ describe('LessonDraftService studio workflow', () => {
     service = studio.service;
   });
 
-  describe('reconciliação de publicações interrompidas', () => {
+  describe("reconciliação de publicações interrompidas", () => {
     const publishing = () => {
       const lesson = makeLesson(
         LessonStatus.PUBLISHING,
         LessonStageStatus.APPROVED,
       );
-      lesson.publicationLeaseOwner = 'old-attempt';
+      lesson.publicationLeaseOwner = "old-attempt";
       repo.findExpiredPublishingLessons.mockResolvedValue([lesson]);
       repo.findLessonById.mockResolvedValue(lesson);
       return lesson;
     };
 
-    it('não toca em uma publicação cuja lease ainda está vigente', async () => {
+    it("não toca em uma publicação cuja lease ainda está vigente", async () => {
       const lesson = publishing();
       repo.isPublicationLeaseActive.mockResolvedValue(true);
 
@@ -235,20 +235,20 @@ describe('LessonDraftService studio workflow', () => {
       expect(weekMaterialsGet.findOneBySourceLessonId).not.toHaveBeenCalled();
     });
 
-    it('vincula a página existente quando a lease expirou depois de criá-la', async () => {
+    it("vincula a página existente quando a lease expirou depois de criá-la", async () => {
       const lesson = publishing();
       weekMaterialsGet.findOneBySourceLessonId.mockResolvedValue({
-        id: 'page-9',
+        id: "page-9",
       });
 
       await studio.publication.resumeInterruptedPublications();
 
       expect(lesson.status).toBe(LessonStatus.PUBLISHED);
-      expect(lesson.weekMaterialId).toBe('page-9');
+      expect(lesson.weekMaterialId).toBe("page-9");
       expect(lesson.publicationLeaseOwner).toBeNull();
     });
 
-    it('devolve a lição para pronta quando a lease expirou sem página criada', async () => {
+    it("devolve a lição para pronta quando a lease expirou sem página criada", async () => {
       const lesson = publishing();
 
       await studio.publication.resumeInterruptedPublications();
@@ -260,10 +260,10 @@ describe('LessonDraftService studio workflow', () => {
       expect(lesson.weekMaterialId).toBeNull();
     });
 
-    it('mantém PUBLISHING quando a consulta ao material falha, em vez de presumir que não existe', async () => {
+    it("mantém PUBLISHING quando a consulta ao material falha, em vez de presumir que não existe", async () => {
       const lesson = publishing();
       weekMaterialsGet.findOneBySourceLessonId.mockRejectedValue(
-        new Error('db offline'),
+        new Error("db offline"),
       );
 
       await expect(
@@ -274,26 +274,26 @@ describe('LessonDraftService studio workflow', () => {
       expect(repo.updateLesson).not.toHaveBeenCalled();
     });
 
-    it('só confia no marcador da descrição para lições em PUBLISHING', async () => {
+    it("só confia no marcador da descrição para lições em PUBLISHING", async () => {
       const lesson = makeLesson(
         LessonStatus.READY_FOR_PUBLICATION,
         LessonStageStatus.APPROVED,
       );
       repo.findLessonById.mockResolvedValue(lesson);
       weekMaterialsGet.findAllPaginated.mockResolvedValue({
-        data: [{ id: 'forged', description: `[origem:licao:${LESSON_ID}]` }],
+        data: [{ id: "forged", description: `[origem:licao:${LESSON_ID}]` }],
       });
-      weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: 'page-1' });
+      weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: "page-1" });
       spyOnRender();
 
       const result = await service.publishToWeekMaterial(LESSON_ID, USER_ID);
 
-      expect(result.weekMaterialId).toBe('page-1');
+      expect(result.weekMaterialId).toBe("page-1");
       expect(weekMaterialsGet.findAllPaginated).not.toHaveBeenCalled();
     });
   });
 
-  describe('publicação', () => {
+  describe("publicação", () => {
     const ready = () => {
       const lesson = makeLesson(
         LessonStatus.READY_FOR_PUBLICATION,
@@ -304,24 +304,24 @@ describe('LessonDraftService studio workflow', () => {
       return lesson;
     };
 
-    it('conclui como sucesso quando a página foi criada mas a confirmação no banco falhou', async () => {
+    it("conclui como sucesso quando a página foi criada mas a confirmação no banco falhou", async () => {
       const lesson = ready();
-      weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: 'page-1' });
+      weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: "page-1" });
       const run = (work: (manager: object) => Promise<unknown>) => work({});
       repo.runInTransaction
         .mockImplementationOnce(run) // reserva
-        .mockRejectedValueOnce(new Error('deadlock')) // confirmação
+        .mockRejectedValueOnce(new Error("deadlock")) // confirmação
         .mockImplementation(run); // acerto pós-falha
 
       const result = await service.publishToWeekMaterial(LESSON_ID, USER_ID);
 
-      expect(result.weekMaterialId).toBe('page-1');
+      expect(result.weekMaterialId).toBe("page-1");
       expect(lesson.status).toBe(LessonStatus.PUBLISHED);
-      expect(lesson.weekMaterialId).toBe('page-1');
+      expect(lesson.weekMaterialId).toBe("page-1");
       expect(weekMaterials.createWeekMaterialsPage).toHaveBeenCalledTimes(1);
     });
 
-    it('não cria a página quando a reserva foi perdida durante a renderização', async () => {
+    it("não cria a página quando a reserva foi perdida durante a renderização", async () => {
       const lesson = ready();
       repo.renewPublicationLease.mockResolvedValue(false);
 
@@ -335,15 +335,15 @@ describe('LessonDraftService studio workflow', () => {
       expect(lesson.status).toBe(LessonStatus.READY_FOR_PUBLICATION);
     });
 
-    it('guarda mensagem genérica e truncada para falhas internas', async () => {
+    it("guarda mensagem genérica e truncada para falhas internas", async () => {
       const lesson = ready();
       weekMaterials.createWeekMaterialsPage.mockRejectedValue(
-        new Error(`stack interno ${'x'.repeat(900)}`),
+        new Error(`stack interno ${"x".repeat(900)}`),
       );
 
       await expect(
         service.publishToWeekMaterial(LESSON_ID, USER_ID),
-      ).rejects.toThrow('stack interno');
+      ).rejects.toThrow("stack interno");
 
       expect(lesson.status).toBe(LessonStatus.READY_FOR_PUBLICATION);
       expect(lesson.publicationFailureMessage).toBe(
@@ -353,29 +353,29 @@ describe('LessonDraftService studio workflow', () => {
 
     const pageGone = () => {
       const { AppNotFoundException } = jest.requireActual<
-        typeof import('src/content/ai-lessons/compat/exceptions')
-      >('src/content/ai-lessons/compat/exceptions');
+        typeof import("src/content/ai-lessons/compat/exceptions")
+      >("src/content/ai-lessons/compat/exceptions");
       weekMaterialsGet.findOnePage.mockRejectedValue(
-        new AppNotFoundException(ErrorCode.WEEK_MATERIAL_NOT_FOUND, 'x'),
+        new AppNotFoundException(ErrorCode.WEEK_MATERIAL_NOT_FOUND, "x"),
       );
     };
 
-    it('publica novamente quando o material vinculado foi removido', async () => {
+    it("publica novamente quando o material vinculado foi removido", async () => {
       const lesson = makeLesson(
         LessonStatus.PUBLISHED,
         LessonStageStatus.APPROVED,
       );
-      lesson.weekMaterialId = 'page-gone';
+      lesson.weekMaterialId = "page-gone";
       repo.findLessonById.mockResolvedValue(lesson);
       spyOnRender();
       pageGone();
-      weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: 'page-2' });
+      weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: "page-2" });
 
       const result = await service.publishToWeekMaterial(LESSON_ID, USER_ID);
 
-      expect(result.weekMaterialId).toBe('page-2');
+      expect(result.weekMaterialId).toBe("page-2");
       expect(lesson.status).toBe(LessonStatus.PUBLISHED);
-      expect(lesson.weekMaterialId).toBe('page-2');
+      expect(lesson.weekMaterialId).toBe("page-2");
       expect(repo.updateLesson).toHaveBeenCalledWith(
         LESSON_ID,
         { weekMaterialId: null },
@@ -384,43 +384,43 @@ describe('LessonDraftService studio workflow', () => {
       expect(weekMaterials.createWeekMaterialsPage).toHaveBeenCalledTimes(1);
     });
 
-    it('devolve o vínculo existente sem recriar quando o material ainda existe', async () => {
+    it("devolve o vínculo existente sem recriar quando o material ainda existe", async () => {
       const lesson = makeLesson(
         LessonStatus.PUBLISHED,
         LessonStageStatus.APPROVED,
       );
-      lesson.weekMaterialId = 'page-1';
+      lesson.weekMaterialId = "page-1";
       repo.findLessonById.mockResolvedValue(lesson);
 
       const result = await service.publishToWeekMaterial(LESSON_ID, USER_ID);
 
-      expect(result.weekMaterialId).toBe('page-1');
+      expect(result.weekMaterialId).toBe("page-1");
       expect(weekMaterials.createWeekMaterialsPage).not.toHaveBeenCalled();
       expect(repo.reservePublication).not.toHaveBeenCalled();
     });
 
-    it('não presume que o material sumiu quando a consulta falha', async () => {
+    it("não presume que o material sumiu quando a consulta falha", async () => {
       const lesson = makeLesson(
         LessonStatus.PUBLISHED,
         LessonStageStatus.APPROVED,
       );
-      lesson.weekMaterialId = 'page-1';
+      lesson.weekMaterialId = "page-1";
       repo.findLessonById.mockResolvedValue(lesson);
-      weekMaterialsGet.findOnePage.mockRejectedValue(new Error('db offline'));
+      weekMaterialsGet.findOnePage.mockRejectedValue(new Error("db offline"));
 
       await expect(
         service.publishToWeekMaterial(LESSON_ID, USER_ID),
-      ).rejects.toThrow('db offline');
-      expect(lesson.weekMaterialId).toBe('page-1');
+      ).rejects.toThrow("db offline");
+      expect(lesson.weekMaterialId).toBe("page-1");
       expect(weekMaterials.createWeekMaterialsPage).not.toHaveBeenCalled();
     });
 
-    it('mantém bloqueada a publicação de uma lição arquivada', async () => {
+    it("mantém bloqueada a publicação de uma lição arquivada", async () => {
       const lesson = makeLesson(
         LessonStatus.ARCHIVED,
         LessonStageStatus.APPROVED,
       );
-      lesson.weekMaterialId = 'page-gone';
+      lesson.weekMaterialId = "page-gone";
       repo.findLessonById.mockResolvedValue(lesson);
       pageGone();
 
@@ -433,9 +433,9 @@ describe('LessonDraftService studio workflow', () => {
       expect(weekMaterials.createWeekMaterialsPage).not.toHaveBeenCalled();
     });
 
-    it('grava título, descrição sem marcador de origem e a base do path da semana', async () => {
+    it("grava título, descrição sem marcador de origem e a base do path da semana", async () => {
       const lesson = ready();
-      weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: 'page-1' });
+      weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: "page-1" });
 
       await service.publishToWeekMaterial(LESSON_ID, USER_ID);
 
@@ -445,20 +445,20 @@ describe('LessonDraftService studio workflow', () => {
         unknown,
         { routePathSource?: string },
       ];
-      expect(dto.pageTitle).toBe('Semana 7 — Tema');
+      expect(dto.pageTitle).toBe("Semana 7 · Crianças — Tema");
       expect(dto.pageDescription).toBe(
-        'Material completo da semana 7, revisado e aprovado.',
+        "Material completo para crianças de 3 a 11 anos — semana 7, revisado e aprovado.",
       );
-      expect(dto.pageDescription).not.toContain('[origem:licao:');
+      expect(dto.pageDescription).not.toContain("[origem:licao:");
       expect(dto.sourceLessonId).toBe(lesson.id);
-      // The route is addressed by the week alone: materiais_semanal_semana_7.
-      expect(options).toEqual({ routePathSource: 'Semana 7' });
+      // A rota é endereçada pela semana e pelo público, para não colidir.
+      expect(options).toMatchObject({ routePathSource: "Semana 7 Crianças" });
     });
 
-    it('usa a imagem de apresentação da lição como imagem da rota', async () => {
+    it("usa a imagem de apresentação da lição como imagem da rota", async () => {
       const lesson = ready();
       lesson.coverImageUrl = COVER_URL;
-      weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: 'page-1' });
+      weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: "page-1" });
 
       await service.publishToWeekMaterial(LESSON_ID, USER_ID);
 
@@ -467,9 +467,9 @@ describe('LessonDraftService studio workflow', () => {
       expect(options.routeImageUrl).toBe(COVER_URL);
     });
 
-    it('sem imagem de apresentação não envia imagem: a rota usa o card padrão', async () => {
+    it("sem imagem de apresentação não envia imagem: a rota usa o card padrão", async () => {
       ready();
-      weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: 'page-1' });
+      weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: "page-1" });
 
       await service.publishToWeekMaterial(LESSON_ID, USER_ID);
 
@@ -478,72 +478,46 @@ describe('LessonDraftService studio workflow', () => {
       expect(options.routeImageUrl).toBeUndefined();
     });
 
-    it('publica o Material Especial com a marca de tipo e o path derivado do título', async () => {
-      const lesson = makeLesson(
-        LessonStatus.READY_FOR_PUBLICATION,
-        LessonStageStatus.APPROVED,
-        {},
-        SPECIAL_LESSON_STAGE_ORDER,
-      );
-      repo.findLessonById.mockResolvedValue(lesson);
-      spyOnRender();
-      weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: 'page-1' });
-
-      await service.publishToWeekMaterial(LESSON_ID, USER_ID);
-
-      const [dto, , options] = weekMaterials.createWeekMaterialsPage.mock
-        .calls[0] as [
-        { pageTitle: string; pageDescription: string; documents: unknown[] },
-        unknown,
-        { routePathSource?: string },
-      ];
-      expect(dto.pageTitle).toBe('Material Especial (Semana 7) — Tema');
-      expect(dto.pageDescription).toContain('[tipo:especial]');
-      expect(dto.pageDescription).not.toContain('[origem:licao:');
-      expect(dto.documents).toHaveLength(3);
-      expect(options).toEqual({ routePathSource: undefined });
-    });
-
-    it('nomeia o item cujo PDF falhou na mensagem de falha da publicação', async () => {
+    it("nomeia o item cujo PDF falhou na mensagem de falha da publicação", async () => {
       const lesson = makeLesson(
         LessonStatus.READY_FOR_PUBLICATION,
         LessonStageStatus.APPROVED,
       );
       repo.findLessonById.mockResolvedValue(lesson);
       const { ServiceUnavailableException, UnprocessableEntityException } =
-        jest.requireActual<typeof import('@nestjs/common')>('@nestjs/common');
+        jest.requireActual<typeof import("@nestjs/common")>("@nestjs/common");
       jest
-        .spyOn(studio.pdfExport, 'renderStagePdf')
-        .mockResolvedValueOnce({ pdfBuffer: Buffer.from('a'), fileName: 'a' })
+        .spyOn(studio.pdfExport, "renderStagePdf")
+        .mockResolvedValueOnce({ pdfBuffer: Buffer.from("a"), fileName: "a" })
         .mockRejectedValueOnce(
-          new UnprocessableEntityException('Arte em formato não suportado.'),
+          new UnprocessableEntityException("Arte em formato não suportado."),
         );
 
       await expect(
         service.publishToWeekMaterial(LESSON_ID, USER_ID),
       ).rejects.toMatchObject({
         code: ErrorCode.LESSON_STAGE_PDF_UNAVAILABLE,
-        message: 'Visuais da história: Arte em formato não suportado.',
+        message: "Visuais da lição: Arte em formato não suportado.",
       });
       expect(lesson.status).toBe(LessonStatus.READY_FOR_PUBLICATION);
       expect(lesson.publicationFailureMessage).toBe(
-        'Visuais da história: Arte em formato não suportado.',
+        "Visuais da lição: Arte em formato não suportado.",
       );
 
       // Converter busy: 503, still naming the item and kept for the admin.
       jest
-        .spyOn(studio.pdfExport, 'renderStagePdf')
-        .mockRejectedValue(new ServiceUnavailableException('Fila ocupada.'));
+        .spyOn(studio.pdfExport, "renderStagePdf")
+        .mockRejectedValue(new ServiceUnavailableException("Fila ocupada."));
       await expect(
         service.publishToWeekMaterial(LESSON_ID, USER_ID),
       ).rejects.toMatchObject({ status: 503 });
       expect(lesson.publicationFailureMessage).toBe(
-        'Lição completa: Fila ocupada.',
+        "Lição completa: Fila ocupada.",
       );
       expect(weekMaterials.createWeekMaterialsPage).not.toHaveBeenCalled();
     });
 
-    it('vincula a página criada e restaura itens reabertos quando a reserva foi perdida', async () => {
+    it("vincula a página criada e restaura itens reabertos quando a reserva foi perdida", async () => {
       const lesson = ready();
       weekMaterials.createWeekMaterialsPage.mockImplementation(() => {
         // Lease lost meanwhile: the reconciliation released the lesson and an
@@ -552,47 +526,47 @@ describe('LessonDraftService studio workflow', () => {
         lesson.publicationLeaseOwner = null;
         stageOf(lesson, LessonStageType.LESSON).status =
           LessonStageStatus.CHANGES_REQUESTED;
-        const edited = stageOf(lesson, LessonStageType.MANUAL_WORK);
+        const edited = stageOf(lesson, LessonStageType.STANDARD_GAME);
         edited.status = LessonStageStatus.DRAFT;
-        edited.currentVersionId = 'version-edited';
-        return Promise.resolve({ id: 'page-1' });
+        edited.currentVersionId = "version-edited";
+        return Promise.resolve({ id: "page-1" });
       });
 
       const result = await service.publishToWeekMaterial(LESSON_ID, USER_ID);
 
       // The page exists: it is the source of truth, never an error.
-      expect(result.weekMaterialId).toBe('page-1');
+      expect(result.weekMaterialId).toBe("page-1");
       expect(lesson.status).toBe(LessonStatus.PUBLISHED);
-      expect(lesson.weekMaterialId).toBe('page-1');
+      expect(lesson.weekMaterialId).toBe("page-1");
       expect(stageOf(lesson, LessonStageType.LESSON).status).toBe(
         LessonStageStatus.APPROVED,
       );
-      expect(stageOf(lesson, LessonStageType.MANUAL_WORK).status).toBe(
+      expect(stageOf(lesson, LessonStageType.STANDARD_GAME).status).toBe(
         LessonStageStatus.DRAFT,
       );
     });
 
-    it('usa a versão e o checksum como chave de cache do PDF', async () => {
+    it("usa a versão e o checksum como chave de cache do PDF", async () => {
       const lesson = makeLesson(
         LessonStatus.IN_PROGRESS,
         LessonStageStatus.DRAFT,
       );
       repo.findLessonById.mockResolvedValue(lesson);
       docx.buildDocxFromTiptapOrStructuredJson.mockResolvedValue(
-        Buffer.from('docx'),
+        Buffer.from("docx"),
       );
-      pdf.convertDocxToPdf.mockResolvedValue(Buffer.from('%PDF'));
+      pdf.convertDocxToPdf.mockResolvedValue(Buffer.from("%PDF"));
 
       await service.previewStagePdf(LESSON_ID, LessonStageType.LESSON);
 
       expect(pdf.convertDocxToPdf).toHaveBeenCalledWith(
         expect.any(Buffer),
-        'version-LESSON:checksum',
+        "version-LESSON:checksum",
       );
     });
   });
 
-  describe('exclusão mútua com a geração', () => {
+  describe("exclusão mútua com a geração", () => {
     const generating = () => {
       const lesson = makeLesson(
         LessonStatus.IN_PROGRESS,
@@ -603,7 +577,7 @@ describe('LessonDraftService studio workflow', () => {
       return lesson;
     };
 
-    it('recusa gerar outra etapa enquanto uma etapa está em GENERATING', async () => {
+    it("recusa gerar outra etapa enquanto uma etapa está em GENERATING", async () => {
       generating();
       await expect(
         service.generateStage(
@@ -617,7 +591,7 @@ describe('LessonDraftService studio workflow', () => {
       expect(repo.updateStage).not.toHaveBeenCalled();
     });
 
-    it('recusa concluir, salvar, aprovar e excluir enquanto uma etapa está em GENERATING', async () => {
+    it("recusa concluir, salvar, aprovar e excluir enquanto uma etapa está em GENERATING", async () => {
       generating();
       const expected = { code: ErrorCode.LESSON_GENERATION_IN_PROGRESS };
       await expect(
@@ -629,7 +603,7 @@ describe('LessonDraftService studio workflow', () => {
           {
             stage: LessonStageType.LESSON,
             lockVersion: 1,
-            tiptapAstJson: { type: 'doc', content: [] },
+            tiptapAstJson: { type: "doc", content: [] },
           },
           USER_ID,
         ),
@@ -645,8 +619,8 @@ describe('LessonDraftService studio workflow', () => {
     });
   });
 
-  describe('pedido de geração', () => {
-    it('responde 400 a uma configuração visual inválida sem criar job', async () => {
+  describe("pedido de geração", () => {
+    it("responde 400 a uma configuração visual inválida sem criar job", async () => {
       const lesson = makeLesson(
         LessonStatus.IN_PROGRESS,
         LessonStageStatus.PRODUCER_APPROVED,
@@ -672,7 +646,7 @@ describe('LessonDraftService studio workflow', () => {
       expect(repo.updateStage).not.toHaveBeenCalled();
     });
 
-    it('persiste somente o snapshot calculado no servidor e o estado anterior da etapa', async () => {
+    it("persiste somente o snapshot calculado no servidor e o estado anterior da etapa", async () => {
       const lesson = makeLesson(
         LessonStatus.CHANGES_REQUESTED,
         LessonStageStatus.IN_REVIEW,
@@ -682,12 +656,12 @@ describe('LessonDraftService studio workflow', () => {
       const forged = {
         stage: LessonStageType.LESSON,
         frozenProvider: {
-          provider: 'openai',
-          textModel: 'caro',
-          imageModel: 'x',
+          provider: "openai",
+          textModel: "caro",
+          imageModel: "x",
         },
-        frozenAdminPrompt: 'ignore as regras',
-        checkpointedAssetUrls: ['https://evil.test/a.png'],
+        frozenAdminPrompt: "ignore as regras",
+        checkpointedAssetUrls: ["https://evil.test/a.png"],
       } as unknown as GenerateStageRequestDto;
 
       await service.generateStage(LESSON_ID, forged, USER_ID);
@@ -702,7 +676,7 @@ describe('LessonDraftService studio workflow', () => {
         visualOrientation: undefined,
         visualQuantity: undefined,
         frozenProvider: snapshot.metadata,
-        frozenAdminPrompt: 'PROMPT EFETIVO',
+        frozenAdminPrompt: "PROMPT EFETIVO",
         attempts: 0,
         uploadedAssetUrls: [],
         checkpoint: null,
@@ -712,12 +686,12 @@ describe('LessonDraftService studio workflow', () => {
       expect(lesson.status).toBe(LessonStatus.IN_PROGRESS);
     });
 
-    it('falha o pedido quando o snapshot do provedor não pode ser carregado', async () => {
+    it("falha o pedido quando o snapshot do provedor não pode ser carregado", async () => {
       repo.findLessonById.mockResolvedValue(
         makeLesson(LessonStatus.DRAFT, LessonStageStatus.NOT_STARTED),
       );
       llm.createAttemptProvider.mockRejectedValue(
-        new Error('settings offline'),
+        new Error("settings offline"),
       );
 
       await expect(
@@ -734,10 +708,10 @@ describe('LessonDraftService studio workflow', () => {
     });
   });
 
-  describe('lease e retomada da geração', () => {
+  describe("lease e retomada da geração", () => {
     const pendingStage = (request: LessonGenerationRequest) =>
       ({
-        id: 'stage-LESSON',
+        id: "stage-LESSON",
         lessonId: LESSON_ID,
         type: LessonStageType.LESSON,
         status: LessonStageStatus.GENERATING,
@@ -746,11 +720,11 @@ describe('LessonDraftService studio workflow', () => {
         generationLeaseOwner: null,
       }) as unknown as LessonStageEntity;
 
-    it('não reivindica novamente uma geração que já roda neste processo', async () => {
+    it("não reivindica novamente uma geração que já roda neste processo", async () => {
       const stage = pendingStage({ stage: LessonStageType.LESSON });
       repo.findGeneratingStages.mockResolvedValue([stage]);
       const execute = jest
-        .spyOn(internals(), 'executeStageGeneration')
+        .spyOn(internals(), "executeStageGeneration")
         .mockReturnValue(new Promise<void>(() => undefined));
 
       await studio.generation.resumePendingGenerations();
@@ -767,7 +741,7 @@ describe('LessonDraftService studio workflow', () => {
       await studio.generation.onApplicationShutdown();
     });
 
-    it('encerra a etapa com falha quando o limite de retomadas é atingido e descarta os uploads', async () => {
+    it("encerra a etapa com falha quando o limite de retomadas é atingido e descarta os uploads", async () => {
       const lesson = makeLesson(
         LessonStatus.IN_PROGRESS,
         LessonStageStatus.NOT_STARTED,
@@ -789,7 +763,7 @@ describe('LessonDraftService studio workflow', () => {
           return Promise.resolve(true);
         },
       );
-      const execute = jest.spyOn(internals(), 'executeStageGeneration');
+      const execute = jest.spyOn(internals(), "executeStageGeneration");
 
       await studio.generation.resumePendingGenerations();
 
@@ -801,14 +775,14 @@ describe('LessonDraftService studio workflow', () => {
       expect(s3.delete).toHaveBeenCalledWith(ASSET_URL);
     });
 
-    it('restaura o status anterior da etapa quando a regeneração falha', async () => {
+    it("restaura o status anterior da etapa quando a regeneração falha", async () => {
       const lesson = makeLesson(
         LessonStatus.IN_PROGRESS,
         LessonStageStatus.PRODUCER_APPROVED,
         { [LessonStageType.LESSON]: LessonStageStatus.GENERATING },
       );
       const stage = stageOf(lesson, LessonStageType.LESSON);
-      stage.generationLeaseOwner = 'token-1';
+      stage.generationLeaseOwner = "token-1";
       stage.generationRequestJson = {
         stage: LessonStageType.LESSON,
         frozenProvider: snapshot.metadata,
@@ -820,7 +794,7 @@ describe('LessonDraftService studio workflow', () => {
         internals().failInterruptedGeneration(
           LESSON_ID,
           LessonStageType.LESSON,
-          'token-1',
+          "token-1",
           new Error('{"error":{"code":"service_unavailable"}}'),
         ),
       ).resolves.toBe(true);
@@ -828,33 +802,33 @@ describe('LessonDraftService studio workflow', () => {
       expect(stage.status).toBe(LessonStageStatus.PRODUCER_APPROVED);
       expect(stage.failureCode).toBe(LessonFailureCode.AI_PROVIDER_UNAVAILABLE);
       // Provider comes from the frozen snapshot, not from the message text.
-      expect(stage.failureMessage).toContain('usando Gemini');
+      expect(stage.failureMessage).toContain("usando Gemini");
       expect(stage.generationRequestJson).toBeNull();
       expect(lesson.status).toBe(LessonStatus.PACKAGE_READY);
     });
 
-    it('ignora a falha de uma tentativa que não é mais dona da lease', async () => {
+    it("ignora a falha de uma tentativa que não é mais dona da lease", async () => {
       const lesson = makeLesson(
         LessonStatus.IN_PROGRESS,
         LessonStageStatus.DRAFT,
         { [LessonStageType.LESSON]: LessonStageStatus.GENERATING },
       );
       stageOf(lesson, LessonStageType.LESSON).generationLeaseOwner =
-        'new-owner';
+        "new-owner";
       repo.findLessonById.mockResolvedValue(lesson);
 
       await expect(
         internals().failInterruptedGeneration(
           LESSON_ID,
           LessonStageType.LESSON,
-          'old-owner',
-          new Error('falha'),
+          "old-owner",
+          new Error("falha"),
         ),
       ).resolves.toBe(false);
       expect(repo.updateStage).not.toHaveBeenCalled();
     });
 
-    it('interrompe a tentativa quando a renovação da lease é recusada', async () => {
+    it("interrompe a tentativa quando a renovação da lease é recusada", async () => {
       jest.useFakeTimers();
       try {
         const lesson = makeLesson(
@@ -863,7 +837,7 @@ describe('LessonDraftService studio workflow', () => {
           { [LessonStageType.LESSON]: LessonStageStatus.GENERATING },
         );
         const stage = stageOf(lesson, LessonStageType.LESSON);
-        stage.generationLeaseOwner = 'token-1';
+        stage.generationLeaseOwner = "token-1";
         stage.generationRequestJson = { stage: LessonStageType.LESSON };
         stage.generationRequestedById = USER_ID;
         repo.findLessonById.mockResolvedValue(lesson);
@@ -875,16 +849,16 @@ describe('LessonDraftService studio workflow', () => {
           }),
         );
 
-        internals().startGeneration(stage, 'token-1');
+        internals().startGeneration(stage, "token-1");
         await jest.advanceTimersByTimeAsync(
           LESSON_GENERATION.HEARTBEAT_INTERVAL_MS + 10,
         );
-        finishText({ content: { story: 'x' }, responseId: 'r1' });
+        finishText({ content: { story: "x" }, responseId: "r1" });
         await jest.advanceTimersByTimeAsync(10);
 
         expect(repo.renewGenerationLease).toHaveBeenCalledWith(
           stage.id,
-          'token-1',
+          "token-1",
           LESSON_GENERATION.LEASE_SECONDS,
         );
         // Neither committed nor recorded as a failure: the stage has an owner.
@@ -896,280 +870,29 @@ describe('LessonDraftService studio workflow', () => {
       }
     });
 
-    it('libera as leases das gerações ativas no encerramento da aplicação', async () => {
+    it("libera as leases das gerações ativas no encerramento da aplicação", async () => {
       const stage = pendingStage({ stage: LessonStageType.LESSON });
       jest
-        .spyOn(internals(), 'executeStageGeneration')
+        .spyOn(internals(), "executeStageGeneration")
         .mockReturnValue(new Promise<void>(() => undefined));
-      internals().startGeneration(stage, 'token-1');
+      internals().startGeneration(stage, "token-1");
 
       await studio.generation.onApplicationShutdown();
 
       expect(repo.releaseGenerationLease).toHaveBeenCalledWith(
         stage.id,
-        'token-1',
+        "token-1",
       );
       repo.findGeneratingStages.mockClear();
       await studio.generation.resumePendingGenerations();
       expect(repo.findGeneratingStages).not.toHaveBeenCalled();
     });
-
-    it('reaproveita texto e imagens já pagos por uma tentativa interrompida', async () => {
-      const lesson = makeLesson(
-        LessonStatus.IN_PROGRESS,
-        LessonStageStatus.PRODUCER_APPROVED,
-        { [LessonStageType.MANUAL_WORK]: LessonStageStatus.GENERATING },
-      );
-      const stage = stageOf(lesson, LessonStageType.MANUAL_WORK);
-      stage.generationLeaseOwner = 'token-2';
-      const upstream = assertLessonDependency(
-        lesson,
-        LessonStageType.MANUAL_WORK,
-      );
-      const request: LessonGenerationRequest = {
-        stage: LessonStageType.MANUAL_WORK,
-        frozenProvider: snapshot.metadata,
-        frozenAdminPrompt: 'PROMPT',
-        attempts: 2,
-        uploadedAssetUrls: [ASSET_URL],
-        checkpoint: {
-          upstreamChecksum: upstream ? lessonContentChecksum(upstream) : null,
-          content: {
-            verseText: 'Deus amou o mundo.',
-            printableAssets: [{ id: 'manual', prompt: 'Arte' }],
-          },
-          responseId: 'resp-1',
-          assetUrls: { manual: ASSET_URL },
-        },
-      };
-      repo.findLessonById.mockResolvedValue(lesson);
-      repo.saveVersion.mockImplementation((version: Record<string, unknown>) =>
-        Promise.resolve({ ...version, id: 'version-new' }),
-      );
-
-      await internals().executeStageGeneration(
-        LESSON_ID,
-        request,
-        USER_ID,
-        'token-2',
-      );
-
-      expect(llm.createAttemptProvider).toHaveBeenCalledWith(snapshot.metadata);
-      expect(llm.generateStage).not.toHaveBeenCalled();
-      expect(llm.generateImage).not.toHaveBeenCalled();
-      expect(s3.upload).not.toHaveBeenCalled();
-      expect(s3.delete).not.toHaveBeenCalled();
-      const saved = (
-        repo.saveVersion.mock.calls[0] as [
-          { structuredDataJson: { printableAssets: Array<{ url: string }> } },
-        ]
-      )[0];
-      expect(saved.structuredDataJson.printableAssets[0].url).toBe(ASSET_URL);
-      expect(stage.status).toBe(LessonStageStatus.DRAFT);
-      expect(stage.currentVersionId).toBe('version-new');
-    });
-
-    it('descarta o checkpoint produzido a partir de um upstream que mudou e valida a imagem nova', async () => {
-      const lesson = makeLesson(
-        LessonStatus.IN_PROGRESS,
-        LessonStageStatus.PRODUCER_APPROVED,
-        { [LessonStageType.MANUAL_WORK]: LessonStageStatus.GENERATING },
-      );
-      const stage = stageOf(lesson, LessonStageType.MANUAL_WORK);
-      stage.generationLeaseOwner = 'token-3';
-      stageOf(lesson, LessonStageType.LESSON).versions[0].structuredDataJson = {
-        memoryVerse: {
-          text: 'Deus amou o mundo.',
-          reference: 'João 3:16',
-          version: 'NVI',
-        },
-      };
-      repo.findLessonById.mockResolvedValue(lesson);
-      llm.generateStage.mockResolvedValue({
-        content: { printableAssets: [{ id: 'manual', prompt: 'Arte' }] },
-        responseId: 'resp-2',
-      });
-      llm.generateImage.mockResolvedValue(Buffer.from('não é imagem'));
-
-      const request: LessonGenerationRequest = {
-        stage: LessonStageType.MANUAL_WORK,
-        frozenAdminPrompt: 'PROMPT',
-        uploadedAssetUrls: [ASSET_URL],
-        checkpoint: {
-          upstreamChecksum: 'outro-upstream',
-          content: { printableAssets: [{ id: 'manual' }] },
-          responseId: 'old',
-          assetUrls: { manual: ASSET_URL },
-        },
-      };
-      stage.generationRequestJson = request;
-
-      await internals().executeStageGeneration(
-        LESSON_ID,
-        request,
-        USER_ID,
-        'token-3',
-      );
-
-      expect(llm.generateStage).toHaveBeenCalledTimes(1);
-      expect(s3.upload).not.toHaveBeenCalled();
-      expect(stage.failureCode).toBe(LessonFailureCode.AI_IMAGE_INVALID);
-      // The abandoned upload recorded by the previous attempt is removed.
-      expect(s3.delete).toHaveBeenCalledWith(ASSET_URL);
-    });
-
-    it('envia ao S3 somente imagens PNG/JPEG válidas e registra cada upload no pedido', async () => {
-      const lesson = makeLesson(
-        LessonStatus.IN_PROGRESS,
-        LessonStageStatus.PRODUCER_APPROVED,
-        { [LessonStageType.MANUAL_WORK]: LessonStageStatus.GENERATING },
-      );
-      const stage = stageOf(lesson, LessonStageType.MANUAL_WORK);
-      stage.generationLeaseOwner = 'token-4';
-      stageOf(lesson, LessonStageType.LESSON).versions[0].structuredDataJson = {
-        memoryVerse: {
-          text: 'Deus amou o mundo.',
-          reference: 'João 3:16',
-          version: 'NVI',
-        },
-      };
-      repo.findLessonById.mockResolvedValue(lesson);
-      llm.generateStage.mockResolvedValue({
-        content: { printableAssets: [{ id: 'manual', prompt: 'Arte' }] },
-        responseId: 'resp-3',
-        usage: { model: 'text-model-x', totalTokens: 321 },
-      });
-      llm.generateImage.mockResolvedValue(PNG);
-      s3.upload.mockResolvedValue(ASSET_URL);
-      repo.saveVersion.mockImplementation((version: Record<string, unknown>) =>
-        Promise.resolve({ ...version, id: 'version-new' }),
-      );
-
-      await internals().executeStageGeneration(
-        LESSON_ID,
-        { stage: LessonStageType.MANUAL_WORK, frozenAdminPrompt: 'PROMPT' },
-        USER_ID,
-        'token-4',
-      );
-
-      expect(repo.updateGenerationRequest).toHaveBeenLastCalledWith(
-        stage.id,
-        'token-4',
-        expect.objectContaining({
-          uploadedAssetUrls: [ASSET_URL],
-          checkpoint: expect.objectContaining({
-            assetUrls: { manual: ASSET_URL },
-          }) as unknown,
-        }),
-      );
-      const saved = (
-        repo.saveVersion.mock.calls[0] as [{ changeSummary: string }]
-      )[0];
-      expect(saved.changeSummary).toBe(
-        'Geração via Gemini (text-model-x; imagens: image-model; 321 tokens)',
-      );
-      expect(s3.delete).not.toHaveBeenCalled();
-    });
-
-    it('publica o progresso: texto, imagens geradas e gravação', async () => {
-      const lesson = makeLesson(
-        LessonStatus.IN_PROGRESS,
-        LessonStageStatus.PRODUCER_APPROVED,
-        { [LessonStageType.MANUAL_WORK]: LessonStageStatus.GENERATING },
-      );
-      stageOf(lesson, LessonStageType.MANUAL_WORK).generationLeaseOwner =
-        'token-5';
-      stageOf(lesson, LessonStageType.LESSON).versions[0].structuredDataJson = {
-        memoryVerse: {
-          text: 'Deus amou o mundo.',
-          reference: 'João 3:16',
-          version: 'NVI',
-        },
-      };
-      repo.findLessonById.mockResolvedValue(lesson);
-      const seen: Array<LessonGenerationProgress | null> = [];
-      llm.generateStage.mockImplementation(async () => {
-        seen.push(await studio.progress.get(LESSON_ID));
-        return {
-          content: { printableAssets: [{ id: 'manual', prompt: 'Arte' }] },
-          responseId: 'resp-5',
-        };
-      });
-      llm.generateImage.mockImplementation(async () => {
-        seen.push(await studio.progress.get(LESSON_ID));
-        return PNG;
-      });
-      s3.upload.mockResolvedValue(ASSET_URL);
-      repo.saveVersion.mockImplementation((version: Record<string, unknown>) =>
-        Promise.resolve({ ...version, id: 'version-new' }),
-      );
-
-      await internals().executeStageGeneration(
-        LESSON_ID,
-        { stage: LessonStageType.MANUAL_WORK, frozenAdminPrompt: 'PROMPT' },
-        USER_ID,
-        'token-5',
-      );
-
-      expect(seen[0]).toMatchObject({
-        stage: LessonStageType.MANUAL_WORK,
-        phase: LessonGenerationPhase.WRITING,
-        completedImages: 0,
-      });
-      expect(seen[1]).toMatchObject({
-        phase: LessonGenerationPhase.IMAGES,
-        totalImages: 1,
-        completedImages: 0,
-      });
-      expect(await studio.progress.get(LESSON_ID)).toMatchObject({
-        phase: LessonGenerationPhase.SAVING,
-        totalImages: 1,
-        completedImages: 1,
-      });
-    });
-
-    it('conclui a geração mesmo com o armazenamento de progresso fora do ar', async () => {
-      const lesson = makeLesson(
-        LessonStatus.IN_PROGRESS,
-        LessonStageStatus.PRODUCER_APPROVED,
-        { [LessonStageType.MANUAL_WORK]: LessonStageStatus.GENERATING },
-      );
-      const stage = stageOf(lesson, LessonStageType.MANUAL_WORK);
-      stage.generationLeaseOwner = 'token-6';
-      stageOf(lesson, LessonStageType.LESSON).versions[0].structuredDataJson = {
-        memoryVerse: {
-          text: 'Deus amou o mundo.',
-          reference: 'João 3:16',
-          version: 'NVI',
-        },
-      };
-      repo.findLessonById.mockResolvedValue(lesson);
-      studio.progressStore.failure = new Error('redis fora do ar');
-      llm.generateStage.mockResolvedValue({
-        content: { printableAssets: [{ id: 'manual', prompt: 'Arte' }] },
-        responseId: 'resp-6',
-      });
-      llm.generateImage.mockResolvedValue(PNG);
-      s3.upload.mockResolvedValue(ASSET_URL);
-      repo.saveVersion.mockImplementation((version: Record<string, unknown>) =>
-        Promise.resolve({ ...version, id: 'version-new' }),
-      );
-
-      await internals().executeStageGeneration(
-        LESSON_ID,
-        { stage: LessonStageType.MANUAL_WORK, frozenAdminPrompt: 'PROMPT' },
-        USER_ID,
-        'token-6',
-      );
-
-      expect(stage.currentVersionId).toBe('version-new');
-    });
   });
 
-  describe('regeneração de imagens escolhidas', () => {
+  describe("regeneração de imagens escolhidas", () => {
     const TYPE = LessonStageType.VERSE_FIXATION;
-    const urlOf = (id: string) => ASSET_URL.replace('manual', `fix-${id}`);
-    const NEW_URL = ASSET_URL.replace('manual', 'fix-new');
+    const urlOf = (id: string) => ASSET_URL.replace("manual", `fix-${id}`);
+    const NEW_URL = ASSET_URL.replace("manual", "fix-new");
     const lessonWithImages = (
       status: LessonStageStatus = LessonStageStatus.DRAFT,
       type: LessonStageType = TYPE,
@@ -1181,11 +904,11 @@ describe('LessonDraftService studio workflow', () => {
       );
       const key =
         type === LessonStageType.MEDITATION_OLDER
-          ? 'printableAssets'
-          : 'assets';
+          ? "printableAssets"
+          : "assets";
       stageOf(lesson, type).versions[0].structuredDataJson = {
-        name: 'Corrida do versículo',
-        [key]: ['1', '2', '3'].map((id) => ({
+        name: "Corrida do versículo",
+        [key]: ["1", "2", "3"].map((id) => ({
           id,
           prompt: `Arte ${id}`,
           url: urlOf(id),
@@ -1204,12 +927,12 @@ describe('LessonDraftService studio workflow', () => {
       ...extra,
     });
 
-    it('guarda o texto e as imagens mantidas como trabalho já pago', async () => {
+    it("guarda o texto e as imagens mantidas como trabalho já pago", async () => {
       const lesson = lessonWithImages();
 
       await service.regenerateImages(
         LESSON_ID,
-        body(['2'], { instructions: 'Sem texto na arte' }),
+        body(["2"], { instructions: "Sem texto na arte" }),
         USER_ID,
       );
 
@@ -1220,12 +943,12 @@ describe('LessonDraftService studio workflow', () => {
         attempts: 0,
         // Kept images are never listed as uploads of the request.
         uploadedAssetUrls: [],
-        regeneratedAssetIds: ['2'],
-        imageInstructions: 'Sem texto na arte',
+        regeneratedAssetIds: ["2"],
+        imageInstructions: "Sem texto na arte",
         previousState: { status: LessonStageStatus.DRAFT },
         checkpoint: {
-          responseId: '',
-          assetUrls: { '1': urlOf('1'), '3': urlOf('3') },
+          responseId: "",
+          assetUrls: { "1": urlOf("1"), "3": urlOf("3") },
         },
       });
       expect(await studio.progress.get(LESSON_ID)).toMatchObject({
@@ -1234,27 +957,27 @@ describe('LessonDraftService studio workflow', () => {
       });
     });
 
-    it('gera só a imagem escolhida, sem reescrever o texto, e cria versão nova', async () => {
+    it("gera só a imagem escolhida, sem reescrever o texto, e cria versão nova", async () => {
       const lesson = lessonWithImages();
       await service.regenerateImages(
         LESSON_ID,
-        body(['2'], { instructions: 'Sem texto na arte' }),
+        body(["2"], { instructions: "Sem texto na arte" }),
         USER_ID,
       );
       const stage = stageOf(lesson, TYPE);
-      stage.generationLeaseOwner = 'token-r1';
+      stage.generationLeaseOwner = "token-r1";
       s3.downloadOwned.mockResolvedValue(PNG);
       llm.generateImage.mockResolvedValue(PNG);
       s3.upload.mockResolvedValue(NEW_URL);
       repo.saveVersion.mockImplementation((version: Record<string, unknown>) =>
-        Promise.resolve({ ...version, id: 'version-new' }),
+        Promise.resolve({ ...version, id: "version-new" }),
       );
 
       await internals().executeStageGeneration(
         LESSON_ID,
         stage.generationRequestJson as LessonGenerationRequest,
         USER_ID,
-        'token-r1',
+        "token-r1",
       );
 
       expect(llm.generateStage).not.toHaveBeenCalled();
@@ -1265,10 +988,10 @@ describe('LessonDraftService studio workflow', () => {
         unknown,
         { data: Buffer } | undefined,
       ];
-      expect(prompt).toContain('Sem texto na arte');
+      expect(prompt).toContain("Sem texto na arte");
       // The first image stays, so the new one copies its characters.
       expect(s3.downloadOwned).toHaveBeenCalledWith(
-        urlOf('1'),
+        urlOf("1"),
         expect.any(Number),
       );
       expect(reference?.data).toEqual(PNG);
@@ -1281,58 +1004,58 @@ describe('LessonDraftService studio workflow', () => {
         ]
       )[0];
       expect(saved.structuredDataJson.assets.map((asset) => asset.url)).toEqual(
-        [urlOf('1'), NEW_URL, urlOf('3')],
+        [urlOf("1"), NEW_URL, urlOf("3")],
       );
       expect(saved.changeSummary).toBe(
-        '1 de 3 imagem regerada via Gemini (image-model); texto mantido',
+        "1 de 3 imagem regerada via Gemini (image-model); texto mantido",
       );
       expect(s3.delete).not.toHaveBeenCalled();
-      expect(stage.currentVersionId).toBe('version-new');
+      expect(stage.currentVersionId).toBe("version-new");
     });
 
-    it('ao regerar a primeira imagem, usa como referência uma imagem que ficou', async () => {
+    it("ao regerar a primeira imagem, usa como referência uma imagem que ficou", async () => {
       const lesson = lessonWithImages();
-      await service.regenerateImages(LESSON_ID, body(['1']), USER_ID);
+      await service.regenerateImages(LESSON_ID, body(["1"]), USER_ID);
       const stage = stageOf(lesson, TYPE);
-      stage.generationLeaseOwner = 'token-r2';
+      stage.generationLeaseOwner = "token-r2";
       s3.downloadOwned.mockResolvedValue(PNG);
       llm.generateImage.mockResolvedValue(PNG);
       s3.upload.mockResolvedValue(NEW_URL);
       repo.saveVersion.mockImplementation((version: Record<string, unknown>) =>
-        Promise.resolve({ ...version, id: 'version-new' }),
+        Promise.resolve({ ...version, id: "version-new" }),
       );
 
       await internals().executeStageGeneration(
         LESSON_ID,
         stage.generationRequestJson as LessonGenerationRequest,
         USER_ID,
-        'token-r2',
+        "token-r2",
       );
 
       expect(s3.downloadOwned).toHaveBeenCalledWith(
-        urlOf('2'),
+        urlOf("2"),
         expect.any(Number),
       );
       expect(llm.generateImage).toHaveBeenCalledTimes(1);
     });
 
-    it('envia as imagens mantidas como referência e pede o mesmo estilo e os mesmos rostos', async () => {
+    it("envia as imagens mantidas como referência e pede o mesmo estilo e os mesmos rostos", async () => {
       const lesson = lessonWithImages();
-      await service.regenerateImages(LESSON_ID, body(['2']), USER_ID);
+      await service.regenerateImages(LESSON_ID, body(["2"]), USER_ID);
       const stage = stageOf(lesson, TYPE);
-      stage.generationLeaseOwner = 'token-r4';
+      stage.generationLeaseOwner = "token-r4";
       s3.downloadOwned.mockResolvedValue(PNG);
       llm.generateImage.mockResolvedValue(PNG);
       s3.upload.mockResolvedValue(NEW_URL);
       repo.saveVersion.mockImplementation((version: Record<string, unknown>) =>
-        Promise.resolve({ ...version, id: 'version-new' }),
+        Promise.resolve({ ...version, id: "version-new" }),
       );
 
       await internals().executeStageGeneration(
         LESSON_ID,
         stage.generationRequestJson as LessonGenerationRequest,
         USER_ID,
-        'token-r4',
+        "token-r4",
       );
 
       const [prompt, , , reference] = llm.generateImage.mock.calls[0] as [
@@ -1346,26 +1069,26 @@ describe('LessonDraftService studio workflow', () => {
       expect(reference.companions).toHaveLength(0);
       expect(
         s3.downloadOwned.mock.calls.map((call: unknown[]) => call[0]),
-      ).toEqual([urlOf('1')]);
+      ).toEqual([urlOf("1")]);
     });
 
-    it('nunca refaz uma imagem mantida, mesmo quando ela não pode ser lida como referência', async () => {
+    it("nunca refaz uma imagem mantida, mesmo quando ela não pode ser lida como referência", async () => {
       const lesson = lessonWithImages();
-      await service.regenerateImages(LESSON_ID, body(['2']), USER_ID);
+      await service.regenerateImages(LESSON_ID, body(["2"]), USER_ID);
       const stage = stageOf(lesson, TYPE);
-      stage.generationLeaseOwner = 'token-r5';
-      s3.downloadOwned.mockRejectedValue(new Error('s3 fora do ar'));
+      stage.generationLeaseOwner = "token-r5";
+      s3.downloadOwned.mockRejectedValue(new Error("s3 fora do ar"));
       llm.generateImage.mockResolvedValue(PNG);
       s3.upload.mockResolvedValue(NEW_URL);
       repo.saveVersion.mockImplementation((version: Record<string, unknown>) =>
-        Promise.resolve({ ...version, id: 'version-new' }),
+        Promise.resolve({ ...version, id: "version-new" }),
       );
 
       await internals().executeStageGeneration(
         LESSON_ID,
         stage.generationRequestJson as LessonGenerationRequest,
         USER_ID,
-        'token-r5',
+        "token-r5",
       );
 
       expect(llm.generateImage).toHaveBeenCalledTimes(1);
@@ -1375,63 +1098,25 @@ describe('LessonDraftService studio workflow', () => {
         ]
       )[0];
       expect(saved.structuredDataJson.assets.map((asset) => asset.url)).toEqual(
-        [urlOf('1'), NEW_URL, urlOf('3')],
+        [urlOf("1"), NEW_URL, urlOf("3")],
       );
     });
 
-    it('a geração completa não recebe o pedido de continuidade', async () => {
-      const lesson = makeLesson(
-        LessonStatus.IN_PROGRESS,
-        LessonStageStatus.PRODUCER_APPROVED,
-        { [LessonStageType.MANUAL_WORK]: LessonStageStatus.GENERATING },
-      );
-      stageOf(lesson, LessonStageType.MANUAL_WORK).generationLeaseOwner =
-        'token-r6';
-      stageOf(lesson, LessonStageType.LESSON).versions[0].structuredDataJson = {
-        memoryVerse: {
-          text: 'Deus amou o mundo.',
-          reference: 'João 3:16',
-          version: 'NVI',
-        },
-      };
-      repo.findLessonById.mockResolvedValue(lesson);
-      llm.generateStage.mockResolvedValue({
-        content: { printableAssets: [{ id: 'manual', prompt: 'Arte' }] },
-        responseId: 'resp-r6',
-      });
-      llm.generateImage.mockResolvedValue(PNG);
-      s3.upload.mockResolvedValue(ASSET_URL);
-      repo.saveVersion.mockImplementation((version: Record<string, unknown>) =>
-        Promise.resolve({ ...version, id: 'version-new' }),
-      );
-
-      await internals().executeStageGeneration(
-        LESSON_ID,
-        { stage: LessonStageType.MANUAL_WORK, frozenAdminPrompt: 'PROMPT' },
-        USER_ID,
-        'token-r6',
-      );
-
-      const [prompt] = llm.generateImage.mock.calls[0] as [string];
-      expect(prompt).not.toContain(LESSON_IMAGE_REGENERATION.STYLE_CONTINUITY);
-      expect(s3.downloadOwned).not.toHaveBeenCalled();
-    });
-
-    const briefAnswer = (cast: string[] = ['Ana']) => ({
+    const briefAnswer = (cast: string[] = ["Ana"]) => ({
       content: {
-        artDirection: 'Traço limpo, contorno marrom, paleta terrosa.',
+        artDirection: "Traço limpo, contorno marrom, paleta terrosa.",
         cast: [
-          { name: 'Ana', appearance: 'Menina de 8 anos, vestido amarelo.' },
+          { name: "Ana", appearance: "Menina de 8 anos, vestido amarelo." },
         ],
         settings: [],
-        parts: ['1', '2', '3'].map((assetId) => ({
+        parts: ["1", "2", "3"].map((assetId) => ({
           assetId,
           prompt: `Parte mestre da imagem ${assetId}, com a cena completa.`,
           cast,
           settings: [],
         })),
       },
-      responseId: 'resp-brief',
+      responseId: "resp-brief",
     });
     const runRegeneration = async (
       lesson: ReturnType<typeof lessonWithImages>,
@@ -1443,7 +1128,7 @@ describe('LessonDraftService studio workflow', () => {
       llm.generateImage.mockResolvedValue(PNG);
       s3.upload.mockResolvedValue(NEW_URL);
       repo.saveVersion.mockImplementation((version: Record<string, unknown>) =>
-        Promise.resolve({ ...version, id: 'version-new' }),
+        Promise.resolve({ ...version, id: "version-new" }),
       );
       await internals().executeStageGeneration(
         LESSON_ID,
@@ -1458,38 +1143,38 @@ describe('LessonDraftService studio workflow', () => {
       )[0].structuredDataJson;
     };
 
-    it('escreve o prompt mestre antes das imagens e manda a cada imagem só a sua parte', async () => {
+    it("escreve o prompt mestre antes das imagens e manda a cada imagem só a sua parte", async () => {
       const lesson = lessonWithImages();
       llm.generateStructured.mockResolvedValue(briefAnswer());
-      await service.regenerateImages(LESSON_ID, body(['2']), USER_ID);
+      await service.regenerateImages(LESSON_ID, body(["2"]), USER_ID);
 
-      const saved = await runRegeneration(lesson, 'token-b1');
+      const saved = await runRegeneration(lesson, "token-b1");
 
       expect(llm.generateStructured).toHaveBeenCalledTimes(1);
       const [prompt] = llm.generateImage.mock.calls[0] as [string];
-      expect(prompt).toContain('Traço limpo, contorno marrom');
-      expect(prompt).toContain('- Ana: Menina de 8 anos');
-      expect(prompt).toContain('Parte mestre da imagem 2');
-      expect(prompt).not.toContain('Parte mestre da imagem 1');
+      expect(prompt).toContain("Traço limpo, contorno marrom");
+      expect(prompt).toContain("- Ana: Menina de 8 anos");
+      expect(prompt).toContain("Parte mestre da imagem 2");
+      expect(prompt).not.toContain("Parte mestre da imagem 1");
       // Stored with the version, so the next regeneration reuses it.
       expect(readImageBrief(TYPE, saved)?.origin).toBe(
         LessonImageBriefOrigin.BACKFILL,
       );
     });
 
-    it('ao refazer algumas imagens reutiliza o prompt mestre guardado, sem reescrevê-lo', async () => {
+    it("ao refazer algumas imagens reutiliza o prompt mestre guardado, sem reescrevê-lo", async () => {
       const lesson = lessonWithImages();
       llm.generateStructured.mockResolvedValue(briefAnswer());
-      await service.regenerateImages(LESSON_ID, body(['2']), USER_ID);
-      const saved = await runRegeneration(lesson, 'token-b2');
+      await service.regenerateImages(LESSON_ID, body(["2"]), USER_ID);
+      const saved = await runRegeneration(lesson, "token-b2");
       const stored = readImageBrief(TYPE, saved);
 
       // A second round over the version that now carries the brief.
       const stage = stageOf(lesson, TYPE);
       stage.versions = [
-        { ...stage.versions[0], id: 'version-new', structuredDataJson: saved },
+        { ...stage.versions[0], id: "version-new", structuredDataJson: saved },
       ];
-      stage.currentVersionId = 'version-new';
+      stage.currentVersionId = "version-new";
       stage.status = LessonStageStatus.DRAFT;
       stage.generationRequestJson = null;
       llm.generateStructured.mockClear();
@@ -1497,27 +1182,27 @@ describe('LessonDraftService studio workflow', () => {
       repo.saveVersion.mockClear();
       await service.regenerateImages(
         LESSON_ID,
-        body(['3'], { lockVersion: stage.lockVersion }),
+        body(["3"], { lockVersion: stage.lockVersion }),
         USER_ID,
       );
-      const again = await runRegeneration(lesson, 'token-b3');
+      const again = await runRegeneration(lesson, "token-b3");
 
       expect(llm.generateStructured).not.toHaveBeenCalled();
       expect(readImageBrief(TYPE, again)).toEqual(stored);
       const [prompt] = llm.generateImage.mock.calls[0] as [string];
-      expect(prompt).toContain('Parte mestre da imagem 3');
+      expect(prompt).toContain("Parte mestre da imagem 3");
     });
 
-    it('ao refazer todas as imagens reescreve o prompt mestre', async () => {
+    it("ao refazer todas as imagens reescreve o prompt mestre", async () => {
       const lesson = lessonWithImages();
       llm.generateStructured.mockResolvedValue(briefAnswer());
-      await service.regenerateImages(LESSON_ID, body(['2']), USER_ID);
-      const saved = await runRegeneration(lesson, 'token-b4');
+      await service.regenerateImages(LESSON_ID, body(["2"]), USER_ID);
+      const saved = await runRegeneration(lesson, "token-b4");
       const stage = stageOf(lesson, TYPE);
       stage.versions = [
-        { ...stage.versions[0], id: 'version-new', structuredDataJson: saved },
+        { ...stage.versions[0], id: "version-new", structuredDataJson: saved },
       ];
-      stage.currentVersionId = 'version-new';
+      stage.currentVersionId = "version-new";
       stage.status = LessonStageStatus.DRAFT;
       stage.generationRequestJson = null;
       llm.generateStructured.mockClear();
@@ -1525,10 +1210,10 @@ describe('LessonDraftService studio workflow', () => {
 
       await service.regenerateImages(
         LESSON_ID,
-        body(['1', '2', '3'], { lockVersion: stage.lockVersion }),
+        body(["1", "2", "3"], { lockVersion: stage.lockVersion }),
         USER_ID,
       );
-      const again = await runRegeneration(lesson, 'token-b5');
+      const again = await runRegeneration(lesson, "token-b5");
 
       expect(llm.generateStructured).toHaveBeenCalledTimes(1);
       expect(readImageBrief(TYPE, again)?.origin).toBe(
@@ -1536,7 +1221,7 @@ describe('LessonDraftService studio workflow', () => {
       );
     });
 
-    it('prancha de recortes sem personagens é gerada sem imagem de referência', async () => {
+    it("prancha de recortes sem personagens é gerada sem imagem de referência", async () => {
       const KIT = LessonStageType.LESSON_VISUALS;
       const lesson = makeLesson(
         LessonStatus.IN_PROGRESS,
@@ -1544,7 +1229,7 @@ describe('LessonDraftService studio workflow', () => {
         { [KIT]: LessonStageStatus.DRAFT },
       );
       stageOf(lesson, LessonStageType.LESSON).versions[0].structuredDataJson = {
-        story: 'Jesus chamou uma criança e a pôs no meio deles.',
+        story: "Jesus chamou uma criança e a pôs no meio deles.",
       };
       stageOf(lesson, KIT).versions[0].structuredDataJson = {
         visualConfig: {
@@ -1553,96 +1238,96 @@ describe('LessonDraftService studio workflow', () => {
           quantity: 4,
         },
         assets: [
-          { id: 'kit-01', category: 'CHARACTERS', items: [{ label: 'Jesus' }] },
-          { id: 'kit-02', category: 'ANIMALS', items: [{ label: 'Pomba' }] },
+          { id: "kit-01", category: "CHARACTERS", items: [{ label: "Jesus" }] },
+          { id: "kit-02", category: "ANIMALS", items: [{ label: "Pomba" }] },
           {
-            id: 'kit-03',
-            category: 'CHARACTERS',
-            items: [{ label: 'Criança' }],
+            id: "kit-03",
+            category: "CHARACTERS",
+            items: [{ label: "Criança" }],
           },
-        ].map((asset) => ({ ...asset, prompt: 'Arte', url: urlOf(asset.id) })),
+        ].map((asset) => ({ ...asset, prompt: "Arte", url: urlOf(asset.id) })),
       };
       repo.findLessonById.mockResolvedValue(lesson);
       llm.generateStructured.mockResolvedValue({
         content: {
-          artDirection: 'Traço limpo, contorno marrom, paleta terrosa.',
+          artDirection: "Traço limpo, contorno marrom, paleta terrosa.",
           cast: [
-            { name: 'Jesus', appearance: 'Homem de túnica bege.' },
-            { name: 'Criança', appearance: 'Menino de túnica clara.' },
+            { name: "Jesus", appearance: "Homem de túnica bege." },
+            { name: "Criança", appearance: "Menino de túnica clara." },
           ],
           settings: [],
           parts: [
-            { assetId: 'kit-01', cast: ['Jesus'] },
-            { assetId: 'kit-02', cast: [] },
-            { assetId: 'kit-03', cast: ['Criança'] },
+            { assetId: "kit-01", cast: ["Jesus"] },
+            { assetId: "kit-02", cast: [] },
+            { assetId: "kit-03", cast: ["Criança"] },
           ].map((part) => ({
             ...part,
             prompt: `Parte mestre da prancha ${part.assetId}, isolada.`,
             settings: [],
           })),
         },
-        responseId: 'resp-brief',
+        responseId: "resp-brief",
       });
       await service.regenerateImages(
         LESSON_ID,
-        { stage: KIT, lockVersion: 1, assetIds: ['kit-02', 'kit-03'] },
+        { stage: KIT, lockVersion: 1, assetIds: ["kit-02", "kit-03"] },
         USER_ID,
       );
       const stage = stageOf(lesson, KIT);
-      stage.generationLeaseOwner = 'token-b7';
+      stage.generationLeaseOwner = "token-b7";
       s3.downloadOwned.mockResolvedValue(PNG);
       llm.generateImage.mockResolvedValue(PNG);
       s3.upload.mockResolvedValue(NEW_URL);
       repo.saveVersion.mockImplementation((version: Record<string, unknown>) =>
-        Promise.resolve({ ...version, id: 'version-new' }),
+        Promise.resolve({ ...version, id: "version-new" }),
       );
 
       await internals().executeStageGeneration(
         LESSON_ID,
         stage.generationRequestJson as LessonGenerationRequest,
         USER_ID,
-        'token-b7',
+        "token-b7",
       );
 
       const calls = llm.generateImage.mock.calls as Array<
         [string, unknown, unknown, unknown]
       >;
-      const dove = calls.find(([prompt]) => prompt.includes('kit-02'));
-      const child = calls.find(([prompt]) => prompt.includes('kit-03'));
+      const dove = calls.find(([prompt]) => prompt.includes("kit-02"));
+      const child = calls.find(([prompt]) => prompt.includes("kit-03"));
       // Regression: with a reference, the dove sheet came back full of characters.
       expect(dove?.[3]).toBeUndefined();
       expect(dove?.[0]).not.toContain(
         LESSON_IMAGE_REGENERATION.STYLE_CONTINUITY,
       );
-      expect(dove?.[0]).not.toContain('Jesus chamou uma criança');
+      expect(dove?.[0]).not.toContain("Jesus chamou uma criança");
       // A sheet with characters still follows the kept identity image.
       expect(child?.[3]).toBeDefined();
     });
 
-    it('gera as imagens mesmo quando o prompt mestre não pôde ser escrito', async () => {
+    it("gera as imagens mesmo quando o prompt mestre não pôde ser escrito", async () => {
       const lesson = lessonWithImages();
-      llm.generateStructured.mockRejectedValue(new Error('fora do ar'));
-      await service.regenerateImages(LESSON_ID, body(['2']), USER_ID);
+      llm.generateStructured.mockRejectedValue(new Error("fora do ar"));
+      await service.regenerateImages(LESSON_ID, body(["2"]), USER_ID);
 
-      const saved = await runRegeneration(lesson, 'token-b6');
+      const saved = await runRegeneration(lesson, "token-b6");
 
       expect(llm.generateImage).toHaveBeenCalledTimes(1);
       expect(readImageBrief(TYPE, saved)).toBeNull();
     });
 
-    it('uma falha devolve o item ao estado anterior e não apaga nenhuma imagem mantida', async () => {
+    it("uma falha devolve o item ao estado anterior e não apaga nenhuma imagem mantida", async () => {
       const lesson = lessonWithImages(LessonStageStatus.PRODUCER_APPROVED);
-      await service.regenerateImages(LESSON_ID, body(['2', '3']), USER_ID);
+      await service.regenerateImages(LESSON_ID, body(["2", "3"]), USER_ID);
       const stage = stageOf(lesson, TYPE);
-      stage.generationLeaseOwner = 'token-r3';
+      stage.generationLeaseOwner = "token-r3";
       s3.downloadOwned.mockResolvedValue(PNG);
-      llm.generateImage.mockRejectedValue(new Error('provedor fora do ar'));
+      llm.generateImage.mockRejectedValue(new Error("provedor fora do ar"));
 
       await internals().executeStageGeneration(
         LESSON_ID,
         stage.generationRequestJson as LessonGenerationRequest,
         USER_ID,
-        'token-r3',
+        "token-r3",
       );
 
       expect(stage.status).toBe(LessonStageStatus.PRODUCER_APPROVED);
@@ -1652,93 +1337,78 @@ describe('LessonDraftService studio workflow', () => {
       expect(s3.delete).not.toHaveBeenCalled();
     });
 
-    it('recusa a escolha feita sobre uma versão que já mudou', async () => {
+    it("recusa a escolha feita sobre uma versão que já mudou", async () => {
       lessonWithImages();
 
       await expect(
         service.regenerateImages(
           LESSON_ID,
-          body(['2'], { lockVersion: 7 }),
+          body(["2"], { lockVersion: 7 }),
           USER_ID,
         ),
       ).rejects.toMatchObject({ code: ErrorCode.LESSON_STAGE_LOCK_CONFLICT });
     });
 
-    it('recusa imagem inexistente e item desatualizado, sem abrir geração', async () => {
+    it("recusa imagem inexistente e item desatualizado, sem abrir geração", async () => {
       const lesson = lessonWithImages();
       await expect(
-        service.regenerateImages(LESSON_ID, body(['9']), USER_ID),
+        service.regenerateImages(LESSON_ID, body(["9"]), USER_ID),
       ).rejects.toMatchObject({ code: ErrorCode.LESSON_INVALID_REQUEST });
 
       stageOf(lesson, TYPE).status = LessonStageStatus.STALE;
       await expect(
-        service.regenerateImages(LESSON_ID, body(['2']), USER_ID),
+        service.regenerateImages(LESSON_ID, body(["2"]), USER_ID),
       ).rejects.toMatchObject({ code: ErrorCode.LESSON_STAGE_STALE_UPSTREAM });
       expect(stageOf(lesson, TYPE).generationRequestJson).toBeNull();
     });
 
-    it('recusa regerar durante a revisão, como a geração completa', async () => {
+    it("recusa regerar durante a revisão, como a geração completa", async () => {
       lessonWithImages(LessonStageStatus.APPROVED);
 
       await expect(
-        service.regenerateImages(LESSON_ID, body(['2']), USER_ID),
+        service.regenerateImages(LESSON_ID, body(["2"]), USER_ID),
       ).rejects.toMatchObject({ code: ErrorCode.LESSON_INVALID_STATE });
-    });
-
-    it('na meditação dos maiores só aceita regerar o conjunto inteiro', async () => {
-      lessonWithImages(
-        LessonStageStatus.DRAFT,
-        LessonStageType.MEDITATION_OLDER,
-      );
-
-      await expect(
-        service.regenerateImages(
-          LESSON_ID,
-          { ...body(['2']), stage: LessonStageType.MEDITATION_OLDER },
-          USER_ID,
-        ),
-      ).rejects.toMatchObject({ code: ErrorCode.LESSON_INVALID_REQUEST });
     });
   });
 
-  describe('alteração do versículo', () => {
+  describe("alteração do versículo", () => {
     const OLD_VERSE = {
-      text: 'Pois Deus tanto amou o mundo.',
-      reference: 'João 3:16',
-      version: 'NVI',
+      text: "Pois Deus tanto amou o mundo.",
+      reference: "João 3:16",
+      version: "NVI",
     };
     const NEW_VERSE = {
-      text: '“O Senhor é o meu pastor; nada me faltará.”',
-      reference: 'Salmo 23:1 — NVI',
+      text: "“O Senhor é o meu pastor; nada me faltará.”",
+      reference: "Salmo 23:1 — NVI",
     };
     const document = (verse: string) => ({
-      type: 'doc',
+      type: "doc",
       content: [
         {
-          type: 'heading',
+          type: "heading",
           attrs: { level: 2 },
-          content: [{ type: 'text', text: 'VERSÍCULO PARA MEMORIZAR' }],
+          content: [{ type: "text", text: "VERSÍCULO PARA MEMORIZAR" }],
         },
         {
-          type: 'paragraph',
-          content: [{ type: 'text', text: `“${verse}”` }],
+          type: "paragraph",
+          content: [{ type: "text", text: `“${verse}”` }],
         },
         {
-          type: 'paragraph',
-          content: [{ type: 'text', text: 'João 3:16 — NVI' }],
+          type: "paragraph",
+          content: [{ type: "text", text: "João 3:16 — NVI" }],
         },
         {
-          type: 'heading',
+          type: "heading",
           attrs: { level: 2 },
-          content: [{ type: 'text', text: 'LIÇÃO BÍBLICA' }],
+          content: [{ type: "text", text: "LIÇÃO BÍBLICA" }],
         },
         {
-          type: 'paragraph',
+          type: "paragraph",
           content: [
             {
-              type: 'text',
-              text: 'Davi e a funda.',
-              marks: [{ type: 'bold' }],
+              type: "text",
+              text: "Davi e a funda.",
+              marks: [{ type: "bold" }],
             },
           ],
         },
@@ -1752,7 +1422,7 @@ describe('LessonDraftService studio workflow', () => {
       const lesson = makeLesson(status, stageStatus, overrides);
       const version = stageOf(lesson, LessonStageType.LESSON).versions[0];
       version.structuredDataJson = {
-        story: 'Davi e a funda.',
+        story: "Davi e a funda.",
         memoryVerse: OLD_VERSE,
       };
       version.tiptapAstJson = document(OLD_VERSE.text);
@@ -1769,7 +1439,7 @@ describe('LessonDraftService studio workflow', () => {
         USER_ID,
       );
 
-    it('grava uma versão do item 1 só com o versículo trocado, sempre em NVI, e mantém o resto do documento', async () => {
+    it("grava uma versão do item 1 só com o versículo trocado, sempre em NVI, e mantém o resto do documento", async () => {
       withVerse(LessonStatus.IN_PROGRESS, LessonStageStatus.PRODUCER_APPROVED);
 
       await change();
@@ -1782,28 +1452,28 @@ describe('LessonDraftService studio workflow', () => {
         tiptapAstJson: { content: Array<Record<string, unknown>> };
         changeSummary: string;
       };
-      expect(saved.structuredDataJson.story).toBe('Davi e a funda.');
+      expect(saved.structuredDataJson.story).toBe("Davi e a funda.");
       expect(saved.structuredDataJson.memoryVerse).toEqual({
-        text: 'O Senhor é o meu pastor; nada me faltará.',
-        reference: 'Salmo 23:1',
-        version: 'NVI',
+        text: "O Senhor é o meu pastor; nada me faltará.",
+        reference: "Salmo 23:1",
+        version: "NVI",
       });
       const texts = JSON.stringify(saved.tiptapAstJson);
-      expect(texts).toContain('“O Senhor é o meu pastor; nada me faltará.”');
-      expect(texts).toContain('Salmo 23:1 — NVI');
-      expect(texts).not.toContain('Pois Deus tanto amou');
+      expect(texts).toContain("“O Senhor é o meu pastor; nada me faltará.”");
+      expect(texts).toContain("Salmo 23:1 — NVI");
+      expect(texts).not.toContain("Pois Deus tanto amou");
       // The rest of the document, with its formatting, is untouched.
       expect(texts).toContain('"marks":[{"type":"bold"}]');
       expect(saved.changeSummary).toBe(
-        'Versículo alterado: João 3:16 → Salmo 23:1',
+        "Versículo alterado: João 3:16 → Salmo 23:1",
       );
     });
 
-    it('devolve o item 1 para produção e deixa desatualizados todos os itens seguintes já gerados', async () => {
+    it("devolve o item 1 para produção e deixa desatualizados todos os itens seguintes já gerados", async () => {
       const lesson = withVerse(
         LessonStatus.IN_PROGRESS,
         LessonStageStatus.PRODUCER_APPROVED,
-        { [LessonStageType.MANUAL_WORK]: LessonStageStatus.NOT_STARTED },
+        { [LessonStageType.STANDARD_GAME]: LessonStageStatus.NOT_STARTED },
       );
 
       await change();
@@ -1813,20 +1483,17 @@ describe('LessonDraftService studio workflow', () => {
       );
       for (const type of [
         LessonStageType.LESSON_VISUALS,
-        LessonStageType.STANDARD_GAME,
         LessonStageType.VERSE_VISUALS,
         LessonStageType.VERSE_FIXATION,
-        LessonStageType.MEDITATION_YOUNGER,
-        LessonStageType.MEDITATION_OLDER,
       ])
         expect(stageOf(lesson, type).status).toBe(LessonStageStatus.STALE);
-      // What was never generated stays as it was.
-      expect(stageOf(lesson, LessonStageType.MANUAL_WORK).status).toBe(
+      // O que nunca foi gerado continua como estava.
+      expect(stageOf(lesson, LessonStageType.STANDARD_GAME).status).toBe(
         LessonStageStatus.NOT_STARTED,
       );
     });
 
-    it('atinge os itens seguintes mesmo no ciclo de revisão, que normalmente os protege', async () => {
+    it("atinge os itens seguintes mesmo no ciclo de revisão, que normalmente os protege", async () => {
       const lesson = withVerse(
         LessonStatus.IN_REVIEW,
         LessonStageStatus.IN_REVIEW,
@@ -1842,18 +1509,18 @@ describe('LessonDraftService studio workflow', () => {
       );
     });
 
-    it('exige a confirmação do aviso quando há itens seguintes gerados', async () => {
+    it("exige a confirmação do aviso quando há itens seguintes gerados", async () => {
       withVerse(LessonStatus.IN_PROGRESS, LessonStageStatus.PRODUCER_APPROVED);
 
       await expect(change({ acknowledgeImpact: false })).rejects.toMatchObject({
         response: expect.objectContaining({
-          code: ErrorCode.LESSON_VERSE_CHANGE_NOT_ACKNOWLEDGED,
+          error: ErrorCode.LESSON_VERSE_CHANGE_NOT_ACKNOWLEDGED,
         }),
       });
       expect(repo.saveVersion).not.toHaveBeenCalled();
     });
 
-    it('não pede confirmação quando só o item 1 existe e ainda é rascunho', async () => {
+    it("não pede confirmação quando só o item 1 existe e ainda é rascunho", async () => {
       const lesson = withVerse(
         LessonStatus.IN_PROGRESS,
         LessonStageStatus.NOT_STARTED,
@@ -1868,48 +1535,48 @@ describe('LessonDraftService studio workflow', () => {
       );
     });
 
-    it('não cria versão quando o versículo é o mesmo', async () => {
+    it("não cria versão quando o versículo é o mesmo", async () => {
       withVerse(LessonStatus.IN_PROGRESS, LessonStageStatus.PRODUCER_APPROVED);
 
       await change(
         {},
-        { text: `“${OLD_VERSE.text}”`, reference: 'João 3:16 — NVI' },
+        { text: `“${OLD_VERSE.text}”`, reference: "João 3:16 — NVI" },
       );
 
       expect(repo.saveVersion).not.toHaveBeenCalled();
       expect(repo.updateStage).not.toHaveBeenCalled();
     });
 
-    it('recusa uma referência que não é Livro capítulo:versículo', async () => {
+    it("recusa uma referência que não é Livro capítulo:versículo", async () => {
       withVerse(LessonStatus.IN_PROGRESS, LessonStageStatus.PRODUCER_APPROVED);
 
       await expect(
-        change({}, { text: NEW_VERSE.text, reference: 'qualquer coisa' }),
+        change({}, { text: NEW_VERSE.text, reference: "qualquer coisa" }),
       ).rejects.toBeInstanceOf(AppConflictException);
       expect(repo.saveVersion).not.toHaveBeenCalled();
     });
 
-    it('recusa a troca em lição publicada e em edição de outra sessão', async () => {
+    it("recusa a troca em lição publicada e em edição de outra sessão", async () => {
       withVerse(LessonStatus.PUBLISHED, LessonStageStatus.APPROVED);
       await expect(change()).rejects.toBeInstanceOf(AppConflictException);
 
       withVerse(LessonStatus.IN_PROGRESS, LessonStageStatus.PRODUCER_APPROVED);
       await expect(change({ lockVersion: 9 })).rejects.toMatchObject({
         response: expect.objectContaining({
-          code: ErrorCode.LESSON_STAGE_LOCK_CONFLICT,
+          error: ErrorCode.LESSON_STAGE_LOCK_CONFLICT,
         }),
       });
       expect(repo.saveVersion).not.toHaveBeenCalled();
     });
 
-    it('reconstrói o documento quando ele não tem a seção do versículo', async () => {
+    it("reconstrói o documento quando ele não tem a seção do versículo", async () => {
       const lesson = withVerse(
         LessonStatus.IN_PROGRESS,
         LessonStageStatus.PRODUCER_APPROVED,
       );
       stageOf(lesson, LessonStageType.LESSON).versions[0].tiptapAstJson = {
-        type: 'doc',
-        content: [{ type: 'paragraph' }],
+        type: "doc",
+        content: [{ type: "paragraph" }],
       };
 
       await change();
@@ -1918,32 +1585,32 @@ describe('LessonDraftService studio workflow', () => {
         tiptapAstJson: unknown;
       };
       expect(JSON.stringify(saved.tiptapAstJson)).toContain(
-        'O Senhor é o meu pastor',
+        "O Senhor é o meu pastor",
       );
     });
   });
 
-  describe('edição e conclusão', () => {
-    it('não cria versão nem invalida itens quando o conteúdo salvo é idêntico', async () => {
+  describe("edição e conclusão", () => {
+    it("não cria versão nem invalida itens quando o conteúdo salvo é idêntico", async () => {
       const lesson = makeLesson(
         LessonStatus.PACKAGE_READY,
         LessonStageStatus.PRODUCER_APPROVED,
       );
-      const stage = stageOf(lesson, LessonStageType.MANUAL_WORK);
+      const stage = stageOf(lesson, LessonStageType.STANDARD_GAME);
       const document = {
-        type: 'doc',
-        content: [{ type: 'paragraph', attrs: { a: 1, b: 2 } }],
+        type: "doc",
+        content: [{ type: "paragraph", attrs: { a: 1, b: 2 } }],
       };
       stage.versions[0].tiptapAstJson = {
-        content: [{ attrs: { b: 2, a: 1 }, type: 'paragraph' }],
-        type: 'doc',
+        content: [{ attrs: { b: 2, a: 1 }, type: "paragraph" }],
+        type: "doc",
       };
       repo.findLessonById.mockResolvedValue(lesson);
 
       await service.saveContent(
         LESSON_ID,
         {
-          stage: LessonStageType.MANUAL_WORK,
+          stage: LessonStageType.STANDARD_GAME,
           lockVersion: 1,
           tiptapAstJson: document,
         },
@@ -1955,11 +1622,11 @@ describe('LessonDraftService studio workflow', () => {
       expect(lesson.status).toBe(LessonStatus.PACKAGE_READY);
     });
 
-    it('exige confirmação explícita para concluir um item desatualizado em relação aos anteriores', async () => {
+    it("exige confirmação explícita para concluir um item desatualizado em relação aos anteriores", async () => {
       const lesson = makeLesson(
         LessonStatus.IN_PROGRESS,
         LessonStageStatus.PRODUCER_APPROVED,
-        { [LessonStageType.MANUAL_WORK]: LessonStageStatus.STALE },
+        { [LessonStageType.STANDARD_GAME]: LessonStageStatus.STALE },
       );
       // The lesson item was edited after the manual work was produced.
       stageOf(lesson, LessonStageType.LESSON).versions[0].createdAt = new Date(
@@ -1970,7 +1637,7 @@ describe('LessonDraftService studio workflow', () => {
       await expect(
         service.completeProductionStage(
           LESSON_ID,
-          LessonStageType.MANUAL_WORK,
+          LessonStageType.STANDARD_GAME,
           1,
         ),
       ).rejects.toMatchObject({ code: ErrorCode.LESSON_STAGE_STALE_UPSTREAM });
@@ -1978,35 +1645,35 @@ describe('LessonDraftService studio workflow', () => {
 
       await service.completeProductionStage(
         LESSON_ID,
-        LessonStageType.MANUAL_WORK,
+        LessonStageType.STANDARD_GAME,
         1,
         { acknowledgeStale: true, actorId: USER_ID },
       );
-      expect(stageOf(lesson, LessonStageType.MANUAL_WORK).status).toBe(
+      expect(stageOf(lesson, LessonStageType.STANDARD_GAME).status).toBe(
         LessonStageStatus.PRODUCER_APPROVED,
       );
       expect(lesson.status).toBe(LessonStatus.PACKAGE_READY);
     });
 
-    it('conclui sem confirmação um item desatualizado cujo conteúdo é mais novo que os anteriores', async () => {
+    it("conclui sem confirmação um item desatualizado cujo conteúdo é mais novo que os anteriores", async () => {
       const lesson = makeLesson(
         LessonStatus.IN_PROGRESS,
         LessonStageStatus.PRODUCER_APPROVED,
-        { [LessonStageType.MANUAL_WORK]: LessonStageStatus.STALE },
+        { [LessonStageType.STANDARD_GAME]: LessonStageStatus.STALE },
       );
       repo.findLessonById.mockResolvedValue(lesson);
 
       await service.completeProductionStage(
         LESSON_ID,
-        LessonStageType.MANUAL_WORK,
+        LessonStageType.STANDARD_GAME,
         1,
       );
-      expect(stageOf(lesson, LessonStageType.MANUAL_WORK).status).toBe(
+      expect(stageOf(lesson, LessonStageType.STANDARD_GAME).status).toBe(
         LessonStageStatus.PRODUCER_APPROVED,
       );
     });
 
-    it('recusa concluir um item antes de o item anterior estar concluído', async () => {
+    it("recusa concluir um item antes de o item anterior estar concluído", async () => {
       const lesson = makeLesson(
         LessonStatus.IN_PROGRESS,
         LessonStageStatus.DRAFT,
@@ -2023,8 +1690,8 @@ describe('LessonDraftService studio workflow', () => {
     });
   });
 
-  describe('revisão', () => {
-    it('valida a prontidão da versão lida sob o lock antes de aprovar', async () => {
+  describe("revisão", () => {
+    it("valida a prontidão da versão lida sob o lock antes de aprovar", async () => {
       const lesson = makeLesson(
         LessonStatus.IN_REVIEW,
         LessonStageStatus.IN_REVIEW,
@@ -2041,23 +1708,23 @@ describe('LessonDraftService studio workflow', () => {
       repo.findLessonByIdForUpdate.mockResolvedValue(locked);
       spyOnRender();
       repo.findVersionById.mockResolvedValue({
-        id: 'version-LESSON',
-        stageId: 'stage-LESSON',
-        structuredDataJson: { story: '' },
-        tiptapAstJson: { type: 'doc', content: [] },
+        id: "version-LESSON",
+        stageId: "stage-LESSON",
+        structuredDataJson: { story: "" },
+        tiptapAstJson: { type: "doc", content: [] },
       });
 
       await expect(
         service.approveStage(LESSON_ID, LessonStageType.LESSON, USER_ID, 1),
-      ).rejects.toThrow('LIÇÃO BÍBLICA vazio');
+      ).rejects.toThrow("LIÇÃO BÍBLICA vazio");
       expect(repo.findVersionById).toHaveBeenCalledWith(
-        'version-LESSON',
+        "version-LESSON",
         expect.anything(),
       );
       expect(repo.updateStage).not.toHaveBeenCalled();
     });
 
-    it('recusa aprovar quando a versão atual não pertence mais à etapa', async () => {
+    it("recusa aprovar quando a versão atual não pertence mais à etapa", async () => {
       const lesson = makeLesson(
         LessonStatus.IN_REVIEW,
         LessonStageStatus.IN_REVIEW,
@@ -2070,7 +1737,7 @@ describe('LessonDraftService studio workflow', () => {
       ).rejects.toMatchObject({ code: ErrorCode.LESSON_STAGE_LOCK_CONFLICT });
     });
 
-    it('reabre um item aprovado de um pacote pronto para publicação', async () => {
+    it("reabre um item aprovado de um pacote pronto para publicação", async () => {
       const lesson = makeLesson(
         LessonStatus.READY_FOR_PUBLICATION,
         LessonStageStatus.APPROVED,
@@ -2080,7 +1747,7 @@ describe('LessonDraftService studio workflow', () => {
       await service.reopenStage(
         LESSON_ID,
         LessonStageType.VERSE_VISUALS,
-        ' Versículo errado ',
+        " Versículo errado ",
         USER_ID,
         1,
       );
@@ -2092,14 +1759,14 @@ describe('LessonDraftService studio workflow', () => {
       expect(repo.saveComment).toHaveBeenCalledWith(
         expect.objectContaining({
           sectionKey: LessonStageType.VERSE_VISUALS,
-          commentText: 'Versículo errado',
+          commentText: "Versículo errado",
           authorId: USER_ID,
         }),
         expect.anything(),
       );
     });
 
-    it('só reabre itens de pacotes prontos para publicação', async () => {
+    it("só reabre itens de pacotes prontos para publicação", async () => {
       repo.findLessonById.mockResolvedValue(
         makeLesson(LessonStatus.IN_REVIEW, LessonStageStatus.APPROVED),
       );
@@ -2107,28 +1774,28 @@ describe('LessonDraftService studio workflow', () => {
         service.reopenStage(
           LESSON_ID,
           LessonStageType.LESSON,
-          'nota',
+          "nota",
           USER_ID,
           1,
         ),
       ).rejects.toMatchObject({ code: ErrorCode.LESSON_INVALID_STATE });
     });
 
-    it('resolve comentários e sinaliza comentário inexistente', async () => {
+    it("resolve comentários e sinaliza comentário inexistente", async () => {
       repo.findLessonById.mockResolvedValue(
         makeLesson(LessonStatus.IN_PROGRESS, LessonStageStatus.DRAFT),
       );
-      await service.resolveComment(LESSON_ID, 'comment-1', USER_ID);
-      expect(repo.resolveComment).toHaveBeenCalledWith(LESSON_ID, 'comment-1');
+      await service.resolveComment(LESSON_ID, "comment-1", USER_ID);
+      expect(repo.resolveComment).toHaveBeenCalledWith(LESSON_ID, "comment-1");
 
       repo.resolveComment.mockResolvedValue(false);
       await expect(
-        service.resolveComment(LESSON_ID, 'missing', USER_ID),
+        service.resolveComment(LESSON_ID, "missing", USER_ID),
       ).rejects.toMatchObject({ code: ErrorCode.COMMENT_NOT_FOUND });
     });
   });
 
-  describe('aprovação garante o PDF', () => {
+  describe("aprovação garante o PDF", () => {
     const inReview = () => {
       const lesson = makeLesson(
         LessonStatus.IN_REVIEW,
@@ -2138,7 +1805,7 @@ describe('LessonDraftService studio workflow', () => {
       return lesson;
     };
 
-    it('renderiza o PDF da versão lida antes de aprovar', async () => {
+    it("renderiza o PDF da versão lida antes de aprovar", async () => {
       const lesson = inReview();
       const render = spyOnRender();
 
@@ -2148,7 +1815,7 @@ describe('LessonDraftService studio workflow', () => {
         expect.objectContaining({ id: LESSON_ID }),
         LessonStageType.LESSON,
         undefined,
-        'version-LESSON',
+        "version-LESSON",
       );
       // Rendered before the lesson lock is taken.
       expect(render.mock.invocationCallOrder[0]).toBeLessThan(
@@ -2159,49 +1826,44 @@ describe('LessonDraftService studio workflow', () => {
       );
     });
 
-    it('recusa a aprovação com 422 e o nome do item quando o conteúdo não vira PDF', async () => {
+    it("recusa a aprovação com 422 e o nome do item quando o conteúdo não vira PDF", async () => {
       const lesson = inReview();
       const { UnprocessableEntityException } =
-        jest.requireActual<typeof import('@nestjs/common')>('@nestjs/common');
+        jest.requireActual<typeof import("@nestjs/common")>("@nestjs/common");
       jest
-        .spyOn(studio.pdfExport, 'renderStagePdf')
+        .spyOn(studio.pdfExport, "renderStagePdf")
         .mockRejectedValue(
-          new UnprocessableEntityException('O conteúdo não cabe na folha.'),
+          new UnprocessableEntityException("O conteúdo não cabe na folha."),
         );
 
       await expect(
-        service.approveStage(
-          LESSON_ID,
-          LessonStageType.MEDITATION_YOUNGER,
-          USER_ID,
-          1,
-        ),
+        service.approveStage(LESSON_ID, LessonStageType.LESSON, USER_ID, 1),
       ).rejects.toMatchObject({
         code: ErrorCode.LESSON_STAGE_PDF_UNAVAILABLE,
         status: 422,
-        message: 'Meditação dos menores: O conteúdo não cabe na folha.',
+        message: "Lição completa: O conteúdo não cabe na folha.",
       });
-      expect(stageOf(lesson, LessonStageType.MEDITATION_YOUNGER).status).toBe(
+      expect(stageOf(lesson, LessonStageType.LESSON).status).toBe(
         LessonStageStatus.IN_REVIEW,
       );
       expect(repo.runInTransaction).not.toHaveBeenCalled();
     });
 
-    it('responde 503 quando o conversor está ocupado ou falha de forma inesperada', async () => {
+    it("responde 503 quando o conversor está ocupado ou falha de forma inesperada", async () => {
       inReview();
       const { ServiceUnavailableException } =
-        jest.requireActual<typeof import('@nestjs/common')>('@nestjs/common');
+        jest.requireActual<typeof import("@nestjs/common")>("@nestjs/common");
       const render = jest
-        .spyOn(studio.pdfExport, 'renderStagePdf')
-        .mockRejectedValueOnce(new ServiceUnavailableException('Fila ocupada.'))
-        .mockRejectedValueOnce(new Error('ENOENT soffice /srv/secret'));
+        .spyOn(studio.pdfExport, "renderStagePdf")
+        .mockRejectedValueOnce(new ServiceUnavailableException("Fila ocupada."))
+        .mockRejectedValueOnce(new Error("ENOENT soffice /srv/secret"));
 
       await expect(
         service.approveStage(LESSON_ID, LessonStageType.LESSON, USER_ID, 1),
       ).rejects.toMatchObject({
         code: ErrorCode.LESSON_STAGE_PDF_UNAVAILABLE,
         status: 503,
-        message: 'Lição completa: Fila ocupada.',
+        message: "Lição completa: Fila ocupada.",
       });
       // An internal error never leaks its text.
       await expect(
@@ -2209,27 +1871,27 @@ describe('LessonDraftService studio workflow', () => {
       ).rejects.toMatchObject({
         code: ErrorCode.LESSON_STAGE_PDF_UNAVAILABLE,
         status: 503,
-        message: expect.not.stringContaining('secret') as string,
+        message: expect.not.stringContaining("secret") as string,
       });
       expect(render).toHaveBeenCalledTimes(2);
       expect(repo.updateStage).not.toHaveBeenCalled();
     });
 
-    it('recusa quando a versão mudou entre o PDF e a aprovação', async () => {
+    it("recusa quando a versão mudou entre o PDF e a aprovação", async () => {
       const lesson = inReview();
-      jest.spyOn(studio.pdfExport, 'renderStagePdf').mockImplementation(() => {
+      jest.spyOn(studio.pdfExport, "renderStagePdf").mockImplementation(() => {
         // Another session replaced the version while the PDF was rendered.
         const stage = stageOf(lesson, LessonStageType.LESSON);
         stage.versions.push({
-          id: 'version-newer',
+          id: "version-newer",
           stageId: stage.id,
           structuredDataJson: {},
           tiptapAstJson: null,
         });
-        stage.currentVersionId = 'version-newer';
+        stage.currentVersionId = "version-newer";
         return Promise.resolve({
-          pdfBuffer: Buffer.from('pdf'),
-          fileName: 'a',
+          pdfBuffer: Buffer.from("pdf"),
+          fileName: "a",
         });
       });
 
@@ -2241,7 +1903,7 @@ describe('LessonDraftService studio workflow', () => {
       );
     });
 
-    it('não renderiza PDF para um item que não pode ser aprovado', async () => {
+    it("não renderiza PDF para um item que não pode ser aprovado", async () => {
       const lesson = inReview();
       stageOf(lesson, LessonStageType.LESSON).status =
         LessonStageStatus.APPROVED;
@@ -2262,10 +1924,10 @@ describe('LessonDraftService studio workflow', () => {
     });
   });
 
-  describe('ciclo de revisão: corrigir um item não derruba os outros', () => {
+  describe("ciclo de revisão: corrigir um item não derruba os outros", () => {
     const document = (text: string) => ({
-      type: 'doc',
-      content: [{ type: 'paragraph', content: [{ type: 'text', text }] }],
+      type: "doc",
+      content: [{ type: "paragraph", content: [{ type: "text", text }] }],
     });
     const statuses = (lesson: LessonEntity) =>
       Object.fromEntries(
@@ -2287,7 +1949,7 @@ describe('LessonDraftService studio workflow', () => {
       spyOnRender();
       for (const type of order) {
         if (type === returned)
-          await service.requestChanges(LESSON_ID, type, 'Ajustar', USER_ID, 1);
+          await service.requestChanges(LESSON_ID, type, "Ajustar", USER_ID, 1);
         else await service.approveStage(LESSON_ID, type, USER_ID, 1);
       }
       expect(lesson.status).toBe(LessonStatus.CHANGES_REQUESTED);
@@ -2301,11 +1963,11 @@ describe('LessonDraftService studio workflow', () => {
           // Visual items are only ready with their artwork uploaded.
           structuredDataJson: {
             [type === LessonStageType.LESSON_VISUALS
-              ? 'assets'
-              : 'printableAssets']: [{ id: 'a', url: ASSET_URL }],
+              ? "assets"
+              : "printableAssets"]: [{ id: "a", url: ASSET_URL }],
           },
           id: `version-${type}-2`,
-          contentChecksum: 'checksum-2',
+          contentChecksum: "checksum-2",
           createdAt: new Date(Date.UTC(2026, 1, 1)),
         };
         stageOf(lesson, type).versions.push(saved);
@@ -2332,19 +1994,18 @@ describe('LessonDraftService studio workflow', () => {
     };
 
     it.each([
-      ['semanal (8 itens)', LESSON_STAGE_ORDER, LessonStageType.VERSE_VISUALS],
       [
-        'especial (3 itens)',
-        SPECIAL_LESSON_STAGE_ORDER,
-        LessonStageType.LESSON_VISUALS,
+        "pacote completo (5 itens)",
+        LESSON_STAGE_ORDER,
+        LessonStageType.VERSE_VISUALS,
       ],
       // An early item feeds the six after it and still invalidates nothing.
       [
-        'semanal, item que alimenta os seguintes',
+        "semanal, item que alimenta os seguintes",
         LESSON_STAGE_ORDER,
         LessonStageType.LESSON_VISUALS,
       ],
-    ])('edição do item devolvido — %s', async (_label, order, returned) => {
+    ])("edição do item devolvido — %s", async (_label, order, returned) => {
       const lesson = await reviewReturning(order, returned);
       const before = statuses(lesson);
       versionSaver(lesson, returned);
@@ -2354,7 +2015,7 @@ describe('LessonDraftService studio workflow', () => {
         {
           stage: returned,
           lockVersion: 1,
-          tiptapAstJson: document('Conteúdo corrigido'),
+          tiptapAstJson: document("Conteúdo corrigido"),
         },
         USER_ID,
       );
@@ -2367,26 +2028,26 @@ describe('LessonDraftService studio workflow', () => {
       await finishCycle(lesson, returned);
     });
 
-    it('regeneração do item devolvido mantém os demais aprovados', async () => {
+    it("regeneração do item devolvido mantém os demais aprovados", async () => {
       const returned = LessonStageType.STANDARD_GAME;
       const lesson = await reviewReturning(LESSON_STAGE_ORDER, returned);
       const before = statuses(lesson);
       versionSaver(lesson, returned);
       llm.generateStage.mockResolvedValue({
-        responseId: 'resp-1',
+        responseId: "resp-1",
         content: {
-          name: 'Brincadeira Inovadora',
-          objective: 'Objetivo da brincadeira',
-          funMechanics: 'Mecânica dinâmica',
-          materials: ['Bola'],
-          preparation: ['Organizar roda'],
-          steps: ['Forme uma roda.'],
+          name: "Brincadeira Inovadora",
+          objective: "Objetivo da brincadeira",
+          funMechanics: "Mecânica dinâmica",
+          materials: ["Bola"],
+          preparation: ["Organizar roda"],
+          steps: ["Forme uma roda."],
           assets: [
             {
-              id: 'compilado-01',
-              purpose: 'Resumo',
-              prompt: 'Infográfico',
-              altText: 'Resumo',
+              id: "compilado-01",
+              purpose: "Resumo",
+              prompt: "Infográfico",
+              altText: "Resumo",
             },
           ],
         },
@@ -2401,13 +2062,13 @@ describe('LessonDraftService studio workflow', () => {
       expect(request.previousState).toEqual({
         status: LessonStageStatus.CHANGES_REQUESTED,
       });
-      stage.generationLeaseOwner = 'attempt-1';
+      stage.generationLeaseOwner = "attempt-1";
 
       await internals().executeStageGeneration(
         LESSON_ID,
         request,
         USER_ID,
-        'attempt-1',
+        "attempt-1",
       );
 
       expect(stage.failureMessage).toBeNull();
@@ -2419,7 +2080,7 @@ describe('LessonDraftService studio workflow', () => {
       await finishCycle(lesson, returned);
     });
 
-    it('recusa regenerar um item aprovado ou em revisão', async () => {
+    it("recusa regenerar um item aprovado ou em revisão", async () => {
       const lesson = await reviewReturning(
         LESSON_STAGE_ORDER,
         LessonStageType.VERSE_VISUALS,
@@ -2434,7 +2095,7 @@ describe('LessonDraftService studio workflow', () => {
       ).rejects.toMatchObject({
         code: ErrorCode.LESSON_INVALID_STATE,
         status: 409,
-        message: expect.stringContaining('Reabra o item') as string,
+        message: expect.stringContaining("Reabra o item") as string,
       });
 
       stageOf(lesson, LessonStageType.LESSON).status =
@@ -2447,16 +2108,16 @@ describe('LessonDraftService studio workflow', () => {
         ),
       ).rejects.toMatchObject({
         code: ErrorCode.LESSON_INVALID_STATE,
-        message: expect.stringContaining('Devolva o item') as string,
+        message: expect.stringContaining("Devolva o item") as string,
       });
       expect(repo.updateStage).not.toHaveBeenCalledWith(
-        'stage-LESSON',
+        "stage-LESSON",
         expect.objectContaining({ status: LessonStageStatus.GENERATING }),
         expect.anything(),
       );
     });
 
-    it('corrigir um item reaberto de um pacote pronto mantém os demais aprovados', async () => {
+    it("corrigir um item reaberto de um pacote pronto mantém os demais aprovados", async () => {
       const lesson = makeLesson(
         LessonStatus.READY_FOR_PUBLICATION,
         LessonStageStatus.APPROVED,
@@ -2464,7 +2125,7 @@ describe('LessonDraftService studio workflow', () => {
       repo.findLessonById.mockResolvedValue(lesson);
       spyOnRender();
       const reopened = LessonStageType.LESSON_VISUALS;
-      await service.reopenStage(LESSON_ID, reopened, 'Trocar arte', USER_ID, 1);
+      await service.reopenStage(LESSON_ID, reopened, "Trocar arte", USER_ID, 1);
       versionSaver(lesson, reopened);
 
       await service.saveContent(
@@ -2472,7 +2133,7 @@ describe('LessonDraftService studio workflow', () => {
         {
           stage: reopened,
           lockVersion: 1,
-          tiptapAstJson: document('Arte trocada'),
+          tiptapAstJson: document("Arte trocada"),
         },
         USER_ID,
       );
@@ -2485,7 +2146,7 @@ describe('LessonDraftService studio workflow', () => {
       await finishCycle(lesson, reopened);
     });
 
-    it('fora de um ciclo de revisão a edição continua desatualizando os itens seguintes', async () => {
+    it("fora de um ciclo de revisão a edição continua desatualizando os itens seguintes", async () => {
       const lesson = makeLesson(
         LessonStatus.PACKAGE_READY,
         LessonStageStatus.PRODUCER_APPROVED,
@@ -2498,7 +2159,7 @@ describe('LessonDraftService studio workflow', () => {
         {
           stage: LessonStageType.STANDARD_GAME,
           lockVersion: 1,
-          tiptapAstJson: document('Nova brincadeira'),
+          tiptapAstJson: document("Nova brincadeira"),
         },
         USER_ID,
       );
@@ -2517,24 +2178,24 @@ describe('LessonDraftService studio workflow', () => {
     });
   });
 
-  describe('imagem de apresentação', () => {
+  describe("imagem de apresentação", () => {
     const lessonWithItemOne = (status = LessonStatus.IN_PROGRESS) => {
       const lesson = makeLesson(status, LessonStageStatus.PRODUCER_APPROVED);
       stageOf(lesson, LessonStageType.LESSON).versions[0].structuredDataJson = {
-        story: '### Davi e Golias\nDavi venceu o gigante com uma funda.',
+        story: "### Davi e Golias\nDavi venceu o gigante com uma funda.",
       };
       repo.findLessonById.mockResolvedValue(lesson);
       return lesson;
     };
 
-    it('desenha a capa com o título curto e o protagonista escolhidos pelo briefing', async () => {
+    it("desenha a capa com o título curto e o protagonista escolhidos pelo briefing", async () => {
       lessonWithItemOne();
       llm.generateStructured.mockResolvedValue({
         content: {
-          headline: 'Davi e Golias: a vitória da fé no Senhor dos exércitos',
-          character: { name: 'Davi', appearance: 'menino pastor, túnica azul' },
-          scene: 'Davi segura a funda num vale ensolarado.',
-          palette: ['azul-céu', 'verde-pasto'],
+          headline: "Davi e Golias: a vitória da fé no Senhor dos exércitos",
+          character: { name: "Davi", appearance: "menino pastor, túnica azul" },
+          scene: "Davi segura a funda num vale ensolarado.",
+          palette: ["azul-céu", "verde-pasto"],
         },
       });
       llm.generateImage.mockResolvedValue(PNG);
@@ -2544,12 +2205,12 @@ describe('LessonDraftService studio workflow', () => {
 
       const [prompt, orientation, , , purpose] = llm.generateImage.mock
         .calls[0] as [string, string, unknown, unknown, string];
-      expect(orientation).toBe('LANDSCAPE');
-      expect(purpose).toBe('COVER');
+      expect(orientation).toBe("LANDSCAPE");
+      expect(purpose).toBe("COVER");
       expect(prompt).toContain('"DAVI E GOLIAS"');
-      expect(prompt).toContain('Davi. Aparência fixa');
-      expect(prompt).toContain('Davi venceu o gigante');
-      expect(prompt).not.toContain('###');
+      expect(prompt).toContain("Davi. Aparência fixa");
+      expect(prompt).toContain("Davi venceu o gigante");
+      expect(prompt).not.toContain("###");
       expect(repo.updateLesson).toHaveBeenCalledWith(
         LESSON_ID,
         { coverImageUrl: COVER_URL },
@@ -2557,10 +2218,10 @@ describe('LessonDraftService studio workflow', () => {
       );
     });
 
-    it('desenha a capa só com o tema quando o briefing falha', async () => {
+    it("desenha a capa só com o tema quando o briefing falha", async () => {
       lessonWithItemOne();
       llm.generateStructured.mockRejectedValue(
-        new Error('provedor fora do ar'),
+        new Error("provedor fora do ar"),
       );
       llm.generateImage.mockResolvedValue(PNG);
       s3.upload.mockResolvedValue(COVER_URL);
@@ -2569,7 +2230,7 @@ describe('LessonDraftService studio workflow', () => {
 
       const [prompt] = llm.generateImage.mock.calls[0] as [string];
       expect(prompt).toContain('"TEMA"');
-      expect(prompt).toContain('O protagonista da história abaixo');
+      expect(prompt).toContain("O protagonista da história abaixo");
       expect(repo.updateLesson).toHaveBeenCalledWith(
         LESSON_ID,
         { coverImageUrl: COVER_URL },
@@ -2577,7 +2238,7 @@ describe('LessonDraftService studio workflow', () => {
       );
     });
 
-    it('apaga do bucket a imagem substituída', async () => {
+    it("apaga do bucket a imagem substituída", async () => {
       const lesson = lessonWithItemOne();
       lesson.coverImageUrl = ASSET_URL;
       llm.generateImage.mockResolvedValue(PNG);
@@ -2589,7 +2250,7 @@ describe('LessonDraftService studio workflow', () => {
       expect(s3.delete).not.toHaveBeenCalledWith(COVER_URL);
     });
 
-    it('não altera a imagem de uma lição publicada: a rota já a exibe', async () => {
+    it("não altera a imagem de uma lição publicada: a rota já a exibe", async () => {
       lessonWithItemOne(LessonStatus.PUBLISHED);
 
       await expect(
@@ -2598,14 +2259,14 @@ describe('LessonDraftService studio workflow', () => {
       expect(llm.generateImage).not.toHaveBeenCalled();
     });
 
-    it('descarta a imagem nova quando o item 1 mudou durante o desenho', async () => {
+    it("descarta a imagem nova quando o item 1 mudou durante o desenho", async () => {
       const lesson = lessonWithItemOne();
       // Read under the lock, the lesson already points to another version.
       const moved = {
         ...lesson,
         stages: lesson.stages.map((stage) =>
           stage.type === LessonStageType.LESSON
-            ? { ...stage, currentVersionId: 'outra-versao' }
+            ? { ...stage, currentVersionId: "outra-versao" }
             : stage,
         ),
       };
@@ -2621,9 +2282,9 @@ describe('LessonDraftService studio workflow', () => {
       expect(s3.delete).toHaveBeenCalledWith(COVER_URL);
     });
 
-    it('a geração do item 1 não falha quando só a imagem falha', async () => {
+    it("a geração do item 1 não falha quando só a imagem falha", async () => {
       const lesson = lessonWithItemOne();
-      llm.generateImage.mockRejectedValue(new Error('provedor fora do ar'));
+      llm.generateImage.mockRejectedValue(new Error("provedor fora do ar"));
 
       const url = await (
         studio.generation as unknown as {
@@ -2642,12 +2303,12 @@ describe('LessonDraftService studio workflow', () => {
     });
   });
 
-  describe('prévia da publicação', () => {
+  describe("prévia da publicação", () => {
     beforeEach(() => {
       weekMaterialsGet.findPossibleDuplicates.mockResolvedValue([]);
     });
 
-    it('informa o título, o tipo, a quantidade de PDFs e as duplicatas de uma lição ainda não publicada', async () => {
+    it("informa o título, o tipo, a quantidade de PDFs e as duplicatas de uma lição ainda não publicada", async () => {
       const lesson = makeLesson(
         LessonStatus.READY_FOR_PUBLICATION,
         LessonStageStatus.APPROVED,
@@ -2655,23 +2316,23 @@ describe('LessonDraftService studio workflow', () => {
       repo.findLessonById.mockResolvedValue(lesson);
       const duplicates = [
         {
-          id: 'page-old',
-          title: 'Semana 7',
-          routePath: 'materiais_semanal_semana_7',
+          id: "page-old",
+          title: "Semana 7",
+          routePath: "materiais_semanal_semana_7",
         },
       ];
       weekMaterialsGet.findPossibleDuplicates.mockResolvedValue(duplicates);
 
       await expect(service.getPublicationPreview(LESSON_ID)).resolves.toEqual({
-        title: 'Semana 7 — Tema',
+        title: "Semana 7 · Crianças — Tema",
         isSpecial: false,
-        documentCount: 8,
+        documentCount: 5,
         coverImageUrl: null,
         weekMaterial: null,
         duplicates,
       });
       expect(weekMaterialsGet.findPossibleDuplicates).toHaveBeenCalledWith({
-        title: 'Semana 7 — Tema',
+        title: "Semana 7 · Crianças — Tema",
         weekNumber: 7,
         special: false,
         excludePageId: null,
@@ -2679,57 +2340,55 @@ describe('LessonDraftService studio workflow', () => {
       expect(weekMaterialsGet.findOnePage).not.toHaveBeenCalled();
     });
 
-    it('descreve o material vinculado e o exclui das duplicatas', async () => {
+    it("descreve o material vinculado e o exclui das duplicatas", async () => {
       const lesson = makeLesson(
         LessonStatus.PUBLISHED,
         LessonStageStatus.APPROVED,
-        {},
-        SPECIAL_LESSON_STAGE_ORDER,
       );
-      lesson.weekMaterialId = 'page-1';
+      lesson.weekMaterialId = "page-1";
       repo.findLessonById.mockResolvedValue(lesson);
       weekMaterialsGet.findOnePage.mockResolvedValue({
-        id: 'page-1',
+        id: "page-1",
         currentWeek: true,
-        route: { path: 'materiais_semanal_material_especial_semana_7_tema' },
+        route: { path: "materiais_semanal_material_especial_semana_7_tema" },
       });
 
       const preview = await service.getPublicationPreview(LESSON_ID);
 
       expect(preview).toMatchObject({
-        title: 'Material Especial (Semana 7) — Tema',
-        isSpecial: true,
-        documentCount: 3,
+        title: "Semana 7 · Crianças — Tema",
+        isSpecial: false,
+        documentCount: 5,
         weekMaterial: {
-          id: 'page-1',
+          id: "page-1",
           exists: true,
-          routePath: 'materiais_semanal_material_especial_semana_7_tema',
+          routePath: "materiais_semanal_material_especial_semana_7_tema",
           currentWeek: true,
         },
       });
       expect(weekMaterialsGet.findPossibleDuplicates).toHaveBeenCalledWith(
-        expect.objectContaining({ special: true, excludePageId: 'page-1' }),
+        expect.objectContaining({ special: false, excludePageId: "page-1" }),
       );
     });
 
-    it('marca exists=false quando o material vinculado foi removido', async () => {
+    it("marca exists=false quando o material vinculado foi removido", async () => {
       const lesson = makeLesson(
         LessonStatus.PUBLISHED,
         LessonStageStatus.APPROVED,
       );
-      lesson.weekMaterialId = 'page-gone';
+      lesson.weekMaterialId = "page-gone";
       repo.findLessonById.mockResolvedValue(lesson);
       const { AppNotFoundException } = jest.requireActual<
-        typeof import('src/content/ai-lessons/compat/exceptions')
-      >('src/content/ai-lessons/compat/exceptions');
+        typeof import("src/content/ai-lessons/compat/exceptions")
+      >("src/content/ai-lessons/compat/exceptions");
       weekMaterialsGet.findOnePage.mockRejectedValue(
-        new AppNotFoundException(ErrorCode.WEEK_MATERIAL_NOT_FOUND, 'x'),
+        new AppNotFoundException(ErrorCode.WEEK_MATERIAL_NOT_FOUND, "x"),
       );
 
       const preview = await service.getPublicationPreview(LESSON_ID);
 
       expect(preview.weekMaterial).toEqual({
-        id: 'page-gone',
+        id: "page-gone",
         exists: false,
         routePath: null,
         currentWeek: false,
@@ -2737,8 +2396,8 @@ describe('LessonDraftService studio workflow', () => {
     });
   });
 
-  describe('arquivar e excluir', () => {
-    it('arquiva somente lições publicadas e permite restaurar', async () => {
+  describe("arquivar e excluir", () => {
+    it("arquiva somente lições publicadas e permite restaurar", async () => {
       const lesson = makeLesson(
         LessonStatus.PUBLISHED,
         LessonStageStatus.APPROVED,
@@ -2757,21 +2416,21 @@ describe('LessonDraftService studio workflow', () => {
       expect(lesson.status).toBe(LessonStatus.PUBLISHED);
     });
 
-    it('preserva assets referenciados por outras lições e nunca falha depois de remover a lição', async () => {
-      const shared = ASSET_URL.replace('manual.png', 'shared.png');
+    it("preserva assets referenciados por outras lições e nunca falha depois de remover a lição", async () => {
+      const shared = ASSET_URL.replace("manual.png", "shared.png");
       const lesson = makeLesson(LessonStatus.DRAFT, LessonStageStatus.DRAFT);
       stageOf(
         lesson,
-        LessonStageType.MANUAL_WORK,
+        LessonStageType.STANDARD_GAME,
       ).versions[0].structuredDataJson = {
         _ownedAssetUrls: [ASSET_URL, shared],
-        printableAssets: [{ id: 'manual', url: ASSET_URL }],
+        printableAssets: [{ id: "manual", url: ASSET_URL }],
       };
       repo.findLessonById.mockResolvedValue(lesson);
       repo.findAssetUrlsReferencedElsewhere.mockResolvedValue(
         new Set([shared]),
       );
-      media.discardUnreferencedUploads.mockRejectedValue(new Error('db'));
+      media.discardUnreferencedUploads.mockRejectedValue(new Error("db"));
 
       await expect(service.delete(LESSON_ID, USER_ID)).resolves.toMatchObject({
         success: true,
@@ -2793,8 +2452,8 @@ describe('LessonDraftService studio workflow', () => {
     });
   });
 
-  describe('digest do stream de eventos', () => {
-    it('muda com o conteúdo visível e ignora a ordem das etapas', async () => {
+  describe("digest do stream de eventos", () => {
+    it("muda com o conteúdo visível e ignora a ordem das etapas", async () => {
       const lesson = makeLesson(
         LessonStatus.IN_PROGRESS,
         LessonStageStatus.DRAFT,
@@ -2809,7 +2468,7 @@ describe('LessonDraftService studio workflow', () => {
       await expect(service.getEventDigest(LESSON_ID)).resolves.not.toBe(first);
     });
 
-    it('responde 404 para lição inexistente', async () => {
+    it("responde 404 para lição inexistente", async () => {
       repo.findLessonDigestSource.mockResolvedValue(null);
       await expect(service.getEventDigest(LESSON_ID)).rejects.toMatchObject({
         code: ErrorCode.LESSON_NOT_FOUND,
@@ -2818,17 +2477,17 @@ describe('LessonDraftService studio workflow', () => {
   });
 });
 
-describe('lesson workflow utils', () => {
+describe("lesson workflow utils", () => {
   const stages = (...statuses: LessonStageStatus[]) =>
     statuses.map((status) => ({
       status,
       currentVersionId:
-        status === LessonStageStatus.NOT_STARTED ? null : 'version',
+        status === LessonStageStatus.NOT_STARTED ? null : "version",
     }));
   const special = (status: LessonStageStatus, last: LessonStageStatus) =>
-    stages(status, status, last);
+    stages(status, status, status, status, last);
 
-  it('reconhece o ciclo de revisão pelos itens e pelo status anterior do item editado', () => {
+  it("reconhece o ciclo de revisão pelos itens e pelo status anterior do item editado", () => {
     expect(
       isLessonInReviewCycle([
         LessonStageStatus.DRAFT,
@@ -2850,33 +2509,27 @@ describe('lesson workflow utils', () => {
       );
   });
 
-  it('endereça o material semanal só pela semana e o especial pelo título', () => {
+  it("endereça o material semanal só pela semana e o especial pelo título", () => {
     const regular = {
-      category: LessonCategory.REGULAR,
+      category: LessonCategory.CHILD,
       weekNumber: 27,
-      theme: 'O Bom Pastor',
+      theme: "O Bom Pastor",
     };
-    expect(lessonPublicationTitle(regular)).toBe('Semana 27 — O Bom Pastor');
-    expect(lessonPublicationRoutePathSource(regular)).toBe('Semana 27');
+    expect(lessonPublicationTitle(regular)).toBe(
+      "Semana 27 · Crianças — O Bom Pastor",
+    );
+    expect(lessonPublicationRoutePathSource(regular)).toBe(
+      "Semana 27 Crianças",
+    );
     expect(lessonPublicationDescription(regular)).toBe(
-      'Material completo da semana 27, revisado e aprovado.',
+      "Material completo para crianças de 3 a 11 anos — semana 27, revisado e aprovado.",
     );
-
-    const special = {
-      category: LessonCategory.SPECIAL,
-      weekNumber: null,
-      theme: 'O Picolé Roubado',
-    };
-    expect(lessonPublicationTitle(special)).toBe(
-      'Material Especial — O Picolé Roubado',
-    );
-    expect(lessonPublicationRoutePathSource(special)).toBeUndefined();
-    expect(lessonPublicationDescription(special)).toMatch(
-      /revisado e aprovado\. \[tipo:especial\]$/,
-    );
-    expect(lessonPublicationTitle({ ...special, weekNumber: 3 })).toBe(
-      'Material Especial (Semana 3) — O Picolé Roubado',
-    );
+    expect(
+      lessonPublicationTitle({ ...regular, category: LessonCategory.ADULT }),
+    ).toBe("Semana 27 · Adultos — O Bom Pastor");
+    expect(
+      lessonPublicationRoutePathSource({ ...regular, weekNumber: null }),
+    ).toBeUndefined();
   });
 
   it.each([
@@ -2921,11 +2574,11 @@ describe('lesson workflow utils', () => {
       LessonStatus.IN_REVIEW,
     ],
   ])(
-    'deriva o status da lição a partir de %s + %s',
+    "deriva o status da lição a partir de %s + %s",
     (status, last, expected) => {
       expect(
         recomputeLessonStatus(
-          LessonCategory.SPECIAL,
+          DEFAULT_LESSON_CATEGORY,
           special(status, last),
           LessonStatus.IN_REVIEW,
         ),
@@ -2933,7 +2586,7 @@ describe('lesson workflow utils', () => {
     },
   );
 
-  it('nunca deriva estados de publicação ou arquivo a partir das etapas', () => {
+  it("nunca deriva estados de publicação ou arquivo a partir das etapas", () => {
     for (const status of [
       LessonStatus.PUBLISHING,
       LessonStatus.PUBLISHED,
@@ -2941,24 +2594,28 @@ describe('lesson workflow utils', () => {
     ])
       expect(
         recomputeLessonStatus(
-          LessonCategory.SPECIAL,
+          DEFAULT_LESSON_CATEGORY,
           special(LessonStageStatus.DRAFT, LessonStageStatus.DRAFT),
           status,
         ),
       ).toBe(status);
   });
 
-  it('mantém IN_PROGRESS enquanto faltar alguma etapa do pacote', () => {
+  it("mantém IN_PROGRESS enquanto faltar alguma etapa do pacote", () => {
     expect(
       recomputeLessonStatus(
-        LessonCategory.REGULAR,
-        special(LessonStageStatus.APPROVED, LessonStageStatus.APPROVED),
+        DEFAULT_LESSON_CATEGORY,
+        stages(
+          LessonStageStatus.APPROVED,
+          LessonStageStatus.APPROVED,
+          LessonStageStatus.APPROVED,
+        ),
         LessonStatus.IN_REVIEW,
       ),
     ).toBe(LessonStatus.IN_PROGRESS);
   });
 
-  it('serializa de forma estável independentemente da ordem das chaves', () => {
+  it("serializa de forma estável independentemente da ordem das chaves", () => {
     expect(lessonStableStringify({ b: [{ d: 1, c: 2 }], a: null })).toBe(
       lessonStableStringify({ a: null, b: [{ c: 2, d: 1 }] }),
     );
@@ -2967,21 +2624,31 @@ describe('lesson workflow utils', () => {
     );
   });
 
-  it('numera o item conforme a ordem do tipo de material', () => {
+  it("numera o item conforme a ordem do tipo de material", () => {
     expect(
-      describeAiFailure(LessonStageType.VERSE_VISUALS, new Error('x'), {
-        stageOrder: SPECIAL_LESSON_STAGE_ORDER,
+      describeAiFailure(LessonStageType.VERSE_VISUALS, new Error("x"), {
+        stageOrder: PARTIAL_STAGE_ORDER,
       }).message,
-    ).toContain('Falha no item 3. Visuais do versículo');
+    ).toContain("Falha no item 3. Visuais do versículo");
     expect(
-      describeAiFailure(LessonStageType.VERSE_VISUALS, new Error('x')).message,
-    ).toContain('Falha no item 4. Visuais do versículo');
+      describeAiFailure(LessonStageType.VERSE_VISUALS, new Error("x")).message,
+    ).toContain("Falha no item 3. Visuais do versículo");
+    expect(
+      describeAiFailure(LessonStageType.VERSE_VISUALS, new Error("x"), {
+        stageOrder: [
+          LessonStageType.LESSON,
+          LessonStageType.LESSON_VISUALS,
+          LessonStageType.STANDARD_GAME,
+          LessonStageType.VERSE_VISUALS,
+        ],
+      }).message,
+    ).toContain("Falha no item 4. Visuais do versículo");
   });
 
-  it('distingue as falhas da fila de IA das falhas do provedor', () => {
+  it("distingue as falhas da fila de IA das falhas do provedor", () => {
     const failure = (reason: AiQueueFailure) =>
       describeAiFailure(LessonStageType.LESSON, new AiQueueException(reason), {
-        provider: 'openai',
+        provider: "openai",
       });
     expect(failure(AiQueueFailure.UNAVAILABLE).code).toBe(
       LessonFailureCode.AI_QUEUE_UNAVAILABLE,
@@ -2993,15 +2660,15 @@ describe('lesson workflow utils', () => {
       LessonFailureCode.AI_CONFIGURATION_MISSING,
     );
     expect(failure(AiQueueFailure.UNAVAILABLE).message).toContain(
-      'usando OpenAI',
+      "usando OpenAI",
     );
   });
 
-  it('classifica timeouts de transporte e o limite de retomadas', () => {
+  it("classifica timeouts de transporte e o limite de retomadas", () => {
     expect(
       describeAiFailure(
         LessonStageType.LESSON,
-        new Error('timeout of 120000ms exceeded'),
+        new Error("timeout of 120000ms exceeded"),
       ).code,
     ).toBe(LessonFailureCode.AI_TIMEOUT);
   });

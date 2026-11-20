@@ -1,0 +1,2311 @@
+{
+  "nome": "Mega-acervo e BOT Criador de Brincadeiras Infantis",
+  "versao": "1.0.0",
+  "idioma": "pt-BR",
+  "descricao": "Catálogo de recursos, mecânicas, configurações e prompt mestre para criar brincadeiras infantis.",
+  "metadados": {
+    "total_categorias": 16,
+    "total_materiais_listados": 320,
+    "total_mecanicas": 15,
+    "observacao": "Materiais repetidos em categorias diferentes são mantidos para facilitar a busca; quantidade é de entradas do catálogo."
+  },
+  "acervo_materiais": [
+    {
+      "id": "cat-01",
+      "categoria": "Bolas e objetos de arremesso",
+      "materiais": [
+        {
+          "id": "mat-01-01",
+          "nome": "Bolinhas de plástico",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-02",
+          "nome": "Bolas de futebol",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-03",
+          "nome": "Bolas de vôlei",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-04",
+          "nome": "Bolas de borracha",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-05",
+          "nome": "Bolas de espuma",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-06",
+          "nome": "Bolas de tênis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-07",
+          "nome": "Bolas de pingue-pongue",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-08",
+          "nome": "Bolas de praia",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-09",
+          "nome": "Bolas gigantes infláveis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-10",
+          "nome": "Bolas sensoriais",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-11",
+          "nome": "Bolas de papel",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-12",
+          "nome": "Bolas de meia",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-13",
+          "nome": "Bolas com guizo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-14",
+          "nome": "Bolas de tecido",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-15",
+          "nome": "Bolas coloridas pequenas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-16",
+          "nome": "Bolas de basquete",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-17",
+          "nome": "Saquinhos de feijão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-18",
+          "nome": "Saquinhos de areia",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-19",
+          "nome": "Discos de espuma",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-01-20",
+          "nome": "Frisbees macios",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-02",
+      "categoria": "Circuitos e movimento",
+      "materiais": [
+        {
+          "id": "mat-02-01",
+          "nome": "Bambolês",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-02",
+          "nome": "Cones",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-03",
+          "nome": "Cordas de pular",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-04",
+          "nome": "Cordas grossas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-05",
+          "nome": "Fitas no chão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-06",
+          "nome": "Escadas de agilidade",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-07",
+          "nome": "Colchonetes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-08",
+          "nome": "Tapetes de EVA",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-09",
+          "nome": "Túneis dobráveis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-10",
+          "nome": "Obstáculos de espuma",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-11",
+          "nome": "Arcos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-12",
+          "nome": "Bastões plásticos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-13",
+          "nome": "Alvos de chão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-14",
+          "nome": "Pegadas de EVA",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-15",
+          "nome": "Pneus limpos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-16",
+          "nome": "Plataformas baixas de equilíbrio",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-17",
+          "nome": "Discos de equilíbrio",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-18",
+          "nome": "Paraquedas recreativo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-19",
+          "nome": "Cavalinhos de brinquedo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-02-20",
+          "nome": "Sacos para corrida",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-03",
+      "categoria": "Baldes e recipientes",
+      "materiais": [
+        {
+          "id": "mat-03-01",
+          "nome": "Baldes pequenos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-02",
+          "nome": "Baldes grandes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-03",
+          "nome": "Bacias plásticas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-04",
+          "nome": "Tinas plásticas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-05",
+          "nome": "Copos descartáveis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-06",
+          "nome": "Copos reutilizáveis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-07",
+          "nome": "Potes transparentes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-08",
+          "nome": "Garrafas PET",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-09",
+          "nome": "Garrafas sensoriais lacradas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-10",
+          "nome": "Caixas de papelão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-11",
+          "nome": "Caixas organizadoras",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-12",
+          "nome": "Cestos plásticos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-13",
+          "nome": "Cestos de roupa",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-14",
+          "nome": "Bandejas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-15",
+          "nome": "Funis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-16",
+          "nome": "Colheres grandes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-17",
+          "nome": "Peneiras",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-18",
+          "nome": "Canecas plásticas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-19",
+          "nome": "Pazinhas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-03-20",
+          "nome": "Regadores",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-04",
+      "categoria": "Artes e pintura",
+      "materiais": [
+        {
+          "id": "mat-04-01",
+          "nome": "Tintas guache atóxicas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-02",
+          "nome": "Tintas laváveis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-03",
+          "nome": "Pincéis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-04",
+          "nome": "Pincéis de espuma",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-05",
+          "nome": "Esponjas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-06",
+          "nome": "Rolinhos de pintura",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-07",
+          "nome": "Giz de cera",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-08",
+          "nome": "Lápis de cor",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-09",
+          "nome": "Canetinhas laváveis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-10",
+          "nome": "Giz de quadro",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-11",
+          "nome": "Giz de calçada",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-12",
+          "nome": "Papel sulfite",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-13",
+          "nome": "Cartolina",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-14",
+          "nome": "Papel kraft",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-15",
+          "nome": "Papel crepom",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-16",
+          "nome": "Papel colorido",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-17",
+          "nome": "Adesivos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-18",
+          "nome": "Carimbos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-19",
+          "nome": "Massinha atóxica",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-04-20",
+          "nome": "Aventais",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-05",
+      "categoria": "Quadros e comunicação",
+      "materiais": [
+        {
+          "id": "mat-05-01",
+          "nome": "Quadro branco",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-02",
+          "nome": "Quadro negro",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-03",
+          "nome": "Quadro magnético",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-04",
+          "nome": "Miniquadros",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-05",
+          "nome": "Cartões com palavras",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-06",
+          "nome": "Cartões com imagens",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-07",
+          "nome": "Cartões de números",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-08",
+          "nome": "Cartões de cores",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-09",
+          "nome": "Cartões de letras",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-10",
+          "nome": "Placas SIM e NÃO",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-11",
+          "nome": "Placas VERDADEIRO e FALSO",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-12",
+          "nome": "Pranchetas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-13",
+          "nome": "Cavaletes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-14",
+          "nome": "Painéis de feltro",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-15",
+          "nome": "Letras magnéticas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-16",
+          "nome": "Números magnéticos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-17",
+          "nome": "Lousas pequenas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-18",
+          "nome": "Cartazes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-19",
+          "nome": "Post-its",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-05-20",
+          "nome": "Apagadores",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-06",
+      "categoria": "Memória e raciocínio",
+      "materiais": [
+        {
+          "id": "mat-06-01",
+          "nome": "Jogo da memória",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-02",
+          "nome": "Quebra-cabeças",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-03",
+          "nome": "Dominó",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-04",
+          "nome": "Jogo de sequência",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-05",
+          "nome": "Blocos lógicos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-06",
+          "nome": "Cartões de associação",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-07",
+          "nome": "Tangram",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-08",
+          "nome": "Cubos coloridos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-09",
+          "nome": "Dados grandes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-10",
+          "nome": "Dados ilustrados",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-11",
+          "nome": "Dados de ações",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-12",
+          "nome": "Roda de desafios",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-13",
+          "nome": "Cartelas de bingo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-14",
+          "nome": "Labirintos impressos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-15",
+          "nome": "Cartas de pistas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-16",
+          "nome": "Cartas de desafios",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-17",
+          "nome": "Jogo dos sete erros",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-18",
+          "nome": "Objetos para memorizar",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-19",
+          "nome": "Relógio de brinquedo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-06-20",
+          "nome": "Ábacos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-07",
+      "categoria": "Construção e montagem",
+      "materiais": [
+        {
+          "id": "mat-07-01",
+          "nome": "Blocos de montar",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-02",
+          "nome": "Peças grandes de encaixe",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-03",
+          "nome": "Copos de empilhar",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-04",
+          "nome": "Cubos de papelão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-05",
+          "nome": "Caixas empilháveis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-06",
+          "nome": "Peças de madeira arredondadas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-07",
+          "nome": "Palitos de sorvete",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-08",
+          "nome": "Prendedores de roupa",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-09",
+          "nome": "Rolhas grandes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-10",
+          "nome": "Canudos de papel",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-11",
+          "nome": "Tubos de papelão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-12",
+          "nome": "Peças de EVA",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-13",
+          "nome": "Formas geométricas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-14",
+          "nome": "Peças de mosaico",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-15",
+          "nome": "Argolas plásticas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-16",
+          "nome": "Conectores plásticos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-17",
+          "nome": "Massinha de modelar",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-18",
+          "nome": "Bases de montagem",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-19",
+          "nome": "Peças de montar magnéticas grandes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-07-20",
+          "nome": "Cartões de modelo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-08",
+      "categoria": "Música e sons",
+      "materiais": [
+        {
+          "id": "mat-08-01",
+          "nome": "Pandeiros",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-02",
+          "nome": "Tambores",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-03",
+          "nome": "Chocalhos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-04",
+          "nome": "Maracas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-05",
+          "nome": "Sinos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-06",
+          "nome": "Guizos grandes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-07",
+          "nome": "Xilofones infantis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-08",
+          "nome": "Pau de chuva",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-09",
+          "nome": "Triângulos musicais",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-10",
+          "nome": "Apitos de comando",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-11",
+          "nome": "Caixas de som",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-12",
+          "nome": "Microfone",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-13",
+          "nome": "Instrumentos de brinquedo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-14",
+          "nome": "Cartões de ritmo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-15",
+          "nome": "Claves musicais",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-16",
+          "nome": "Reco-recos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-17",
+          "nome": "Tapetes sonoros",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-18",
+          "nome": "Garrafas musicais lacradas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-19",
+          "nome": "Playlist de músicas infantis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-08-20",
+          "nome": "Botão sonoro",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-09",
+      "categoria": "Faz de conta e personagens",
+      "materiais": [
+        {
+          "id": "mat-09-01",
+          "nome": "Fantoches",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-02",
+          "nome": "Dedoches",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-03",
+          "nome": "Bonecos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-04",
+          "nome": "Bonecas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-05",
+          "nome": "Animais de brinquedo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-06",
+          "nome": "Coroas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-07",
+          "nome": "Chapéus",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-08",
+          "nome": "Capas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-09",
+          "nome": "Máscaras infantis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-10",
+          "nome": "Óculos de fantasia",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-11",
+          "nome": "Fantasia de profissões",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-12",
+          "nome": "Cenários de papelão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-13",
+          "nome": "Castelo de brinquedo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-14",
+          "nome": "Baú do tesouro",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-15",
+          "nome": "Moedas de brinquedo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-16",
+          "nome": "Mapas fictícios",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-17",
+          "nome": "Cartas de missão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-18",
+          "nome": "Objetos cenográficos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-19",
+          "nome": "Teatro de fantoches",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-09-20",
+          "nome": "Maleta de explorador",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-10",
+      "categoria": "Água e experiências",
+      "materiais": [
+        {
+          "id": "mat-10-01",
+          "nome": "Bacias de água",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-02",
+          "nome": "Copos medidores",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-03",
+          "nome": "Conta-gotas grandes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-04",
+          "nome": "Pipetas infantis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-05",
+          "nome": "Esponjas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-06",
+          "nome": "Barquinhos de brinquedo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-07",
+          "nome": "Objetos que flutuam",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-08",
+          "nome": "Objetos que afundam",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-09",
+          "nome": "Peixinhos plásticos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-10",
+          "nome": "Potes transparentes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-11",
+          "nome": "Funis de água",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-12",
+          "nome": "Regadores",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-13",
+          "nome": "Garrafinhas de apertar",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-14",
+          "nome": "Pincéis com água",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-15",
+          "nome": "Gelo colorido com corante alimentício",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-16",
+          "nome": "Forminhas de gelo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-17",
+          "nome": "Conchas grandes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-18",
+          "nome": "Bandejas de experimentos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-19",
+          "nome": "Bolhas de sabão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-10-20",
+          "nome": "Toalhas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-11",
+      "categoria": "Natureza e exploração",
+      "materiais": [
+        {
+          "id": "mat-11-01",
+          "nome": "Folhas secas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-02",
+          "nome": "Flores caídas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-03",
+          "nome": "Pedras grandes lisas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-04",
+          "nome": "Gravetos sem ponta",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-05",
+          "nome": "Sementes grandes seguras",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-06",
+          "nome": "Terra para plantio",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-07",
+          "nome": "Areia limpa",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-08",
+          "nome": "Vasos pequenos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-09",
+          "nome": "Mudas de plantas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-10",
+          "nome": "Pás de jardinagem",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-11",
+          "nome": "Lupas infantis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-12",
+          "nome": "Binóculos de brinquedo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-13",
+          "nome": "Imagens de animais",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-14",
+          "nome": "Pegadas ilustradas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-15",
+          "nome": "Mapas do tesouro",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-16",
+          "nome": "Bússolas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-17",
+          "nome": "Conchas grandes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-18",
+          "nome": "Pinhas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-19",
+          "nome": "Regadores de jardim",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-11-20",
+          "nome": "Cartões de observação",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-12",
+      "categoria": "Coordenação e precisão",
+      "materiais": [
+        {
+          "id": "mat-12-01",
+          "nome": "Argolas de arremesso",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-02",
+          "nome": "Pinos de boliche",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-03",
+          "nome": "Alvos com velcro",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-04",
+          "nome": "Bolas com velcro",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-05",
+          "nome": "Pinças infantis",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-06",
+          "nome": "Pegadores grandes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-07",
+          "nome": "Colheres de corrida",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-08",
+          "nome": "Bastões de equilíbrio",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-09",
+          "nome": "Copos-alvo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-10",
+          "nome": "Discos de lançamento",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-11",
+          "nome": "Cestos-alvo",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-12",
+          "nome": "Caixas com abertura",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-13",
+          "nome": "Pescaria magnética infantil",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-14",
+          "nome": "Varinhas magnéticas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-15",
+          "nome": "Peças para classificação",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-16",
+          "nome": "Pregadores grandes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-17",
+          "nome": "Pratos plásticos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-18",
+          "nome": "Raquetes leves",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-19",
+          "nome": "Balões com supervisão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-12-20",
+          "nome": "Bolinhas de espuma",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-13",
+      "categoria": "Materiais recicláveis",
+      "materiais": [
+        {
+          "id": "mat-13-01",
+          "nome": "Garrafas PET sem bordas cortantes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-02",
+          "nome": "Rolos de papel higiênico",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-03",
+          "nome": "Rolos de papel toalha",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-04",
+          "nome": "Caixas de sapato",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-05",
+          "nome": "Caixas de leite higienizadas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-06",
+          "nome": "Tampas grandes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-07",
+          "nome": "Papelão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-08",
+          "nome": "Retalhos de tecido",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-09",
+          "nome": "Potes de iogurte limpos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-10",
+          "nome": "Embalagens plásticas seguras",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-11",
+          "nome": "Jornais",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-12",
+          "nome": "Revistas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-13",
+          "nome": "Sacolas de papel",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-14",
+          "nome": "Bandejas de papelão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-15",
+          "nome": "Caixas de ovos higienizadas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-16",
+          "nome": "Papel de embalagem",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-17",
+          "nome": "Rótulos ilustrados",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-18",
+          "nome": "Caixas de cereal",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-19",
+          "nome": "Papel usado no verso",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-13-20",
+          "nome": "Tubos de papel",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-14",
+      "categoria": "Tempo, pontuação e sorteio",
+      "materiais": [
+        {
+          "id": "mat-14-01",
+          "nome": "Cronômetro",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-02",
+          "nome": "Ampulhetas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-03",
+          "nome": "Relógio visual",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-04",
+          "nome": "Dados numéricos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-05",
+          "nome": "Dados de cores",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-06",
+          "nome": "Roleta de papelão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-07",
+          "nome": "Roleta de desafios",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-08",
+          "nome": "Fichas de pontos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-09",
+          "nome": "Quadro de pontuação",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-10",
+          "nome": "Adesivos de recompensa",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-11",
+          "nome": "Medalhas simbólicas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-12",
+          "nome": "Troféus de papel",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-13",
+          "nome": "Cartões de equipes",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-14",
+          "nome": "Pulseiras coloridas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-15",
+          "nome": "Sacos de sorteio",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-16",
+          "nome": "Cartões numerados",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-17",
+          "nome": "Marcadores de rodada",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-18",
+          "nome": "Fitas de chegada",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-19",
+          "nome": "Campainhas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-14-20",
+          "nome": "Placas de missão",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-15",
+      "categoria": "Recursos educativos e bíblicos",
+      "materiais": [
+        {
+          "id": "mat-15-01",
+          "nome": "Bíblia infantil",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-02",
+          "nome": "Cartões de versículos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-03",
+          "nome": "Cartões de personagens bíblicos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-04",
+          "nome": "Figuras bíblicas para recorte",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-05",
+          "nome": "Cenários bíblicos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-06",
+          "nome": "Mapas de histórias bíblicas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-07",
+          "nome": "Perguntas bíblicas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-08",
+          "nome": "Cartões de valores",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-09",
+          "nome": "Cartões de emoções",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-10",
+          "nome": "Figuras de animais bíblicos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-11",
+          "nome": "Quebra-cabeças bíblicos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-12",
+          "nome": "Jogo da memória bíblico",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-13",
+          "nome": "Fantoches bíblicos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-14",
+          "nome": "Livros ilustrados",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-15",
+          "nome": "Cartões de sequência de histórias",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-16",
+          "nome": "Caixinhas de perguntas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-17",
+          "nome": "Palavras embaralhadas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-18",
+          "nome": "Cartazes de versículos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-19",
+          "nome": "Dados de personagens",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-15-20",
+          "nome": "Trilhas bíblicas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    },
+    {
+      "id": "cat-16",
+      "categoria": "Recursos digitais e impressão",
+      "materiais": [
+        {
+          "id": "mat-16-01",
+          "nome": "Projetor",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-02",
+          "nome": "Tablet supervisionado",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-03",
+          "nome": "Computador",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-04",
+          "nome": "Impressora",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-05",
+          "nome": "Imagens impressas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-06",
+          "nome": "QR codes educativos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-07",
+          "nome": "Slides ilustrados",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-08",
+          "nome": "Áudios de animais",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-09",
+          "nome": "Sons de instrumentos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-10",
+          "nome": "Vídeos curtos educativos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-11",
+          "nome": "Temporizador visual",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-12",
+          "nome": "Jogos de perguntas digitais",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-13",
+          "nome": "Cartelas personalizadas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-14",
+          "nome": "Cartões plastificados",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-15",
+          "nome": "Figuras para recortar",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-16",
+          "nome": "Adesivos impressos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-17",
+          "nome": "Tabuleiros impressos",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-18",
+          "nome": "Pistas impressas",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-19",
+          "nome": "Mapas ilustrados",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        },
+        {
+          "id": "mat-16-20",
+          "nome": "Certificados",
+          "quantidade_disponivel": null,
+          "observacoes": ""
+        }
+      ]
+    }
+  ],
+  "mecanicas": [
+    {
+      "id": "mec-01",
+      "nome": "Movimento",
+      "acoes": [
+        "Correr",
+        "Saltar",
+        "Engatinhar",
+        "Desviar",
+        "Rastejar",
+        "Equilibrar",
+        "Girar",
+        "Transportar",
+        "Atravessar"
+      ]
+    },
+    {
+      "id": "mec-02",
+      "nome": "Precisão",
+      "acoes": [
+        "Acertar alvos",
+        "Arremessar",
+        "Encaixar",
+        "Lançar argolas",
+        "Empilhar",
+        "Conduzir objetos"
+      ]
+    },
+    {
+      "id": "mec-03",
+      "nome": "Memória",
+      "acoes": [
+        "Memorizar sequências",
+        "Encontrar pares",
+        "Lembrar posições",
+        "Reconhecer mudanças",
+        "Repetir padrões"
+      ]
+    },
+    {
+      "id": "mec-04",
+      "nome": "Investigação",
+      "acoes": [
+        "Encontrar pistas",
+        "Decifrar códigos",
+        "Descobrir objetos",
+        "Procurar tesouros",
+        "Resolver mistérios"
+      ]
+    },
+    {
+      "id": "mec-05",
+      "nome": "Criatividade",
+      "acoes": [
+        "Desenhar",
+        "Pintar",
+        "Construir",
+        "Inventar histórias",
+        "Criar personagens",
+        "Montar cenários"
+      ]
+    },
+    {
+      "id": "mec-06",
+      "nome": "Cooperação",
+      "acoes": [
+        "Resolver desafios em grupo",
+        "Transportar objetos juntos",
+        "Completar missões",
+        "Ajudar colegas"
+      ]
+    },
+    {
+      "id": "mec-07",
+      "nome": "Velocidade",
+      "acoes": [
+        "Completar tarefas contra o relógio",
+        "Disputar rodadas rápidas",
+        "Responder a sinais"
+      ]
+    },
+    {
+      "id": "mec-08",
+      "nome": "Estratégia",
+      "acoes": [
+        "Planejar movimentos",
+        "Conquistar territórios",
+        "Administrar recursos",
+        "Escolher caminhos"
+      ]
+    },
+    {
+      "id": "mec-09",
+      "nome": "Comunicação",
+      "acoes": [
+        "Dar pistas",
+        "Fazer mímicas",
+        "Descrever objetos",
+        "Adivinhar palavras",
+        "Transmitir mensagens"
+      ]
+    },
+    {
+      "id": "mec-10",
+      "nome": "Sentidos",
+      "acoes": [
+        "Identificar sons",
+        "Reconhecer texturas",
+        "Diferenciar cheiros seguros",
+        "Perceber detalhes"
+      ]
+    },
+    {
+      "id": "mec-11",
+      "nome": "Sorte e surpresa",
+      "acoes": [
+        "Sortear desafios",
+        "Girar roletas",
+        "Descobrir cartas secretas",
+        "Usar dados de ação"
+      ]
+    },
+    {
+      "id": "mec-12",
+      "nome": "Conhecimento",
+      "acoes": [
+        "Responder perguntas",
+        "Ordenar acontecimentos",
+        "Associar imagens",
+        "Descobrir respostas"
+      ]
+    },
+    {
+      "id": "mec-13",
+      "nome": "Construção",
+      "acoes": [
+        "Montar torres",
+        "Reproduzir modelos",
+        "Criar caminhos",
+        "Construir soluções coletivas"
+      ]
+    },
+    {
+      "id": "mec-14",
+      "nome": "Teatro",
+      "acoes": [
+        "Representar personagens",
+        "Encenar histórias",
+        "Imitar animais",
+        "Improvisar situações"
+      ]
+    },
+    {
+      "id": "mec-15",
+      "nome": "Missões",
+      "acoes": [
+        "Superar etapas",
+        "Coletar itens",
+        "Desbloquear fases",
+        "Ganhar pistas",
+        "Concluir aventuras"
+      ]
+    }
+  ],
+  "configuracao_bot": {
+    "faixa_etaria_padrao": null,
+    "perguntas_iniciais": [
+      "Qual a idade das crianças?",
+      "Quantas crianças participarão?",
+      "Qual o local?",
+      "Quanto tempo deve durar?",
+      "Quais materiais estão disponíveis?",
+      "Qual o objetivo?",
+      "Qual a intensidade?",
+      "Será individual, em duplas, equipes ou coletivo?",
+      "Existe um tema específico?"
+    ],
+    "modos": [
+      "surpresa",
+      "poucos materiais",
+      "sem materiais",
+      "bíblico",
+      "circuito",
+      "equipes",
+      "calmo",
+      "agitado",
+      "reciclável",
+      "gincana",
+      "inventor"
+    ],
+    "campos_resposta": [
+      "nome",
+      "resumo",
+      "faixa_etaria",
+      "participantes",
+      "duracao",
+      "local",
+      "materiais",
+      "preparacao",
+      "como_brincar",
+      "regras",
+      "como_termina",
+      "objetivo_pedagogico",
+      "adaptacoes",
+      "variacao_surpresa",
+      "seguranca"
+    ],
+    "regras_segurança": [
+      "Respeitar faixa etária e supervisão de adulto.",
+      "Evitar peças pequenas com crianças que possam levá-las à boca.",
+      "Não combinar vendas nos olhos com corrida ou obstáculos.",
+      "Verificar segurança de água, balões, cordas, tintas e materiais reciclados.",
+      "Oferecer alternativas inclusivas."
+    ]
+  },
+  "prompt_mestre": "Você é um especialista em recreação infantil, pedagogia, ludicidade e criação de brincadeiras. Sua missão é criar brincadeiras extremamente divertidas, originais, seguras e fáceis de realizar usando o acervo de materiais e mecânicas deste JSON.\n\n1. ACERVO: Consulte acervo_materiais. Ele é expansível; não suponha que todos os materiais estão fisicamente disponíveis. Pergunte o que o usuário tem ou respeite seu inventário.\n2. MECÂNICAS: Combine formas diferentes de brincar, consultando mecanicas. Varie a estrutura do jogo, não apenas o nome ou a história.\n3. PERGUNTAS (somente quando necessário): faixa etária, participantes, local, duração, materiais disponíveis, objetivo, intensidade, formato individual/duplas/equipes/coletivo e tema. Se houver dados suficientes, avance e explicite suposições.\n4. CRIATIVIDADE: Priorize diversão real; crie nomes memoráveis, surpresas, missões e descobertas. Combine de 1 a 5 tipos de materiais quando possível, com regras simples. Ofereça versões cooperativa e competitiva quando fizer sentido. Prefira materiais baratos e reutilizáveis, sem exigir compra do acervo inteiro.\n5. SEGURANÇA E INCLUSÃO: Adapte às diferenças motoras, sensoriais e cognitivas; evite objetos cortantes, tóxicos, quebráveis e peças pequenas inadequadas à idade. Não combine vendas com corrida ou obstáculos. Atividades com água, balões e cordas precisam de supervisão e adequação à idade.\n6. SAÍDA: Informe NOME, RESUMO, FAIXA ETÁRIA, PARTICIPANTES, DURAÇÃO, LOCAL, MATERIAIS (quantidades), PREPARAÇÃO, COMO BRINCAR (passo a passo), REGRAS, COMO TERMINA, OBJETIVO PEDAGÓGICO (se aplicável), ADAPTAÇÕES (fácil, difícil, inclusiva), VARIAÇÃO SURPRESA e SEGURANÇA.\n7. MODOS: surpresa, poucos materiais (máximo 3 tipos), sem materiais, bíblico (fiel à história), circuito, equipes, calmo, agitado, reciclável, gincana, inventor.\n8. MELHORIA CONTÍNUA: Registre brincadeiras aprovadas com materiais, regras, faixa etária, participantes, duração e avaliação. Se o histórico estiver disponível, evite repetições e proponha melhorias.",
+  "gerador_combinacoes": {
+    "materiais_por_brincadeira_opcoes": [
+      2,
+      3,
+      5
+    ],
+    "intensidades": [
+      "calma",
+      "moderada",
+      "agitada"
+    ],
+    "temas": [
+      "livre",
+      "bíblico",
+      "educativo"
+    ],
+    "estilos": [
+      "Caça ao tesouro",
+      "Circuito de desafios",
+      "Missão em equipes",
+      "Desafio de memória",
+      "Jogo de precisão",
+      "Aventura cooperativa",
+      "Investigação secreta",
+      "Corrida de revezamento",
+      "Construção criativa",
+      "Sequência de missões"
+    ],
+    "prompt_modelo": "Crie uma brincadeira infantil original usando os materiais: {materiais}. Estilo: {estilo}. Intensidade: {intensidade}. Tema: {tema}. Dê nome, objetivo, materiais com quantidades, preparação, regras, passo a passo, duração, adaptações e cuidados. Combine os materiais de forma criativa e segura."
+  },
+  "modelo_cadastro_material": {
+    "nome": "Bambolê",
+    "categoria": "Circuitos e movimento",
+    "idade_recomendada": "Depende da atividade",
+    "ambiente": [
+      "interno",
+      "externo"
+    ],
+    "tipo_uso": [
+      "saltar",
+      "lançar",
+      "delimitar"
+    ],
+    "quantidade_disponivel": 12,
+    "custo": "baixo",
+    "supervisao": "conforme atividade",
+    "combina_com": [
+      "bolinhas",
+      "cones",
+      "baldes"
+    ]
+  },
+  "acervo_brincadeiras_aprovadas": [],
+  "modelo_brincadeira_aprovada": {
+    "id": "",
+    "nome": "",
+    "materiais": [],
+    "mecanicas": [],
+    "regras": [],
+    "faixa_etaria": "",
+    "participantes": "",
+    "duracao_minutos": null,
+    "avaliacao": null,
+    "observacoes": ""
+  }
+}

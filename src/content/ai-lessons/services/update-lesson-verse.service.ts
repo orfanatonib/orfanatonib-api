@@ -1,28 +1,31 @@
-import { Injectable } from '@nestjs/common';
-import { AppConflictException, ErrorCode } from 'src/content/ai-lessons/compat/exceptions';
+import { Injectable } from "@nestjs/common";
+import {
+  AppConflictException,
+  ErrorCode,
+} from "src/content/ai-lessons/compat/exceptions";
 import {
   LESSON_CANONICAL_VERSE_VERSION,
   LESSON_STAGE_COMPLETED_STATUSES,
-} from '../constants/lesson-workflow.constants';
-import { LESSON_VERSE_CHANGE } from '../constants/lesson-verse-change.constants';
-import { ChangeMemoryVerseRequestDto } from '../dto/change-memory-verse.dto';
-import { LessonEntity } from '../entities/lesson.entity';
-import { LessonStageEntity } from '../entities/lesson-stage.entity';
+} from "../constants/lesson-workflow.constants";
+import { LESSON_VERSE_CHANGE } from "../constants/lesson-verse-change.constants";
+import { ChangeMemoryVerseRequestDto } from "../dto/change-memory-verse.dto";
+import { LessonEntity } from "../entities/lesson.entity";
+import { LessonStageEntity } from "../entities/lesson-stage.entity";
 import {
   LessonStageStatus,
   LessonStageType,
   LessonStatus,
   LessonVersionSource,
-} from '../enums/lesson.enums';
-import { LessonWorkflowAction } from '../enums/lesson-failure-code.enum';
-import { AiLessonsRepository } from '../repositories/ai-lessons.repository';
-import type { LessonJsonObject } from '../types/lesson-generation.types';
-import { normalizeLessonVerseReference, unquoteLessonVerse } from '../utils';
+} from "../enums/lesson.enums";
+import { LessonWorkflowAction } from "../enums/lesson-failure-code.enum";
+import { AiLessonsRepository } from "../repositories/ai-lessons.repository";
+import type { LessonJsonObject } from "../types/lesson-generation.types";
+import { normalizeLessonVerseReference, unquoteLessonVerse } from "../utils";
 import {
   isBibleReference,
   reconcileStageStructuredContent,
-} from '../utils/lesson-canonical-content.utils';
-import { lessonContentToTiptap } from '../utils/lesson-tiptap.utils';
+} from "../utils/lesson-canonical-content.utils";
+import { lessonContentToTiptap } from "../utils/lesson-tiptap.utils";
 import {
   currentMemoryVerse,
   isSameVerse,
@@ -30,19 +33,19 @@ import {
   replaceMemoryVerseInDocument,
   stagesOutdatedByVerseChange,
   type LessonVerseValue,
-} from '../utils/lesson-verse-change.utils';
+} from "../utils/lesson-verse-change.utils";
 import {
   assertLessonMutable,
   lessonAsObject,
   lessonContentChecksum,
   lessonCurrentVersion,
-} from '../utils/lesson-workflow.utils';
+} from "../utils/lesson-workflow.utils";
 import {
   lessonNotFound,
   stageNotFound,
-} from '../utils/lesson-studio-errors.utils';
-import { GetLessonService } from './get-lesson.service';
-import { LessonStudioSupportService } from './lesson-studio-support.service';
+} from "../utils/lesson-studio-errors.utils";
+import { GetLessonService } from "./get-lesson.service";
+import { LessonStudioSupportService } from "./lesson-studio-support.service";
 
 const TERMINAL_STATUSES: readonly LessonStatus[] = [
   LessonStatus.PUBLISHED,
@@ -77,7 +80,7 @@ export class UpdateLessonVerseService {
       if (!lesson) throw lessonNotFound();
       assertLessonMutable(
         lesson,
-        'Aguarde a geração ou publicação em andamento antes de alterar o versículo.',
+        "Aguarde a geração ou publicação em andamento antes de alterar o versículo.",
       );
       if (TERMINAL_STATUSES.includes(lesson.status))
         throw new AppConflictException(
@@ -91,7 +94,7 @@ export class UpdateLessonVerseService {
       if (stage.lockVersion !== dto.lockVersion)
         throw new AppConflictException(
           ErrorCode.LESSON_STAGE_LOCK_CONFLICT,
-          'Esta etapa foi alterada em outra sessão. Recarregue antes de alterar o versículo.',
+          "Esta etapa foi alterada em outra sessão. Recarregue antes de alterar o versículo.",
         );
       const current = lessonCurrentVersion(stage);
       if (!current?.structuredDataJson)
@@ -182,7 +185,7 @@ export class UpdateLessonVerseService {
         LESSON_VERSE_CHANGE.INVALID_REFERENCE_MESSAGE,
       );
     return {
-      text: unquoteLessonVerse(dto.text).replace(/\s+/g, ' '),
+      text: unquoteLessonVerse(dto.text).replace(/\s+/g, " "),
       reference,
       version: LESSON_CANONICAL_VERSE_VERSION,
     };
@@ -222,12 +225,7 @@ export class UpdateLessonVerseService {
     }
     return {
       structured: next,
-      document: lessonContentToTiptap(
-        next,
-        lesson.weekNumber,
-        stage.type,
-        lesson.category,
-      ),
+      document: lessonContentToTiptap(next, lesson.weekNumber, stage.type),
     };
   }
 }

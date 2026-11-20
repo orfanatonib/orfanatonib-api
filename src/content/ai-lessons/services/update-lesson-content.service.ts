@@ -1,32 +1,35 @@
-import { Injectable } from '@nestjs/common';
-import { AppConflictException, ErrorCode } from 'src/content/ai-lessons/compat/exceptions';
-import { LESSON_STAGE_EDITABLE_STATUSES } from '../constants/lesson-workflow.constants';
-import { SaveTiptapContentDto } from '../dto/save-tiptap-content.dto';
-import { LessonEntity } from '../entities/lesson.entity';
-import { LessonStageEntity } from '../entities/lesson-stage.entity';
-import { LessonVersionEntity } from '../entities/lesson-version.entity';
+import { Injectable } from "@nestjs/common";
+import {
+  AppConflictException,
+  ErrorCode,
+} from "src/content/ai-lessons/compat/exceptions";
+import { LESSON_STAGE_EDITABLE_STATUSES } from "../constants/lesson-workflow.constants";
+import { SaveTiptapContentDto } from "../dto/save-tiptap-content.dto";
+import { LessonEntity } from "../entities/lesson.entity";
+import { LessonStageEntity } from "../entities/lesson-stage.entity";
+import { LessonVersionEntity } from "../entities/lesson-version.entity";
 import {
   LessonStageStatus,
   LessonStageType,
   LessonVersionSource,
-} from '../enums/lesson.enums';
-import { LessonWorkflowAction } from '../enums/lesson-failure-code.enum';
-import { AiLessonsRepository } from '../repositories/ai-lessons.repository';
-import type { LessonJsonObject } from '../types/lesson-generation.types';
-import { normalizeLessonDocumentHeader } from '../utils';
-import { reconcileStageStructuredContent } from '../utils/lesson-canonical-content.utils';
+} from "../enums/lesson.enums";
+import { LessonWorkflowAction } from "../enums/lesson-failure-code.enum";
+import { AiLessonsRepository } from "../repositories/ai-lessons.repository";
+import type { LessonJsonObject } from "../types/lesson-generation.types";
+import { normalizeLessonDocumentHeader } from "../utils";
+import { reconcileStageStructuredContent } from "../utils/lesson-canonical-content.utils";
 import {
   assertLessonMutable,
   lessonContentChecksum,
   lessonCurrentVersion,
   lessonStableStringify,
-} from '../utils/lesson-workflow.utils';
-import { GetLessonService } from './get-lesson.service';
-import { LessonStudioSupportService } from './lesson-studio-support.service';
+} from "../utils/lesson-workflow.utils";
+import { GetLessonService } from "./get-lesson.service";
+import { LessonStudioSupportService } from "./lesson-studio-support.service";
 import {
   lessonNotFound,
   stageNotFound,
-} from '../utils/lesson-studio-errors.utils';
+} from "../utils/lesson-studio-errors.utils";
 
 /** Manual edition of a stage: reconciles the edited document with the canonical data and versions it. */
 @Injectable()
@@ -50,19 +53,19 @@ export class UpdateLessonContentService {
       if (!lesson) throw lessonNotFound();
       assertLessonMutable(
         lesson,
-        'Aguarde a geração ou publicação em andamento antes de editar a lição.',
+        "Aguarde a geração ou publicação em andamento antes de editar a lição.",
       );
       const stage = lesson.stages.find((item) => item.type === dto.stage);
       if (!stage) throw stageNotFound();
       if (stage.lockVersion !== dto.lockVersion)
         throw new AppConflictException(
           ErrorCode.LESSON_STAGE_LOCK_CONFLICT,
-          'Esta etapa foi alterada em outra sessão. Recarregue antes de salvar.',
+          "Esta etapa foi alterada em outra sessão. Recarregue antes de salvar.",
         );
       if (!LESSON_STAGE_EDITABLE_STATUSES.includes(stage.status))
         throw new AppConflictException(
           ErrorCode.LESSON_INVALID_STATE,
-          'A etapa não está editável durante a revisão final.',
+          "A etapa não está editável durante a revisão final.",
         );
       const current = lessonCurrentVersion(stage);
       const structured = reconcileStageStructuredContent(
@@ -89,7 +92,7 @@ export class UpdateLessonContentService {
         structuredDataJson: structured,
         docxS3Key: null,
         pdfS3Key: null,
-        changeSummary: dto.changeSummary ?? 'Edição manual',
+        changeSummary: dto.changeSummary ?? "Edição manual",
         createdSource: LessonVersionSource.MANUAL_EDIT,
         createdById: userId,
         openAiResponseId: null,
@@ -149,7 +152,6 @@ export class UpdateLessonContentService {
           normalizeLessonDocumentHeader(
             current.tiptapAstJson,
             lesson.weekNumber,
-            lesson.category,
           ),
         )
     );

@@ -52,3 +52,12 @@ export interface AttendanceRecordsFilters {
   sortBy: keyof typeof import("./constants").ATTENDANCE_SORT_COLUMNS;
   sortOrder: "ASC" | "DESC";
 }
+
+/** Validated writes persisted together, using a single transaction. */
+export interface AttendanceBatchEntry {
+  member: UserEntity;
+  schedule: import("src/shelter/schedule/entities/shelter-schedule.entity").ShelterScheduleEntity;
+  category: AttendanceCategory;
+  type: import("./entities/attendance.entity").AttendanceType;
+  comment?: string;
+}

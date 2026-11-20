@@ -1,21 +1,21 @@
-import { pngImageFixture } from '../fixtures/provider-image.fixture';
-import { createAiQueueMock } from 'src/shared/providers/ai-queue/testing/queue.mock';
-import { ConfigService } from '@nestjs/config';
-import { AxiosError } from 'axios';
-import { OpenAiLessonService, schemaFor } from './open-ai-lesson.service';
-import { LessonStageType } from '../enums/lesson.enums';
-import { LESSON_TEMPLATES } from '../templates/lesson-templates';
-import { LESSON_BASE_PROMPT } from '../constants/lesson-editorial.constants';
+import { pngImageFixture } from "../fixtures/provider-image.fixture";
+import { createAiQueueMock } from "src/shared/providers/ai-queue/testing/queue.mock";
+import { ConfigService } from "@nestjs/config";
+import { AxiosError } from "axios";
+import { OpenAiLessonService, schemaFor } from "./open-ai-lesson.service";
+import { LessonCategory, LessonStageType } from "../enums/lesson.enums";
+import { LESSON_TEMPLATES } from "../templates/lesson-templates";
+import { LESSON_BASE_PROMPT } from "../constants/lesson-editorial.constants";
 
 const queued = createAiQueueMock();
 
-describe('OpenAiLessonService image identity', () => {
+describe("OpenAiLessonService image identity", () => {
   const config = {
     get: jest.fn((key: string) => {
       const values: Record<string, string> = {
-        OPENAI_API_KEY: 'test-key',
-        OPENAI_IMAGE_MODEL: 'gpt-image-test',
-        OPENAI_IMAGE_QUALITY: 'high',
+        OPENAI_API_KEY: "test-key",
+        OPENAI_IMAGE_MODEL: "gpt-image-test",
+        OPENAI_IMAGE_QUALITY: "high",
       };
       return values[key];
     }),
@@ -27,24 +27,24 @@ describe('OpenAiLessonService image identity', () => {
 
   beforeEach(() => queued.post.mockReset());
 
-  it('reviews the real artwork with a separate schema and keeps administrator instructions out of the reviewer', async () => {
+  it("reviews the real artwork with a separate schema and keeps administrator instructions out of the reviewer", async () => {
     queued.post.mockResolvedValue({
-      data: { id: 'review-response', output_text: '{"issues":[]}' },
+      data: { id: "review-response", output_text: '{"issues":[]}' },
     });
     await service.generateStage({
-      theme: 'Tema livre',
-      biblicalReference: 'Referência aprovada',
+      theme: "Tema livre",
+      biblicalReference: "Referência aprovada",
       weekNumber: 1,
       stage: LessonStageType.MEDITATION_OLDER,
       template: LESSON_TEMPLATES[LessonStageType.MEDITATION_OLDER],
-      approvedUpstream: { story: 'Fonte aprovada.' },
-      adminPrompt: 'Instrução de geração',
+      approvedUpstream: { story: "Fonte aprovada." },
+      adminPrompt: "Instrução de geração",
       olderMeditationReview: {
         content: { activities: [] },
         images: [
           {
             activityNumber: 2,
-            image: { data: Buffer.from('actual-image'), mimeType: 'image/png' },
+            image: { data: Buffer.from("actual-image"), mimeType: "image/png" },
           },
         ],
       },
@@ -53,44 +53,44 @@ describe('OpenAiLessonService image identity', () => {
       input: Array<{ content: unknown }>;
       text: { format: { schema: { required: string[] } } };
     };
-    expect(body.input[0].content).toContain('revisor independente');
-    expect(JSON.stringify(body.input[1].content)).toContain('input_image');
+    expect(body.input[0].content).toContain("revisor independente");
+    expect(JSON.stringify(body.input[1].content)).toContain("input_image");
     expect(JSON.stringify(body.input[1].content)).toContain(
-      Buffer.from('actual-image').toString('base64'),
+      Buffer.from("actual-image").toString("base64"),
     );
     expect(JSON.stringify(body.input[1].content)).not.toContain(
-      'Instrução de geração',
+      "Instrução de geração",
     );
-    expect(body.text.format.schema.required).toEqual(['issues']);
+    expect(body.text.format.schema.required).toEqual(["issues"]);
   });
 
-  it('limits older gpt-4o output reservation without changing other stage requests', async () => {
+  it("limits older gpt-4o output reservation without changing other stage requests", async () => {
     const instance = new OpenAiLessonService(
       {
         get: <T>(key: string) =>
-          (key === 'OPENAI_TEXT_MODEL'
-            ? 'gpt-4o'
-            : key === 'OPENAI_API_KEY'
-              ? 'test-key'
+          (key === "OPENAI_TEXT_MODEL"
+            ? "gpt-4o"
+            : key === "OPENAI_API_KEY"
+              ? "test-key"
               : undefined) as T | undefined,
       },
       queued.service,
     );
     queued.post.mockResolvedValue({
-      data: { id: 'test-response', output_text: '{}' },
+      data: { id: "test-response", output_text: "{}" },
     });
     for (const stage of [
       LessonStageType.MEDITATION_OLDER,
       LessonStageType.MEDITATION_YOUNGER,
     ]) {
       await instance.generateStage({
-        theme: 'Jesus vive',
-        biblicalReference: 'João 11',
+        theme: "Jesus vive",
+        biblicalReference: "João 11",
         weekNumber: 14,
         stage,
         template: LESSON_TEMPLATES[stage],
         approvedUpstream: null,
-        adminPrompt: '',
+        adminPrompt: "",
       });
       const payload = queued.post.mock.lastCall?.[1] as Record<string, unknown>;
       // Every stage is bounded on models without reasoning; item 7 keeps its own cap.
@@ -100,35 +100,35 @@ describe('OpenAiLessonService image identity', () => {
     }
   });
 
-  it('requires complete printable older blocks without changing the younger schema', () => {
+  it("requires complete printable older blocks without changing the younger schema", () => {
     expect(
       JSON.stringify(schemaFor(LessonStageType.MEDITATION_OLDER)),
-    ).toContain('sourceExcerpt');
+    ).toContain("sourceExcerpt");
     expect(
       JSON.stringify(schemaFor(LessonStageType.MEDITATION_YOUNGER)),
-    ).not.toContain('sourceExcerpt');
+    ).not.toContain("sourceExcerpt");
   });
 
   it.each([
-    ['gpt-4o', 'none', false],
-    ['gpt-4o', 'high', false],
-    ['gpt-4o-2024-08-06', 'low', false],
-    ['gpt-4o-mini', 'none', false],
-    ['gpt-4.1', 'high', false],
-    ['gpt-5.4', 'high', true],
-    ['gpt-6-luna', 'none', true],
-    ['o3-mini', 'low', true],
-    ['o1', 'medium', true],
-    ['gpt-5.4', undefined, false],
-    ['gpt-5-chat-latest', 'low', false],
+    ["gpt-4o", "none", false],
+    ["gpt-4o", "high", false],
+    ["gpt-4o-2024-08-06", "low", false],
+    ["gpt-4o-mini", "none", false],
+    ["gpt-4.1", "high", false],
+    ["gpt-5.4", "high", true],
+    ["gpt-6-luna", "none", true],
+    ["o3-mini", "low", true],
+    ["o1", "medium", true],
+    ["gpt-5.4", undefined, false],
+    ["gpt-5-chat-latest", "low", false],
   ])(
-    'respeita o suporte a raciocínio de %s com esforço %s',
+    "respeita o suporte a raciocínio de %s com esforço %s",
     async (model, effort, supported) => {
       const stageService = new OpenAiLessonService(
         {
           get: <T>(key: string): T | undefined => {
             const values: Record<string, string | undefined> = {
-              OPENAI_API_KEY: 'test-key',
+              OPENAI_API_KEY: "test-key",
               OPENAI_TEXT_MODEL: model,
               OPENAI_REASONING_EFFORT: effort,
             };
@@ -138,49 +138,48 @@ describe('OpenAiLessonService image identity', () => {
         queued.service,
       );
       queued.post.mockResolvedValueOnce({
-        data: { id: 'meditation-response', output_text: '{}' },
+        data: { id: "meditation-response", output_text: "{}" },
       });
 
       await stageService.generateStage({
-        theme: 'O poder de Jesus sobre a morte',
-        biblicalReference: 'João 11:1-44; Lucas 7:11-17',
+        theme: "O poder de Jesus sobre a morte",
+        biblicalReference: "João 11:1-44; Lucas 7:11-17",
         weekNumber: 14,
         stage: LessonStageType.MEDITATION_YOUNGER,
         template: LESSON_TEMPLATES[LessonStageType.MEDITATION_YOUNGER],
         approvedUpstream: null,
-        adminPrompt: 'Meditação para crianças menores',
+        adminPrompt: "Meditação para crianças menores",
       });
 
       const body: unknown = queued.post.mock.lastCall?.[1];
       expect(body).toMatchObject({ model, store: false });
       if (supported) {
-        expect(body).toHaveProperty('reasoning', { effort });
+        expect(body).toHaveProperty("reasoning", { effort });
       } else {
-        expect(body).not.toHaveProperty('reasoning');
+        expect(body).not.toHaveProperty("reasoning");
       }
       expect(queued.post.mock.calls).toHaveLength(1);
     },
   );
 
-  it('envia o padrão editorial e um contrato compatível com oito perguntas e oração vazia', async () => {
+  it("envia o padrão editorial e um contrato do modelo 2026 com seis a oito perguntas", async () => {
     const generated = {
-      story: 'Crianças, vocês já tiveram uma dúvida? (aguarde as respostas)',
-      closingPrayer: '',
+      story: "Crianças, vocês já tiveram uma dúvida? (aguarde as respostas)",
       reviewQuestions: Array.from({ length: 8 }, () => ({
-        question: 'Por quê?',
-        answer: 'Por amor.',
+        question: "Por quê?",
+        answer: "Por amor.",
       })),
-      visualScenes: [{ id: 'scene-01', prompt: 'Cena separada.' }],
+      visualScenes: [{ id: "scene-01", prompt: "Cena separada." }],
     };
     queued.post.mockResolvedValueOnce({
       data: {
-        id: 'editorial-response',
+        id: "editorial-response",
         output_text: JSON.stringify(generated),
       },
     });
     const result = await service.generateStage({
-      theme: 'Ressurreição, ascensão de Jesus e a grande comissão.',
-      biblicalReference: 'João 20:19-31',
+      theme: "Ressurreição, ascensão de Jesus e a grande comissão.",
+      biblicalReference: "João 20:19-31",
       weekNumber: 26,
       stage: LessonStageType.LESSON,
       template: LESSON_TEMPLATES[LessonStageType.LESSON],
@@ -193,40 +192,44 @@ describe('OpenAiLessonService image identity', () => {
       text: { format: { schema: Record<string, unknown> } };
     };
     const user = JSON.parse(
-      body.input.find((item) => item.role === 'user')?.content ?? '{}',
+      body.input.find((item) => item.role === "user")?.content ?? "{}",
     ) as Record<string, unknown>;
-    expect(user).not.toHaveProperty('adminPrompt');
-    const system = body.input.find((item) => item.role === 'system')?.content;
-    expect(system).toContain('PROMPT EDITORIAL DA ETAPA');
-    expect(system).toContain('Não omita Tomé');
+    expect(user).not.toHaveProperty("adminPrompt");
+    const system = body.input.find((item) => item.role === "system")?.content;
+    expect(system).toContain("PROMPT EDITORIAL DA ETAPA");
+    expect(system).toContain("Não omita Tomé");
     expect(body.text.format.schema).toEqual(schemaFor(LessonStageType.LESSON));
     expect(body.text.format.schema).toMatchObject({
       properties: {
-        reviewQuestions: { minItems: 8, maxItems: 10 },
-        closingPrayer: { type: 'string' },
+        reviewQuestions: { minItems: 6, maxItems: 8 },
+        supportMaterials: { minItems: 3, maxItems: 6 },
+        verseOptions: { minItems: 2, maxItems: 2 },
       },
     });
+    expect(body.text.format.schema.properties).not.toHaveProperty(
+      "closingPrayer",
+    );
   });
 
-  it('retries a reset image request without regenerating text', async () => {
+  it("retries a reset image request without regenerating text", async () => {
     jest.useFakeTimers();
     queued.post
       .mockRejectedValueOnce(
-        Object.assign(new Error('read ECONNRESET'), { code: 'ECONNRESET' }),
+        Object.assign(new Error("read ECONNRESET"), { code: "ECONNRESET" }),
       )
       .mockResolvedValueOnce({
         data: {
-          data: [{ b64_json: pngImageFixture('recovered').toString('base64') }],
+          data: [{ b64_json: pngImageFixture("recovered").toString("base64") }],
         },
       });
     try {
-      const pending = service.generateImage('Desenho aprovado');
+      const pending = service.generateImage("Desenho aprovado");
       await jest.runAllTimersAsync();
-      expect((await pending).equals(pngImageFixture('recovered'))).toBe(true);
+      expect((await pending).equals(pngImageFixture("recovered"))).toBe(true);
       expect(queued.post.mock.calls).toHaveLength(2);
       expect(queued.post.mock.calls.map((call) => call[0])).toEqual([
-        'https://api.openai.com/v1/images/generations',
-        'https://api.openai.com/v1/images/generations',
+        "https://api.openai.com/v1/images/generations",
+        "https://api.openai.com/v1/images/generations",
       ]);
       expect(queued.post.mock.calls[0][1]).toEqual(
         queued.post.mock.calls[1][1],
@@ -236,55 +239,55 @@ describe('OpenAiLessonService image identity', () => {
     }
   });
 
-  it('usa edição com a imagem-mãe nas cenas seguintes', async () => {
+  it("usa edição com a imagem-mãe nas cenas seguintes", async () => {
     queued.post.mockResolvedValueOnce({
       data: {
-        data: [{ b64_json: pngImageFixture('next-scene').toString('base64') }],
+        data: [{ b64_json: pngImageFixture("next-scene").toString("base64") }],
       },
     });
 
     const result = await service.generateImage(
-      'Cena seguinte',
-      'LANDSCAPE',
-      'STORY_SEQUENCE',
+      "Cena seguinte",
+      "LANDSCAPE",
+      "STORY_SEQUENCE",
       {
-        data: Buffer.from('identity-reference'),
-        mimeType: 'image/png',
+        data: Buffer.from("identity-reference"),
+        mimeType: "image/png",
       },
     );
 
-    expect(result.equals(pngImageFixture('next-scene'))).toBe(true);
+    expect(result.equals(pngImageFixture("next-scene"))).toBe(true);
     const call = queued.post.mock.lastCall;
-    expect(call?.[0]).toBe('https://api.openai.com/v1/images/edits');
+    expect(call?.[0]).toBe("https://api.openai.com/v1/images/edits");
     expect(call?.[1]).toBeInstanceOf(FormData);
     const form = call?.[1] as FormData;
-    expect(form.get('prompt')).toContain('Cena seguinte');
-    expect(form.get('image[]')).toBeInstanceOf(Blob);
+    expect(form.get("prompt")).toContain("Cena seguinte");
+    expect(form.get("image[]")).toBeInstanceOf(Blob);
   });
 
-  it('anexa todas as imagens de referência de uma substituição', async () => {
+  it("anexa todas as imagens de referência de uma substituição", async () => {
     queued.post.mockResolvedValueOnce({
       data: {
-        data: [{ b64_json: pngImageFixture('replacement').toString('base64') }],
+        data: [{ b64_json: pngImageFixture("replacement").toString("base64") }],
       },
     });
 
-    await service.generateImage('Imagem refeita', 'LANDSCAPE', 'CUTOUT_KIT', {
-      data: Buffer.from('identity-reference'),
-      mimeType: 'image/png',
+    await service.generateImage("Imagem refeita", "LANDSCAPE", "CUTOUT_KIT", {
+      data: Buffer.from("identity-reference"),
+      mimeType: "image/png",
       companions: [
-        { data: Buffer.from('neighbour-a'), mimeType: 'image/png' },
-        { data: Buffer.from('neighbour-b'), mimeType: 'image/jpeg' },
+        { data: Buffer.from("neighbour-a"), mimeType: "image/png" },
+        { data: Buffer.from("neighbour-b"), mimeType: "image/jpeg" },
       ],
     });
 
     const form = queued.post.mock.lastCall?.[1] as FormData;
-    const files = form.getAll('image[]') as File[];
+    const files = form.getAll("image[]") as File[];
     expect(files).toHaveLength(3);
     expect(files.map((file) => file.type)).toEqual([
-      'image/png',
-      'image/png',
-      'image/jpeg',
+      "image/png",
+      "image/png",
+      "image/jpeg",
     ]);
   });
 
@@ -293,7 +296,7 @@ describe('OpenAiLessonService image identity', () => {
       {
         get: <T>(key: string): T | undefined =>
           ({
-            OPENAI_API_KEY: 'test-key',
+            OPENAI_API_KEY: "test-key",
             OPENAI_TEXT_MODEL: model,
             OPENAI_REASONING_EFFORT: effort,
           })[key] as T | undefined,
@@ -301,91 +304,91 @@ describe('OpenAiLessonService image identity', () => {
       queued.service,
     );
   const lessonInput = {
-    theme: 'Jesus vive',
-    biblicalReference: 'João 11',
+    theme: "Jesus vive",
+    biblicalReference: "João 11",
     weekNumber: 14,
     stage: LessonStageType.LESSON,
     template: LESSON_TEMPLATES[LessonStageType.LESSON],
     approvedUpstream: null,
-    adminPrompt: '',
+    adminPrompt: "",
   };
 
-  it('detects refusal blocks instead of reporting an empty answer', async () => {
+  it("detects refusal blocks instead of reporting an empty answer", async () => {
     queued.post.mockResolvedValue({
       data: {
-        id: 'refused',
-        output: [{ content: [{ type: 'refusal', refusal: 'I cannot help.' }] }],
+        id: "refused",
+        output: [{ content: [{ type: "refusal", refusal: "I cannot help." }] }],
       },
     });
     await expect(
-      textService('gpt-4o').generateStage(lessonInput),
+      textService("gpt-4o").generateStage(lessonInput),
     ).rejects.toThrow('"code":"content_blocked"');
   });
 
-  it('classifies timeouts and never forwards them as an unknown failure', async () => {
+  it("classifies timeouts and never forwards them as an unknown failure", async () => {
     queued.post.mockRejectedValue(
-      new AxiosError('timeout of 120000ms exceeded', 'ECONNABORTED'),
+      new AxiosError("timeout of 120000ms exceeded", "ECONNABORTED"),
     );
     await expect(
-      textService('gpt-4o').generateStage(lessonInput),
+      textService("gpt-4o").generateStage(lessonInput),
     ).rejects.toThrow('"code":"deadline_exceeded"');
   });
 
-  it('omits the `none` effort for o-series and bounds output only without reasoning', async () => {
+  it("omits the `none` effort for o-series and bounds output only without reasoning", async () => {
     queued.post.mockResolvedValue({
       data: {
-        id: 'ok',
-        output_text: '{}',
+        id: "ok",
+        output_text: "{}",
         usage: { input_tokens: 10, output_tokens: 5, total_tokens: 15 },
       },
     });
     await expect(
-      textService('o3-mini', 'none').generateStage(lessonInput),
+      textService("o3-mini", "none").generateStage(lessonInput),
     ).resolves.toMatchObject({
-      usage: { model: 'o3-mini', inputTokens: 10, outputTokens: 5 },
+      usage: { model: "o3-mini", inputTokens: 10, outputTokens: 5 },
     });
     const reasoning = queued.post.mock.lastCall?.[1] as Record<string, unknown>;
-    expect(reasoning).not.toHaveProperty('reasoning');
-    expect(reasoning).not.toHaveProperty('max_output_tokens');
+    expect(reasoning).not.toHaveProperty("reasoning");
+    expect(reasoning).not.toHaveProperty("max_output_tokens");
 
-    await textService('gpt-4o').generateStage(lessonInput);
+    await textService("gpt-4o").generateStage(lessonInput);
     expect(queued.post.mock.lastCall?.[1]).toMatchObject({
       max_output_tokens: 12000,
     });
   });
 
-  it('retries a rate limit on every stage and rejects bytes that are not an image', async () => {
+  it("retries a rate limit on every stage and rejects bytes that are not an image", async () => {
     jest.useFakeTimers();
     try {
       queued.post
         .mockRejectedValueOnce(
-          Object.assign(new AxiosError('rate limited'), {
+          Object.assign(new AxiosError("rate limited"), {
             response: {
               status: 429,
-              headers: { 'retry-after': '1' },
-              data: { error: { code: 'rate_limit_exceeded' } },
+              headers: { "retry-after": "1" },
+              data: { error: { code: "rate_limit_exceeded" } },
             },
           }),
         )
-        .mockResolvedValueOnce({ data: { id: 'ok', output_text: '{}' } });
-      const pending = textService('gpt-4o').generateStage(lessonInput);
+        .mockResolvedValueOnce({ data: { id: "ok", output_text: "{}" } });
+      const pending = textService("gpt-4o").generateStage(lessonInput);
       await jest.runAllTimersAsync();
-      await expect(pending).resolves.toMatchObject({ responseId: 'ok' });
+      await expect(pending).resolves.toMatchObject({ responseId: "ok" });
       expect(queued.post.mock.calls).toHaveLength(2);
     } finally {
       jest.useRealTimers();
     }
     queued.post.mockResolvedValue({
       data: {
-        data: [{ b64_json: Buffer.from('not an image').toString('base64') }],
+        data: [{ b64_json: Buffer.from("not an image").toString("base64") }],
       },
     });
-    await expect(service.generateImage('Desenho')).rejects.toThrow(
-      'não é uma imagem PNG ou JPEG válida',
+    await expect(service.generateImage("Desenho")).rejects.toThrow(
+      "não é uma imagem PNG ou JPEG válida",
     );
   });
 
-  it('both fun games are one-page documents with a single compiled image', () => {
+  it("both fun games are one-page documents with a single compiled image", () => {
     for (const stage of [
       LessonStageType.STANDARD_GAME,
       LessonStageType.VERSE_FIXATION,
@@ -403,12 +406,12 @@ describe('OpenAiLessonService image identity', () => {
       expect(schema.properties.steps.maxItems).toBe(6);
       expect(schema.properties.assets.maxItems).toBe(1);
       expect(schema.properties.assets.items.properties.id.enum).toEqual([
-        'compilado-01',
+        "compilado-01",
       ]);
     }
   });
 
-  it('pede uma única imagem de compilado para a brincadeira divertida', () => {
+  it("pede uma única imagem de compilado para a brincadeira divertida", () => {
     const schema = schemaFor(LessonStageType.STANDARD_GAME) as {
       properties: {
         assets: {
@@ -421,23 +424,45 @@ describe('OpenAiLessonService image identity', () => {
     expect(schema.properties.assets.minItems).toBe(1);
     expect(schema.properties.assets.maxItems).toBe(1);
     expect(schema.properties.assets.items.properties.id.enum).toEqual([
-      'compilado-01',
+      "compilado-01",
     ]);
   });
-  it('pede a mensagem central e a justificativa do versículo antes do propósito e do versículo', () => {
+  it.each([
+    [LessonCategory.BABY, 3, 4, 2, 3],
+    [LessonCategory.CHILD, 6, 8, 3, 6],
+    [LessonCategory.TEEN, 6, 8, 3, 4],
+    [LessonCategory.ADULT, 6, 8, 3, 3],
+  ])(
+    "o contrato da lição de %s ajusta perguntas e materiais ao público",
+    (category, qMin, qMax, mMin, mMax) => {
+      const schema = schemaFor(LessonStageType.LESSON, false, category) as {
+        properties: Record<string, { minItems?: number; maxItems?: number }>;
+      };
+      expect(schema.properties.reviewQuestions).toMatchObject({
+        minItems: qMin,
+        maxItems: qMax,
+      });
+      expect(schema.properties.supportMaterials).toMatchObject({
+        minItems: mMin,
+        maxItems: mMax,
+      });
+    },
+  );
+
+  it("pede a mensagem central e a justificativa do versículo antes das seções que elas orientam", () => {
     const schema = schemaFor(LessonStageType.LESSON) as {
       required: string[];
       properties: Record<string, unknown>;
     };
     const order = Object.keys(schema.properties);
     expect(schema.required).toEqual(
-      expect.arrayContaining(['centralMessage', 'verseChoice']),
+      expect.arrayContaining(["centralMessage", "verseChoice"]),
     );
-    expect(order.indexOf('centralMessage')).toBeLessThan(
-      order.indexOf('purpose'),
+    expect(order.indexOf("centralMessage")).toBeLessThan(
+      order.indexOf("characters"),
     );
-    expect(order.indexOf('verseChoice')).toBeLessThan(
-      order.indexOf('memoryVerse'),
+    expect(order.indexOf("verseChoice")).toBeLessThan(
+      order.indexOf("memoryVerse"),
     );
   });
 });

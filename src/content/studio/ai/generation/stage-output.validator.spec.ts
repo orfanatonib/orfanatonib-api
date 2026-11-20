@@ -27,7 +27,7 @@ describe("validateStageOutput", () => {
     },
   );
 
-  it("bebê: lição curta e sem perguntas; adulto: estudo longo com perguntas", () => {
+  it("bebê: lição curta e sem perguntas; adulto: estudo longo com mais perguntas", () => {
     const baby = fakeStageContent(
       ContentStageType.LESSON,
       ContentAudience.BABY,
@@ -39,17 +39,17 @@ describe("validateStageOutput", () => {
       "T",
     ) as { story: Array<{ body: string }>; reviewQuestions: unknown[] };
     expect(baby.reviewQuestions).toHaveLength(0);
-    expect(adult.reviewQuestions.length).toBeGreaterThanOrEqual(5);
+    expect(adult.reviewQuestions.length).toBeGreaterThanOrEqual(6);
     const total = (c: { story: Array<{ body: string }> }) =>
       c.story.reduce((n, b) => n + b.body.split(" ").length, 0);
-    expect(total(adult)).toBeGreaterThan(total(baby) * 4);
+    expect(total(adult)).toBeGreaterThan(total(baby) * 2);
   });
 
   it("uma lição de adulto curta demais (do tamanho de bebê) é recusada", () => {
     const content = clone(
       fakeStageContent(ContentStageType.LESSON, ContentAudience.ADULT, "T"),
     ) as { story: Array<{ body: string }> };
-    content.story = [{ body: "texto curto demais para adultos." }];
+    content.story = [{ heading: "x", body: "texto curto demais." } as never];
     expect(() =>
       validateStageOutput(
         ContentStageType.LESSON,
@@ -59,11 +59,57 @@ describe("validateStageOutput", () => {
     ).toThrow(StageOutputError);
   });
 
-  it("bebê com perguntas de revisão é recusado; criança sem perguntas também", () => {
+  it("a lição exige as marcações de ação do condutor do público", () => {
+    const content = clone(
+      fakeStageContent(ContentStageType.LESSON, ContentAudience.TEEN, "T"),
+    ) as { icebreaker: string; story: Array<{ body: string }> };
+    content.icebreaker = "Sem marcação.";
+    content.story = content.story.map((block) => ({
+      ...block,
+      body: block.body.replace(/\(Ação do Líder:[^)]*\)/g, ""),
+    }));
+    expect(() =>
+      validateStageOutput(
+        ContentStageType.LESSON,
+        ContentAudience.TEEN,
+        content,
+      ),
+    ).toThrow(/Ação do Líder/);
+  });
+
+  it("a lição exige a quantidade de materiais do público e duas opções de versículo", () => {
+    const adult = clone(
+      fakeStageContent(ContentStageType.LESSON, ContentAudience.ADULT, "T"),
+    ) as { supportMaterials: string[]; verseOptions: string[] };
+    adult.supportMaterials = ["Um — representa x."];
+    expect(() =>
+      validateStageOutput(
+        ContentStageType.LESSON,
+        ContentAudience.ADULT,
+        adult,
+      ),
+    ).toThrow(/supportMaterials/);
+    const child = clone(
+      fakeStageContent(ContentStageType.LESSON, ContentAudience.CHILD, "T"),
+    ) as { verseOptions: string[] };
+    child.verseOptions = ["só uma"];
+    expect(() =>
+      validateStageOutput(
+        ContentStageType.LESSON,
+        ContentAudience.CHILD,
+        child,
+      ),
+    ).toThrow(/verseOptions/);
+  });
+
+  it("bebê com mais perguntas do que o limite é recusado; criança sem perguntas também", () => {
     const baby = clone(
       fakeStageContent(ContentStageType.LESSON, ContentAudience.BABY, "T"),
     ) as { reviewQuestions: unknown[] };
-    baby.reviewQuestions = [{ question: "q?", answer: "a" }];
+    baby.reviewQuestions = Array.from({ length: 9 }, () => ({
+      question: "q?",
+      answer: "a",
+    }));
     expect(() =>
       validateStageOutput(ContentStageType.LESSON, ContentAudience.BABY, baby),
     ).toThrow(/reviewQuestions/);
@@ -109,24 +155,152 @@ describe("validateStageOutput", () => {
       },
       /materials/,
     ],
-  ])("atividade: %s", (_n, mutate, expected) => {
+    [
+      "adaptações diferentes de duas",
+      (c: Record<string, unknown>) => {
+        c.ageAdaptations = ["só uma"];
+      },
+      /ageAdaptations/,
+    ],
+    [
+      "duração fora da faixa do público",
+      (c: Record<string, unknown>) => {
+        c.durationMinutes = 90;
+      },
+      /durationMinutes/,
+    ],
+  ])("brincadeira: %s", (_n, mutate, expected) => {
     const c = clone(
-      fakeStageContent(ContentStageType.ACTIVITY, ContentAudience.CHILD, "T"),
+      fakeStageContent(
+        ContentStageType.STANDARD_GAME,
+        ContentAudience.CHILD,
+        "T",
+      ),
     );
     mutate(c);
     expect(() =>
-      validateStageOutput(ContentStageType.ACTIVITY, ContentAudience.CHILD, c),
+      validateStageOutput(
+        ContentStageType.STANDARD_GAME,
+        ContentAudience.CHILD,
+        c,
+      ),
     ).toThrow(expected);
   });
 
-  it("apoios visuais exigem ids sequenciais visual-01…", () => {
+  it("os visuais da lição exigem ids sequenciais visual-01…", () => {
     const c = clone(
-      fakeStageContent(ContentStageType.VISUAL, ContentAudience.CHILD, "T"),
+      fakeStageContent(
+        ContentStageType.LESSON_VISUALS,
+        ContentAudience.CHILD,
+        "T",
+      ),
     ) as { items: Array<{ id: string }> };
     c.items[1].id = "visual-09";
     expect(() =>
-      validateStageOutput(ContentStageType.VISUAL, ContentAudience.CHILD, c),
+      validateStageOutput(
+        ContentStageType.LESSON_VISUALS,
+        ContentAudience.CHILD,
+        c,
+      ),
     ).toThrow(/visual-02/);
+  });
+
+  describe("versículo (fonte fechada da lição aprovada)", () => {
+    const approved = {
+      text: "Porque Deus tanto amou o mundo.",
+      reference: "João 3.16",
+    };
+
+    it("cartões que reconstroem o versículo e referência isolada passam", () => {
+      expect(() =>
+        validateStageOutput(
+          ContentStageType.VERSE_VISUALS,
+          ContentAudience.TEEN,
+          fakeStageContent(
+            ContentStageType.VERSE_VISUALS,
+            ContentAudience.TEEN,
+            "T",
+          ),
+          approved,
+        ),
+      ).not.toThrow();
+    });
+
+    it("recusa cartões que omitem palavras", () => {
+      const c = clone(
+        fakeStageContent(
+          ContentStageType.VERSE_VISUALS,
+          ContentAudience.TEEN,
+          "T",
+        ),
+      ) as { cards: Array<{ text: string }> };
+      c.cards[1].text = "amou.";
+      expect(() =>
+        validateStageOutput(
+          ContentStageType.VERSE_VISUALS,
+          ContentAudience.TEEN,
+          c,
+          approved,
+        ),
+      ).toThrow(/não reconstroem/);
+    });
+
+    it("recusa referência misturada ao texto no cartão final", () => {
+      const c = clone(
+        fakeStageContent(
+          ContentStageType.VERSE_VISUALS,
+          ContentAudience.TEEN,
+          "T",
+        ),
+      ) as { referenceCard: { text: string } };
+      c.referenceCard.text = "Porque Deus tanto amou o mundo. João 3.16";
+      expect(() =>
+        validateStageOutput(
+          ContentStageType.VERSE_VISUALS,
+          ContentAudience.TEEN,
+          c,
+          approved,
+        ),
+      ).toThrow(/referenceCard/);
+    });
+
+    it("recusa versículo diferente do aprovado na lição (visuais e fixação)", () => {
+      const other = {
+        text: "O Senhor é o meu pastor.",
+        reference: "Salmos 23.1",
+      };
+      for (const stage of [
+        ContentStageType.VERSE_VISUALS,
+        ContentStageType.VERSE_FIXATION,
+      ])
+        expect(() =>
+          validateStageOutput(
+            stage,
+            ContentAudience.CHILD,
+            fakeStageContent(stage, ContentAudience.CHILD, "T"),
+            other,
+          ),
+        ).toThrow(/difere do versículo aprovado/);
+    });
+
+    it("a fixação exige a avaliação", () => {
+      const c = clone(
+        fakeStageContent(
+          ContentStageType.VERSE_FIXATION,
+          ContentAudience.ADULT,
+          "T",
+        ),
+      ) as { evaluation: string };
+      c.evaluation = "";
+      expect(() =>
+        validateStageOutput(
+          ContentStageType.VERSE_FIXATION,
+          ContentAudience.ADULT,
+          c,
+          approved,
+        ),
+      ).toThrow(/evaluation/);
+    });
   });
 
   it("higieniza Markdown e marcadores de imagem, sem mexer no texto", () => {
@@ -136,16 +310,16 @@ describe("validateStageOutput", () => {
       ),
     ).toBe("Importante e forte\nTítulo\ntexto  fim");
     const c = clone(
-      fakeStageContent(ContentStageType.DISCUSSION, ContentAudience.TEEN, "T"),
-    ) as { introduction: string };
-    c.introduction = "**Bem-vindos**";
+      fakeStageContent(ContentStageType.LESSON, ContentAudience.TEEN, "T"),
+    ) as { icebreaker: string };
+    c.icebreaker = `**Bem-vindos** (Ação do Líder: mostre a pedra.)`;
     const { content } = validateStageOutput(
-      ContentStageType.DISCUSSION,
+      ContentStageType.LESSON,
       ContentAudience.TEEN,
       c,
     );
-    expect((content as { introduction: string }).introduction).toBe(
-      "Bem-vindos",
+    expect((content as { icebreaker: string }).icebreaker).toContain(
+      "Bem-vindos (Ação do Líder",
     );
   });
 });

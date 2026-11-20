@@ -1,3 +1,11 @@
+import { AiGenerationCapability } from "../ai/enums/ai-generation-capability.enum";
+import type {
+  ImageJobProgress,
+  RequestContentStageImagesInput,
+  StageImageContext,
+} from "../types";
+import type { VisualConfig } from "../dto/visual-config.dto";
+import { assertVisualConfig } from "./content-visual-config.helpers";
 import { Injectable } from "@nestjs/common";
 import { DataSource, In } from "typeorm";
 
@@ -82,6 +90,7 @@ export class ContentGenerationRepository {
       }
 
       assertDependenciesReady(stage, trackStages);
+      assertVisualConfig(stage.stageType, stage.track.audience, input);
 
       if (
         !canTransitionContentStage(stage.status, ContentStageStatus.GENERATING)
@@ -104,6 +113,7 @@ export class ContentGenerationRepository {
             capability: input.capability,
             theme: contentPackage.theme,
             revisionInstructions: input.revisionInstructions ?? null,
+            visualConfig: input.visualConfig ?? null,
           },
           configurationSnapshot: {
             catalogVersion: CONTENT_STUDIO_CATALOG_VERSION,
@@ -172,6 +182,7 @@ export class ContentGenerationRepository {
 
     let revisionInstructions: string | null = null;
     let adminPrompt: string | null = null;
+    let visualConfig: VisualConfig | null = null;
     if (jobId) {
       const job = await this.dataSource
         .getRepository(ContentGenerationJobEntity)
@@ -180,6 +191,9 @@ export class ContentGenerationRepository {
         job?.normalizedRequest as { revisionInstructions?: unknown } | undefined
       )?.revisionInstructions;
       revisionInstructions = typeof raw === "string" && raw.trim() ? raw : null;
+      visualConfig =
+        ((job?.normalizedRequest as { visualConfig?: VisualConfig | null })
+          ?.visualConfig as VisualConfig | null | undefined) ?? null;
       // Orientação pessoal de quem pediu a geração, para este público e esta etapa.
       if (job?.requestedById) {
         const preference = await this.dataSource
@@ -201,6 +215,7 @@ export class ContentGenerationRepository {
     return {
       revisionInstructions,
       adminPrompt,
+      visualConfig,
       stageType: stage.stageType,
       audience: stage.track.audience,
       theme: pkg.theme,
@@ -258,6 +273,7 @@ export class ContentGenerationRepository {
           job.leaseExpiresAt < now);
       if (!runnable) return null;
 
+      const previousError = job.errorMessage;
       job.status = ContentGenerationJobStatus.RUNNING;
       job.attempts += 1;
       job.workerId = workerId;
@@ -279,6 +295,8 @@ export class ContentGenerationRepository {
         capability: job.capability,
         requestedById: job.requestedById,
         attempts: job.attempts,
+        previousError: job.attempts > 1 ? previousError : null,
+        request: job.normalizedRequest,
       };
     });
   }
@@ -304,7 +322,7 @@ export class ContentGenerationRepository {
       if (input.retry && input.availableAt) job.availableAt = input.availableAt;
       await jobRepo.save(job);
 
-      if (!input.retry) {
+      if (!input.retry && !input.keepStage) {
         const stageRepo = manager.getRepository(ContentStageEntity);
         const stage = await stageRepo.findOne({ where: { id: job.stageId } });
         if (
@@ -316,6 +334,149 @@ export class ContentGenerationRepository {
         }
       }
     });
+  }
+
+  /**
+   * Cria o job de IMAGENS da versão atual da etapa. Não mexe no estado da etapa (o texto já existe): só impede
+   * duas gerações ao mesmo tempo na mesma etapa.
+   */
+  async requestStageImages(
+    input: RequestContentStageImagesInput,
+  ): Promise<ContentGenerationJobEntity> {
+    return this.dataSource.transaction(async (manager) => {
+      const jobRepo = manager.getRepository(ContentGenerationJobEntity);
+      const { contentPackage, stage } = await findStageContextOrFail(
+        manager,
+        input.packageId,
+        input.stageId,
+      );
+      assertPackageCanProduce(contentPackage);
+      const existing = await jobRepo.findOne({
+        where: { idempotencyKey: input.idempotencyKey },
+      });
+      if (existing) return existing;
+      const active = await jobRepo.findOne({
+        where: {
+          stageId: input.stageId,
+          status: In([...ACTIVE_CONTENT_GENERATION_JOB_STATUSES]),
+        },
+      });
+      if (active)
+        throw new ResourceConflictException(
+          "Já existe geração ativa para esta etapa",
+          { jobId: active.id, status: active.status },
+        );
+      if (stage.currentVersionId !== input.versionId)
+        throw new ResourceConflictException(
+          "A versão da etapa mudou; atualize a página e tente de novo",
+        );
+      return jobRepo.save(
+        jobRepo.create({
+          stageId: stage.id,
+          idempotencyKey: input.idempotencyKey,
+          capability: AiGenerationCapability.IMAGE_GENERATION,
+          status: ContentGenerationJobStatus.PENDING,
+          normalizedRequest: {
+            packageId: contentPackage.id,
+            stageId: stage.id,
+            stageType: stage.stageType,
+            capability: AiGenerationCapability.IMAGE_GENERATION,
+            theme: contentPackage.theme,
+            versionId: input.versionId,
+            slots: input.slots ?? null,
+            instructions: input.instructions ?? null,
+          },
+          configurationSnapshot: {
+            catalogVersion: CONTENT_STUDIO_CATALOG_VERSION,
+            provider: null,
+            model: null,
+            policyVersion: CONTENT_STUDIO_CATALOG_VERSION,
+          },
+          progress: null,
+          attempts: 0,
+          availableAt: new Date(),
+          requestedById: input.requestedById,
+        }),
+      );
+    });
+  }
+
+  /** Conteúdo da versão para o worker de imagens (a versão pedida, não necessariamente a atual). */
+  async loadStageImageContext(
+    stageId: string,
+    versionId: string,
+  ): Promise<StageImageContext | null> {
+    const stage = await this.dataSource
+      .getRepository(ContentStageEntity)
+      .findOne({ where: { id: stageId }, relations: { track: true } });
+    if (!stage?.track) return null;
+    const version = await this.dataSource
+      .getRepository(ContentVersionEntity)
+      .findOne({ where: { id: versionId, stageId } });
+    if (!version) return null;
+    return {
+      packageId: stage.track.packageId,
+      stageId,
+      stageType: stage.stageType,
+      audience: stage.track.audience,
+      versionId,
+      content: version.structuredContent,
+    };
+  }
+
+  async currentVersionIdOf(stageId: string): Promise<string | null> {
+    const stage = await this.dataSource
+      .getRepository(ContentStageEntity)
+      .findOne({ where: { id: stageId } });
+    return stage?.currentVersionId ?? null;
+  }
+
+  /** Andamento das imagens (aparece na tela por SSE) e renovação do lease: o worker está vivo. */
+  async updateJobProgress(
+    jobId: string,
+    progress: ImageJobProgress,
+    leaseMs: number,
+    now: Date = new Date(),
+  ): Promise<void> {
+    await this.dataSource
+      .createQueryBuilder()
+      .update(ContentGenerationJobEntity)
+      .set({
+        progress: () => "CAST(:progress AS JSON)",
+        heartbeatAt: now,
+        leaseExpiresAt: new Date(now.getTime() + leaseMs),
+      })
+      .setParameter("progress", JSON.stringify(progress))
+      .where("id = :jobId AND status = :running", {
+        jobId,
+        running: ContentGenerationJobStatus.RUNNING,
+      })
+      .execute();
+  }
+
+  /** Conclui um job de imagens (não há versão nova a gravar). */
+  async markJobSucceeded(
+    jobId: string,
+    progress: ImageJobProgress,
+  ): Promise<void> {
+    await this.dataSource
+      .createQueryBuilder()
+      .update(ContentGenerationJobEntity)
+      .set({
+        status: ContentGenerationJobStatus.SUCCEEDED,
+        progress: () => "CAST(:progress AS JSON)",
+        workerId: null,
+        leaseExpiresAt: null,
+        heartbeatAt: null,
+        errorCode: null,
+        errorMessage: null,
+      })
+      .setParameter("progress", JSON.stringify(progress))
+      .where("id = :jobId AND status = :running", {
+        jobId,
+        running: ContentGenerationJobStatus.RUNNING,
+      })
+      .execute();
   }
 
   /** Última geração pedida para a etapa (qualquer estado), para o front acompanhar o andamento. */

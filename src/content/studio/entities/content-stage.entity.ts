@@ -18,6 +18,8 @@ import { ContentTrackEntity } from "./content-track.entity";
 import { ContentVersionEntity } from "./content-version.entity";
 
 @Entity("content_stages")
+// Índice próprio da FK: o único composto (trackId, stageType) precisa ser recriado quando o enum muda.
+@Index(["trackId"])
 @Index(["trackId", "stageType"], { unique: true })
 @Index(["status", "updatedAt"])
 export class ContentStageEntity extends BaseEntity {
