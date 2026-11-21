@@ -574,3 +574,8 @@ Para reportar problemas:
 ## Atualização — limitação de taxa (opt-in)
 
 Reativada **como opt-in**: `RATE_LIMIT_ENABLED=true` aplica o middleware a todas as rotas (o `/health` é ignorado). Os limites antigos (auth 5, escrita 50, upload 10 por janela) derrubavam o uso normal e eram a causa provável do desligamento; os novos padrões por IP são **auth 30 / 15 min, escrita 300 / 5 min, upload 60 / h, geral 1000 / 15 min**, ajustáveis por `RATE_LIMIT_AUTH_MAX`, `RATE_LIMIT_WRITE_MAX`, `RATE_LIMIT_UPLOAD_MAX` e `RATE_LIMIT_GENERAL_MAX`. Atrás de proxy/balanceador defina `TRUST_PROXY_HOPS` (nº de saltos confiáveis), senão todos os usuários compartilham o IP do proxy. Excedido o limite, a resposta é `429` no contrato de erro padrão. Verificado ao vivo: com `RATE_LIMIT_AUTH_MAX=3`, a 4ª tentativa de login recebe 429 e as demais rotas seguem normais.
+
+
+## Código do erro exibido ao usuário (front)
+
+O app mostra ao usuário `Código do erro: <requestId>` no aviso do erro e em "Detalhes técnicos"; o valor é o `requestId` do corpo, igual ao cabeçalho `X-Request-Id`, e é o que o suporte usa para achar o log. Coberto por `orfanatonib-app/e2e/live/http-errors/http-errors.ui.spec.ts` (404 real, sem mock).
