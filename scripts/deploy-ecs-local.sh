@@ -5,7 +5,8 @@
 # ==============================================================================
 # Fluxo:
 #   1. Build da imagem linux/arm64
-#   2. Push para ECR prod-orfanato-nib-api:latest
+#   2. Push para ECR prod-orfanato-nib-api com DUAS tags: o SHA curto do git (rastreio/rollback)
+#      e `latest` (a EC2 puxa `latest`; contrato da stack, nao mudar)
 #   3. Pull da imagem na EC2 e recriacao do container orfanato-nib-api
 #
 # Este script NAO gerencia config/env. Ele assume que a EC2 ja tem:
@@ -77,8 +78,15 @@ if [ -z "$REPO_URI" ] || [ "$REPO_URI" = "None" ]; then
     exit 1
 fi
 
+GIT_SHA="$(git -C "$PROJECT_ROOT" rev-parse --short HEAD)"
+if [ -z "$GIT_SHA" ]; then
+    echo -e "${RED}Erro: nao foi possivel obter o SHA do git (git rev-parse --short HEAD).${NC}"
+    exit 1
+fi
+SHA_IMAGE_URI="${REPO_URI}:${GIT_SHA}"
 IMAGE_URI="${REPO_URI}:latest"
-echo -e "   -> ${GREEN}${IMAGE_URI}${NC}"
+echo -e "   -> ${GREEN}${SHA_IMAGE_URI}${NC}"
+echo -e "   -> ${GREEN}${IMAGE_URI}${NC} (a EC2 puxa esta)"
 
 echo -e "${YELLOW}2. Autenticando Docker no ECR...${NC}"
 aws ecr get-login-password --region "$AWS_REGION" --profile "$AWS_PROFILE" | \
@@ -89,6 +97,7 @@ cd "$PROJECT_ROOT"
 docker buildx build \
     --platform "$DOCKER_PLATFORM" \
     -f Dockerfile \
+    -t "$SHA_IMAGE_URI" \
     -t "$IMAGE_URI" \
     --push \
     .

@@ -37,13 +37,6 @@ export class ProfileWriteRepository {
     });
   }
 
-  deleteSections(userId: string): Promise<void> {
-    return this.dataSource.transaction(async (manager) => {
-      await manager.delete(PersonalData, { userId });
-      await manager.delete(UserPreferences, { userId });
-    });
-  }
-
   private async upsertPersonalData(
     manager: EntityManager,
     userId: string,

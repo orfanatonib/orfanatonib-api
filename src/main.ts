@@ -44,15 +44,6 @@ async function bootstrap() {
 
     // Filtro e interceptor globais são providers do AppModule (APP_FILTER/APP_INTERCEPTOR).
     // Encerramento gracioso pelos hooks do Nest (SIGINT/SIGTERM fecham o app).
-    // Atrás de proxy/balanceador: confia só no número de saltos informado (IP real do cliente).
-    const proxyHops = Number(process.env.TRUST_PROXY_HOPS);
-    if (Number.isInteger(proxyHops) && proxyHops > 0) {
-      (
-        app.getHttpAdapter().getInstance() as {
-          set: (k: string, v: number) => void;
-        }
-      ).set("trust proxy", proxyHops);
-    }
     app.enableShutdownHooks();
 
     app.useGlobalPipes(

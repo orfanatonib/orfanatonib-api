@@ -19,6 +19,11 @@ export class ContactRepository extends Repository<ContactEntity> {
     });
   }
 
+  /** Mensagens que o admin ainda não marcou como lidas. */
+  async countUnread(): Promise<number> {
+    return this.countBy({ read: false });
+  }
+
   async findOneById(id: string): Promise<ContactEntity | null> {
     return this.findOne({
       where: { id },

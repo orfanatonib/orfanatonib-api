@@ -18,6 +18,11 @@ export class SiteFeedbackRepository extends Repository<SiteFeedbackEntity> {
     return this.find({ order: { createdAt: "DESC" } });
   }
 
+  /** Feedbacks que o admin ainda não marcou como lidos. */
+  async countUnread(): Promise<number> {
+    return this.countBy({ read: false });
+  }
+
   async findById(id: string): Promise<SiteFeedbackEntity | null> {
     return this.findOneBy({ id });
   }

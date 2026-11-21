@@ -30,15 +30,14 @@ Flag = `@FeatureFlag` do handler; "só papel" = sem flag (decide apenas o guard)
 | GET | `/users/:id`, `/users/:id/profile` | admin | `user_management` |
 | PUT | `/users/:id` | admin | `user_management` |
 | DELETE | `/users/:id` | admin (404 se não existe) | `user_management` |
-| PATCH | `/users/:id/image` | admin (**sem chamador no front**) | `user_management` |
 | GET / PATCH | `/profile` | qualquer sessão (só o próprio) | só papel |
 | PATCH | `/profile/password`, `/profile/image` | qualquer sessão (só o próprio) | só papel |
 | POST | `/profiles` | qualquer sessão (cria/atualiza o PRÓPRIO) | `user_management` **ou** `member_area` |
 | GET | `/profiles` | admin, líder (líder só enxerga a própria equipe) | `user_management` **ou** `leader_management` |
 | GET | `/profiles/me`, PUT `/profiles/me` | qualquer sessão (só o próprio) | só papel |
-| GET / PUT / DELETE | `/profiles/:id` | admin (DELETE **sem chamador no front**) | `user_management` |
+| GET / PUT | `/profiles/:id` | admin | `user_management` |
 
-Garantias (cobertas por Jest e pela matriz E2E `user-profile`, 199/199):
+Garantias (cobertas por Jest e pela matriz E2E `user-profile`, 177/177):
 - Nenhuma resposta traz `password` nem `refreshToken` (`toSafeUser`).
 - `POST/PUT /profiles*` gravam dados pessoais e preferências numa **única transação** (`ProfileWriteRepository`); a data de nascimento é gravada como o mesmo dia em qualquer fuso do servidor (`parseBirthDate`).
 - `POST /users` desfaz o usuário recém-criado se o perfil de líder/membro não puder ser criado; `DELETE /users/:id` apaga perfis e usuário primeiro e a foto depois (falha na limpeza da foto é registrada, não desfaz a exclusão).
@@ -48,8 +47,8 @@ Garantias (cobertas por Jest e pela matriz E2E `user-profile`, 199/199):
 
 > A seção "Endpoints" antiga (PATCH `/users/:id`, `activate`, `deactivate`) descrevia rotas que não existem; os exemplos abaixo são históricos.
 
-### Decisões pendentes (solicitante)
-- Destino de `PATCH /users/:id/image` e de `DELETE /profiles/:id`: sem chamador no front (remover, documentar consumidor externo ou ligar).
+### Endpoints removidos (decisão do solicitante)
+- `PATCH /users/:id/image` e `DELETE /profiles/:id` foram **removidos** por não terem chamador no front. A foto continua sendo trocada pelo próprio usuário em `PATCH /profile/image`; para apagar dados de perfil de outro usuário, use `PUT /profiles/:id` ou `DELETE /users/:id`.
 
 ### Riscos conhecidos
 - `DELETE /users/:id` remove os perfis de líder/membro antes de apagar o usuário, sem transação entre módulos: uma falha do banco nesse meio deixa o usuário sem o perfil do papel.

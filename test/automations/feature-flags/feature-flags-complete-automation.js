@@ -13,35 +13,30 @@ class FeatureFlagsAutomation extends AutomationBase {
                 name: 'Events Module',
                 description: 'Enable/disable events functionality',
                 enabled: true,
-                environment: 'staging'
             },
             {
                 key: 'content-meditations',
                 name: 'Meditations Module',
                 description: 'Enable/disable meditations functionality',
                 enabled: true,
-                environment: 'staging'
             },
             {
                 key: 'content-documents',
                 name: 'Documents Module',
                 description: 'Enable/disable documents functionality',
                 enabled: true,
-                environment: 'staging'
             },
             {
                 key: 'content-informatives',
                 name: 'Informatives Module',
                 description: 'Enable/disable informative banners',
                 enabled: true,
-                environment: 'staging'
             },
             {
                 key: 'event-email-notifications',
                 name: 'Event Email Notifications',
                 description: 'Enable/disable email notifications for events',
                 enabled: false,
-                environment: 'staging'
             },
 
             {
@@ -49,28 +44,24 @@ class FeatureFlagsAutomation extends AutomationBase {
                 name: 'Video Pages',
                 description: 'Enable/disable video pages functionality',
                 enabled: true,
-                environment: 'staging'
             },
             {
                 key: 'pages-image',
                 name: 'Image Pages',
                 description: 'Enable/disable image galleries',
                 enabled: true,
-                environment: 'staging'
             },
             {
                 key: 'pages-ideas',
                 name: 'Ideas Pages',
                 description: 'Enable/disable ideas pages',
                 enabled: true,
-                environment: 'staging'
             },
             {
                 key: 'pages-visit-material',
                 name: 'Visit Material Pages',
                 description: 'Enable/disable visit material pages',
                 enabled: true,
-                environment: 'staging'
             },
 
             {
@@ -78,21 +69,18 @@ class FeatureFlagsAutomation extends AutomationBase {
                 name: 'Comments System',
                 description: 'Enable/disable user comments',
                 enabled: true,
-                environment: 'staging'
             },
             {
                 key: 'communication-contact',
                 name: 'Contact Form',
                 description: 'Enable/disable contact form',
                 enabled: true,
-                environment: 'staging'
             },
             {
                 key: 'communication-feedback',
                 name: 'Site Feedback',
                 description: 'Enable/disable site feedback system',
                 enabled: true,
-                environment: 'staging'
             },
 
             {
@@ -100,35 +88,30 @@ class FeatureFlagsAutomation extends AutomationBase {
                 name: 'Shelter Management',
                 description: 'Enable/disable shelter management features',
                 enabled: false,
-                environment: 'staging'
             },
             {
                 key: 'shelter-schedules',
                 name: 'Shelter Schedules',
                 description: 'Enable/disable visit and meeting schedules',
                 enabled: true,
-                environment: 'staging'
             },
             {
                 key: 'shelter-teams',
                 name: 'Teams Management',
                 description: 'Enable/disable teams functionality',
                 enabled: true,
-                environment: 'staging'
             },
             {
                 key: 'shelter-pagelas',
                 name: 'Pagelas System',
                 description: 'Enable/disable pagelas (attendance sheets)',
                 enabled: false,
-                environment: 'staging'
             },
             {
                 key: 'shelter-address',
                 name: 'Shelter Address',
                 description: 'Enable/disable shelter address visibility',
                 enabled: false,
-                environment: 'staging'
             },
 
             {
@@ -136,14 +119,12 @@ class FeatureFlagsAutomation extends AutomationBase {
                 name: 'Attendance Tracking',
                 description: 'Enable/disable attendance tracking system',
                 enabled: true,
-                environment: 'staging'
             },
             {
                 key: 'attendance-reports',
                 name: 'Attendance Reports',
                 description: 'Enable/disable attendance reports and statistics',
                 enabled: true,
-                environment: 'staging'
             },
 
             {
@@ -151,14 +132,12 @@ class FeatureFlagsAutomation extends AutomationBase {
                 name: 'Personal Data Management',
                 description: 'Enable/disable personal data editing',
                 enabled: true,
-                environment: 'staging'
             },
             {
                 key: 'profile-preferences',
                 name: 'User Preferences',
                 description: 'Enable/disable user preferences',
                 enabled: true,
-                environment: 'staging'
             },
 
             {
@@ -166,7 +145,6 @@ class FeatureFlagsAutomation extends AutomationBase {
                 name: 'AI Suggestions',
                 description: 'Enable/disable AI-powered content suggestions',
                 enabled: false,
-                environment: 'staging',
                 metadata: {
                     provider: 'openai',
                     model: 'gpt-4'
@@ -177,7 +155,6 @@ class FeatureFlagsAutomation extends AutomationBase {
                 name: 'Advanced Analytics',
                 description: 'Enable/disable advanced analytics dashboard',
                 enabled: false,
-                environment: 'staging',
                 metadata: {
                     provider: 'google-analytics',
                     trackingId: 'GA-XXXXXXX'
@@ -188,7 +165,6 @@ class FeatureFlagsAutomation extends AutomationBase {
                 name: 'Push Notifications',
                 description: 'Enable/disable push notifications',
                 enabled: false,
-                environment: 'staging',
                 metadata: {
                     provider: 'firebase',
                     enabled: false
@@ -255,13 +231,6 @@ class FeatureFlagsAutomation extends AutomationBase {
             Logger.success(`${statsResponse.data.enabled} ligadas e ${statsResponse.data.disabled} desligadas`);
         } else {
             Logger.error('Falha ao obter estatísticas de feature flags');
-        }
-
-        const stagingResponse = await this.client.get('/feature-flags/environment/staging');
-        if (stagingResponse && stagingResponse.status === 200) {
-            Logger.success(`${stagingResponse.data.length} feature flags em staging`);
-        } else {
-            Logger.error('Falha ao listar feature flags de staging');
         }
 
         const checkResponse = await this.client.get('/feature-flags/check/content-events');

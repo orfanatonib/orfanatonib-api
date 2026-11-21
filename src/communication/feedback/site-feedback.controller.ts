@@ -18,6 +18,7 @@ import { GetSiteFeedbackService } from "./services/get-site-feedback.service";
 import { UpdateSiteFeedbackService } from "./services/update-site-feedback.service";
 import { DeleteSiteFeedbackService } from "./services/delete-site-feedback.service";
 import { CreateSiteFeedbackDto } from "./dto/create-site-feedback.dto";
+import { SiteFeedbackPendingCountDto } from "./dto/site-feedback-pending-count.dto";
 import { SiteFeedbackResponseDto } from "./dto/site-feedback-response.dto";
 import { UpdateSiteFeedbackDto } from "./dto/update-site-feedback.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
@@ -58,6 +59,15 @@ export class SiteFeedbackController {
   async findAll(): Promise<SiteFeedbackResponseDto[]> {
     const feedbacks = await this.getFeedbackService.findAll();
     return plainToInstance(SiteFeedbackResponseDto, feedbacks);
+  }
+
+  /** Selo do painel do admin: quantos feedbacks ainda não foram lidos. */
+  @FeatureFlag(FeatureFlagKeys.FEEDBACK_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
+  @Get("pending-count")
+  @UseGuards(JwtAuthGuard, AdminRoleGuard)
+  async pendingCount(): Promise<SiteFeedbackPendingCountDto> {
+    return this.getFeedbackService.pendingCount();
   }
 
   @FeatureFlag(FeatureFlagKeys.FEEDBACK_MANAGEMENT)

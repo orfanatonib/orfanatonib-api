@@ -5,18 +5,12 @@ import {
   Body,
   Param,
   Put,
-  Patch,
   Delete,
   UseGuards,
   Logger,
   Query,
   ParseUUIDPipe,
-  UploadedFiles,
-  UseInterceptors,
 } from "@nestjs/common";
-import { AnyFilesInterceptor } from "@nestjs/platform-express";
-import type { UserImageBody } from "./services/update-user-image.service";
-import { USER_IMAGE_UPLOAD_OPTIONS } from "./constants/user.constants";
 import { CreateUserService } from "./services/create-user.service";
 import { CreateUserDto } from "./dto/create-user.dto";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
@@ -29,7 +23,6 @@ import { GetUsersService } from "./services/get-user.service";
 import { DeleteUserService } from "./services/delete-user.service";
 import { UpdateUserService } from "./services/update-user.service";
 import { UpdateUserDto } from "./dto/update-user.dto";
-import { UpdateUserImageService } from "./services/update-user-image.service";
 import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
@@ -46,7 +39,6 @@ export class UserController {
     private readonly deleteUserService: DeleteUserService,
     private readonly updateUserService: UpdateUserService,
     private readonly getUsersService: GetUsersService,
-    private readonly updateUserImageService: UpdateUserImageService,
   ) {}
 
   @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
@@ -121,29 +113,5 @@ export class UserController {
     await this.deleteUserService.remove(id);
     this.logger.log(`User deleted successfully: ${id}`);
     return { message: "User removed successfully" };
-  }
-
-  @FeatureFlag(FeatureFlagKeys.USER_MANAGEMENT)
-  @UseGuards(FeatureFlagGuard)
-  @Patch(":id/image")
-  @UseGuards(AdminRoleGuard)
-  @UseInterceptors(AnyFilesInterceptor(USER_IMAGE_UPLOAD_OPTIONS))
-  async updateImage(
-    @Param("id", new ParseUUIDPipe()) id: string,
-    @UploadedFiles() files: Express.Multer.File[] = [],
-    @Body("imageData") imageDataRaw?: string,
-    @Body() body?: UserImageBody,
-  ): Promise<SafeUser> {
-    this.logger.log(`Updating user image: ${id}`);
-    const bodyToProcess = imageDataRaw
-      ? { imageData: imageDataRaw }
-      : body || {};
-    const result = await this.updateUserImageService.updateUserImage(
-      id,
-      bodyToProcess,
-      files,
-    );
-    this.logger.log(`User image updated successfully: ${id}`);
-    return toSafeUser(result);
   }
 }

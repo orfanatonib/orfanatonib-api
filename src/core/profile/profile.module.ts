@@ -5,7 +5,6 @@ import { CreateProfileService } from "./services/profile/create-profile.service"
 import { GetAllProfilesService } from "./services/profile/get-all-profiles.service";
 import { GetOneProfileService } from "./services/profile/get-one-profile.service";
 import { UpdateProfileService } from "./services/profile/update-profile.service";
-import { DeleteProfileService } from "./services/profile/delete-profile.service";
 import { UserRepository } from "../user/user.repository";
 import { ProfilesQueryRepository } from "./repositories/profiles-query.repository";
 import { PersonalDataRepository } from "./repositories/personal-data.repository";
@@ -31,7 +30,6 @@ import { AuthModule } from "../auth/auth.module";
     GetAllProfilesService,
     GetOneProfileService,
     UpdateProfileService,
-    DeleteProfileService,
     UserRepository,
     PersonalDataRepository,
     ProfilesQueryRepository,
@@ -43,7 +41,6 @@ import { AuthModule } from "../auth/auth.module";
     GetAllProfilesService,
     GetOneProfileService,
     UpdateProfileService,
-    DeleteProfileService,
     PersonalDataRepository,
     UserPreferencesRepository,
   ],

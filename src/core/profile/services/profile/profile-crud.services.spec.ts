@@ -3,7 +3,6 @@ import { NotFoundException } from "@nestjs/common";
 import { UserRole } from "src/core/auth/auth.types";
 
 import { CreateProfileService } from "./create-profile.service";
-import { DeleteProfileService } from "./delete-profile.service";
 import { GetOneProfileService } from "./get-one-profile.service";
 import { UpdateProfileService } from "./update-profile.service";
 
@@ -30,13 +29,11 @@ function build(
     findByUserId: jest.fn().mockResolvedValue(personal),
     createForUser: jest.fn((_id: string, d: object) => Promise.resolve(d)),
     updateByUserId: jest.fn((_id: string, d: object) => Promise.resolve(d)),
-    deleteByUserId: jest.fn().mockResolvedValue(undefined),
   };
   const prefsRepo = {
     findByUserId: jest.fn().mockResolvedValue(prefs),
     createForUser: jest.fn((_id: string, d: object) => Promise.resolve(d)),
     updateByUserId: jest.fn((_id: string, d: object) => Promise.resolve(d)),
-    deleteByUserId: jest.fn().mockResolvedValue(undefined),
   };
   // Fake sequencial do repositório transacional: reaproveita os mocks por tabela para as asserções.
   const writer = {
@@ -58,10 +55,6 @@ function build(
         return { personalData, preferences };
       },
     ),
-    deleteSections: jest.fn(async (id: string) => {
-      await personalRepo.deleteByUserId(id);
-      await prefsRepo.deleteByUserId(id);
-    }),
   };
   return {
     users,
@@ -75,7 +68,6 @@ function build(
       prefsRepo as never,
       writer as never,
     ),
-    remove: new DeleteProfileService(users as never, writer as never),
     getOne: new GetOneProfileService(
       users as never,
       personalRepo as never,
@@ -84,8 +76,8 @@ function build(
   };
 }
 
-describe("serviços de perfil completo (create/update/get/delete)", () => {
-  it.each(["create", "update", "remove", "getOne"] as const)(
+describe("serviços de perfil completo (create/update/get)", () => {
+  it.each(["create", "update", "getOne"] as const)(
     "%s: usuário inexistente é 404 e nada é gravado",
     async (op) => {
       const ctx = build({ user: null });
@@ -94,13 +86,11 @@ describe("serviços de perfil completo (create/update/get/delete)", () => {
           ctx.create.execute("x", { personalData: { gender: "F" } } as never),
         update: () =>
           ctx.update.execute("x", { personalData: { gender: "F" } } as never),
-        remove: () => ctx.remove.execute("x"),
         getOne: () => ctx.getOne.execute("x"),
       }[op];
       await expect(call()).rejects.toBeInstanceOf(NotFoundException);
       expect(ctx.personalRepo.createForUser).not.toHaveBeenCalled();
       expect(ctx.personalRepo.updateByUserId).not.toHaveBeenCalled();
-      expect(ctx.personalRepo.deleteByUserId).not.toHaveBeenCalled();
     },
   );
 
@@ -168,12 +158,5 @@ describe("serviços de perfil completo (create/update/get/delete)", () => {
     expect(out.preferences).toBeUndefined();
     expect(out).not.toHaveProperty("password");
     expect(out).not.toHaveProperty("refreshToken");
-  });
-
-  it("remove apaga dados pessoais e preferências (o usuário continua)", async () => {
-    const ctx = build();
-    await ctx.remove.execute("u1");
-    expect(ctx.personalRepo.deleteByUserId).toHaveBeenCalledWith("u1");
-    expect(ctx.prefsRepo.deleteByUserId).toHaveBeenCalledWith("u1");
   });
 });

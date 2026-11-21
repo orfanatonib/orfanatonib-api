@@ -227,7 +227,7 @@ This system handles data about vulnerable people and ministry participants. Data
 - Do not trust filenames or client-provided storage keys.
 - Keep secrets in environment configuration; never commit real credentials or place them in documentation and tests.
 - Parameterize database queries and allowlist dynamic sorting/filter fields.
-- Preserve the security headers, CORS policy, global validation, rate limiting, and timeout behavior configured by the application.
+- Preserve the security headers, CORS policy, global validation, and error-handling behavior configured by the application.
 - Avoid including personal data in error details, analytics, or third-party telemetry unless documented requirements demand authorized aggregate reporting.
 - Statistics and exports MUST enforce the same access scope as source-record endpoints.
 

@@ -1426,25 +1426,6 @@
           "response": []
         },
         {
-          "name": "Perfil completo - Apagar dados de perfil (admin)",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/profiles/{{user_id}}",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "profiles",
-                "{{user_id}}"
-              ]
-            },
-            "description": "Apaga dados pessoais e preferências; o usuário continua. Sem chamador no front (decisão pendente)."
-          },
-          "response": []
-        },
-        {
           "name": "Usuários - Lista simples (admin)",
           "request": {
             "method": "GET",
@@ -1499,40 +1480,6 @@
               ]
             },
             "description": ""
-          },
-          "response": []
-        },
-        {
-          "name": "Usuários - Trocar foto de um usuário (admin)",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/users/{{user_id}}/image",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "users",
-                "{{user_id}}",
-                "image"
-              ]
-            },
-            "description": "Sem chamador no front (decisão pendente).",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Link\",\n  \"url\": \"https://example.com/foto.png\",\n  \"uploadType\": \"link\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
           },
           "response": []
         }

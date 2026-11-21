@@ -9,7 +9,6 @@ O **UsersController** gerencia todas as operações CRUD de usuários do sistema
 - ✅ **CRUD Completo** de usuários
 - ✅ **Apenas Admin**: Todos os endpoints requerem `AdminRoleGuard`
 - ✅ **Orquestração Automática** de Member/Leader profiles
-- ✅ **Gerenciamento de Imagens**: Upload e atualização de imagens de perfil
 - ✅ **Controle Total**: Admin pode alterar qualquer campo de qualquer usuário
 - ✅ **Sem Validação de Senha Atual**: Admin pode alterar senhas sem conhecer a senha atual
 
@@ -369,56 +368,6 @@ curl -X DELETE \
 
 ---
 
-### 6. **PATCH /users/:id/image** - Atualizar Imagem de Perfil
-
-Atualiza a imagem de perfil de qualquer usuário. Suporta upload de arquivo ou URL externa.
-
-> 📖 **Documentação completa**: Veja [Users_Image_Endpoint_Documentation.md](./Users_Image_Endpoint_Documentation.md) para detalhes completos.
-
-#### Request
-
-**Método:** `PATCH`  
-**URL:** `/users/:id/image`  
-**Content-Type:** `multipart/form-data` (upload) ou `application/json` (URL)  
-**Authorization:** `Bearer <jwt_token>` (obrigatório - apenas admin)
-
-#### Parâmetros de URL
-
-- `id` (UUID, obrigatório): ID do usuário
-
-#### Opção 1: Upload de Arquivo (Form-Data)
-
-```bash
-curl -X PATCH \
-  'https://api.example.com/users/123e4567-e89b-12d3-a456-426614174000/image' \
-  -H 'Authorization: Bearer seu_token_admin' \
-  -F 'imageData={"title":"Foto do Usuário","description":"Imagem de perfil"}' \
-  -F 'file=@/caminho/para/imagem.jpg'
-```
-
-#### Opção 2: URL Externa (JSON)
-
-```bash
-curl -X PATCH \
-  'https://api.example.com/users/123e4567-e89b-12d3-a456-426614174000/image' \
-  -H 'Authorization: Bearer seu_token_admin' \
-  -H 'Content-Type: application/json' \
-  -d '{
-    "uploadType": "LINK",
-    "url": "https://exemplo.com/imagem.jpg"
-  }'
-```
-
-#### Response 200 OK
-
-Retorna a entidade `UserEntity` atualizada.
-
-#### Validações
-
-- ✅ **Apenas imagens**: No modo upload, apenas arquivos com MIME type `image/*` são aceitos
-
----
-
 ## 📊 Estrutura de Dados
 
 ### UserEntity
@@ -686,7 +635,6 @@ console.log('Total:', meta.total);
 
 - **Profile Endpoints**: Ver [Profile_Controller_Documentation.md](./Profile_Controller_Documentation.md) para endpoints de perfil próprio
 - **Auth Endpoints**: Ver [Auth_Controller_Documentation.md](../auth/Auth_Controller_Documentation.md) para autenticação
-- **Image Endpoint**: Ver [Users_Image_Endpoint_Documentation.md](./Users_Image_Endpoint_Documentation.md) para detalhes completos sobre upload de imagens
 
 ---
 

@@ -4,7 +4,6 @@ import { UserRole } from "src/core/auth/auth.types";
 import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { CreateProfileService } from "src/core/profile/services/profile/create-profile.service";
-import { DeleteProfileService } from "src/core/profile/services/profile/delete-profile.service";
 import { UpdateProfileService } from "src/core/profile/services/profile/update-profile.service";
 import { ProfileWriteRepository } from "src/core/profile/repositories/profile-write.repository";
 import { ChangePasswordService } from "./services/change-password.service";
@@ -74,13 +73,6 @@ describe("Falha de colaborador em usuários e perfis", () => {
       await expect(
         svc.execute("outro", { personalData: { gender: "M" } } as never),
       ).rejects.toBe(boom);
-    });
-
-    it("[user-profile.delete.profiles-id#falha-do-colaborador-sem-efeito-parcial] apagar perfil: falha propaga e o usuário não é tocado", async () => {
-      const w = writer(boom);
-      const svc = new DeleteProfileService(users() as never, w as never);
-      await expect(svc.execute("u1")).rejects.toBe(boom);
-      expect(w.deleteSections).toHaveBeenCalledTimes(1);
     });
 
     it("a gravação roda numa única transação: a 2ª seção falhar derruba a transação inteira (rollback do TypeORM)", async () => {
@@ -291,15 +283,6 @@ describe("Falha de colaborador em usuários e perfis", () => {
       const { svc, storage, batch } = setup(old);
       await expect(
         svc.updateUserImage("u1", { title: "t" }, [file]),
-      ).rejects.toBe(boom);
-      expect(batch.discarded).toBe(1);
-      expect(storage.deleteAfterCommit).not.toHaveBeenCalled();
-    });
-
-    it("[user-profile.patch.users-id-image#falha-do-colaborador-sem-efeito-parcial] admin trocando a foto de outro usuário: mesma garantia (sem objeto novo, antigo intacto)", async () => {
-      const { svc, storage, batch } = setup(old);
-      await expect(
-        svc.updateUserImage("u2", { title: "t" }, [file]),
       ).rejects.toBe(boom);
       expect(batch.discarded).toBe(1);
       expect(storage.deleteAfterCommit).not.toHaveBeenCalled();

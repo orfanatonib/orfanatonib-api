@@ -215,7 +215,7 @@ Quem já tinha perfil de líder/membro pode ficar com o perfil antigo; remova-o 
 **Enumeração de e-mails.** `forgot-password` responde sempre `201` com o mesmo corpo genérico e não espera o banco nem o envio: a busca, o token e o e-mail rodam em segundo plano (`deliverResetLink`, nunca lança), só para conta existente e completa. `complete-register` com token inválido não diferencia inexistente de não pendente. Auditoria do módulo: `resend-verification` já respondia igual (conferido); `login` responde a mesma mensagem para e-mail inexistente e senha errada; `reset-password/validate` e `reset-password` só revelam o e-mail a quem tem o token. `register` com e-mail já cadastrado responde `409` — inerente a qualquer cadastro com e-mail único; aceito e documentado (mitigação: rate limit, decisão abaixo). `POST /auth/google` devolve `newUser:false` para conta existente, mas só a quem apresenta um ID token válido do próprio Google.
 
 ### Decisões ainda abertas do solicitante
-- **Tokens em `localStorage`/redux-persist** (T3.1) e **rate limit** (`RATE_LIMIT_ENABLED`, T3.2).
+- **Tokens em `localStorage`/redux-persist** (T3.1); rate limit removido por decisão do solicitante (T3.2; reavaliar no futuro).
 
 ## Falha parcial (2026-11-21)
 `POST /auth/verify-email` confirma o e-mail **antes** de gastar o token (sem transação; se a confirmação falhar o link continua válido). `POST /auth/reset-password` não falha mais se só o aviso "senha alterada" não puder ser enfileirado (a senha já mudou e o token já foi apagado).

@@ -41,18 +41,21 @@ jobs:
       - name: Build project
         run: npm run build
 
-      # PENDENTE (decisao do solicitante, plano 01 regra 16): migrations NAO rodam na CI.
-      # Passo preparado e DESATIVADO. Para ativar: remover o comentario, confirmar o
-      # destino do banco e a politica de rollback (migration:revert) com o solicitante.
-      # - name: Run database migrations
-      #   env:
-      #     ENVIRONMENT: production
-      #     DB_HOST: ${{ secrets.DB_HOST }}
-      #     DB_PORT: ${{ secrets.DB_PORT }}
-      #     DB_USERNAME: ${{ secrets.DB_USERNAME }}
-      #     DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      #     DB_NAME: ${{ secrets.DB_NAME }}
-      #   run: npx typeorm-ts-node-commonjs migration:run -d database/data-source.ts
+      # Migrations de banco (plano 01, T4.x): rodam DEPOIS do build e ANTES de subir o container novo.
+      # Se falhar, o job para aqui e o deploy NAO continua (o container atual segue no ar).
+      # O runner do GitHub precisa alcancar o banco (prod): DB_HOST publico/liberado no security
+      # group para o runner (ou runner self-hosted na VPC). Secrets usados (ja existentes):
+      # DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, DB_NAME. Rollback: nao e automatico;
+      # exporte as DB_* do banco e rode `npm run db:migration:revert` (1 migration por vez) (ver README do deploy/CI).
+      - name: Run database migrations
+        env:
+          ENVIRONMENT: production
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+        run: npm run db:migration:deploy
 
       # 🔐 Credenciais de DEPLOY (Conta onde está o ECS/ECR)
       - name: Configure AWS credentials (Deploy Account)

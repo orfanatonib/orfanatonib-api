@@ -14,6 +14,7 @@ function repoWith(found: object | null = feedback()) {
     findAll: jest.fn().mockResolvedValue([found]),
     findOneBy: jest.fn().mockResolvedValue(found),
     findById: jest.fn().mockResolvedValue(found),
+    countUnread: jest.fn().mockResolvedValue(3),
     save: jest.fn((entity: object) => Promise.resolve(entity)),
     remove: jest.fn().mockResolvedValue(undefined),
   };
@@ -25,6 +26,13 @@ describe("GetSiteFeedbackService", () => {
     await expect(
       new GetSiteFeedbackService(repo as never).findAll(),
     ).resolves.toHaveLength(1);
+  });
+
+  it("pendingCount devolve quantos feedbacks ainda não foram lidos", async () => {
+    const repo = repoWith();
+    await expect(
+      new GetSiteFeedbackService(repo as never).pendingCount(),
+    ).resolves.toEqual({ pending: 3 });
   });
 
   it("findOne devolve o registro e responde 404 quando não existe", async () => {

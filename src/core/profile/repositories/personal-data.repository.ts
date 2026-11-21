@@ -36,8 +36,4 @@ export class PersonalDataRepository extends Repository<PersonalData> {
     await this.update({ userId }, data);
     return this.findByUserId(userId);
   }
-
-  async deleteByUserId(userId: string): Promise<void> {
-    await this.delete({ userId });
-  }
 }

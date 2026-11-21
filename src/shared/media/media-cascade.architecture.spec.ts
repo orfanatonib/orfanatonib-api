@@ -19,7 +19,6 @@ const NO_MEDIA_OWNERS: ReadonlySet<string> = new Set([
   "content/page/feed-photo-comment/services/delete-feed-comment.service.ts", // comentário é só texto
   "core/feature-flags/services/delete-feature-flag.service.ts",
   "core/log-records/services/delete-log-records.service.ts",
-  "core/profile/services/profile/delete-profile.service.ts",
   "shelter/leader-profile/services/delete-leader-profile.service.ts",
   "shelter/member-profile/services/delete-member-profile.service.ts",
   "shelter/pagela/services/delete-pagela.service.ts",

@@ -1,4 +1,4 @@
-import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { APP_FILTER } from "@nestjs/core";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ConfigModule } from "@nestjs/config";
@@ -41,7 +41,6 @@ import { RemindersModule } from "./shelter/reminders/reminders.module";
 import { AiProviderAdminModule } from "./content/ai-lessons/ai-provider-admin.module";
 import { ContentStudioModule } from "./content/studio/content-studio.module";
 import { GlobalExceptionFilter } from "./common/filters";
-import { RateLimitingMiddleware } from "./common/middlewares/rate-limiting.middleware";
 import { RequestContextModule } from "./core/request-context";
 import { ObservabilityModule } from "./core/observability/observability.module";
 import { AuditModule } from "./core/audit/audit.module";
@@ -126,14 +125,4 @@ function getEnvFilePath(): string {
     { provide: APP_FILTER, useClass: GlobalExceptionFilter },
   ],
 })
-export class AppModule implements NestModule {
-  /**
-   * Limitação de taxa é OPT-IN (`RATE_LIMIT_ENABLED=true`): atrás de proxy/balanceador
-   * defina também `TRUST_PROXY_HOPS`, senão todos os usuários compartilham o IP do proxy.
-   */
-  configure(consumer: MiddlewareConsumer): void {
-    if (process.env.RATE_LIMIT_ENABLED === "true") {
-      consumer.apply(RateLimitingMiddleware).forRoutes("*");
-    }
-  }
-}
+export class AppModule {}

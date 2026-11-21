@@ -47,12 +47,7 @@ e nenhuma API altera isso.
   *seções* é outro conceito (módulo `ideas-sections`) e não muda.
 - **Resposta:** `IdeasPageResponseDto` não traz mais `public` na página e `route.public` é sempre
   `false`.
-- **Dados legados:** o código tolera linhas antigas com `ideas_pages.public = 1` / `routes.public = 1`
-  (leitura ignora a coluna; `GET /routes` e `GET /routes/:id` nunca devolvem rota `IdeasPage` ao
-  visitante; o próximo `PATCH` regrava `public = false`). **Pendência:** a normalização em massa
-  dos dados existentes é um UPDATE puro, que `migration:generate` não gera (só gera diferença de
-  esquema); por regra do projeto o SQL não foi inventado. Se quiser limpar o legado, uma migration
-  de dados precisa ser autorizada.
+- **Dados legados:** a migration de dados `ForceIdeasPagesPrivate1795360000000` (autorizada pelo solicitante) força `public = 0` em `ideas_pages` e nas `routes` com `entityType = 'IdeasPage'` (idempotente, `down` vazio). O código **mantém a tolerância** (leitura ignora a coluna; `GET /routes` e `GET /routes/:id` nunca devolvem rota `IdeasPage` ao visitante) como defesa em profundidade.
 - `ideas-page` saiu de `CORE_UNFLAGGED` (`feature-flags.architecture.spec.ts`): todos os handlers
   têm `@FeatureFlag`.
 

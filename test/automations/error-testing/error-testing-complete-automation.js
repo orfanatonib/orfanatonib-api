@@ -75,7 +75,6 @@ class ErrorTestingAutomation {
             this.testAuthenticationErrors.bind(this),
             this.testAuthorizationErrors.bind(this),
             this.testNotFoundErrors.bind(this),
-            this.testRateLimitingErrors.bind(this),
             this.testServerErrors.bind(this),
             this.testTimeoutErrors.bind(this),
         ];
@@ -216,36 +215,6 @@ class ErrorTestingAutomation {
         for (const test of notFoundTests) {
             await this.runTest(test);
         }
-    }
-
-    async testRateLimitingErrors() {
-        console.log('\n⏱️  Testing Rate Limiting');
-
-        // Fazer múltiplas requests rápidas para testar rate limiting
-        const rateLimitTest = {
-            name: 'Rate limiting activation',
-            request: async () => {
-                const requests = [];
-                // Fazer 10 requests rápidas
-                for (let i = 0; i < 10; i++) {
-                    requests.push(this.client.get('/health'));
-                }
-
-                try {
-                    await Promise.all(requests);
-                    return { status: 200 }; // Se todas passarem, rate limiting não ativou
-                } catch (error) {
-                    if (error.response?.status === 429) {
-                        return error.response;
-                    }
-                    throw error;
-                }
-            },
-            expectedStatus: 429,
-            expectedCategory: 'RULE'
-        };
-
-        await this.runTest(rateLimitTest);
     }
 
     async testServerErrors() {

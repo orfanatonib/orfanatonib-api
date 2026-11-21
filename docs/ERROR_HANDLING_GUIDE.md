@@ -1,7 +1,7 @@
 # Guia de Tratamento de Erros - API Orfanato NIB
 
 **📅 Última atualização:** Novembro 2026
-**🔧 Estado atual:** rate limiting opt-in (`RATE_LIMIT_ENABLED=true`); timeout de requisição removido; `requestId` gerado no servidor
+**🔧 Estado atual:** rate limiting removido (decisão do solicitante); timeout de requisição removido; `requestId` gerado no servidor
 **📝 Sem Swagger:** Documentação manual mantida atualizada
 
 ## Visão Geral
@@ -18,7 +18,7 @@ Esta API possui um sistema robusto e profissional de tratamento de erros, projet
 - ✅ **Sem vazamento** - a resposta nunca traz stack nem SQL; o `path` e o log **não ecoam a query string**; IP e User-Agent não são gravados
 - ✅ **`details.code`** - código estável opcional (`FEATURE_DISABLED`, `LOG_9101`, `LOG_9102`, `VAL_4005`…) para o front decidir a mensagem
 - ✅ **Auditoria e log técnico** - o filtro registra a falha (`docs/modules/observability-audit`)
-- ⚠️ **Rate limiting opt-in** - ligue com `RATE_LIMIT_ENABLED=true` (e `TRUST_PROXY_HOPS` atrás de proxy)
+- ❌ **Rate limiting removido** - decisão do solicitante; reavaliar no futuro
 - ❌ **Timeout removido** - o middleware antigo estava morto e lançava dentro de `setTimeout`
 - ✅ **Build limpo** - Sem warnings ou erros
 - ✅ **Código enxuto** - Imports e dependências otimizadas
@@ -272,27 +272,9 @@ servidor SMTP:
 }
 ```
 
-## Rate Limiting (Limitação de Taxa)
+## Limitação de taxa
 
-**Opt-in:** só vale com `RATE_LIMIT_ENABLED=true`. Atrás de proxy/balanceador defina também `TRUST_PROXY_HOPS`, senão todos os usuários dividem o IP do proxy. Limites:
-
-### Limites por Tipo de Operação (Quando Ativo)
-
-| Operação | Limite | Janela de Tempo |
-|----------|--------|-----------------|
-| **Geral** | 1000 requests | 15 minutos |
-| **Autenticação** | 5 tentativas | 15 minutos |
-| **Escrita (POST/PUT/PATCH/DELETE)** | 50 operações | 5 minutos |
-| **Upload de Arquivos** | 10 uploads | 1 hora |
-
-### Headers de Rate Limiting (Quando Ativo)
-
-```http
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
-X-RateLimit-Reset: 1705313100
-Retry-After: 900  // Aparece quando limite excedido
-```
+**Removida por decisão do solicitante** (não implementada; reavaliar no futuro). A API não tem middleware de rate limit nem variáveis `RATE_LIMIT_*`/`TRUST_PROXY_HOPS`. Resta apenas a regra de negócio dos comentários do feed (`429` com `FEED_COMMENT_MESSAGES.RATE_LIMITED`).
 
 ## Timeouts
 
@@ -311,7 +293,6 @@ Content-Type: application/json
 
 ```http
 X-Request-Id: 550e8400-e29b-41d4-a716-446655440000  // gerado pelo servidor; igual ao `requestId` do corpo de erro (sempre presente)
-// Headers de rate limiting só aparecem com RATE_LIMIT_ENABLED=true
 ```
 
 ## Logging e Monitoramento
@@ -430,29 +411,6 @@ try {
 }
 ```
 
-### Tratamento de Rate Limiting
-
-**⚠️ ATUALMENTE DESABILITADO:** Quando reabilitado, usar:
-
-```typescript
-// Interceptador axios para rate limiting
-axios.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response?.status === 429) {
-      const retryAfter = error.response.data.details?.retryAfter || 60;
-      toast.error(`Muitas tentativas. Tente novamente em ${retryAfter} segundos.`);
-
-      // Opcional: implementar retry automático
-      return new Promise(resolve => {
-        setTimeout(() => resolve(axios(error.config)), retryAfter * 1000);
-      });
-    }
-    return Promise.reject(error);
-  }
-);
-```
-
 ### Tratamento de Autenticação
 
 ```typescript
@@ -555,10 +513,9 @@ Inclui verificações de conectividade com banco de dados e serviços externos.
 3. **Implemente retry automático** apenas para erros 5xx
 4. **Não tente novamente automaticamente** para erros 4xx
 5. **Valide dados no frontend** antes de enviar para reduzir erros 400
-6. **Rate limiting:** Atualmente desabilitado - implementar quando reabilitado
-7. **Implemente loading states** para operações que podem demorar
-8. **Log erros de servidor** para debugging, mas não exponha detalhes sensíveis
-9. **Console limpo:** A API não polui logs com requests normais
+6. **Implemente loading states** para operações que podem demorar
+7. **Log erros de servidor** para debugging, mas não exponha detalhes sensíveis
+8. **Console limpo:** A API não polui logs com requests normais
 
 ## Suporte e Debugging
 
@@ -571,9 +528,9 @@ Para reportar problemas:
 
 **Contato para suporte técnico:** Use o `correlationId` em comunicações com a equipe de backend.
 
-## Atualização — limitação de taxa (opt-in)
+## Atualização — limitação de taxa removida
 
-Reativada **como opt-in**: `RATE_LIMIT_ENABLED=true` aplica o middleware a todas as rotas (o `/health` é ignorado). Os limites antigos (auth 5, escrita 50, upload 10 por janela) derrubavam o uso normal e eram a causa provável do desligamento; os novos padrões por IP são **auth 30 / 15 min, escrita 300 / 5 min, upload 60 / h, geral 1000 / 15 min**, ajustáveis por `RATE_LIMIT_AUTH_MAX`, `RATE_LIMIT_WRITE_MAX`, `RATE_LIMIT_UPLOAD_MAX` e `RATE_LIMIT_GENERAL_MAX`. Atrás de proxy/balanceador defina `TRUST_PROXY_HOPS` (nº de saltos confiáveis), senão todos os usuários compartilham o IP do proxy. Excedido o limite, a resposta é `429` no contrato de erro padrão. Verificado ao vivo: com `RATE_LIMIT_AUTH_MAX=3`, a 4ª tentativa de login recebe 429 e as demais rotas seguem normais.
+O middleware `RateLimitingMiddleware`, a dependência `express-rate-limit`, as variáveis `RATE_LIMIT_*` e `TRUST_PROXY_HOPS` foram removidos por decisão do solicitante ("esquece, não implemente; no futuro a gente vê"). O IP do cliente não era usado por mais nada (log estruturado e auditoria não o gravam).
 
 
 ## Código do erro exibido ao usuário (front)

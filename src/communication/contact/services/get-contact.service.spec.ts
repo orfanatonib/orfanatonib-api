@@ -3,7 +3,7 @@ import { GetContactService } from "./get-contact.service";
 import { ContactRepository } from "../contact.repository";
 
 describe("GetContactService", () => {
-  const repository = { getAll: jest.fn() };
+  const repository = { getAll: jest.fn(), countUnread: jest.fn() };
   let service: GetContactService;
 
   beforeEach(async () => {
@@ -27,5 +27,11 @@ describe("GetContactService", () => {
 
     expect(result).toEqual(contacts);
     expect(repository.getAll).toHaveBeenCalledTimes(1);
+  });
+
+  it("counts the messages still unread", async () => {
+    repository.countUnread.mockResolvedValue(4);
+
+    await expect(service.pendingCount()).resolves.toEqual({ pending: 4 });
   });
 });

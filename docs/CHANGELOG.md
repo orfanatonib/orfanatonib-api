@@ -4,6 +4,15 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-21 - DECISÕES DO SOLICITANTE (planos 01, 06, 07, 08, 31)
+
+- **REMOVE (breaking)**: `PATCH /users/:id/image` e `DELETE /profiles/:id` (sem chamador no front). Saem handlers, `DeleteProfileService`, `ProfileWriteRepository.deleteSections`, `deleteByUserId` dos repositórios de perfil, `UpdateUserImageDto`, specs, E2E, Postman e `Users_Image_Endpoint_Documentation.md`. Matriz `user-profile` em 177/177.
+- **ADD (migration de dados, autorizada)**: `ForceIdeasPagesPrivate1795360000000` força `public = 0` em `ideas_pages` e em `routes` com `entityType = 'IdeasPage'` (idempotente; `down` vazio). O código segue tolerando o legado.
+- **REMOVE**: restos de "feature flag por ambiente" (script `test/automations/feature-flags`, IDs de matriz e doc da rota `/feature-flags/environment/:environment`). `ENVIRONMENT`/`NODE_ENV` do runtime ficam.
+- **REMOVE**: rate limit (decisão do solicitante; reavaliar no futuro): `RateLimitingMiddleware`, `rate-limiting.config.spec`, dependência `express-rate-limit`, `RATE_LIMIT_*`, `TRUST_PROXY_HOPS`/`trust proxy` (usados só por ele), teste de automação de 429 e docs (`ERROR_HANDLING_GUIDE`). Fica o `429` próprio dos comentários do feed.
+- **CHANGE (CI)**: `deploy-staging.yml` e `deploy-prod.yml` rodam `npm run db:migration:deploy` (novo; também `db:migration:revert`) depois do build e antes do deploy; falha aborta. Requer que o runner alcance o banco (ver `docs/modules/bootstrap-config/README.md`).
+- **CHANGE (script)**: `scripts/deploy-ecs-local.sh` publica a tag do SHA curto e `latest` (a EC2 puxa `latest`).
+
 ## [Unreleased] - 2026-11-21 - USUÁRIOS E PERFIS (plano 07, fechamento)
 
 - **FIX**: data de nascimento de `POST/PUT /profiles*` era gravada **um dia antes** em servidor com fuso negativo (`new Date("2001-05-10")` é meia-noite UTC e o driver grava `date` pelos componentes locais); agora `parseBirthDate` usa meia-noite local.

@@ -22,6 +22,7 @@ import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 import { randomUUID } from "crypto";
 import { isHoneypotTripped } from "./utils/contact-honeypot.util";
+import { ContactPendingCountDto } from "./dto/contact-pending-count.dto";
 import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
@@ -65,6 +66,15 @@ export class ContactController {
   async getAll(): Promise<ContactResponseDto[]> {
     const contacts = await this.getContactService.getAllContacts();
     return contacts.map((contact) => ContactResponseDto.fromEntity(contact));
+  }
+
+  /** Selo do painel do admin: quantas mensagens ainda não foram lidas. */
+  @FeatureFlag(FeatureFlagKeys.CONTACT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
+  @Get("pending-count")
+  @UseGuards(JwtAuthGuard, AdminRoleGuard)
+  async pendingCount(): Promise<ContactPendingCountDto> {
+    return this.getContactService.pendingCount();
   }
 
   @FeatureFlag(FeatureFlagKeys.CONTACT_MANAGEMENT)

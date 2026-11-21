@@ -326,8 +326,6 @@ fetch('/profile/password', {
 
 Atualiza a imagem de perfil do próprio usuário. Suporta upload de arquivo ou URL externa.
 
-> 📖 **Documentação completa**: Veja [Users_Image_Endpoint_Documentation.md](./Users_Image_Endpoint_Documentation.md) para detalhes completos sobre este endpoint.
-
 #### Request
 
 **Método:** `PATCH`  
@@ -379,7 +377,7 @@ Retorna a entidade `UserEntity` atualizada.
 | **Ver Perfil** | `GET /users/:id` | `GET /profile` | Próprio: auto-detecta userId do token |
 | **Atualizar Perfil** | `PUT /users/:id` | `PATCH /profile` | Próprio: apenas name, email, phone |
 | **Alterar Senha** | `PUT /users/:id` (password) | `PATCH /profile/password` | Próprio: requer senha atual |
-| **Atualizar Imagem** | `PATCH /users/:id/image` | `PATCH /profile/image` | Mesmo comportamento, mas próprio perfil |
+| **Atualizar Imagem** | — (removido) | `PATCH /profile/image` | Mesmo comportamento, mas próprio perfil |
 | **Alterar Role** | ✅ Permitido | ❌ Não permitido | Apenas admin |
 | **Ativar/Desativar** | ✅ Permitido | ❌ Não permitido | Apenas admin |
 | **Alterar completed** | ✅ Permitido | ❌ Não permitido | Apenas admin |
@@ -719,7 +717,6 @@ const ProfileSettings = () => {
 ## 🔗 Relacionamento com Outros Endpoints
 
 - **Admin Endpoints**: Ver [Users_Controller_Documentation.md](./Users_Controller_Documentation.md)
-- **Imagem de Perfil**: Ver [Users_Image_Endpoint_Documentation.md](./Users_Image_Endpoint_Documentation.md)
 - **Autenticação**: Ver [Auth_Controller_Documentation.md](../auth/Auth_Controller_Documentation.md)
 
 ---
