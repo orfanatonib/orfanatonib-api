@@ -182,9 +182,8 @@ describe("direções visuais dos cartões do versículo (Adolescentes e Adultos)
     expect(() => validate(ContentAudience.TEEN, "inventada")).toThrow(
       /lookId deve ser um destes/,
     );
-    expect(() => validate(ContentAudience.ADULT, undefined)).toThrow(
-      /lookId deve ser um destes/,
-    );
+    // Sem lookId a saída nem passa pelo formato (campo obrigatório do schema).
+    expect(() => validate(ContentAudience.ADULT, undefined)).toThrow(/lookId/);
     expect(() =>
       validate(ContentAudience.TEEN, verseCardLookIds(ContentAudience.TEEN)[2]),
     ).not.toThrow();
