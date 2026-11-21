@@ -48,6 +48,9 @@ export class AttachIdeasSectionService {
       );
     }
 
+    // Falha previsível antes de gravar: upload declarado sem arquivo/campo.
+    this.mediaService.assertUploadsResolvable(dto.medias ?? [], files);
+
     const attached = await this.repository.attachToPage(
       sectionId,
       {
@@ -58,12 +61,23 @@ export class AttachIdeasSectionService {
       page,
     );
 
-    const medias = await this.mediaService.replaceAll(
-      sectionId,
-      dto.medias ?? [],
-      files,
-    );
-
-    return toIdeasSectionDto(attached, medias);
+    try {
+      const medias = await this.mediaService.replaceAll(
+        sectionId,
+        dto.medias ?? [],
+        files,
+      );
+      return toIdeasSectionDto(attached, medias);
+    } catch (error: unknown) {
+      // Sem transação entre seção e mídia: a seção volta à fila, com o texto de antes.
+      await this.repository
+        .restoreUnattached(sectionId, {
+          title: section.title,
+          description: section.description,
+          public: section.public,
+        })
+        .catch(() => undefined);
+      throw error;
+    }
   }
 }

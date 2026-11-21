@@ -5,8 +5,6 @@ import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { IdeasPageResponseDto } from "../dto/ideas-page-response.dto";
 import { IdeasPageEntity } from "../entities/ideas-page.entity";
 import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
-import { AuthContextService } from "src/core/auth/services/auth-context.service";
-import type { Request } from "express";
 
 @Injectable()
 export class GetIdeasPageService {
@@ -15,13 +13,7 @@ export class GetIdeasPageService {
   constructor(
     private readonly pageRepo: IdeasPageRepository,
     private readonly mediaProcessor: MediaItemProcessor,
-    private readonly authContext: AuthContextService,
   ) {}
-
-  /** Páginas não públicas só aparecem com sessão válida. */
-  canSeeNonPublic(req: Request): Promise<boolean> {
-    return this.authContext.isLoggedIn(req);
-  }
 
   async findOne(id: string): Promise<IdeasPageEntity> {
     const page = await this.pageRepo.findOnePageById(id);
@@ -33,14 +25,12 @@ export class GetIdeasPageService {
     return this.pageRepo.findAllPagesWithSections();
   }
 
-  async findPageWithMedia(
-    id: string,
-    includeNonPublic = true,
-  ): Promise<IdeasPageResponseDto> {
+  /**
+   * A página de ideias é sempre privada: a sessão é exigida pelo `JwtAuthGuard` do
+   * controller e a coluna legada `public` é ignorada (tratada como `false`).
+   */
+  async findPageWithMedia(id: string): Promise<IdeasPageResponseDto> {
     const page = await this.findOne(id);
-    if (!includeNonPublic && !page.public) {
-      throw new NotFoundException("Page not found");
-    }
 
     const sectionIds = page.sections.map((s) => s.id);
     const media = await this.mediaProcessor.findManyMediaItemsByTargets(
@@ -52,13 +42,8 @@ export class GetIdeasPageService {
     return IdeasPageResponseDto.fromEntity(page, map);
   }
 
-  async findAllPagesWithMedia(
-    includeNonPublic = true,
-  ): Promise<IdeasPageResponseDto[]> {
-    const allPages = await this.pageRepo.findAllPagesWithSections();
-    const pages = includeNonPublic
-      ? allPages
-      : allPages.filter((page) => page.public);
+  async findAllPagesWithMedia(): Promise<IdeasPageResponseDto[]> {
+    const pages = await this.pageRepo.findAllPagesWithSections();
     const allSectionIds = pages.flatMap((p) => p.sections.map((s) => s.id));
 
     const allMedia = await this.mediaProcessor.findManyMediaItemsByTargets(

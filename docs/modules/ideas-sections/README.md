@@ -32,10 +32,11 @@ ideas-section/
 │   ├── create-ideas-section.service.ts
 │   ├── update-ideas-section.service.ts
 │   ├── attach-ideas-section.service.ts
-│   ├── get-ideas-sections.service.ts
+│   ├── get-ideas-section.service.ts
 │   ├── delete-ideas-section.service.ts
 │   └── ideas-section-media.service.ts    todas as regras de mídia e S3
 ├── utils/ideas-section-payload.util.ts   parse e validação do multipart
+├── utils/ideas-section-upload.util.ts    limites e filtro de tipo do Multer
 └── ideas-section.controller.ts
 ```
 
@@ -45,15 +46,37 @@ ideas-section/
 
 | Rota | Quem |
 |------|------|
-| `POST /ideas-sections` | qualquer usuário autenticado |
-| `GET /ideas-sections` | qualquer usuário autenticado |
-| `GET /ideas-sections/:id` | qualquer usuário autenticado |
-| `PATCH /ideas-sections/:id` | admin |
-| `PATCH /ideas-sections/:id/attach/:pageId` | admin |
-| `DELETE /ideas-sections/:id` | admin |
+| `POST /ideas-sections` | qualquer usuário autenticado (flag `idea_submission`); o autor é sempre o dono do token |
+| `GET /ideas-sections` | **admin** (flag `idea_moderation`) |
+| `GET /ideas-sections/:id` | **admin** (flag `idea_moderation`) |
+| `PATCH /ideas-sections/:id` | admin (flag `idea_moderation`) |
+| `PATCH /ideas-sections/:id/attach/:pageId` | admin (flag `idea_moderation`) |
+| `DELETE /ideas-sections/:id` | admin (flag `idea_moderation`) |
 
-As duas leituras **não tinham guard nenhum**. A seção expõe nome, e-mail e
-telefone de quem a enviou, e qualquer visitante anônimo podia listar tudo.
+Anônimo recebe 401 em todas; membro e líder recebem 403 nas cinco rotas de
+admin; com a flag desligada a resposta é `403 FEATURE_DISABLED`.
+
+A seção expõe nome, e-mail e telefone de quem a enviou. As duas leituras já
+foram **públicas** e depois abertas a qualquer sessão; hoje a fila de ideias só
+sai para o admin, e o membro apenas **envia** (`POST`).
+
+### Upload
+
+- Até **10 arquivos por requisição, 100 MB cada** (era 200 MB) — constante
+  `IDEAS_SECTION_UPLOAD_LIMITS` em `constants.ts`.
+- O tipo é conferido **na borda** (`ideasSectionFileFilter`): só imagem, vídeo
+  e documento da política de mídia; áudio, HTML, executáveis etc. voltam 400
+  `details.code = MEDIA_MIME` antes de ocupar memória. O armazenamento ainda
+  aplica o teto por tipo (imagem 10 MB, documento 25 MB, vídeo 200 MB) e a
+  assinatura do conteúdo.
+
+### Consistência entre seção e mídia
+
+Seção e mídia não compartilham transação (o upload sai do banco), então cada
+escrita compensa explicitamente: criar apaga a seção se a mídia falhar;
+editar restaura título, descrição e visibilidade; vincular devolve a seção à
+fila com o texto de antes; apagar só remove a linha depois de remover a mídia.
+Na troca de arquivo a ordem é novo objeto → linha → só então some o antigo.
 
 ---
 
@@ -104,18 +127,17 @@ lá; um item que deixa de ser upload tem o arquivo removido.
 ## 🧪 Testes
 
 ```bash
-# backend
-npx jest src/content/page/ideas-section
+# backend (uma rodada por vez, com limite de memória)
+NODE_OPTIONS='--max-old-space-size=2048' npx jest --runInBand src/content/page/ideas-section
 
-# contratos da API, ao vivo
-npx playwright test --config=playwright.live.config.ts e2e/live/ideas-sections.api.spec.ts
-
-# as telas, ao vivo
-npx playwright test --config=playwright.live.config.ts e2e/live/ideas-sections.ui.spec.ts
+# E2E ao vivo (no repositório do app): contratos, matriz, S3 e telas
+npx playwright test --project=live-api e2e/live/ideas-sections
+npx playwright test --project=live-ui e2e/live/ideas-sections
+npx playwright test --project=live-ui-mobile e2e/live/ideas-sections
 ```
 
-Backend: 6 suítes e 87 testes, **98.7% stmts / 98.6% linhas**. O módulo não
-tinha nenhum teste.
+Backend: 12 suítes, 120+ testes. A coleção Postman está em
+`Ideas_Sections_API_Collection.postman_collection.json`.
 
 Frontend: **só Playwright**. `ideas-sections.ui.spec.ts` cria as ideias pela
 API, dirige as telas de verdade — inclusive o envio de uma ideia por um membro,
@@ -129,8 +151,8 @@ o caminho que estava quebrado — e confere na API o que a tela gravou.
   uma segunda classe com o mesmo nome sobre a mesma entidade. Some quando
   aquele módulo for refatorado; este já exporta `GetIdeasSectionsService` como
   contrato de leitura.
-- A criação não é transacional: o upload sai do banco. A compensação é
-  explícita — se a mídia falhar, a seção recém-criada é removida.
+- Criar, editar e vincular não são transacionais (o upload sai do banco); a
+  compensação é explícita, descrita em "Consistência entre seção e mídia".
 - `mediaType` aceita três tipos (vídeo, documento, imagem); a tabela
   compartilhada conhece quatro. O áudio nunca foi oferecido pela tela e
   continua recusado.

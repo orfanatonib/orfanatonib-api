@@ -71,6 +71,304 @@ describe("IdeasSectionMediaService", () => {
     s3 = moduleRef.get(AwsS3Service);
   });
 
+  const seedStored = (entity: MediaItemEntity): void => {
+    processor.findMediaItemsByTarget.mockResolvedValue([entity]);
+    processor.findMediaItemById.mockResolvedValue(entity);
+  };
+
+  describe("falha no meio da lista", () => {
+    it("[ideas-section.s3.06] a mídia já regravada volta ao arquivo antigo (que segue no bucket) e o objeto novo é descartado", async () => {
+      const antigo = buildMediaEntity({
+        id: "m1",
+        url: "https://bucket.test/antigo.png",
+      });
+      seedStored(antigo);
+      processor.upsertMediaItem
+        .mockImplementationOnce((id: string, media: MediaItemEntity) => ({
+          ...media,
+          id,
+        }))
+        .mockRejectedValueOnce(new Error("banco"))
+        .mockImplementation((id: string, media: MediaItemEntity) => ({
+          ...media,
+          id,
+        }));
+
+      await expect(
+        service.replaceAll(
+          "section-id",
+          [
+            buildUploadMediaDto({ id: "m1" }),
+            buildUploadMediaDto({ fieldKey: "b" }),
+          ],
+          { image_upload: buildFile(), b: buildFile({ fieldname: "b" }) },
+        ),
+      ).rejects.toThrow("banco");
+
+      expect(processor.upsertMediaItem).toHaveBeenCalledWith(
+        "m1",
+        expect.objectContaining({ url: "https://bucket.test/antigo.png" }),
+      );
+      expect(s3.delete).toHaveBeenCalledWith("https://bucket.test/novo.png");
+      expect(s3.delete).not.toHaveBeenCalledWith(
+        "https://bucket.test/antigo.png",
+      );
+    });
+
+    it("mídia nova gravada antes da falha é removida (linha) e o upload dela descartado", async () => {
+      processor.upsertMediaItem
+        .mockImplementationOnce(
+          (_id: string | undefined, media: MediaItemEntity) => ({
+            ...media,
+            id: "nova-1",
+          }),
+        )
+        .mockRejectedValueOnce(new Error("banco"));
+
+      await expect(
+        service.replaceAll(
+          "section-id",
+          [buildLinkMediaDto(), buildLinkMediaDto({ title: "segunda" })],
+          {},
+        ),
+      ).rejects.toThrow("banco");
+
+      expect(processor.deleteMediaItems).toHaveBeenCalledWith(
+        [expect.objectContaining({ id: "nova-1" })],
+        expect.any(Function),
+      );
+    });
+  });
+
+  describe("rollback que também falha", () => {
+    it("não restaurar uma linha ou não desfazer as novas é registrado, e o erro devolvido continua sendo o original", async () => {
+      seedStored(
+        buildMediaEntity({ id: "m1", url: "https://bucket.test/antigo.png" }),
+      );
+      processor.upsertMediaItem
+        .mockImplementationOnce((id: string, media: MediaItemEntity) => ({
+          ...media,
+          id,
+        }))
+        .mockImplementationOnce(
+          (_id: string | undefined, media: MediaItemEntity) => ({
+            ...media,
+            id: "nova",
+          }),
+        )
+        .mockRejectedValueOnce(new Error("banco"))
+        .mockRejectedValue("texto solto");
+      processor.deleteMediaItems.mockRejectedValue("falhou");
+
+      await expect(
+        service.replaceAll(
+          "section-id",
+          [
+            buildLinkMediaDto({ id: "m1" }),
+            buildLinkMediaDto({ title: "nova" }),
+            buildLinkMediaDto({ title: "falha" }),
+          ],
+          {},
+        ),
+      ).rejects.toThrow("banco");
+
+      expect(processor.deleteMediaItems).toHaveBeenCalled();
+    });
+  });
+
+  describe("rollback com erros do tipo Error", () => {
+    it("registra o motivo e usa a função de descarte vazia para as linhas novas", async () => {
+      processor.upsertMediaItem
+        .mockImplementationOnce(
+          (_id: string | undefined, media: MediaItemEntity) => ({
+            ...media,
+            id: "nova",
+          }),
+        )
+        .mockRejectedValueOnce(new Error("banco"));
+      processor.deleteMediaItems.mockImplementation(
+        async (
+          _items: MediaItemEntity[],
+          discard: (url: string) => Promise<void>,
+        ) => {
+          await discard("https://bucket.test/x.png");
+          throw new Error("limpeza falhou");
+        },
+      );
+
+      await expect(
+        service.replaceAll(
+          "section-id",
+          [buildLinkMediaDto(), buildLinkMediaDto({ title: "falha" })],
+          {},
+        ),
+      ).rejects.toThrow("banco");
+      expect(s3.delete).not.toHaveBeenCalledWith("https://bucket.test/x.png");
+    });
+
+    it("não restaurar a linha antiga por erro do tipo Error também só é registrado", async () => {
+      seedStored(buildMediaEntity({ id: "m1" }));
+      processor.upsertMediaItem
+        .mockImplementationOnce((id: string, media: MediaItemEntity) => ({
+          ...media,
+          id,
+        }))
+        .mockRejectedValueOnce(new Error("banco"))
+        .mockRejectedValueOnce(new Error("restauração"));
+
+      await expect(
+        service.replaceAll(
+          "section-id",
+          [
+            buildLinkMediaDto({ id: "m1" }),
+            buildLinkMediaDto({ title: "falha" }),
+          ],
+          {},
+        ),
+      ).rejects.toThrow("banco");
+    });
+  });
+
+  describe("ramos de borda", () => {
+    it("mídia sem título usa o título padrão nas mensagens de recusa", async () => {
+      expect(() =>
+        service.assertUploadsResolvable(
+          [buildUploadMediaDto({ title: undefined, fieldKey: undefined })],
+          {},
+        ),
+      ).toThrow(/Sem título/);
+
+      await expect(
+        service.replaceAll(
+          "section-id",
+          [buildLinkMediaDto({ id: "alheia", title: undefined })],
+          {},
+        ),
+      ).rejects.toThrow(/Sem título/);
+    });
+
+    it("link sem url grava url vazia, sem quebrar", async () => {
+      const [saved] = await service.replaceAll(
+        "section-id",
+        [buildLinkMediaDto({ url: undefined })],
+        {},
+      );
+      expect(saved.url).toBe("");
+    });
+
+    it("apagar o antigo com rejeição que não é Error é só registrado", async () => {
+      seedStored(
+        buildMediaEntity({ id: "m1", url: "https://bucket.test/antigo.png" }),
+      );
+      s3.delete.mockRejectedValue("negado");
+      await expect(
+        service.replaceAll("section-id", [buildUploadMediaDto({ id: "m1" })], {
+          image_upload: buildFile(),
+        }),
+      ).resolves.toHaveLength(1);
+    });
+  });
+
+  describe("edições simultâneas", () => {
+    it("[ideas-section.s3.12] duas escritas da mesma seção rodam em fila: a segunda só começa depois da primeira", async () => {
+      const order: string[] = [];
+      let releaseFirst: () => void = () => undefined;
+      processor.findMediaItemsByTarget
+        .mockImplementationOnce(async () => {
+          order.push("1:lê");
+          await new Promise<void>((resolve) => {
+            releaseFirst = resolve;
+          });
+          order.push("1:fim");
+          return [];
+        })
+        .mockImplementationOnce(() => {
+          order.push("2:lê");
+          return Promise.resolve([]);
+        });
+
+      const first = service.replaceAll("section-id", [], {});
+      const second = service.replaceAll("section-id", [], {});
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(order).toEqual(["1:lê"]);
+
+      releaseFirst();
+      await Promise.all([first, second]);
+      expect(order).toEqual(["1:lê", "1:fim", "2:lê"]);
+    });
+
+    it("a falha da primeira não trava a fila da seção", async () => {
+      processor.findMediaItemsByTarget.mockRejectedValueOnce(
+        new Error("banco"),
+      );
+      await expect(service.replaceAll("section-id", [], {})).rejects.toThrow(
+        "banco",
+      );
+      await expect(service.replaceAll("section-id", [], {})).resolves.toEqual(
+        [],
+      );
+    });
+
+    it("seções diferentes não esperam uma pela outra", async () => {
+      let releaseA: () => void = () => undefined;
+      processor.findMediaItemsByTarget.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            releaseA = () => resolve([]);
+          }),
+      );
+      const a = service.replaceAll("a", [], {});
+      await expect(service.replaceAll("b", [], {})).resolves.toEqual([]);
+      releaseA();
+      await a;
+    });
+  });
+
+  describe("falha ao apagar do bucket", () => {
+    it("[ideas-section.s3.11] se apagar o objeto antigo falha, a troca já gravada vale, o erro não derruba a requisição e o objeto novo é mantido", async () => {
+      // A fila `media_cleanup_queue` é alimentada pelo AwsS3Service (spec próprio);
+      // aqui se prova que a ideia não engole nem propaga a falha. Derrubar o
+      // LocalStack de verdade fica fora do alcance do E2E (banco só leitura).
+      seedStored(
+        buildMediaEntity({
+          id: "media-id",
+          url: "https://bucket.test/antigo.png",
+        }),
+      );
+      s3.delete.mockRejectedValue(new Error("AccessDenied"));
+
+      const [saved] = await service.replaceAll(
+        "section-id",
+        [buildUploadMediaDto({ id: "media-id" })],
+        { image_upload: buildFile() },
+      );
+
+      expect(s3.delete).toHaveBeenCalledWith("https://bucket.test/antigo.png");
+      expect(saved.url).toBe("https://bucket.test/novo.png");
+      expect(processor.upsertMediaItem).toHaveBeenCalled();
+    });
+  });
+
+  describe("mídia de outra seção", () => {
+    it("recusa um id de mídia que não pertence à seção, sem gravar nem enviar nada", async () => {
+      processor.findMediaItemsByTarget.mockResolvedValue([
+        buildMediaEntity({ id: "minha" }),
+      ]);
+
+      await expect(
+        service.replaceAll(
+          "section-id",
+          [buildLinkMediaDto({ id: "de-outra-secao" })],
+          {},
+        ),
+      ).rejects.toThrow(RuleException);
+
+      expect(processor.upsertMediaItem).not.toHaveBeenCalled();
+      expect(s3.upload).not.toHaveBeenCalled();
+      expect(s3.delete).not.toHaveBeenCalled();
+    });
+  });
+
   describe("colunas obrigatórias do banco", () => {
     it("preenche title e description quando o payload os omite", async () => {
       // `media_items.title` e `.description` são NOT NULL sem default: sem
@@ -166,8 +464,11 @@ describe("IdeasSectionMediaService", () => {
     });
 
     it("troca o arquivo e apaga o anterior do bucket", async () => {
-      processor.findMediaItemById.mockResolvedValue(
-        buildMediaEntity({ url: "https://bucket.test/antigo.png" }),
+      seedStored(
+        buildMediaEntity({
+          id: "media-id",
+          url: "https://bucket.test/antigo.png",
+        }),
       );
 
       await service.replaceAll(
@@ -180,8 +481,12 @@ describe("IdeasSectionMediaService", () => {
     });
 
     it("mantém o arquivo quando o item existe e nenhum novo foi enviado", async () => {
-      processor.findMediaItemById.mockResolvedValue(
-        buildMediaEntity({ url: "https://bucket.test/antigo.png", size: 99 }),
+      seedStored(
+        buildMediaEntity({
+          id: "media-id",
+          url: "https://bucket.test/antigo.png",
+          size: 99,
+        }),
       );
 
       const [saved] = await service.replaceAll(
@@ -198,8 +503,11 @@ describe("IdeasSectionMediaService", () => {
     });
 
     it("apaga o arquivo quando a mídia vira link", async () => {
-      processor.findMediaItemById.mockResolvedValue(
-        buildMediaEntity({ url: "https://bucket.test/antigo.png" }),
+      seedStored(
+        buildMediaEntity({
+          id: "media-id",
+          url: "https://bucket.test/antigo.png",
+        }),
       );
 
       const [saved] = await service.replaceAll(

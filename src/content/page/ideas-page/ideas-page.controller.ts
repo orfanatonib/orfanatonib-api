@@ -7,14 +7,13 @@ import {
   UploadedFiles,
   UseInterceptors,
   BadRequestException,
+  HttpException,
   Logger,
   ValidationPipe,
   Get,
   Patch,
   UseGuards,
-  Req,
 } from "@nestjs/common";
-import type { Request } from "express";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
 
 /** Mídias de ideias: até 10 arquivos de 200 MB (MIME validado no armazenamento quando migrado). */
@@ -50,7 +49,7 @@ export class IdeasPageController {
     private readonly updateService: UpdateIdeasPageService,
   ) {}
 
-  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @FeatureFlag([FeatureFlagKeys.PAGE_MANAGEMENT, FeatureFlagKeys.IDEAS_SHARING])
   @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
@@ -66,10 +65,10 @@ export class IdeasPageController {
 
       const parsed: unknown = JSON.parse(raw);
       const validationPipe = new ValidationPipe({ transform: true });
-      const dto: CreateIdeasPageDto = await validationPipe.transform(parsed, {
+      const dto = (await validationPipe.transform(parsed, {
         type: "body",
         metatype: CreateIdeasPageDto,
-      });
+      })) as CreateIdeasPageDto;
 
       const filesDict: Record<string, Express.Multer.File> = {};
       files.forEach((f) => {
@@ -82,11 +81,12 @@ export class IdeasPageController {
       return result;
     } catch (err) {
       this.logger.error("Error creating ideas page", err);
+      if (err instanceof HttpException && err.getStatus() < 500) throw err;
       throw new BadRequestException("Error creating ideas page.");
     }
   }
 
-  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @FeatureFlag([FeatureFlagKeys.PAGE_MANAGEMENT, FeatureFlagKeys.IDEAS_SHARING])
   @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
@@ -125,14 +125,16 @@ export class IdeasPageController {
         filesDict,
       );
       this.logger.log(`Ideas page updated successfully: ${id}`);
-      return IdeasPageResponseDto.fromEntity(result, new Map());
+      return result;
     } catch (error) {
       this.logger.error("Error updating ideas page", error);
+      if (error instanceof HttpException && error.getStatus() < 500)
+        throw error;
       throw new BadRequestException("Error updating ideas page.");
     }
   }
 
-  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @FeatureFlag([FeatureFlagKeys.PAGE_MANAGEMENT, FeatureFlagKeys.IDEAS_SHARING])
   @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(":id")
@@ -143,26 +145,26 @@ export class IdeasPageController {
       this.logger.log(`Ideas page deleted successfully: ${id}`);
     } catch (error) {
       this.logger.error("Error removing ideas page", error);
+      if (error instanceof HttpException && error.getStatus() < 500)
+        throw error;
       throw new BadRequestException("Erro ao remover a página de ideias.");
     }
   }
 
-  /** Anônimo recebe só páginas públicas; com sessão, todas. */
+  /** Leitura só com sessão (qualquer perfil) e sob `ideas_sharing`; visitante anônimo recebe 401. */
+  @FeatureFlag(FeatureFlagKeys.IDEAS_SHARING)
+  @UseGuards(FeatureFlagGuard)
+  @UseGuards(JwtAuthGuard)
   @Get()
-  async findAll(@Req() req: Request): Promise<IdeasPageResponseDto[]> {
-    return this.getService.findAllPagesWithMedia(
-      await this.getService.canSeeNonPublic(req),
-    );
+  async findAll(): Promise<IdeasPageResponseDto[]> {
+    return this.getService.findAllPagesWithMedia();
   }
 
+  @FeatureFlag(FeatureFlagKeys.IDEAS_SHARING)
+  @UseGuards(FeatureFlagGuard)
+  @UseGuards(JwtAuthGuard)
   @Get(":id")
-  async findOne(
-    @Param("id") id: string,
-    @Req() req: Request,
-  ): Promise<IdeasPageResponseDto> {
-    return this.getService.findPageWithMedia(
-      id,
-      await this.getService.canSeeNonPublic(req),
-    );
+  async findOne(@Param("id") id: string): Promise<IdeasPageResponseDto> {
+    return this.getService.findPageWithMedia(id);
   }
 }

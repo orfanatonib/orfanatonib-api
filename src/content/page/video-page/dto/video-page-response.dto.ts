@@ -1,4 +1,9 @@
-import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
+import {
+  MediaItemEntity,
+  MediaType,
+  PlatformType,
+  UploadType,
+} from "src/shared/media/media-item/media-item.entity";
 import { RouteEntity } from "src/infrastructure/route/route-page.entity";
 import { VideosPage } from "../entities/video-page.entity";
 
@@ -30,6 +35,44 @@ export class VideoRouteDto {
   }
 }
 
+/**
+ * Vídeo da página como a API o devolve: só os campos que o app consome. Não vaza
+ * `storageKey` (chave interna do bucket), `targetId` nem `targetType`.
+ */
+export class VideoMediaResponseDto {
+  id: string;
+  title: string;
+  description: string;
+  mediaType: MediaType;
+  uploadType: UploadType;
+  platformType?: PlatformType;
+  url: string;
+  isLocalFile: boolean;
+  originalName?: string;
+  size?: number;
+  createdAt: Date;
+  updatedAt: Date;
+
+  static fromEntity(ent: MediaItemEntity): VideoMediaResponseDto {
+    return {
+      id: ent.id,
+      title: ent.title,
+      description: ent.description,
+      mediaType: ent.mediaType,
+      uploadType:
+        ent.uploadType ||
+        (ent.isLocalFile ? UploadType.UPLOAD : UploadType.LINK),
+      platformType: ent.platformType || undefined,
+      url: ent.url,
+      isLocalFile: ent.isLocalFile,
+      originalName: ent.originalName || undefined,
+      size: ent.size || undefined,
+      createdAt: ent.createdAt,
+      updatedAt: ent.updatedAt,
+    };
+  }
+}
+
 export class VideosPageResponseDto {
   id: string;
   title: string;
@@ -38,7 +81,7 @@ export class VideosPageResponseDto {
   createdAt: Date;
   updatedAt: Date;
   route: VideoRouteDto;
-  videos: MediaItemEntity[];
+  videos: VideoMediaResponseDto[];
 
   static fromEntity(
     page: VideosPage,
@@ -58,7 +101,7 @@ export class VideosPageResponseDto {
       createdAt: page.createdAt,
       updatedAt: page.updatedAt,
       route: VideoRouteDto.fromEntity(page.route),
-      videos: videos,
+      videos: videos.map((video) => VideoMediaResponseDto.fromEntity(video)),
     };
   }
 }

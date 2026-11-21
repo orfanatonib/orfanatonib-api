@@ -14,6 +14,8 @@ import { MediaModule } from "src/shared/media/media.module";
 import { DeleteIdeasPageService } from "./services/delete-ideas-page.service";
 import { GetIdeasPageService } from "./services/get-ideas-page.service";
 import { UpdateIdeasPageService } from "./services/update-ideas-page.service";
+import { IdeasPageMediaSyncService } from "./services/ideas-page-media-sync.service";
+import { IdeasPageWriteRepository } from "./repositories/ideas-page-write.repository";
 
 @Module({
   imports: [
@@ -31,6 +33,8 @@ import { UpdateIdeasPageService } from "./services/update-ideas-page.service";
     DeleteIdeasPageService,
     GetIdeasPageService,
     UpdateIdeasPageService,
+    IdeasPageMediaSyncService,
+    IdeasPageWriteRepository,
     {
       provide: IdeasPageRepository,
       useFactory: (dataSource: DataSource) =>

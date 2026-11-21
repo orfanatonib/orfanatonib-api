@@ -14,10 +14,6 @@ import {
 } from "@nestjs/common";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
 
-/** Mídias de ideias: até 10 arquivos de 200 MB (MIME validado no armazenamento quando migrado). */
-const IDEAS_UPLOAD_OPTIONS = {
-  limits: { fileSize: 200 * 1024 * 1024, files: 10 },
-} as const;
 import { UnauthenticatedException } from "src/common/exceptions";
 import { AuthenticatedRequest } from "src/core/auth/auth.types";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
@@ -39,6 +35,7 @@ import {
   parseIdeasSectionPayload,
   toFilesDict,
 } from "./utils/ideas-section-payload.util";
+import { IDEAS_UPLOAD_OPTIONS } from "./utils/ideas-section-upload.util";
 import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";

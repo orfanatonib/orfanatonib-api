@@ -29,6 +29,14 @@ const TARGET_TYPE = MediaTargetType.IdeasSection;
 export class IdeasSectionMediaService {
   private readonly logger = new Logger(IdeasSectionMediaService.name);
 
+  /**
+   * Escritas de mídia da mesma seção entram em fila neste processo. Sem isso,
+   * duas edições simultâneas liam o mesmo estado, as duas subiam um objeto
+   * novo e a que gravava por último deixava o da primeira órfão no bucket.
+   * (Várias instâncias da API exigiriam uma trava no banco.)
+   */
+  private readonly sectionQueues = new Map<string, Promise<unknown>>();
+
   constructor(
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly s3: AwsS3Service,
@@ -79,16 +87,49 @@ export class IdeasSectionMediaService {
    * Grava a lista inteira que veio no payload e remove o que ela não menciona
    * mais. A lista enviada é a verdade sobre a seção.
    */
-  async replaceAll(
+  replaceAll(
+    sectionId: string,
+    incoming: readonly IdeasSectionMediaItemDto[],
+    files: UploadedFilesDict,
+  ): Promise<MediaItemEntity[]> {
+    return this.serialize(sectionId, () =>
+      this.replaceAllNow(sectionId, incoming, files),
+    );
+  }
+
+  private serialize<T>(sectionId: string, task: () => Promise<T>): Promise<T> {
+    const previous = this.sectionQueues.get(sectionId) ?? Promise.resolve();
+    const run = previous.then(task, task);
+    const tail = run.then(
+      () => undefined,
+      () => undefined,
+    );
+    this.sectionQueues.set(sectionId, tail);
+    void tail.then(() => {
+      if (this.sectionQueues.get(sectionId) === tail) {
+        this.sectionQueues.delete(sectionId);
+      }
+    });
+    return run;
+  }
+
+  private async replaceAllNow(
     sectionId: string,
     incoming: readonly IdeasSectionMediaItemDto[],
     files: UploadedFilesDict,
   ): Promise<MediaItemEntity[]> {
     const stored = await this.findBySection(sectionId);
+    this.assertIdsBelongToSection(stored, incoming);
 
     // Ordem segura (plano 30, P0): objeto novo → linha no banco → só então some o antigo.
     // Apagar antes deixava a linha antiga apontando para um objeto inexistente se o
     // upload ou o `upsert` seguinte falhasse.
+    const snapshot = new Map(
+      stored.map((item) => [
+        item.id,
+        Object.assign(new MediaItemEntity(), item),
+      ]),
+    );
     const tracking: FileTracking = { uploaded: [], replaced: [] };
     const saved: MediaItemEntity[] = [];
     try {
@@ -96,6 +137,9 @@ export class IdeasSectionMediaService {
         saved.push(await this.save(input, sectionId, files, tracking));
       }
     } catch (error: unknown) {
+      // Linhas voltam ao que eram ANTES de os objetos novos sumirem: os antigos
+      // seguem no bucket e nenhuma linha aponta para um objeto descartado.
+      await this.rollbackSaved(saved, snapshot);
       await this.discardObjects(tracking.uploaded);
       throw error;
     }
@@ -106,14 +150,64 @@ export class IdeasSectionMediaService {
     return saved;
   }
 
-  /** Apaga as mídias da seção, inclusive os arquivos no bucket. */
-  async removeAll(sectionId: string): Promise<void> {
-    const stored = await this.findBySection(sectionId);
-    if (stored.length === 0) return;
+  /**
+   * Um `id` de mídia que não é desta seção não pode ser regravado aqui: sem
+   * esta conferência, o PATCH de uma ideia sobrescrevia a mídia de outra.
+   */
+  private assertIdsBelongToSection(
+    stored: readonly MediaItemEntity[],
+    incoming: readonly IdeasSectionMediaItemDto[],
+  ): void {
+    const own = new Set(stored.map((item) => item.id));
+    const foreign = incoming.find((item) => item.id && !own.has(item.id));
+    if (foreign) {
+      throw new RuleException(
+        IDEAS_SECTION_MESSAGES.MEDIA_NOT_IN_SECTION(
+          foreign.title || IDEAS_SECTION_MEDIA_DEFAULTS.TITLE,
+        ),
+      );
+    }
+  }
 
-    await this.mediaItemProcessor.deleteMediaItems(stored, (url) =>
-      this.s3.delete(url),
-    );
+  /** Apaga as mídias da seção, inclusive os arquivos no bucket. */
+  removeAll(sectionId: string): Promise<void> {
+    return this.serialize(sectionId, async () => {
+      const stored = await this.findBySection(sectionId);
+      if (stored.length === 0) return;
+
+      await this.mediaItemProcessor.deleteMediaItems(stored, (url) =>
+        this.s3.delete(url),
+      );
+    });
+  }
+
+  /** Desfaz as linhas gravadas nesta passada: as que já existiam voltam ao estado anterior, as novas somem. */
+  private async rollbackSaved(
+    saved: readonly MediaItemEntity[],
+    snapshot: ReadonlyMap<string, MediaItemEntity>,
+  ): Promise<void> {
+    const created: MediaItemEntity[] = [];
+    for (const item of saved) {
+      const before = snapshot.get(item.id);
+      try {
+        if (before) {
+          await this.mediaItemProcessor.upsertMediaItem(before.id, before);
+        } else {
+          created.push(item);
+        }
+      } catch (error: unknown) {
+        const reason = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Mídia ${item.id} não restaurada: ${reason}`);
+      }
+    }
+    if (created.length > 0) {
+      await this.mediaItemProcessor
+        .deleteMediaItems(created, () => Promise.resolve())
+        .catch((error: unknown) => {
+          const reason = error instanceof Error ? error.message : String(error);
+          this.logger.error(`Mídias novas não desfeitas: ${reason}`);
+        });
+    }
   }
 
   /** Remove o que está gravado e não veio na lista nova. */

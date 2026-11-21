@@ -1,106 +1,136 @@
 import {
   BadRequestException,
+  HttpException,
   Injectable,
   Logger,
   NotFoundException,
 } from "@nestjs/common";
-import { DataSource, QueryRunner } from "typeorm";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { RouteService } from "src/infrastructure/route/services/route.service";
 import {
   RouteEntity,
   RouteType,
 } from "src/infrastructure/route/route-page.entity";
-import {
-  MediaItemEntity,
-  PlatformType,
-  MediaType,
-  UploadType,
-} from "src/shared/media/media-item/media-item.entity";
-import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
+import { MediaTargetType } from "src/shared/media/media-target-type.enum";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { UpdateVideosPageDto } from "../dto/update-video-page.dto";
 import { VideosPageResponseDto } from "../dto/video-page-response.dto";
 import { VideosPageRepository } from "../repositories/video-page.repository";
-import { MediaItemDto } from "src/shared/dto/media-item-dto";
-import { MediaTargetType } from "src/shared/media/media-target-type.enum";
+import {
+  VIDEO_PAGE_ROUTE_IMAGE,
+  VIDEO_PAGE_ROUTE_PREFIX,
+  VideoPageMessages,
+} from "../constants";
+import { errorReason, findRemovedMedia, localFileUrls } from "../utils";
+import { VideoPageMediaService } from "./video-page-media.service";
 
 @Injectable()
 export class UpdateVideosPageService {
   private readonly logger = new Logger(UpdateVideosPageService.name);
 
   constructor(
-    private readonly dataSource: DataSource,
-    private readonly awsS3Service: AwsS3Service,
     private readonly routeService: RouteService,
-    private readonly mediaItemProcessor: MediaItemProcessor,
+    private readonly mediaStorage: MediaStorageService,
+    private readonly videoMedia: VideoPageMediaService,
     private readonly videosPageRepo: VideosPageRepository,
   ) {}
 
+  /**
+   * Ordem segura para o bucket: objetos novos sobem → linhas gravadas na
+   * transação → só depois do commit saem os objetos antigos. Se algo falha, os
+   * novos são descartados e os antigos continuam referenciados.
+   */
   async execute(
     id: string,
     dto: UpdateVideosPageDto,
     filesDict: Record<string, Express.Multer.File>,
   ): Promise<VideosPageResponseDto> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    const existingPage = await this.videosPageRepo.findById(id);
+    if (!existingPage) {
+      throw new NotFoundException(VideoPageMessages.PAGE_NOT_FOUND);
+    }
+
+    const batch = this.mediaStorage.newBatch();
+    const obsoleteUrls: string[] = [];
 
     try {
-      const existingPage = await this.videosPageRepo.findById(id);
-      if (!existingPage) {
-        throw new NotFoundException("Page not found");
-      }
+      const response = await this.videosPageRepo.runInTransaction(
+        async (manager) => {
+          if (!(await this.videosPageRepo.lockPage(manager, id))) {
+            throw new NotFoundException(VideoPageMessages.PAGE_NOT_FOUND);
+          }
+          const existingMedia = await this.videosPageRepo.findMedia(
+            manager,
+            id,
+          );
+          const removed = findRemovedMedia(existingMedia, dto.videos);
+          await this.videosPageRepo.removeMedia(manager, removed);
+          obsoleteUrls.push(...localFileUrls(removed));
 
-      const existingMedia =
-        await this.mediaItemProcessor.findManyMediaItemsByTargets(
-          [existingPage.id],
-          MediaTargetType.VideosPage,
-        );
+          existingPage.name = dto.title;
+          existingPage.description = dto.description;
+          existingPage.public = dto.public;
+          const updatedPage = await this.videosPageRepo.savePage(
+            manager,
+            existingPage,
+          );
 
-      await this.deleteMedia(existingMedia, dto.videos, queryRunner);
+          const savedRoute = await this.upsertRoute(
+            existingPage.route.id,
+            dto,
+            updatedPage.id,
+          );
 
-      existingPage.name = dto.title;
-      existingPage.description = dto.description;
-      existingPage.public = dto.public;
-      const updatedPage = await queryRunner.manager.save(existingPage);
+          const mediaItems: MediaItemEntity[] = [];
+          for (const input of dto.videos) {
+            const existing = input.id
+              ? existingMedia.find((media) => media.id === input.id)
+              : undefined;
+            if (input.id && !existing) {
+              throw new NotFoundException(
+                `Media with id ${input.id} not found.`,
+              );
+            }
+            const { media, obsoleteUrl } = await this.videoMedia.materialize(
+              input,
+              updatedPage.id,
+              filesDict,
+              batch,
+              existing,
+            );
+            if (obsoleteUrl) obsoleteUrls.push(obsoleteUrl);
+            mediaItems.push(
+              await this.videosPageRepo.saveMedia(manager, media),
+            );
+          }
 
-      const savedRoute = await this.upsertRoute(
-        existingPage.route.id,
-        dto,
-        updatedPage.id,
+          updatedPage.route = savedRoute;
+          const finalPage = await this.videosPageRepo.savePage(
+            manager,
+            updatedPage,
+          );
+          return VideosPageResponseDto.fromEntity(finalPage, mediaItems);
+        },
       );
-
-      const mediaItems = await this.processPageMedia(
-        dto.videos,
-        updatedPage.id,
-        existingMedia,
-        filesDict,
-        queryRunner,
-      );
-
-      updatedPage.route = savedRoute;
-      const finalPage = await queryRunner.manager.save(updatedPage);
-
-      await queryRunner.commitTransaction();
-      return VideosPageResponseDto.fromEntity(finalPage, mediaItems);
+      batch.commit();
+      await this.mediaStorage.deleteAfterCommit(obsoleteUrls);
+      return response;
     } catch (error) {
+      await batch.discard();
+      if (error instanceof HttpException) throw error;
       this.logger.error(
-        "Error updating videos page. Rolling back.",
-        error.stack,
+        `Error updating videos page ${id}. Rolling back: ${errorReason(error)}`,
       );
-      await queryRunner.rollbackTransaction();
-      throw new BadRequestException("Error updating videos page.");
-    } finally {
-      await queryRunner.release();
+      throw new BadRequestException(VideoPageMessages.UPDATE_FAILED);
     }
   }
 
-  private async upsertRoute(
+  private upsertRoute(
     routeId: string,
     pageData: UpdateVideosPageDto,
     videoPageId: string,
   ): Promise<RouteEntity> {
-    const routeData: Partial<RouteEntity> = {
+    return this.routeService.upsertRoute(routeId, {
       title: pageData.title,
       subtitle: "Videos page",
       idToFetch: videoPageId,
@@ -108,207 +138,9 @@ export class UpdateVideosPageService {
       entityId: videoPageId,
       type: RouteType.PAGE,
       description: pageData.description,
-      path: "galeria_videos_",
-      image:
-        "https://orfanatos-nib-storage.s3.us-east-1.amazonaws.com/aux/card_videos.png",
+      path: VIDEO_PAGE_ROUTE_PREFIX,
+      image: VIDEO_PAGE_ROUTE_IMAGE,
       public: pageData.public,
-    };
-    return this.routeService.upsertRoute(routeId, routeData);
-  }
-
-  private async deleteMedia(
-    existingMedia: MediaItemEntity[],
-    requestedMedia: ReadonlyArray<{ id?: string | null }>,
-    queryRunner: QueryRunner,
-  ): Promise<void> {
-    const requestedMediaIds = requestedMedia
-      .map((media) => media.id)
-      .filter((id): id is string => typeof id === "string" && id.length > 0);
-    const mediaToRemove = existingMedia.filter(
-      (existing) => existing.id && !requestedMediaIds.includes(existing.id),
-    );
-
-    for (const media of mediaToRemove) {
-      if (!media.id) {
-        continue;
-      }
-
-      if (media.isLocalFile && media.url) {
-        try {
-          await this.awsS3Service.delete(media.url);
-        } catch (error) {
-          this.logger.error(
-            `Error deleting file from S3: ${media.url}`,
-            error.stack,
-          );
-          throw new BadRequestException(
-            `Error deleting file from S3: ${media.url}`,
-          );
-        }
-      } else {
-      }
-
-      await queryRunner.manager.remove(MediaItemEntity, media);
-    }
-  }
-
-  private async processPageMedia(
-    mediaItems: MediaItemDto[],
-    pageId: string,
-    oldMedia: MediaItemEntity[],
-    filesDict: Record<string, Express.Multer.File>,
-    queryRunner: QueryRunner,
-  ): Promise<MediaItemEntity[]> {
-    const processed: MediaItemEntity[] = [];
-    for (const mediaInput of mediaItems) {
-      if (mediaInput.id) {
-        const saved = await this.upsertMedia(
-          mediaInput,
-          pageId,
-          filesDict,
-          queryRunner,
-        );
-        processed.push(saved);
-      } else {
-        const saved = await this.addMedia(
-          mediaInput,
-          pageId,
-          filesDict,
-          queryRunner,
-        );
-        processed.push(saved);
-      }
-    }
-    return processed;
-  }
-
-  private async addMedia(
-    mediaInput: MediaItemDto,
-    targetId: string,
-    filesDict: Record<string, Express.Multer.File>,
-    queryRunner: QueryRunner,
-  ): Promise<MediaItemEntity> {
-    const media = new MediaItemEntity();
-    Object.assign(
-      media,
-      this.mediaItemProcessor.buildBaseMediaItem(
-        {
-          ...mediaInput,
-          mediaType: MediaType.VIDEO,
-          uploadType: mediaInput.uploadType,
-          platformType: mediaInput.platformType as PlatformType,
-        },
-        targetId,
-        MediaTargetType.VideosPage,
-      ),
-    );
-
-    if (mediaInput.uploadType === UploadType.UPLOAD && mediaInput.isLocalFile) {
-      const key = mediaInput.fieldKey ?? mediaInput.url;
-      if (!key) {
-        throw new Error(`File missing for upload: no fieldKey or url provided`);
-      }
-      const file = filesDict[key];
-      if (!file) {
-        throw new Error(`File not found for upload: ${key}`);
-      }
-
-      media.url = await this.awsS3Service.upload(file);
-      media.isLocalFile = true;
-      media.originalName = file.originalname;
-      media.size = file.size;
-    } else if (
-      mediaInput.uploadType === UploadType.LINK ||
-      mediaInput.isLocalFile === false
-    ) {
-      if (!mediaInput.url) {
-        throw new BadRequestException("URL is required for link type videos.");
-      }
-      media.url = mediaInput.url;
-      media.isLocalFile = false;
-      media.platformType = mediaInput.platformType || PlatformType.YOUTUBE;
-    } else {
-      throw new BadRequestException(
-        `Invalid media type: ${mediaInput.uploadType}`,
-      );
-    }
-
-    return queryRunner.manager.save(MediaItemEntity, media);
-  }
-
-  private async upsertMedia(
-    mediaInput: MediaItemDto,
-    targetId: string,
-    filesDict: Record<string, Express.Multer.File>,
-    queryRunner: QueryRunner,
-  ): Promise<MediaItemEntity> {
-    const existingMedia = await queryRunner.manager.findOne(MediaItemEntity, {
-      where: { id: mediaInput.id },
     });
-    if (!existingMedia) {
-      throw new NotFoundException(`Media with id ${mediaInput.id} not found.`);
-    }
-
-    const media = new MediaItemEntity();
-    Object.assign(
-      media,
-      this.mediaItemProcessor.buildBaseMediaItem(
-        {
-          ...mediaInput,
-          mediaType: MediaType.VIDEO,
-          uploadType: mediaInput.uploadType,
-          platformType: mediaInput.platformType as PlatformType,
-        },
-        targetId,
-        MediaTargetType.VideosPage,
-      ),
-    );
-    media.id = mediaInput.id || "";
-
-    if (mediaInput.uploadType === UploadType.UPLOAD) {
-      const key = mediaInput.fieldKey ?? "";
-      const file = filesDict[key];
-
-      if (file) {
-        if (existingMedia.isLocalFile && existingMedia.url) {
-          try {
-            await this.awsS3Service.delete(existingMedia.url);
-          } catch (error) {
-            this.logger.warn(`Could not delete old file: ${existingMedia.url}`);
-          }
-        }
-        media.url = await this.awsS3Service.upload(file);
-        media.isLocalFile = true;
-        media.originalName = file.originalname;
-        media.size = file.size;
-      } else {
-        media.url = existingMedia.url;
-        media.isLocalFile = existingMedia.isLocalFile;
-        media.originalName = existingMedia.originalName;
-        media.size = existingMedia.size;
-      }
-    } else if (mediaInput.uploadType === UploadType.LINK) {
-      if (existingMedia.isLocalFile && existingMedia.url) {
-        try {
-          await this.awsS3Service.delete(existingMedia.url);
-        } catch (error) {
-          this.logger.warn(
-            `Could not delete old file when switching to link: ${existingMedia.url}`,
-          );
-        }
-      }
-      if (!mediaInput.url) {
-        throw new BadRequestException("URL is required for link type videos.");
-      }
-      media.url = mediaInput.url;
-      media.isLocalFile = false;
-      media.platformType = mediaInput.platformType || PlatformType.YOUTUBE;
-    } else {
-      throw new BadRequestException(
-        `Invalid media type: ${mediaInput.uploadType}`,
-      );
-    }
-
-    return queryRunner.manager.save(MediaItemEntity, media);
   }
 }

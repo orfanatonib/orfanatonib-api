@@ -39,7 +39,9 @@ const mp4 = (key = "vid", extra: Partial<Express.Multer.File> = {}) =>
     originalname: `${key}.mp4`,
     mimetype: "video/mp4",
     size: 16,
-    buffer: Buffer.from([0, 0, 0, 16, 102, 116, 121, 112, 105, 115, 111, 109, 0, 0, 0, 0]),
+    buffer: Buffer.from([
+      0, 0, 0, 16, 102, 116, 121, 112, 105, 115, 111, 109, 0, 0, 0, 0,
+    ]),
     ...extra,
   }) as Express.Multer.File;
 
@@ -71,14 +73,21 @@ describe("validateShelterPostMedia (fotos e vídeo no mesmo post)", () => {
     expect(() =>
       validateShelterPostMedia([video()], { vid: mp4() }),
     ).not.toThrow();
-    const mov = mp4("vid", { originalname: "x.mov", mimetype: "video/quicktime" });
-    expect(() => validateShelterPostMedia([video()], { vid: mov })).not.toThrow();
+    const mov = mp4("vid", {
+      originalname: "x.mov",
+      mimetype: "video/quicktime",
+    });
+    expect(() =>
+      validateShelterPostMedia([video()], { vid: mov }),
+    ).not.toThrow();
     const webm = mp4("vid", {
       originalname: "x.webm",
       mimetype: "video/webm",
       buffer: Buffer.from([0x1a, 0x45, 0xdf, 0xa3, 0, 0, 0, 0, 0, 0, 0, 0]),
     });
-    expect(() => validateShelterPostMedia([video()], { vid: webm })).not.toThrow();
+    expect(() =>
+      validateShelterPostMedia([video()], { vid: webm }),
+    ).not.toThrow();
   });
 
   it("recusa post vazio, 2 vídeos e mais de 10 fotos", () => {
@@ -131,9 +140,7 @@ describe("validateShelterPostMedia (fotos e vídeo no mesmo post)", () => {
 
   it("recusa foto declarada com arquivo de vídeo e foto > 10 MB", () => {
     expect(
-      messageOf(() =>
-        validateShelterPostMedia([photo("a")], { a: mp4("a") }),
-      ),
+      messageOf(() => validateShelterPostMedia([photo("a")], { a: mp4("a") })),
     ).toContain(SHELTER_POST_MESSAGES.PHOTO_INVALID);
     expect(
       messageOf(() =>
@@ -150,7 +157,10 @@ describe("validateShelterPostMedia (fotos e vídeo no mesmo post)", () => {
     ).toContain(SHELTER_POST_MESSAGES.FILE_MISSING);
     expect(
       messageOf(() =>
-        validateShelterPostMedia([photo("a")], { a: png("a"), extra: png("extra") }),
+        validateShelterPostMedia([photo("a")], {
+          a: png("a"),
+          extra: png("extra"),
+        }),
       ),
     ).toContain(SHELTER_POST_MESSAGES.FILE_UNLINKED);
   });
@@ -167,7 +177,9 @@ describe("validateShelterPostMedia (fotos e vídeo no mesmo post)", () => {
     );
     const kept: MediaItemDto = { ...video(), id: "m1", fieldKey: undefined };
     expect(() =>
-      validateShelterPostMedia([kept], {}, [{ id: "m1", mediaType: MediaType.VIDEO }]),
+      validateShelterPostMedia([kept], {}, [
+        { id: "m1", mediaType: MediaType.VIDEO },
+      ]),
     ).not.toThrow();
   });
 });
@@ -175,7 +187,11 @@ describe("validateShelterPostMedia (fotos e vídeo no mesmo post)", () => {
 describe("limites do multer", () => {
   it("fotos + vídeo e o vídeo é o maior arquivo", () => {
     expect(IMAGE_SECTION_UPLOAD_LIMITS.files).toBe(11);
-    expect(IMAGE_SECTION_UPLOAD_LIMITS.fileSize).toBe(SHELTER_POST_MAX_VIDEO_BYTES);
-    expect(IMAGE_SECTION_UPLOAD_LIMITS.fileSize).toBeLessThanOrEqual(200 * 1024 * 1024);
+    expect(IMAGE_SECTION_UPLOAD_LIMITS.fileSize).toBe(
+      SHELTER_POST_MAX_VIDEO_BYTES,
+    );
+    expect(IMAGE_SECTION_UPLOAD_LIMITS.fileSize).toBeLessThanOrEqual(
+      200 * 1024 * 1024,
+    );
   });
 });

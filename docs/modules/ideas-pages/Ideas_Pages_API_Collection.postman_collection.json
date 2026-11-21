@@ -1,0 +1,148 @@
+{
+  "info": {
+    "name": "Ideas Pages API Collection",
+    "description": "Páginas de ideias. A página de ideias é SEMPRE privada. POST/PATCH/DELETE: só admin (flags page_management + ideas_sharing; 401 sem token, 403 membro/líder, 403 FEATURE_DISABLED com flag desligada); `public: true` no corpo é rejeitado com 400. GET: exige sessão de qualquer perfil (visitante 401) e a flag ideas_sharing. PATCH/DELETE de id inexistente: 404.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "{{base_url}}",
+      "type": "string"
+    },
+    {
+      "key": "page_id",
+      "value": ""
+    },
+    {
+      "key": "section_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Ideas Pages",
+      "item": [
+        {
+          "name": "Criar página (admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ideas-pages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ideas-pages"
+              ]
+            },
+            "description": "Multipart: campo ideasMaterialsPageData (JSON) + arquivos (fieldKey de cada mídia = nome do campo). 400 sem payload/validação; arquivo inválido recusado sem deixar objeto no bucket.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "ideasMaterialsPageData",
+                  "value": "{\"title\":\"Brincadeiras\",\"subtitle\":\"Ideias\",\"description\":\"Galeria\",\"sections\":[{\"title\":\"Corda\",\"description\":\"Como brincar\",\"medias\":[{\"title\":\"Vídeo\",\"description\":\"d\",\"mediaType\":\"video\",\"uploadType\":\"link\",\"isLocalFile\":false,\"url\":\"https://www.youtube.com/watch?v=abc\",\"platformType\":\"youtube\"}]}]}",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Atualizar página (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ideas-pages/{{page_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ideas-pages",
+                "{{page_id}}"
+              ]
+            },
+            "description": "Mesmo multipart. Mídia fora da lista é removida; o arquivo antigo só é apagado depois do commit. 404 id inexistente.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "ideasMaterialsPageData",
+                  "value": "{\"id\":\"{{page_id}}\",\"title\":\"Brincadeiras 2\",\"description\":\"Galeria\",\"sections\":[{\"id\":\"{{section_id}}\",\"title\":\"Corda\",\"description\":\"Como brincar\",\"medias\":[]}]}",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Excluir página (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ideas-pages/{{page_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ideas-pages",
+                "{{page_id}}"
+              ]
+            },
+            "description": "Remove página, seções, mídia e rota; objetos do bucket depois do commit. 404 id inexistente."
+          }
+        },
+        {
+          "name": "Listar páginas (com sessão)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ideas-pages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ideas-pages"
+              ]
+            },
+            "description": "Exige sessão (qualquer perfil) e flag ideas_sharing: visitante 401, flag desligada 403 FEATURE_DISABLED. Todas as páginas são privadas."
+          }
+        },
+        {
+          "name": "Buscar página (com sessão)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ideas-pages/{{page_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ideas-pages",
+                "{{page_id}}"
+              ]
+            },
+            "description": "Exige sessão e flag ideas_sharing (visitante 401). 404 se o id não existir."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { DataSource, Repository, IsNull, Not } from "typeorm";
 import { ImageSectionEntity } from "../../image-page/entities/image-section.entity";
+import { ImageSectionReviewStatus } from "../enums/image-section-review-status.enum";
 
 @Injectable()
 export class ImageSectionRepository extends Repository<ImageSectionEntity> {
@@ -66,5 +67,10 @@ export class ImageSectionRepository extends Repository<ImageSectionEntity> {
       },
       relations: ["author"],
     });
+  }
+
+  /** Publicações aguardando revisão (selo do painel do admin). */
+  countPending(): Promise<number> {
+    return this.countBy({ reviewStatus: ImageSectionReviewStatus.PENDING });
   }
 }

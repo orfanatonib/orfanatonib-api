@@ -105,7 +105,8 @@ export function validateShelterPostMedia(
     const extension = extensionOf(file.originalname);
     const typeOk = Boolean(formats[file.mimetype]?.includes(extension));
     const sizeOk = file.size > 0 && file.size <= maxBytes;
-    const contentOk = !isVideo || videoSignatureMatches(file.mimetype, file.buffer);
+    const contentOk =
+      !isVideo || videoSignatureMatches(file.mimetype, file.buffer);
     if (!typeOk || !sizeOk || !contentOk) {
       reject(
         isVideo

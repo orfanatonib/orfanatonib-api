@@ -1,0 +1,184 @@
+{
+  "info": {
+    "name": "Image Pages API Collection",
+    "description": "Galerias de imagens. Escrita só admin (flag page_management); GET /image-pages e /:id (public_galleries) e /:id/sections (shelter_feed) públicos: visitante só vê galerias públicas. Upload: 30 arquivos de até 10 MB.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "{{base_url}}"
+    },
+    {
+      "key": "page_id",
+      "value": ""
+    },
+    {
+      "key": "section_id",
+      "value": ""
+    },
+    {
+      "key": "media_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Image Pages",
+      "item": [
+        {
+          "name": "Criar galeria (admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-pages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-pages"
+              ]
+            },
+            "description": "Multipart: campo imageData (JSON) + arquivos `file_sec<S>_mid<M>` referenciados por fieldKey. 400 payload/arquivo inválido (nada é gravado), 401 sem token, 403 membro/líder ou flag desligada (FEATURE_DISABLED).",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "imageData",
+                  "value": "{\"title\": \"Culto de domingo\", \"description\": \"Fotos do culto\", \"public\": true, \"sections\": [{\"caption\": \"Louvor\", \"description\": \"Momento de louvor\", \"public\": true, \"mediaItems\": [{\"uploadType\": \"upload\", \"mediaType\": \"image\", \"isLocalFile\": true, \"originalName\": \"louvor.png\", \"fieldKey\": \"file_sec0_mid0\"}]}]}",
+                  "type": "text"
+                },
+                {
+                  "key": "file_sec0_mid0",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Atualizar galeria (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-pages/{{page_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-pages",
+                "{{page_id}}"
+              ]
+            },
+            "description": "Multipart com imageData (ids de seção e mídia para manter). Objeto antigo só sai do bucket depois do commit. 400 payload inválido, 404 galeria inexistente, 401, 403.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "imageData",
+                  "value": "{\"id\": \"{{page_id}}\", \"title\": \"Culto de domingo\", \"description\": \"Fotos do culto\", \"public\": true, \"sections\": [{\"id\": \"{{section_id}}\", \"caption\": \"Louvor\", \"description\": \"Momento de louvor\", \"public\": true, \"mediaItems\": [{\"id\": \"{{media_id}}\", \"uploadType\": \"upload\", \"mediaType\": \"image\", \"isLocalFile\": true}]}]}",
+                  "type": "text"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar galerias",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-pages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-pages"
+              ]
+            },
+            "description": "Público (flag public_galleries). Visitante recebe só `public: true`; com sessão, todas. 403 FEATURE_DISABLED.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Buscar galeria por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-pages/{{page_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-pages",
+                "{{page_id}}"
+              ]
+            },
+            "description": "Público (flag public_galleries). Galeria não pública é 404 para visitante. Sem chamador no front: contrato para integrações.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Seções paginadas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-pages/{{page_id}}/sections?page=1&limit=2",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-pages",
+                "{{page_id}}",
+                "sections?page=1&limit=2"
+              ]
+            },
+            "description": "Público (flag shelter_feed). page inválido vira 1; limit inválido vira 2, teto 50. 404 para galeria inexistente ou não pública (visitante).",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Excluir galeria (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-pages/{{page_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-pages",
+                "{{page_id}}"
+              ]
+            },
+            "description": "Remove rota, página, seções, mídia e objetos. 403 para a galeria do feed (FEED_ORFANATO_PAGE_ID), 404 se inexistente, 401/403 sem permissão."
+          }
+        }
+      ]
+    }
+  ]
+}

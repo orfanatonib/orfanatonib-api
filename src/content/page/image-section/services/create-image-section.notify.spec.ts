@@ -23,17 +23,13 @@ const item = (key: string, mediaType = MediaType.IMAGE) => ({
 });
 
 const setup = () => {
-  const runner = {
-    connect: jest.fn(),
-    startTransaction: jest.fn(),
-    commitTransaction: jest.fn(),
-    rollbackTransaction: jest.fn(),
-    release: jest.fn(),
-    manager: {
-      create: jest.fn((_e: unknown, data: object) => data),
-      save: jest.fn(async (data: object) => ({ id: "s1", ...data })),
-    },
+  const tx = {
+    saveSection: jest.fn(async (data: object) => ({ id: "s1", ...data })),
   };
+  const transactions = {
+    run: jest.fn(async (work: (t: typeof tx) => Promise<unknown>) => work(tx)),
+  };
+  const mediaStorage = { deleteAfterCommit: jest.fn(async () => undefined) };
   const processor = {
     processMediaItemsPolymorphic: jest.fn(async () => [
       { mediaType: MediaType.IMAGE },
@@ -55,14 +51,15 @@ const setup = () => {
     })),
   };
   const service = new CreateImageSectionService(
-    { createQueryRunner: () => runner } as never,
+    transactions as never,
     { upload: jest.fn(), delete: jest.fn() } as never,
     processor as never,
     repo as never,
     notifications as never,
     users as never,
+    mediaStorage as never,
   );
-  return { service, runner, notifications, users };
+  return { service, transactions, mediaStorage, notifications, users };
 };
 
 const dto = {
@@ -76,9 +73,15 @@ const flush = () => new Promise((resolve) => setImmediate(resolve));
 describe("CreateImageSectionService — aviso aos admins", () => {
   it("avisa todos os admins com nome público, legenda e contagens (sem e-mail do autor)", async () => {
     const { service, notifications } = setup();
-    await service.createSection(dto as never, { a: png("a"), b: png("b") }, "u1");
+    await service.createSection(
+      dto as never,
+      { a: png("a"), b: png("b") },
+      "u1",
+    );
     await flush();
-    expect(notifications.sendPhotoUploadedNotification).toHaveBeenCalledTimes(1);
+    expect(notifications.sendPhotoUploadedNotification).toHaveBeenCalledTimes(
+      1,
+    );
     const calls = notifications.sendPhotoUploadedNotification.mock
       .calls as unknown as Array<[Record<string, unknown>, string[]]>;
     const [payload, recipients] = calls[0];
@@ -106,7 +109,7 @@ describe("CreateImageSectionService — aviso aos admins", () => {
   });
 
   it("falha do e-mail não derruba nem desfaz a publicação (já commitada)", async () => {
-    const { service, notifications, runner } = setup();
+    const { service, notifications, mediaStorage } = setup();
     notifications.sendPhotoUploadedNotification.mockRejectedValueOnce(
       new Error("smtp fora"),
     );
@@ -117,20 +120,15 @@ describe("CreateImageSectionService — aviso aos admins", () => {
     );
     await flush();
     expect(result.id).toBe("s1");
-    expect(runner.commitTransaction).toHaveBeenCalledTimes(1);
-    expect(runner.rollbackTransaction).not.toHaveBeenCalled();
+    expect(mediaStorage.deleteAfterCommit).not.toHaveBeenCalled();
   });
 
   it("mídia inválida é recusada com mensagem clara ANTES de abrir transação, sem aviso", async () => {
-    const { service, notifications, runner } = setup();
+    const { service, notifications, transactions } = setup();
     await expect(
-      service.createSection(
-        { ...dto, mediaItems: [] } as never,
-        {},
-        "u1",
-      ),
+      service.createSection({ ...dto, mediaItems: [] } as never, {}, "u1"),
     ).rejects.toBeInstanceOf(BadRequestException);
-    expect(runner.startTransaction).not.toHaveBeenCalled();
+    expect(transactions.run).not.toHaveBeenCalled();
     expect(notifications.sendPhotoUploadedNotification).not.toHaveBeenCalled();
   });
 });

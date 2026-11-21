@@ -21,12 +21,12 @@ participant "AwsS3Service" as S3
 == Entrada ==
 Client -> Controller : multipart: sectionData + arquivos
 activate Controller
-Controller -> Controller : JwtAuthGuard (+ AdminRoleGuard na escrita)
+Controller -> Controller : JwtAuthGuard + FeatureFlagGuard\n(AdminRoleGuard em tudo, exceto o POST)
 note right
-  As duas leituras eram públicas
-  e expunham e-mail e telefone
-  de quem enviou a ideia.
+  A fila de ideias traz nome, e-mail
+  e telefone do autor: só admin lê.
 end note
+Controller -> Controller : AnyFilesInterceptor\n100 MB x 10 arquivos + filtro de MIME\n(400 MEDIA_MIME)
 Controller -> Payload : parse + validate do campo de texto
 note right
   JSON.parse solto estourava 500
@@ -74,9 +74,15 @@ Attach -> Repo : findById + findPageById
 alt seção já vinculada
   Attach --> Controller : 409 ResourceConflictException
 else
+  Attach -> Media : assertUploadsResolvable
   Attach -> Repo : attachToPage
   Attach -> Media : replaceAll
-  Attach --> Controller : IdeasSectionResponseDto
+  alt a mídia falhou
+    Attach -> Repo : restoreUnattached (texto de antes)
+    Attach --> Controller : erro original
+  else
+    Attach --> Controller : IdeasSectionResponseDto
+  end
 end
 deactivate Attach
 

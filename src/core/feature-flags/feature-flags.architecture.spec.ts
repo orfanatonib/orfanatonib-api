@@ -105,11 +105,6 @@ const CORE_UNFLAGGED: Readonly<Record<string, string>> = {
     "leitura transversal de equipes (escopo no serviço)",
   "shelter/team/teams.controller.ts::findOne":
     "leitura transversal de equipes (escopo no serviço)",
-  // Decisão pendente do solicitante (plano 08 §6): leitura PÚBLICA de ideias
-  "content/page/ideas-page/ideas-page.controller.ts::findAll":
-    "público; flag `ideas_sharing` é de membro (decisão pendente)",
-  "content/page/ideas-page/ideas-page.controller.ts::findOne":
-    "público; flag `ideas_sharing` é de membro (decisão pendente)",
 };
 
 const controllerFiles = (dir: string): string[] =>

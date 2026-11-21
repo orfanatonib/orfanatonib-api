@@ -59,4 +59,48 @@ describe("GetVideosPageService", () => {
       NotFoundException,
     );
   });
+
+  it("mapeia as mídias para o DTO de saída, sem storageKey/targetId/targetType", async () => {
+    repo.findById.mockResolvedValue({
+      id: "a",
+      name: "A",
+      description: "d",
+      public: true,
+      route: { id: "ra", path: "a" },
+    });
+    media.findMediaItemsByTarget.mockResolvedValue([
+      {
+        id: "m1",
+        title: "v",
+        description: "d",
+        mediaType: "video",
+        uploadType: "upload",
+        url: "https://x/v.mp4",
+        isLocalFile: true,
+        storageKey: "k/v.mp4",
+        targetId: "a",
+        targetType: "VideosPage",
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ]);
+    const res = await service.findOne("a");
+    expect(Object.keys(res.videos[0]).sort()).toEqual(
+      [
+        "createdAt",
+        "description",
+        "id",
+        "isLocalFile",
+        "mediaType",
+        "originalName",
+        "platformType",
+        "size",
+        "title",
+        "updatedAt",
+        "uploadType",
+        "url",
+      ].sort(),
+    );
+    expect(res.videos[0]).not.toHaveProperty("storageKey");
+  });
 });

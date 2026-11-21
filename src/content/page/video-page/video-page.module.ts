@@ -13,6 +13,7 @@ import { CreateVideosPageService } from "./services/create-video-page.service";
 import { DeleteVideosPageService } from "./services/delete-video-page.service";
 import { GetVideosPageService } from "./services/get-video-page.service";
 import { UpdateVideosPageService } from "./services/update-video-page.service";
+import { VideoPageMediaService } from "./services/video-page-media.service";
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { UpdateVideosPageService } from "./services/update-video-page.service";
     DeleteVideosPageService,
     GetVideosPageService,
     UpdateVideosPageService,
+    VideoPageMediaService,
     AuthContextService,
     {
       provide: VideosPageRepository,

@@ -128,4 +128,19 @@ describe("IdeasSectionRepository", () => {
 
     expect(sections.delete).toHaveBeenCalledWith({ id: "section-id" });
   });
+
+  it("restoreUnattached devolve os campos e zera a página", async () => {
+    await repository.restoreUnattached("section-id", {
+      title: "t",
+      description: "d",
+      public: true,
+    });
+
+    expect(sections.update).toHaveBeenCalledWith("section-id", {
+      title: "t",
+      description: "d",
+      public: true,
+      page: null,
+    });
+  });
 });

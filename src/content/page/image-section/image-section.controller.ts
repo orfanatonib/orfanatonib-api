@@ -37,6 +37,7 @@ import { UpdateImageSectionDto } from "./dto/update-image-section.dto";
 import { IMAGE_SECTION_UPLOAD_LIMITS } from "./constants";
 import { RejectImageSectionService } from "./services/reject-image-section.service";
 import { RejectImageSectionDto } from "./dto/reject-image-section.dto";
+import { ImageSectionPendingCountDto } from "./dto/image-section-pending-count.dto";
 import { MyImageSectionDto } from "./dto/my-image-section.dto";
 
 /**
@@ -110,6 +111,15 @@ export class ImageSectionController {
     const userId = req.user?.userId;
     if (!userId) throw new UnauthorizedException();
     return this.getService.findMine(userId);
+  }
+
+  /** Selo do painel do admin: quantas publicações aguardam revisão. */
+  @FeatureFlag(FeatureFlagKeys.PHOTO_MODERATION)
+  @UseGuards(FeatureFlagGuard)
+  @Get("pending-count")
+  @UseGuards(AdminRoleGuard)
+  pendingCount(): Promise<ImageSectionPendingCountDto> {
+    return this.getService.pendingCount();
   }
 
   @FeatureFlag(FeatureFlagKeys.PHOTO_MODERATION)

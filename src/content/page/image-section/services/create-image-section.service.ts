@@ -1,5 +1,4 @@
 import { Injectable, Logger, BadRequestException } from "@nestjs/common";
-import { DataSource } from "typeorm";
 import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { UploadType } from "src/shared/media/media-item/media-item.entity";
@@ -8,10 +7,12 @@ import { toPublicDisplayName } from "src/common/utils/display-name.util";
 import { countMediaByType } from "../utils";
 import { validateShelterPostMedia } from "../media-validation";
 import { ImageSectionRepository } from "../repositories/image-section.repository";
+import { ImageSectionTransactionRepository } from "../repositories/image-section-transaction.repository";
+import { ImageSectionEntity } from "src/content/page/image-page/entities/image-section.entity";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { CreateImageSectionDto } from "../dto/create-image-section.dto";
 import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
 import { ImageSectionResponseDto } from "../dto/image-section-response.dto";
-import { ImageSectionEntity } from "src/content/page/image-page/entities/image-section.entity";
 import { NotificationService } from "src/communication/notification/services/notification.service";
 import { GetUsersService } from "src/core/user/services/get-user.service";
 
@@ -25,12 +26,13 @@ export class CreateImageSectionService {
   private readonly logger = new Logger(CreateImageSectionService.name);
 
   constructor(
-    private readonly dataSource: DataSource,
+    private readonly transactions: ImageSectionTransactionRepository,
     private readonly awsS3Service: AwsS3Service,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly imageSectionRepository: ImageSectionRepository,
     private readonly notificationService: NotificationService,
     private readonly getUsersService: GetUsersService,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   async createSection(
@@ -41,67 +43,74 @@ export class CreateImageSectionService {
   ): Promise<ImageSectionResponseDto> {
     // Antes de abrir a transação: o erro chega ao usuário com a mensagem específica.
     validateShelterPostMedia(dto.mediaItems, filesDict);
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    this.validateFiles(dto, filesDict);
+    let mediaItems: MediaItemEntity[] = [];
 
+    let savedSection: ImageSectionEntity;
     try {
-      const section = queryRunner.manager.create(ImageSectionEntity, {
-        caption: dto.caption,
-        description: dto.description,
-        public: dto.public || false,
-        page: null,
-        author: authorId ? { id: authorId } : null,
-      });
-
-      const savedSection = await queryRunner.manager.save(section);
-
-      this.validateFiles(dto, filesDict);
-
-      const preparedMediaItems = dto.mediaItems.map((item) => ({
-        ...item,
-        fileField: item.fieldKey,
-      }));
-
-      const mediaItems: MediaItemEntity[] =
-        await this.mediaItemProcessor.processMediaItemsPolymorphic(
-          preparedMediaItems,
-          savedSection.id,
+      savedSection = await this.transactions.run(async (tx) => {
+        const saved = await tx.saveSection({
+          caption: dto.caption,
+          description: dto.description,
+          public: dto.public || false,
+          page: null,
+          author: authorId ? { id: authorId } : null,
+        });
+        const prepared = dto.mediaItems.map((item) => ({
+          ...item,
+          fileField: item.fieldKey,
+        }));
+        // O processador compensa sozinho (apaga objetos e linhas) se um item falhar.
+        mediaItems = await this.mediaItemProcessor.processMediaItemsPolymorphic(
+          prepared,
+          saved.id,
           MediaTargetType.ImagesPage,
           filesDict,
-          this.awsS3Service.upload.bind(this.awsS3Service),
-          this.awsS3Service.delete.bind(this.awsS3Service),
+          (file) => this.awsS3Service.upload(file),
+          (url) => this.awsS3Service.delete(url),
         );
-
-      await queryRunner.commitTransaction();
-
-      // Recarrega com o autor para o DTO (e o aviso) trazer o nome público.
-      const withAuthor = authorId
-        ? await this.imageSectionRepository.findOne({
-            where: { id: savedSection.id },
-            relations: ["author"],
-          })
-        : null;
-
-      // Quando o próprio admin publica não há o que avisar (e ninguém "aguarda aprovação").
-      if (options.notifyAdmins !== false) {
-        void this.notifyAdmins(
-          savedSection.caption,
-          mediaItems,
-          toPublicDisplayName(withAuthor?.author?.name),
-        );
-      }
-
-      return ImageSectionResponseDto.fromEntity(
-        withAuthor ?? savedSection,
-        mediaItems,
-      );
+        return saved;
+      });
     } catch (error) {
-      await queryRunner.rollbackTransaction();
+      // Se a transação caiu depois de as mídias gravarem, elas não têm dono.
+      await this.discardMedia(mediaItems);
       this.logger.error("Error creating section", error);
       throw new BadRequestException("Error creating section");
-    } finally {
-      await queryRunner.release();
+    }
+
+    // Recarrega com o autor para o DTO (e o aviso) trazer o nome público.
+    const withAuthor = authorId
+      ? await this.imageSectionRepository.findOne({
+          where: { id: savedSection.id },
+          relations: ["author"],
+        })
+      : null;
+
+    // Quando o próprio admin publica não há o que avisar (e ninguém "aguarda aprovação").
+    if (options.notifyAdmins !== false) {
+      void this.notifyAdmins(
+        savedSection.caption,
+        mediaItems,
+        toPublicDisplayName(withAuthor?.author?.name),
+      );
+    }
+
+    return ImageSectionResponseDto.fromEntity(
+      withAuthor ?? savedSection,
+      mediaItems,
+    );
+  }
+
+  /** Linhas primeiro, objetos depois (falha do bucket vai para a fila de limpeza). */
+  private async discardMedia(mediaItems: MediaItemEntity[]): Promise<void> {
+    if (mediaItems.length === 0) return;
+    try {
+      const urls =
+        await this.mediaItemProcessor.removeMediaItemsKeepingFiles(mediaItems);
+      await this.mediaStorage.deleteAfterCommit(urls);
+    } catch (error: unknown) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Mídia da publicação sem limpeza completa: ${reason}`);
     }
   }
 

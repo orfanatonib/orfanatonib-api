@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { ImagePageEntity } from "../image-page/entities/image-page.entity";
+import { ImageSectionTransactionRepository } from "./repositories/image-section-transaction.repository";
 import { ImageSectionRepository } from "./repositories/image-section.repository";
 import { ImagePageRepository } from "../image-page/repositories/image-page.repository";
 import { MediaModule } from "src/shared/media/media.module";
@@ -25,6 +26,7 @@ import { UserModule } from "src/core/user/user.module";
   controllers: [ImageSectionController],
   providers: [
     ImageSectionRepository,
+    ImageSectionTransactionRepository,
     ImagePageRepository,
     CreateImageSectionService,
     DeleteImageSectionService,

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await -- dublê assíncrono de teste */
 import { NotFoundException } from "@nestjs/common";
 import { GetImageSectionService } from "./services/get-image-section.service";
 import { toSectionAuthorDto } from "./utils";

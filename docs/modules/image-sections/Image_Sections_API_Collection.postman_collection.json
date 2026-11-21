@@ -1,0 +1,253 @@
+{
+  "info": {
+    "name": "Image Sections API Collection",
+    "description": "Publicações de fotos e vídeo dos abrigos (plano 32). Qualquer sessão envia (POST) e vê as próprias (GET /mine); fila, detalhe, contagem, aprovação, reprovação e exclusão são só admin. Flags shelter_photo_upload / photo_moderation (403 FEATURE_DISABLED). Upload: até 10 fotos (10 MB) + 1 vídeo (100 MB).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "{{base_url}}"
+    },
+    {
+      "key": "section_id",
+      "value": ""
+    },
+    {
+      "key": "author_id",
+      "value": ""
+    },
+    {
+      "key": "page_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Image Sections",
+      "item": [
+        {
+          "name": "Enviar publicação (membro, líder ou admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-sections",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-sections"
+              ]
+            },
+            "description": "Multipart: campo sectionData (JSON) + arquivos referenciados por fieldKey. A autoria vem da sessão; de quem não é admin, public é forçado a false (nasce pendente, sem galeria). 400 sem mídia/JSON inválido/campo desconhecido/arquivo inválido (nada é gravado), 401 sem token, 403 flag desligada (FEATURE_DISABLED).",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "sectionData",
+                  "type": "text",
+                  "value": "{\"caption\": \"Visita ao abrigo\", \"description\": \"Fotos da visita\", \"public\": false, \"mediaItems\": [{\"title\": \"foto\", \"description\": \"\", \"uploadType\": \"upload\", \"mediaType\": \"image\", \"isLocalFile\": true, \"fieldKey\": \"file_0\", \"originalName\": \"foto.png\"}]}"
+                },
+                {
+                  "key": "file_0",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Minhas publicações",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-sections/mine",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-sections",
+                "mine"
+              ]
+            },
+            "description": "Qualquer sessão: só as próprias, com status (pending/approved/rejected) e o motivo da reprovação."
+          }
+        },
+        {
+          "name": "Fila de revisão (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-sections",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-sections"
+              ]
+            },
+            "description": "Só admin (403 para membro/líder, 401 sem token). Seções sem galeria (pendentes e reprovadas)."
+          }
+        },
+        {
+          "name": "Fila filtrada por autor (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-sections?authorId={{author_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-sections"
+              ],
+              "query": [
+                {
+                  "key": "authorId",
+                  "value": "{{author_id}}"
+                }
+              ]
+            },
+            "description": "Só admin. authorId inválido responde 400."
+          }
+        },
+        {
+          "name": "Contagem de pendentes (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-sections/pending-count",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-sections",
+                "pending-count"
+              ]
+            },
+            "description": "Só admin, flag photo_moderation. Resposta: { \"pending\": n } (selo do painel)."
+          }
+        },
+        {
+          "name": "Detalhe (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-sections/{{section_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-sections",
+                "{{section_id}}"
+              ]
+            },
+            "description": "Só admin. 404 para id inexistente."
+          }
+        },
+        {
+          "name": "Aprovar / editar (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-sections/{{section_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-sections",
+                "{{section_id}}"
+              ]
+            },
+            "description": "Multipart como no envio; public true e pageId opcional (omitido = galeria do feed). Grava approved, revisor e data. 404 id inexistente; 400 mídia de outra publicação ou payload inválido; 403 não-admin.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "sectionData",
+                  "type": "text",
+                  "value": "{\"caption\": \"Visita ao abrigo\", \"description\": \"Fotos da visita\", \"public\": false, \"mediaItems\": [{\"title\": \"foto\", \"description\": \"\", \"uploadType\": \"upload\", \"mediaType\": \"image\", \"isLocalFile\": true, \"fieldKey\": \"file_0\", \"originalName\": \"foto.png\"}]}"
+                },
+                {
+                  "key": "file_0",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Reprovar (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/image-sections/{{section_id}}/reject",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-sections",
+                "{{section_id}}",
+                "reject"
+              ]
+            },
+            "description": "Motivo obrigatório (até 500). 409 se já aprovada; repetir é idempotente.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"reason\": \"Envie sem rostos de crianças.\"}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Excluir (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/image-sections/{{section_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "image-sections",
+                "{{section_id}}"
+              ]
+            },
+            "description": "Só admin. Remove linhas de mídia e a publicação; os objetos saem do bucket depois do commit. 404 id inexistente."
+          }
+        }
+      ]
+    }
+  ]
+}

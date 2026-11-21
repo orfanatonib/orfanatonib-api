@@ -1,5 +1,6 @@
 import {
   IsArray,
+  Equals,
   IsBoolean,
   IsEnum,
   IsOptional,
@@ -85,9 +86,15 @@ export class CreateIdeasPageDto {
   @IsString({ message: 'O campo "description" deve ser uma string.' })
   description: string;
 
+  /**
+   * A página de ideias é SEMPRE privada (decisão fechada, plano 31): `public: true`
+   * é rejeitado com 400; ausente ou `false` equivalem. O valor nunca é persistido.
+   */
   @IsOptional()
-  @IsBoolean({ message: 'O campo "public" deve ser booleano.' })
-  public?: boolean = true;
+  @Equals(false, {
+    message: 'A página de ideias é sempre privada: "public" não pode ser true.',
+  })
+  public?: false;
 
   @IsArray({ message: 'O campo "sections" deve ser um array.' })
   @ValidateNested({ each: true })

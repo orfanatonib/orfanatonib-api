@@ -1,475 +1,173 @@
 import {
+  HttpException,
   Injectable,
   Logger,
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
-import { DataSource, QueryRunner, In } from "typeorm";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { RouteService } from "src/infrastructure/route/services/route.service";
 import {
   RouteEntity,
   RouteType,
 } from "src/infrastructure/route/route-page.entity";
-import { IdeasPageRepository } from "../repositories/ideas-page.repository";
-import { MediaItemProcessor } from "src/shared/media/media-item-processor";
-import {
-  IdeasSectionDto,
-  UpdateIdeasPageDto,
-} from "../dto/update-ideas-page.dto";
-import { IdeasPageEntity } from "../entities/ideas-page.entity";
-import { IdeasSectionEntity } from "../../ideas-section/entities/ideas-section.entity";
-import {
-  MediaItemEntity,
-  MediaType,
-  UploadType,
-} from "src/shared/media/media-item/media-item.entity";
+import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
-import { MediaItemDto } from "src/shared/dto/media-item-dto";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
+import {
+  IDEAS_PAGE_ROUTE_IMAGE,
+  IDEAS_PAGE_ROUTE_PREFIX,
+} from "../constants/ideas-page.constants";
+import { UpdateIdeasPageDto } from "../dto/update-ideas-page.dto";
+import { IdeasPageResponseDto } from "../dto/ideas-page-response.dto";
+import {
+  IdeasPageTransaction,
+  IdeasPageWriteRepository,
+} from "../repositories/ideas-page-write.repository";
+import { IdeasPageMediaSyncService } from "./ideas-page-media-sync.service";
+
+interface UpdateOutcome {
+  response: IdeasPageResponseDto;
+  obsoleteUrls: string[];
+}
 
 @Injectable()
 export class UpdateIdeasPageService {
   private readonly logger = new Logger(UpdateIdeasPageService.name);
 
   constructor(
-    private readonly dataSource: DataSource,
-    private readonly s3: AwsS3Service,
+    private readonly writeRepo: IdeasPageWriteRepository,
     private readonly routeService: RouteService,
-    private readonly mediaItemProcessor: MediaItemProcessor,
-    private readonly pageRepo: IdeasPageRepository,
+    private readonly mediaSync: IdeasPageMediaSyncService,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   async updateIdeasPage(
     id: string,
     pageData: UpdateIdeasPageDto,
     filesDict: Record<string, Express.Multer.File>,
-  ): Promise<IdeasPageEntity> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
+  ): Promise<IdeasPageResponseDto> {
+    const batch = this.mediaStorage.newBatch();
     try {
-      const ideasPageExisting = await this.validatePage(id, queryRunner);
-      const ideasSectionExisting = await this.validateSections(
-        ideasPageExisting.id,
-        queryRunner,
+      const outcome = await this.writeRepo.transaction((tx) =>
+        this.apply(tx, id, pageData, filesDict, batch),
       );
-      const ideasPageRouteExisting = await this.validateRoute(
-        ideasPageExisting.id,
-      );
-      const oldMedia = await this.validateMedia(
-        ideasSectionExisting.map((section) => section.id),
-        queryRunner,
-      );
-
-      await this.deleteSections(
-        ideasSectionExisting,
-        pageData.sections,
-        queryRunner,
-      );
-      await this.deleteMedia(oldMedia, pageData.sections, queryRunner);
-
-      const savedIdeasPage = await this.upsertIdeasPage(
-        ideasPageExisting.id,
-        pageData,
-        queryRunner,
-      );
-      const savedRoute = await this.upsertRoute(
-        ideasPageRouteExisting.id,
-        pageData,
-        savedIdeasPage.id,
-      );
-
-      const updatedSections: IdeasSectionEntity[] = [];
-      const processedMediaIds: string[] = [];
-
-      for (const sectionInput of pageData.sections) {
-        let savedSection: IdeasSectionEntity;
-
-        if (sectionInput.id) {
-          savedSection = await this.upsertSection(
-            sectionInput,
-            savedIdeasPage,
-            queryRunner,
-          );
-        } else {
-          savedSection = await this.addSection(
-            sectionInput,
-            savedIdeasPage,
-            queryRunner,
-          );
-        }
-        updatedSections.push(savedSection);
-
-        const oldSectionMedia = oldMedia.filter(
-          (m) => m.targetId === savedSection.id,
-        );
-        const processedMedia = await this.processSectionMedia(
-          sectionInput.medias || [],
-          savedSection.id,
-          oldSectionMedia,
-          filesDict,
-          queryRunner,
-        );
-        processedMediaIds.push(...processedMedia.map((m) => m.id));
-      }
-
-      savedIdeasPage.sections = updatedSections;
-      savedIdeasPage.route = savedRoute;
-      const finalIdeasPage = await queryRunner.manager.save(
-        IdeasPageEntity,
-        savedIdeasPage,
-      );
-
-      for (const section of finalIdeasPage.sections) {
-        const medias = await queryRunner.manager.find(MediaItemEntity, {
-          where: {
-            targetId: section.id,
-            targetType: MediaTargetType.IdeasSection,
-            id: In(processedMediaIds),
-          },
-        });
-        // `medias` não é coluna da seção: é anexada só para a resposta.
-        Object.assign(section, { medias });
-      }
-
-      await queryRunner.commitTransaction();
-      return finalIdeasPage;
-    } catch (error) {
+      batch.commit();
+      await this.mediaStorage.deleteAfterCommit(outcome.obsoleteUrls);
+      return outcome.response;
+    } catch (error: unknown) {
+      await batch.discard();
       this.logger.error(
-        `Error updating ideas page with ID: ${id}. Rolling back`,
-        error.stack,
+        `Error updating ideas page with ID: ${id}. Rolled back`,
+        error instanceof Error ? error.stack : undefined,
       );
-      await queryRunner.rollbackTransaction();
+      if (error instanceof HttpException && !this.isInternal(error)) {
+        throw error;
+      }
       throw new BadRequestException(
         "Error updating ideas page. No data was saved.",
       );
-    } finally {
-      await queryRunner.release();
     }
   }
 
-  private async validatePage(
-    id: string,
-    queryRunner: QueryRunner,
-  ): Promise<IdeasPageEntity> {
-    const page = await queryRunner.manager.findOne(IdeasPageEntity, {
-      where: { id },
-      relations: ["route"],
-    });
-    if (!page) {
-      throw new NotFoundException("Ideas page not found");
-    }
-    return page;
+  private isInternal(error: HttpException): boolean {
+    return error.getStatus() >= 500;
   }
 
-  private async validateSections(
-    pageId: string,
-    queryRunner: QueryRunner,
-  ): Promise<IdeasSectionEntity[]> {
-    const sections = await queryRunner.manager.find(IdeasSectionEntity, {
-      where: { page: { id: pageId } },
-    });
-    if (!sections || sections.length === 0) {
-      throw new NotFoundException("Ideas page sections not found");
-    }
-    return sections;
-  }
-
-  private async validateRoute(entityId: string): Promise<RouteEntity> {
-    const route = await this.routeService.findRouteByEntityId(entityId);
-    if (!route) {
-      throw new NotFoundException("Ideas page route not found");
-    }
-    return route;
-  }
-
-  private async validateMedia(
-    sectionIds: string[],
-    queryRunner: QueryRunner,
-  ): Promise<MediaItemEntity[]> {
-    // Seção sem mídia é válida: atualizar a página não pode falhar por isso.
-    if (sectionIds.length === 0) return [];
-    const media = await queryRunner.manager.find(MediaItemEntity, {
-      where: {
-        targetId: In(sectionIds),
-        targetType: MediaTargetType.IdeasSection,
-      },
-    });
-    return media;
-  }
-
-  private async upsertIdeasPage(
+  private async apply(
+    tx: IdeasPageTransaction,
     id: string,
     pageData: UpdateIdeasPageDto,
-    queryRunner: QueryRunner,
-  ): Promise<IdeasPageEntity> {
-    const ideasPageToUpsert: Partial<IdeasPageEntity> = {
-      id,
+    filesDict: Record<string, Express.Multer.File>,
+    batch: ReturnType<MediaStorageService["newBatch"]>,
+  ): Promise<UpdateOutcome> {
+    const page = await tx.lockPage(id);
+    if (!page) throw new NotFoundException("Ideas page not found");
+    const route = await this.routeService.findRouteByEntityId(page.id);
+    if (!route) throw new NotFoundException("Ideas page route not found");
+
+    const existingSections = await tx.findSections(page.id);
+    const oldMedia = await tx.findMediaOfSections(
+      existingSections.map((s) => s.id),
+    );
+
+    const requested = pageData.sections;
+    await tx.removeSections(
+      existingSections.filter((s) => !requested.some((r) => r.id === s.id)),
+    );
+    const obsoleteUrls = await this.removeUnrequestedMedia(
+      tx,
+      oldMedia,
+      requested.flatMap((s) => (s.medias ?? []).map((m) => m.id)),
+    );
+
+    const savedPage = await tx.savePage({
+      id: page.id,
       title: pageData.title,
       subtitle: pageData.subtitle,
       description: pageData.description,
-    };
-    const savedIdeasPage = await queryRunner.manager.save(
-      IdeasPageEntity,
-      ideasPageToUpsert,
-    );
-    return savedIdeasPage;
-  }
-
-  private async addSection(
-    sectionInput: IdeasSectionDto,
-    ideasPage: IdeasPageEntity,
-    queryRunner: QueryRunner,
-  ): Promise<IdeasSectionEntity> {
-    const sectionToAdd: Partial<IdeasSectionEntity> = {
-      title: sectionInput.title,
-      description: sectionInput.description,
-      public: sectionInput.public ?? true,
-      page: ideasPage,
-    };
-    const savedSection = await queryRunner.manager.save(
-      IdeasSectionEntity,
-      sectionToAdd,
-    );
-    return savedSection;
-  }
-
-  private async deleteSections(
-    existingSections: IdeasSectionEntity[],
-    requestedSections: IdeasSectionDto[],
-    queryRunner: QueryRunner,
-  ): Promise<void> {
-    const sectionsToRemove = existingSections.filter(
-      (existing) =>
-        !requestedSections.some((requested) => requested.id === existing.id),
-    );
-    for (const section of sectionsToRemove) {
-      await queryRunner.manager.remove(IdeasSectionEntity, section);
-    }
-  }
-
-  private async deleteMedia(
-    existingMedia: MediaItemEntity[],
-    requestedSections: IdeasSectionDto[],
-    queryRunner: QueryRunner,
-  ): Promise<void> {
-    const requestedMediaIds = requestedSections
-      .flatMap((section) => section.medias.map((media) => media.id))
-      .filter((id): id is string => typeof id === "string" && id.length > 0);
-    const mediaToRemove = existingMedia.filter(
-      (existing) => existing.id && !requestedMediaIds.includes(existing.id),
-    );
-    for (const media of mediaToRemove) {
-      if (!media.id) {
-        continue;
-      }
-      if (media.isLocalFile && media.url) {
-        try {
-          await this.s3.delete(media.url);
-        } catch (error) {
-          this.logger.error(
-            `Error deleting file from S3: ${media.url}`,
-            error.stack,
-          );
-          throw new BadRequestException(
-            `Error deleting file from S3: ${media.url}`,
-          );
-        }
-      }
-      await queryRunner.manager.delete(MediaItemEntity, { id: media.id });
-    }
-  }
-
-  private async addMedia(
-    mediaInput: MediaItemDto,
-    targetId: string,
-    filesDict: Record<string, Express.Multer.File>,
-    queryRunner: QueryRunner,
-  ): Promise<MediaItemEntity> {
-    const media = this.mediaItemProcessor.buildBaseMediaItem(
-      { ...mediaInput, mediaType: mediaInput.mediaType || MediaType.IMAGE },
-      targetId,
-      MediaTargetType.IdeasSection,
-    );
-
-    if (
-      mediaInput.uploadType === UploadType.UPLOAD ||
-      mediaInput.isLocalFile === true
-    ) {
-      media.platformType = undefined;
-      if (!mediaInput.fieldKey) {
-        throw new BadRequestException(
-          `FieldKey missing for media "${mediaInput.title}"`,
-        );
-      }
-      const file = filesDict[mediaInput.fieldKey];
-      if (!file) {
-        throw new BadRequestException(
-          `File missing for media "${mediaInput.title}"`,
-        );
-      }
-      media.url = await this.s3.upload(file);
-      media.isLocalFile = mediaInput.isLocalFile;
-      media.originalName = file.originalname;
-      media.size = file.size;
-    } else {
-      media.title = mediaInput.title || media.title;
-      media.description = mediaInput.description || media.description;
-      media.uploadType = mediaInput.uploadType || media.uploadType;
-      media.platformType = mediaInput.platformType || media.platformType;
-      media.mediaType = mediaInput.mediaType || media.mediaType;
-      media.url = mediaInput.url?.trim() || media.url;
-      media.originalName = mediaInput.originalName || media.originalName;
-      media.isLocalFile = mediaInput.isLocalFile || media.isLocalFile;
-      media.size = mediaInput.size || media.size;
-    }
-
-    const savedMedia = await this.mediaItemProcessor.saveMediaItem(media);
-    return savedMedia;
-  }
-
-  private async upsertSection(
-    sectionInput: IdeasSectionDto,
-    ideasPage: IdeasPageEntity,
-    queryRunner: QueryRunner,
-  ): Promise<IdeasSectionEntity> {
-    const sectionToUpsert: Partial<IdeasSectionEntity> = {
-      id: sectionInput.id,
-      title: sectionInput.title,
-      description: sectionInput.description,
-      public: sectionInput.public ?? true,
-      page: ideasPage,
-    };
-    const savedSection = await queryRunner.manager.save(
-      IdeasSectionEntity,
-      sectionToUpsert,
-    );
-    return savedSection;
-  }
-
-  private async upsertMedia(
-    mediaInput: MediaItemDto,
-    targetId: string,
-    filesDict: Record<string, Express.Multer.File>,
-    queryRunner: QueryRunner,
-  ): Promise<MediaItemEntity> {
-    let existingMedia: MediaItemEntity | null = null;
-    if (mediaInput.id) {
-      existingMedia = await queryRunner.manager.findOne(MediaItemEntity, {
-        where: { id: mediaInput.id },
-      });
-    }
-
-    const media = this.mediaItemProcessor.buildBaseMediaItem(
-      mediaInput,
-      targetId,
-      MediaTargetType.IdeasSection,
-    );
-
-    const isUpload =
-      mediaInput.uploadType === UploadType.UPLOAD && mediaInput.isLocalFile;
-    const key = mediaInput.fieldKey ?? mediaInput.url;
-    const file = key ? filesDict[key] : undefined;
-
-    if (isUpload && file) {
-      if (existingMedia?.isLocalFile && existingMedia.url) {
-        try {
-          await this.s3.delete(existingMedia.url);
-        } catch (error) {
-          this.logger.warn(`Could not delete old file: ${existingMedia.url}`);
-        }
-      }
-      media.url = await this.s3.upload(file);
-      media.originalName = file.originalname;
-      media.isLocalFile = true;
-      media.size = file.size;
-    } else if (isUpload && !file && existingMedia) {
-      media.url = existingMedia.url;
-      media.originalName = existingMedia.originalName;
-      media.isLocalFile = existingMedia.isLocalFile;
-      media.size = existingMedia.size;
-    } else {
-      if (
-        existingMedia?.isLocalFile &&
-        existingMedia.url &&
-        !mediaInput.isLocalFile
-      ) {
-        try {
-          await this.s3.delete(existingMedia.url);
-        } catch (error) {
-          this.logger.warn(
-            `Could not delete old file when switching to link: ${existingMedia.url}`,
-          );
-        }
-      }
-      media.title = mediaInput.title || media.title;
-      media.description = mediaInput.description || media.description;
-      media.uploadType = mediaInput.uploadType || media.uploadType;
-      media.platformType = mediaInput.platformType || media.platformType;
-      media.mediaType = mediaInput.mediaType || media.mediaType;
-      media.url = mediaInput.url?.trim() || media.url;
-      media.originalName = mediaInput.originalName || media.originalName;
-      media.isLocalFile = mediaInput.isLocalFile ?? false;
-      media.size = mediaInput.size || media.size;
-    }
-
-    const savedMedia = await queryRunner.manager.save(MediaItemEntity, {
-      ...media,
-      id: mediaInput.id,
+      public: false, // sempre privada: edição também normaliza legado
     });
-    return savedMedia;
+
+    const mediaBySection = new Map<string, MediaItemEntity[]>();
+    for (const input of requested) {
+      const known = existingSections.find((s) => s.id === input.id);
+      const fields = {
+        title: input.title,
+        description: input.description,
+        public: input.public ?? true,
+      };
+      const section = known
+        ? await tx.saveSection({ id: known.id, ...fields, page: savedPage })
+        : await tx.createSection(savedPage, fields);
+      const synced = await this.mediaSync.syncSection(
+        tx,
+        section.id,
+        input.medias ?? [],
+        oldMedia,
+        filesDict,
+        batch,
+      );
+      mediaBySection.set(section.id, synced.saved);
+      obsoleteUrls.push(...synced.obsoleteUrls);
+    }
+
+    await this.upsertRoute(route, pageData, page.id);
+    const reloaded = await tx.loadPage(page.id);
+    if (!reloaded) throw new NotFoundException("Ideas page not found");
+    return {
+      response: IdeasPageResponseDto.fromEntity(reloaded, mediaBySection),
+      obsoleteUrls,
+    };
+  }
+
+  /** Remove as linhas de mídia fora da lista pedida; devolve os arquivos a apagar após o commit. */
+  private async removeUnrequestedMedia(
+    tx: IdeasPageTransaction,
+    oldMedia: MediaItemEntity[],
+    requestedIds: Array<string | undefined>,
+  ): Promise<string[]> {
+    const keep = new Set(requestedIds.filter((v): v is string => !!v));
+    const toRemove = oldMedia.filter((m) => !keep.has(m.id));
+    await tx.removeMedia(toRemove);
+    return toRemove.filter((m) => m.isLocalFile && m.url).map((m) => m.url);
   }
 
   private async upsertRoute(
-    routeId: string,
+    route: RouteEntity,
     pageData: UpdateIdeasPageDto,
-    ideasPageId: string,
+    pageId: string,
   ): Promise<RouteEntity> {
-    const routeData: Partial<RouteEntity> = {
+    return this.routeService.upsertRoute(route.id, {
       title: pageData.title,
       subtitle: pageData.subtitle,
       description: pageData.description,
-      idToFetch: ideasPageId,
+      idToFetch: pageId,
       entityType: MediaTargetType.IdeasPage,
-      entityId: ideasPageId,
+      entityId: pageId,
       type: RouteType.PAGE,
-      path: "galeria_ideias_",
-      image:
-        "https://orfanatos-nib-storage.s3.us-east-1.amazonaws.com/aux/card_ideias.png",
+      path: IDEAS_PAGE_ROUTE_PREFIX,
+      image: IDEAS_PAGE_ROUTE_IMAGE,
       public: false,
-    };
-    const savedRoute = await this.routeService.upsertRoute(routeId, routeData);
-    return savedRoute;
-  }
-
-  private async processSectionMedia(
-    mediaItems: MediaItemDto[],
-    sectionId: string,
-    oldMedia: MediaItemEntity[],
-    filesDict: Record<string, Express.Multer.File>,
-    queryRunner: QueryRunner,
-  ): Promise<MediaItemEntity[]> {
-    const processedMedia: MediaItemEntity[] = [];
-    for (const mediaInput of mediaItems) {
-      if (mediaInput.id) {
-        const savedMedia = await this.upsertMedia(
-          mediaInput,
-          sectionId,
-          filesDict,
-          queryRunner,
-        );
-        processedMedia.push(savedMedia);
-      } else {
-        const savedMedia = await this.addMedia(
-          mediaInput,
-          sectionId,
-          filesDict,
-          queryRunner,
-        );
-        processedMedia.push(savedMedia);
-      }
-    }
-    return processedMedia;
+    });
   }
 }

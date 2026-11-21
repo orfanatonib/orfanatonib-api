@@ -107,6 +107,7 @@ export class ImageController {
       return result;
     } catch (error) {
       this.logger.error("Error updating gallery", error);
+      if (error instanceof NotFoundException) throw error;
       throw new BadRequestException("Erro ao atualizar a galeria.");
     }
   }

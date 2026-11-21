@@ -13,16 +13,20 @@ describe("ImageSectionController (antes sem nenhum guard)", () => {
     expect(guardsOf(ImageSectionController)).toContain(JwtAuthGuard);
   });
 
-  it.each(["getAll", "getById", "update", "delete", "reject"] as const)(
-    "%s é só de admin",
-    (handler) => {
-      expect(
-        guardsOf(
-          Reflect.get(ImageSectionController.prototype, handler) as object,
-        ),
-      ).toContain(AdminRoleGuard);
-    },
-  );
+  it.each([
+    "getAll",
+    "getById",
+    "update",
+    "delete",
+    "reject",
+    "pendingCount",
+  ] as const)("%s é só de admin", (handler) => {
+    expect(
+      guardsOf(
+        Reflect.get(ImageSectionController.prototype, handler) as object,
+      ),
+    ).toContain(AdminRoleGuard);
+  });
 
   it("create fica aberto a qualquer sessão (membro propõe), não a admin apenas", () => {
     expect(
@@ -36,6 +40,20 @@ describe("ImageSectionController (antes sem nenhum guard)", () => {
     expect(
       guardsOf(Reflect.get(ImageSectionController.prototype, "mine") as object),
     ).not.toContain(AdminRoleGuard);
+  });
+
+  it("pendingCount delega ao serviço e devolve { pending }", async () => {
+    const getService = {
+      pendingCount: jest.fn().mockResolvedValue({ pending: 4 }),
+    };
+    const controller = new ImageSectionController(
+      {} as never,
+      {} as never,
+      getService as never,
+      {} as never,
+      {} as never,
+    );
+    await expect(controller.pendingCount()).resolves.toEqual({ pending: 4 });
   });
 
   describe("create: publicação direta só para admin", () => {

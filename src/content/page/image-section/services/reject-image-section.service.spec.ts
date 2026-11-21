@@ -44,7 +44,11 @@ const flush = () => new Promise((resolve) => setImmediate(resolve));
 describe("RejectImageSectionService", () => {
   it("reprova a pendente: grava motivo, revisor e data, e avisa o autor só com o necessário", async () => {
     const { service, repo, notifications } = setup();
-    const result = await service.reject("s1", "Há rostos de crianças.", "admin1");
+    const result = await service.reject(
+      "s1",
+      "Há rostos de crianças.",
+      "admin1",
+    );
     await flush();
     expect(result.reviewStatus).toBe(ImageSectionReviewStatus.REJECTED);
     expect(result.rejectionReason).toBe("Há rostos de crianças.");
@@ -98,7 +102,9 @@ describe("RejectImageSectionService", () => {
 
   it("falha do e-mail não desfaz a reprovação nem derruba a chamada", async () => {
     const { service, repo, notifications } = setup();
-    notifications.sendImageRejectedEmail.mockRejectedValueOnce(new Error("smtp"));
+    notifications.sendImageRejectedEmail.mockRejectedValueOnce(
+      new Error("smtp"),
+    );
     const result = await service.reject("s1", "motivo", "a");
     await flush();
     expect(result.reviewStatus).toBe(ImageSectionReviewStatus.REJECTED);
@@ -127,7 +133,9 @@ describe("RejectImageSectionDto", () => {
     expect(
       (await check("a".repeat(REJECTION_REASON_MAX_LENGTH + 1))).length,
     ).toBeGreaterThan(0);
-    expect((await check("a".repeat(REJECTION_REASON_MAX_LENGTH))).length).toBe(0);
+    expect((await check("a".repeat(REJECTION_REASON_MAX_LENGTH))).length).toBe(
+      0,
+    );
     const dto = plainToInstance(RejectImageSectionDto, { reason: "  ok  " });
     expect(dto.reason).toBe("ok");
   });

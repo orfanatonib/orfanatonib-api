@@ -12,6 +12,8 @@ import { CreateImagePageService } from "./services/create-image-page.service";
 import { GetImagePageService } from "./services/get-image-page.service";
 import { DeleteImagePageService } from "./services/delete-image-page.service";
 import { UpdateImagePageService } from "./services/update-image-page.service";
+import { UpdateImagePageMediaService } from "./services/update-image-page-media.service";
+import { ImagePageTransactionRepository } from "./repositories/image-page-transaction.repository";
 import { AuthModule } from "src/core/auth/auth.module";
 import { FeedCelebrationModule } from "../feed-celebration/feed-celebration.module";
 import { FeedPhotoCommentModule } from "../feed-photo-comment/feed-photo-comment.module";
@@ -31,6 +33,8 @@ import { FeedPhotoCommentModule } from "../feed-photo-comment/feed-photo-comment
     GetImagePageService,
     DeleteImagePageService,
     UpdateImagePageService,
+    UpdateImagePageMediaService,
+    ImagePageTransactionRepository,
     {
       provide: ImagePageRepository,
       useFactory: (dataSource: DataSource) =>

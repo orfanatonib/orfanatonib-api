@@ -1,99 +1,66 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
-  BadRequestException,
 } from "@nestjs/common";
-import { DataSource, In, QueryRunner } from "typeorm";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
-import { RouteService } from "src/infrastructure/route/services/route.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
-import { IdeasPageRepository } from "../repositories/ideas-page.repository";
-import { IdeasSectionEntity } from "../../ideas-section/entities/ideas-section.entity";
-import { IdeasPageEntity } from "../entities/ideas-page.entity";
-import { RouteEntity } from "src/infrastructure/route/route-page.entity";
-import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
+import { IdeasPageRepository } from "../repositories/ideas-page.repository";
+import { IdeasPageWriteRepository } from "../repositories/ideas-page-write.repository";
 
 @Injectable()
 export class DeleteIdeasPageService {
   private readonly logger = new Logger(DeleteIdeasPageService.name);
 
   constructor(
-    private readonly dataSource: DataSource,
     private readonly pageRepo: IdeasPageRepository,
-    private readonly routeService: RouteService,
-    private readonly awsS3Service: AwsS3Service,
+    private readonly writeRepo: IdeasPageWriteRepository,
     private readonly mediaItemProcessor: MediaItemProcessor,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
+  /**
+   * Linhas (página, rota, seções, mídias) saem numa transação; os objetos do
+   * bucket só são apagados DEPOIS do commit (falha vai para a fila de limpeza),
+   * então um rollback nunca deixa referência quebrada.
+   */
   async removeIdeasPage(id: string): Promise<void> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    const page = await this.pageRepo.findOnePageById(id);
+    if (!page) {
+      throw new NotFoundException(`Ideas page with id ${id} not found`);
+    }
+
+    const sectionIds = (page.sections ?? []).map((s) => s.id);
+    const media =
+      sectionIds.length > 0
+        ? await this.mediaItemProcessor.findManyMediaItemsByTargets(
+            sectionIds,
+            MediaTargetType.IdeasSection,
+          )
+        : [];
 
     try {
-      const page = await this.pageRepo.findOnePageById(id);
-      if (!page) {
-        throw new NotFoundException(`Ideas page with id ${id} not found`);
-      }
-
-      const sectionIds = page.sections?.map((s) => s.id) || [];
-
-      if (sectionIds.length > 0) {
-        const mediaItems = await this.validateMedia(sectionIds);
-
-        await this.mediaItemProcessor.deleteMediaItems(
-          mediaItems,
-          this.awsS3Service.delete.bind(this.awsS3Service),
-        );
-      } else {
-      }
-
-      if (page.route?.id) {
-        await queryRunner.manager.save(IdeasPageEntity, {
-          id: page.id,
-          route: null,
-        });
-
-        await queryRunner.manager.delete(RouteEntity, { id: page.route.id });
-      } else {
-      }
-
-      await queryRunner.manager.remove(page);
-
-      const remainingSections = await queryRunner.manager.find(
-        IdeasSectionEntity,
-        {
-          where: sectionIds.length ? { id: In(sectionIds) } : undefined,
-        },
+      await this.writeRepo.transaction(async (tx) => {
+        await tx.removeMedia(media);
+        const clean = await tx.removePageWithRoute(page, sectionIds);
+        if (!clean) {
+          throw new BadRequestException(
+            "Failed to remove all associated sections",
+          );
+        }
+      });
+    } catch (error: unknown) {
+      this.logger.error(
+        "Error removing ideas page. Rolled back.",
+        error instanceof Error ? error.stack : undefined,
       );
-
-      if (remainingSections.length > 0) {
-        throw new BadRequestException(
-          "Failed to remove all associated sections",
-        );
-      }
-
-      await queryRunner.commitTransaction();
-    } catch (error) {
-      this.logger.error("Error removing ideas page. Rolling back.", error);
-      await queryRunner.rollbackTransaction();
       throw new BadRequestException("Error removing ideas page.");
-    } finally {
-      await queryRunner.release();
     }
-  }
 
-  private async validateMedia(
-    sectionIds: string[],
-  ): Promise<MediaItemEntity[]> {
-    const mediaItems =
-      await this.mediaItemProcessor.findManyMediaItemsByTargets(
-        sectionIds,
-        MediaTargetType.IdeasSection,
-      );
-
-    return mediaItems;
+    await this.mediaStorage.deleteAfterCommit(
+      media.filter((m) => m.isLocalFile && m.url).map((m) => m.url),
+    );
   }
 }

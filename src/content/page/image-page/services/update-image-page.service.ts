@@ -1,42 +1,50 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
   NotFoundException,
-  BadRequestException,
 } from "@nestjs/common";
 import { ImageSectionReviewStatus } from "src/content/page/image-section/enums/image-section-review-status.enum";
-import { DataSource, QueryRunner } from "typeorm";
 import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { RouteService } from "src/infrastructure/route/services/route.service";
 import {
   RouteEntity,
   RouteType,
 } from "src/infrastructure/route/route-page.entity";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
+import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { ImagePageRepository } from "../repositories/image-page.repository";
 import { ImageSectionRepository } from "../../image-section/repositories/image-section.repository";
-import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import {
+  ImagePageTransaction,
+  ImagePageTransactionRepository,
+} from "../repositories/image-page-transaction.repository";
 import { UpdateImagePageDto, UpdateSectionDto } from "../dto/update-image.dto";
 import { ImagePageResponseDto } from "../dto/image-page-response.dto";
 import { ImageSectionEntity } from "../entities/image-section.entity";
-import {
-  MediaItemEntity,
-  UploadType,
-} from "src/shared/media/media-item/media-item.entity";
 import { ImagePageEntity } from "../entities/image-page.entity";
-import { MediaItemDto } from "src/shared/dto/media-item-dto";
-import { MediaTargetType } from "src/shared/media/media-target-type.enum";
+import { MediaChangeLog } from "../media-change-log";
+import {
+  IMAGE_PAGE_ROUTE_IMAGE,
+  IMAGE_PAGE_ROUTE_PATH_PREFIX,
+} from "../constants";
+import { UpdateImagePageMediaService } from "./update-image-page-media.service";
 
 @Injectable()
 export class UpdateImagePageService {
   private readonly logger = new Logger(UpdateImagePageService.name);
 
   constructor(
-    private readonly dataSource: DataSource,
+    private readonly transactions: ImagePageTransactionRepository,
     private readonly imagePageRepository: ImagePageRepository,
     private readonly imageSectionRepository: ImageSectionRepository,
     private readonly routeService: RouteService,
     private readonly awsS3Service: AwsS3Service,
     private readonly mediaItemProcessor: MediaItemProcessor,
+    private readonly mediaStorage: MediaStorageService,
+    private readonly mediaService: UpdateImagePageMediaService,
   ) {}
 
   async updateImagePage(
@@ -44,92 +52,87 @@ export class UpdateImagePageService {
     pageData: UpdateImagePageDto,
     filesDict: Record<string, Express.Multer.File>,
   ): Promise<ImagePageResponseDto> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    const log = new MediaChangeLog();
+    let result: ImagePageResponseDto;
 
     try {
-      const imagePageExisting = await this.validateImagePage(id);
-      const imageSectionExisting = await this.validateSections(
-        imagePageExisting.id,
+      result = await this.transactions.run((tx) =>
+        this.applyUpdate(tx, id, pageData, filesDict, log),
       );
-      const imagePageRouteExisting = await this.validateRoute(
-        imagePageExisting.id,
-      );
-      const oldMedia = await this.validateMedia(
-        imageSectionExisting.map((section) => section.id),
-      );
-
-      await this.deleteSections(
-        imageSectionExisting,
-        pageData.sections,
-        queryRunner,
-      );
-      await this.deleteMedia(oldMedia, pageData.sections, queryRunner);
-
-      const savedImagePage = await this.upsertImagePage(
-        imagePageExisting.id,
-        pageData,
-        queryRunner,
-      );
-      const savedRoute = await this.upsertRoute(
-        imagePageRouteExisting.id,
-        pageData,
-        savedImagePage.id,
-      );
-
-      const updatedSections: ImageSectionEntity[] = [];
-      const mediaMap = new Map<string, MediaItemEntity[]>();
-
-      for (const sectionInput of pageData.sections) {
-        let savedSection: ImageSectionEntity;
-
-        if (sectionInput.id) {
-          savedSection = await this.upsertSection(
-            sectionInput,
-            savedImagePage,
-            queryRunner,
-          );
-        } else {
-          savedSection = await this.addSection(
-            sectionInput,
-            savedImagePage,
-            queryRunner,
-          );
-        }
-        updatedSections.push(savedSection);
-
-        const oldSectionMedia = oldMedia.filter(
-          (m) => m.targetId === savedSection.id,
-        );
-        const processedMedia = await this.processSectionMedia(
-          sectionInput.mediaItems,
-          savedSection.id,
-          oldSectionMedia,
-          filesDict,
-          queryRunner,
-        );
-        mediaMap.set(savedSection.id, processedMedia);
-      }
-
-      savedImagePage.sections = updatedSections;
-      savedImagePage.route = savedRoute;
-      const finalImagePage = await queryRunner.manager.save(
-        ImagePageEntity,
-        savedImagePage,
-      );
-
-      await queryRunner.commitTransaction();
-      return ImagePageResponseDto.fromEntity(finalImagePage, mediaMap);
     } catch (error) {
       this.logger.error("Error updating gallery. Rolling back.", error);
-      await queryRunner.rollbackTransaction();
+      await this.discardUploads(log.uploadedUrls);
+      // Id inexistente (página, seções, rota ou mídia) é 404, como em vídeo e ideias.
+      if (error instanceof NotFoundException) throw error;
       throw new BadRequestException(
         "Error updating gallery. No data was saved.",
       );
-    } finally {
-      await queryRunner.release();
     }
+
+    await this.mediaStorage.deleteAfterCommit(log.obsoleteUrls);
+    return result;
+  }
+
+  private async applyUpdate(
+    tx: ImagePageTransaction,
+    id: string,
+    pageData: UpdateImagePageDto,
+    filesDict: Record<string, Express.Multer.File>,
+    log: MediaChangeLog,
+  ): Promise<ImagePageResponseDto> {
+    await tx.lockPage(id);
+    const existingPage = await this.validateImagePage(id);
+    const existingSections = await this.validateSections(existingPage.id);
+    const existingRoute = await this.validateRoute(existingPage.id);
+    const oldMedia = await this.validateMedia(
+      existingSections.map((section) => section.id),
+    );
+
+    await this.removeUnrequestedSections(
+      existingSections,
+      pageData.sections,
+      tx,
+    );
+    await this.mediaService.removeUnrequested(
+      oldMedia,
+      pageData.sections,
+      tx,
+      log,
+    );
+
+    const savedPage = await tx.savePage({
+      id: existingPage.id,
+      name: pageData.title,
+      description: pageData.description,
+      public: pageData.public,
+    });
+    const savedRoute = await this.upsertRoute(
+      existingRoute.id,
+      pageData,
+      savedPage.id,
+    );
+
+    const sections: ImageSectionEntity[] = [];
+    const mediaMap = new Map<string, MediaItemEntity[]>();
+    for (const input of pageData.sections) {
+      const section = await this.saveSection(input, savedPage, tx);
+      sections.push(section);
+      mediaMap.set(
+        section.id,
+        await this.mediaService.processSectionMedia(
+          input.mediaItems,
+          section.id,
+          filesDict,
+          tx,
+          log,
+        ),
+      );
+    }
+
+    savedPage.sections = sections;
+    savedPage.route = savedRoute;
+    const finalPage = await tx.savePage(savedPage);
+    return ImagePageResponseDto.fromEntity(finalPage, mediaMap);
   }
 
   async validateImagePage(id: string): Promise<ImagePageEntity> {
@@ -159,7 +162,7 @@ export class UpdateImagePageService {
   async validateMedia(sectionIds: string[]): Promise<MediaItemEntity[]> {
     const media = await this.mediaItemProcessor.findManyMediaItemsByTargets(
       sectionIds,
-      "ImagesPage",
+      MediaTargetType.ImagesPage,
     );
     if (!media || media.length === 0) {
       throw new NotFoundException("Media associated with gallery not found");
@@ -167,214 +170,41 @@ export class UpdateImagePageService {
     return media;
   }
 
-  async upsertImagePage(
-    id: string,
-    pageData: UpdateImagePageDto,
-    queryRunner: QueryRunner,
-  ): Promise<ImagePageEntity> {
-    const imagePageToUpsert: Partial<ImagePageEntity> = {
-      id,
-      name: pageData.title,
-      description: pageData.description,
-      public: pageData.public,
-    };
-    const savedImagePage = await queryRunner.manager.save(
-      ImagePageEntity,
-      imagePageToUpsert,
-    );
-    return savedImagePage;
-  }
-
-  async addSection(
-    sectionInput: UpdateSectionDto,
-    imagePage: ImagePageEntity,
-    queryRunner: QueryRunner,
+  private saveSection(
+    input: UpdateSectionDto,
+    page: ImagePageEntity,
+    tx: ImagePageTransaction,
   ): Promise<ImageSectionEntity> {
-    const sectionToAdd: Partial<ImageSectionEntity> = {
-      caption: sectionInput.caption,
-      description: sectionInput.description,
-      public: sectionInput.public,
-      page: imagePage,
-      reviewStatus: ImageSectionReviewStatus.APPROVED,
-    };
-    const savedSection = await queryRunner.manager.save(
-      ImageSectionEntity,
-      sectionToAdd,
-    );
-    return savedSection;
-  }
-
-  async deleteSections(
-    existingSections: ImageSectionEntity[],
-    requestedSections: UpdateSectionDto[],
-    queryRunner: QueryRunner,
-  ): Promise<void> {
-    const sectionsToRemove = existingSections.filter(
-      (existing) =>
-        !requestedSections.some((requested) => requested.id === existing.id),
-    );
-    for (const section of sectionsToRemove) {
-      await queryRunner.manager.remove(ImageSectionEntity, section);
-    }
-  }
-
-  async deleteMedia(
-    existingMedia: MediaItemEntity[],
-    requestedSections: UpdateSectionDto[],
-    queryRunner: QueryRunner,
-  ): Promise<void> {
-    const requestedMediaIds = requestedSections
-      .flatMap((section) => section.mediaItems.map((media) => media.id))
-      .filter((id): id is string => typeof id === "string" && id.length > 0);
-    const mediaToRemove = existingMedia.filter(
-      (existing) => existing.id && !requestedMediaIds.includes(existing.id),
-    );
-    for (const media of mediaToRemove) {
-      if (!media.id) {
-        continue;
-      }
-      if (media.isLocalFile && media.url) {
-        try {
-          await this.awsS3Service.delete(media.url);
-        } catch (error) {
-          this.logger.error(
-            `Error deleting file from S3: ${media.url}`,
-            error.stack,
-          );
-          throw new BadRequestException(
-            `Error deleting file from S3: ${media.url}`,
-          );
-        }
-      }
-      await queryRunner.manager.remove(MediaItemEntity, media);
-    }
-  }
-
-  async addMedia(
-    mediaInput: MediaItemDto,
-    targetId: string,
-    filesDict: Record<string, Express.Multer.File>,
-    queryRunner: QueryRunner,
-  ): Promise<MediaItemEntity> {
-    const media = this.mediaItemProcessor.buildBaseMediaItem(
-      mediaInput,
-      targetId,
-      "ImagesPage",
-    );
-    if (mediaInput.isLocalFile) {
-      const key = mediaInput.fieldKey ?? mediaInput.url;
-      if (!key) {
-        throw new Error(`File missing for upload: no fieldKey or url provided`);
-      }
-      const file = filesDict[key];
-      if (!file) {
-        throw new Error(`File not found for upload: ${key}`);
-      }
-
-      media.url = await this.awsS3Service.upload(file);
-      media.originalName = file.originalname;
-      media.size = file.size;
-    }
-    const savedMedia = await queryRunner.manager.save(MediaItemEntity, media);
-    return savedMedia;
-  }
-
-  async upsertSection(
-    sectionInput: UpdateSectionDto,
-    imagePage: ImagePageEntity,
-    queryRunner: QueryRunner,
-  ): Promise<ImageSectionEntity> {
-    const sectionToUpsert: Partial<ImageSectionEntity> = {
-      id: sectionInput.id,
-      caption: sectionInput.caption,
-      description: sectionInput.description,
-      public: sectionInput.public,
-      page: imagePage,
-    };
-    const savedSection = await queryRunner.manager.save(
-      ImageSectionEntity,
-      sectionToUpsert,
-    );
-    return savedSection;
-  }
-
-  async upsertMedia(
-    mediaInput: MediaItemDto,
-    targetId: string,
-    filesDict: Record<string, Express.Multer.File>,
-    queryRunner: QueryRunner,
-  ): Promise<MediaItemEntity> {
-    let existingMedia: MediaItemEntity | null = null;
-    if (mediaInput.id) {
-      existingMedia = await queryRunner.manager.findOne(MediaItemEntity, {
-        where: { id: mediaInput.id },
-      });
-    }
-    const media = this.mediaItemProcessor.buildBaseMediaItem(
-      mediaInput,
-      targetId,
-      "ImagesPage",
-    );
-    const isUpload =
-      mediaInput.uploadType === UploadType.UPLOAD && mediaInput.isLocalFile;
-    const key = mediaInput.fieldKey ?? mediaInput.url;
-    const file = key ? filesDict[key] : undefined;
-
-    if (isUpload && file) {
-      if (existingMedia?.isLocalFile && existingMedia.url) {
-        try {
-          await this.awsS3Service.delete(existingMedia.url);
-        } catch (error) {
-          this.logger.warn(`Could not delete old file: ${existingMedia.url}`);
-        }
-      }
-      media.url = await this.awsS3Service.upload(file);
-      media.originalName = file.originalname;
-      media.isLocalFile = true;
-      media.size = file.size;
-    } else if (isUpload && !file && existingMedia) {
-      media.url = existingMedia.url;
-      media.originalName = existingMedia.originalName;
-      media.isLocalFile = existingMedia.isLocalFile;
-      media.size = existingMedia.size;
-    } else {
-      if (
-        existingMedia?.isLocalFile &&
-        existingMedia.url &&
-        !mediaInput.isLocalFile
-      ) {
-        try {
-          await this.awsS3Service.delete(existingMedia.url);
-        } catch (error) {
-          this.logger.warn(
-            `Could not delete old file when switching to link: ${existingMedia.url}`,
-          );
-        }
-      }
-      media.title = mediaInput.title || media.title;
-      media.description = mediaInput.description || media.description;
-      media.uploadType = mediaInput.uploadType || media.uploadType;
-      media.platformType = mediaInput.platformType || media.platformType;
-      media.mediaType = mediaInput.mediaType || media.mediaType;
-      media.url = mediaInput.url?.trim() || media.url;
-      media.originalName = mediaInput.originalName || media.originalName;
-      media.isLocalFile = mediaInput.isLocalFile ?? false;
-      media.size = mediaInput.size || media.size;
-    }
-
-    const savedMedia = await queryRunner.manager.save(MediaItemEntity, {
-      ...media,
-      id: mediaInput.id,
+    return tx.saveSection({
+      ...(input.id
+        ? { id: input.id }
+        : { reviewStatus: ImageSectionReviewStatus.APPROVED }),
+      caption: input.caption,
+      description: input.description,
+      public: input.public,
+      page,
     });
-    return savedMedia;
   }
 
-  async upsertRoute(
+  private async removeUnrequestedSections(
+    existing: ImageSectionEntity[],
+    requested: UpdateSectionDto[],
+    tx: ImagePageTransaction,
+  ): Promise<void> {
+    const toRemove = existing.filter(
+      (section) => !requested.some((item) => item.id === section.id),
+    );
+    for (const section of toRemove) {
+      await tx.removeSection(section);
+    }
+  }
+
+  private upsertRoute(
     routeId: string,
     pageData: UpdateImagePageDto,
     imagePageId: string,
   ): Promise<RouteEntity> {
-    const routeData: Partial<RouteEntity> = {
+    return this.routeService.upsertRoute(routeId, {
       title: pageData.title,
       subtitle: "Image gallery page",
       idToFetch: imagePageId,
@@ -382,43 +212,22 @@ export class UpdateImagePageService {
       entityId: imagePageId,
       type: RouteType.PAGE,
       description: pageData.description,
-      path: "galeria_imagens_",
-      image:
-        "https://orfanatos-nib-storage.s3.us-east-1.amazonaws.com/aux/card_imagens.png",
+      path: IMAGE_PAGE_ROUTE_PATH_PREFIX,
+      image: IMAGE_PAGE_ROUTE_IMAGE,
       public: pageData.public,
-    };
-
-    const savedRoute = await this.routeService.upsertRoute(routeId, routeData);
-    return savedRoute;
+    });
   }
 
-  async processSectionMedia(
-    mediaItems: MediaItemDto[],
-    sectionId: string,
-    oldMedia: MediaItemEntity[],
-    filesDict: Record<string, Express.Multer.File>,
-    queryRunner: QueryRunner,
-  ): Promise<MediaItemEntity[]> {
-    const processedMedia: MediaItemEntity[] = [];
-    for (const mediaInput of mediaItems) {
-      if (mediaInput.id) {
-        const savedMedia = await this.upsertMedia(
-          mediaInput,
-          sectionId,
-          filesDict,
-          queryRunner,
-        );
-        processedMedia.push(savedMedia);
-      } else {
-        const savedMedia = await this.addMedia(
-          mediaInput,
-          sectionId,
-          filesDict,
-          queryRunner,
-        );
-        processedMedia.push(savedMedia);
-      }
+  /** Melhor esforço: o que subiu antes da falha e nenhuma mídia referencia vai embora do bucket. */
+  private async discardUploads(urls: string[]): Promise<void> {
+    if (urls.length === 0) return;
+    try {
+      await this.mediaItemProcessor.discardUnreferencedUploads(urls, (url) =>
+        this.awsS3Service.delete(url),
+      );
+    } catch (error: unknown) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Upload órfão após rollback da galeria: ${reason}`);
     }
-    return processedMedia;
   }
 }

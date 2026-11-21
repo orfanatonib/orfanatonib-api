@@ -1,0 +1,67 @@
+@startuml image-sections-flow
+title Publicações de fotos dos abrigos - enviar, aprovar, reprovar e apagar (S3 sem órfão)
+
+actor Membro
+actor Admin
+participant "ImageSectionController" as C
+participant "Create/Update/Delete/Reject\nImageSectionService" as S
+participant "ImageSectionTransactionRepository" as T
+database MySQL
+participant "MediaItemProcessor" as M
+participant "S3" as S3
+participant "MediaStorageService" as Q
+
+== Enviar (qualquer sessão) ==
+Membro -> C : POST /image-sections (sectionData + arquivos)
+C -> C : JwtAuthGuard + FeatureFlag; não-admin => public=false
+C -> S : createSection
+S -> S : valida composição, tipo, tamanho e assinatura (400, nada sobe)
+S -> T : run(tx)
+T -> MySQL : publicação pendente (authorId da sessão, sem galeria)
+S -> M : mídias
+M -> S3 : upload
+alt falha em qualquer etapa
+  T -> MySQL : rollback
+  S -> Q : deleteAfterCommit(objetos já enviados)
+else sucesso
+  T -> MySQL : commit
+  S -> Admin : e-mail aos admins (flag email_image_shared_notification)
+end
+
+== Aprovar (admin) ==
+Admin -> C : PATCH /image-sections/:id (pageId opcional)
+C -> S : updateSection
+S -> T : run(tx)
+T -> MySQL : SELECT ... FOR UPDATE (404 se não existe)
+S -> M : sobe arquivos novos (registrados no MediaChangeLog)
+M -> S3 : upload
+T -> MySQL : linhas de mídia + publicação (approved, revisor, galeria)
+alt falha
+  T -> MySQL : rollback (linhas antigas intactas)
+  S -> Q : descarta só os objetos novos
+else sucesso
+  T -> MySQL : commit
+  S -> Q : deleteAfterCommit(objetos substituídos ou removidos)
+  Q -> S3 : delete (falha vai para media_cleanup_queue)
+end
+
+== Reprovar e contar ==
+Admin -> C : PATCH /image-sections/:id/reject {reason}
+C -> S : reject (409 se aprovada; idempotente)
+S -> MySQL : rejected + motivo + revisor
+Admin -> C : GET /image-sections/pending-count
+C -> MySQL : COUNT(reviewStatus = pending)
+
+== Apagar (admin) ==
+Admin -> C : DELETE /image-sections/:id
+C -> S : deleteSection
+S -> T : run(tx)
+T -> MySQL : trava, remove linhas de mídia e a publicação (404 se não existe)
+alt falha
+  T -> MySQL : rollback (mídia e objetos permanecem)
+else sucesso
+  T -> MySQL : commit
+  S -> Q : deleteAfterCommit(objetos)
+  Q -> S3 : delete
+end
+@enduml

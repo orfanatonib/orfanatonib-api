@@ -1,3 +1,4 @@
+import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { RouteEntityType } from "../route-entity-type.enum";
 import {
   Injectable,
@@ -106,7 +107,8 @@ export class RouteService {
 
   /**
    * Visitante anônimo só enxerga rotas públicas; com sessão válida, tudo
-   * (comportamento anterior). Os dias de meditação são sempre não públicos.
+   * (comportamento anterior). Os dias de meditação são sempre não públicos. Rota de
+   * página de ideias é SEMPRE privada: linha legada com `public=true` não vaza ao visitante.
    */
   async findAllRoutes(
     options: { includeNonPublic: boolean } = { includeNonPublic: true },
@@ -114,7 +116,11 @@ export class RouteService {
     const all = await this.routeRepo.find();
     const routes = options.includeNonPublic
       ? all
-      : all.filter((route) => route.public);
+      : all.filter(
+          (route) =>
+            route.public &&
+            route.entityType !== (MediaTargetType.IdeasPage as string),
+        );
     if (!options.includeNonPublic) return routes;
 
     const meditation = await this.getMeditationService.getThisWeekMeditation();
@@ -151,7 +157,13 @@ export class RouteService {
     options: { includeNonPublic: boolean } = { includeNonPublic: true },
   ): Promise<RouteEntity | null> {
     const route = await this.routeRepo.findOne({ where: { id } });
-    if (route && !options.includeNonPublic && !route.public) return null;
+    if (
+      route &&
+      !options.includeNonPublic &&
+      (!route.public ||
+        route.entityType === (MediaTargetType.IdeasPage as string))
+    )
+      return null;
     return route;
   }
 

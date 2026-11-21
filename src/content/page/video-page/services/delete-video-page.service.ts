@@ -1,65 +1,50 @@
 import {
   BadRequestException,
+  HttpException,
   Injectable,
   Logger,
   NotFoundException,
 } from "@nestjs/common";
-import { DataSource } from "typeorm";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
-import { RouteService } from "src/infrastructure/route/services/route.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
-import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
-import { VideosPageRepository } from "../repositories/video-page.repository";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
+import { VideosPageRepository } from "../repositories/video-page.repository";
+import { VideoPageMessages } from "../constants";
+import { errorReason, localFileUrls } from "../utils";
 
 @Injectable()
 export class DeleteVideosPageService {
   private readonly logger = new Logger(DeleteVideosPageService.name);
 
   constructor(
-    private readonly dataSource: DataSource,
     private readonly videosPageRepo: VideosPageRepository,
     private readonly mediaItemProcessor: MediaItemProcessor,
-    private readonly awsS3Service: AwsS3Service,
-    private readonly routeService: RouteService,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   async execute(id: string): Promise<void> {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    const page = await this.videosPageRepo.findById(id);
+    if (!page)
+      throw new NotFoundException(`Página com id ${id} não encontrada`);
 
     try {
-      const page = await this.videosPageRepo.findById(id);
-      if (!page)
-        throw new NotFoundException(`Página com id ${id} não encontrada`);
-
-      const mediaItems: MediaItemEntity[] =
-        await this.mediaItemProcessor.findMediaItemsByTarget(
-          page.id,
-          MediaTargetType.VideosPage,
-        );
-
-      await this.mediaItemProcessor.deleteMediaItems(
-        mediaItems,
-        this.awsS3Service.delete.bind(this.awsS3Service),
+      const mediaItems = await this.mediaItemProcessor.findMediaItemsByTarget(
+        page.id,
+        MediaTargetType.VideosPage,
       );
 
-      if (page.route?.id) {
-        await this.routeService.removeRoute(page.route.id);
-      }
-
-      await queryRunner.manager.remove(page);
-      await queryRunner.commitTransaction();
+      // Banco primeiro, numa transação; os objetos só saem do bucket depois do commit.
+      await this.videosPageRepo.runInTransaction(async (manager) => {
+        await this.videosPageRepo.removeMedia(manager, mediaItems);
+        await this.videosPageRepo.removePageWithRoute(manager, page);
+      });
+      await this.mediaStorage.deleteAfterCommit(localFileUrls(mediaItems));
     } catch (error) {
-      await queryRunner.rollbackTransaction();
+      if (error instanceof HttpException) throw error;
       this.logger.error(
-        "Error removing videos page. Rollback executed.",
-        error,
+        `Error removing videos page ${id}. Rollback executed: ${errorReason(error)}`,
       );
-      throw new BadRequestException("Error removing videos page.");
-    } finally {
-      await queryRunner.release();
+      throw new BadRequestException(VideoPageMessages.DELETE_FAILED);
     }
   }
 }

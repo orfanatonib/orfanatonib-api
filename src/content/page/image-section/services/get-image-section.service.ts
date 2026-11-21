@@ -6,6 +6,7 @@ import { ImageSectionResponseDto } from "../dto/image-section-response.dto";
 import { FeedSectionContextDto } from "../dto/feed-section-context.dto";
 import { toFeedSectionContext, toMyImageSectionDto } from "../utils";
 import { MyImageSectionDto } from "../dto/my-image-section.dto";
+import { ImageSectionPendingCountDto } from "../dto/image-section-pending-count.dto";
 import { In } from "typeorm";
 
 @Injectable()
@@ -30,6 +31,10 @@ export class GetImageSectionService {
         media.filter((item) => item.targetId === section.id),
       ),
     );
+  }
+
+  async pendingCount(): Promise<ImageSectionPendingCountDto> {
+    return { pending: await this.sectionRepository.countPending() };
   }
 
   async findAll(authorId?: string): Promise<ImageSectionResponseDto[]> {

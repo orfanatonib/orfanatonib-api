@@ -117,6 +117,24 @@
     ],
     "coverageDirectory": "../coverage",
     "coverageThreshold": {
+      "./src/content/page/ideas-section/services/": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "./src/content/page/ideas-section/mappers/": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "./src/content/page/ideas-section/utils/": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
       "./src/content/studio/": {
         "statements": 69,
         "branches": 54,

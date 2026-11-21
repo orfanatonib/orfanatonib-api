@@ -29,6 +29,20 @@ describe("RouteService.findAllRoutes", () => {
     expect(getMeditation.getThisWeekMeditation).not.toHaveBeenCalled();
   });
 
+  it("anônimo nunca recebe rota de página de ideias, mesmo legada com public=true", async () => {
+    const { svc, repo } = setup();
+    repo.find.mockResolvedValue([
+      route("pub", true),
+      Object.assign(route("ideas", true), { entityType: "IdeasPage" }),
+    ]);
+    const out = await svc.findAllRoutes({ includeNonPublic: false });
+    expect(out.map((r) => r.id)).toEqual(["pub"]);
+    repo.findOne.mockResolvedValue(
+      Object.assign(route("ideas", true), { entityType: "IdeasPage" }),
+    );
+    expect(await svc.findById("ideas", { includeNonPublic: false })).toBeNull();
+  });
+
   it("com sessão recebe todas (comportamento anterior), sem meditação", async () => {
     const { svc } = setup();
     expect((await svc.findAllRoutes()).map((r) => r.id)).toEqual([

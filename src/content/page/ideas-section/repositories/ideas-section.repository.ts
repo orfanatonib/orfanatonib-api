@@ -90,6 +90,11 @@ export class IdeasSectionRepository {
     return attached as IdeasSectionEntity;
   }
 
+  /** Desfaz o vínculo com a página e restaura os campos de antes (compensação do attach). */
+  async restoreUnattached(id: string, data: IdeasSectionData): Promise<void> {
+    await this.sections.update(id, { ...data, page: null as never });
+  }
+
   async deleteById(id: string): Promise<void> {
     await this.sections.delete({ id });
   }

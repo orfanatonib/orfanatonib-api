@@ -25,9 +25,9 @@ function setup() {
     findMediaItemsByTarget: jest.fn().mockResolvedValue([stored]),
     findMediaItemById: jest.fn().mockResolvedValue(stored),
     buildBaseMediaItem: jest.fn((input: object) => ({ ...input })),
-    upsertMediaItem: jest.fn(async (_id: string | undefined, media: object) => {
+    upsertMediaItem: jest.fn((_id: string | undefined, media: object) => {
       events.push("upsert");
-      return { id: "m1", ...media };
+      return Promise.resolve({ id: "m1", ...media });
     }),
     deleteMediaItems: jest.fn(
       async (
@@ -39,12 +39,13 @@ function setup() {
     ),
   };
   const s3 = {
-    upload: jest.fn(async () => {
+    upload: jest.fn(() => {
       events.push("upload");
-      return NEW;
+      return Promise.resolve(NEW);
     }),
-    delete: jest.fn(async (url: string) => {
+    delete: jest.fn((url: string) => {
       events.push(`delete:${url}`);
+      return Promise.resolve();
     }),
   };
   return {

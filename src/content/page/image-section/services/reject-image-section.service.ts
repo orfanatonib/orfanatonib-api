@@ -42,7 +42,9 @@ export class RejectImageSectionService {
       throw new NotFoundException(IMAGE_SECTION_REVIEW_MESSAGES.NOT_FOUND);
     }
     if (section.reviewStatus === ImageSectionReviewStatus.APPROVED) {
-      throw new ConflictException(IMAGE_SECTION_REVIEW_MESSAGES.ALREADY_APPROVED);
+      throw new ConflictException(
+        IMAGE_SECTION_REVIEW_MESSAGES.ALREADY_APPROVED,
+      );
     }
 
     const alreadyRejected =

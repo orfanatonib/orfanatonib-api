@@ -5,7 +5,6 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { DataSource, QueryRunner } from "typeorm";
 import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import {
@@ -13,13 +12,21 @@ import {
   MediaItemEntity,
 } from "src/shared/media/media-item/media-item.entity";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
+import { MediaItemDto } from "src/shared/dto/media-item-dto";
+import { FEED_PAGE_ID_ENV } from "src/content/page/image-page/constants";
+import { MediaChangeLog } from "src/content/page/image-page/media-change-log";
+import { ImagePageRepository } from "src/content/page/image-page/repositories/image-page.repository";
 import { ImageSectionReviewStatus } from "../enums/image-section-review-status.enum";
 import { validateShelterPostMedia } from "../media-validation";
-import { ImageSectionRepository } from "../repositories/image-section.repository";
-import { ImagePageRepository } from "src/content/page/image-page/repositories/image-page.repository";
+import {
+  ImageSectionTransaction,
+  ImageSectionTransactionRepository,
+} from "../repositories/image-section-transaction.repository";
 import { UpdateImageSectionDto } from "../dto/update-image-section.dto";
-import { MediaItemDto } from "src/shared/dto/media-item-dto";
 import { ImageSectionResponseDto } from "../dto/image-section-response.dto";
+
+type FilesDict = Record<string, Express.Multer.File>;
 
 @Injectable()
 export class UpdateImageSectionService {
@@ -27,17 +34,22 @@ export class UpdateImageSectionService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly dataSource: DataSource,
+    private readonly transactions: ImageSectionTransactionRepository,
     private readonly awsS3Service: AwsS3Service,
     private readonly mediaItemProcessor: MediaItemProcessor,
-    private readonly sectionRepo: ImageSectionRepository,
     private readonly pageRepo: ImagePageRepository,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
+  /**
+   * Ordem segura (plano 32): objeto novo → linhas → commit → só então some o antigo.
+   * Todas as linhas (publicação e mídias) usam a MESMA transação: se algo falha, nada
+   * foi gravado e só os objetos recém-enviados são descartados.
+   */
   async updateSection(
     id: string,
     dto: UpdateImageSectionDto,
-    filesDict: Record<string, Express.Multer.File>,
+    filesDict: FilesDict,
     reviewerId: string | null = null,
   ): Promise<ImageSectionResponseDto> {
     const existingForValidation =
@@ -46,236 +58,157 @@ export class UpdateImageSectionService {
         MediaTargetType.ImagesPage,
       );
     validateShelterPostMedia(dto.mediaItems, filesDict, existingForValidation);
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-    const tracking: FileTracking = { pendingNew: [], replaced: [] };
-    let committed = false;
 
+    const log = new MediaChangeLog();
+    let result: ImageSectionResponseDto;
     try {
-      const section = await this.sectionRepo.findOne({
-        where: { id },
-        relations: ["author"],
-      });
-      if (!section) {
-        throw new NotFoundException("Section not found");
-      }
-
-      const targetPageId =
-        dto.pageId ?? this.configService.get<string>("FEED_ORFANATO_PAGE_ID");
-      // `findOneBy({ id: undefined })` casaria com qualquer galeria: exige id.
-      const page = targetPageId
-        ? await this.pageRepo.findOneBy({ id: targetPageId })
-        : null;
-      if (!page) {
-        throw new NotFoundException("Default page not found");
-      }
-
-      const existingMedia =
-        await this.mediaItemProcessor.findManyMediaItemsByTargets(
-          [section.id],
-          MediaTargetType.ImagesPage,
-        );
-
-      // Ordem segura (plano 32, P0): objeto novo → linha → commit → só então some o
-      // antigo. Apagar antes deixava a linha apontando para um objeto inexistente se
-      // um passo seguinte falhasse.
-      const processedMedia = await this.processMedia(
-        dto.mediaItems,
-        section.id,
-        filesDict,
-        queryRunner,
-        tracking,
+      result = await this.transactions.run((tx) =>
+        this.applyUpdate(tx, id, dto, filesDict, reviewerId, log),
       );
-      section.caption = dto.caption;
-      section.description = dto.description;
-      section.public = dto.public || false;
-      section.page = page;
-      // Anexar à galeria é aprovar: registra quem revisou e limpa um motivo anterior.
-      section.reviewStatus = ImageSectionReviewStatus.APPROVED;
-      section.rejectionReason = null;
-      section.reviewedBy = reviewerId ? ({ id: reviewerId } as never) : null;
-      section.reviewedAt = new Date();
-      const savedSection = await queryRunner.manager.save(section);
-
-      await queryRunner.commitTransaction();
-      committed = true;
-
-      await this.deleteObsoleteMedia(existingMedia, dto.mediaItems);
-      await this.discardObjects(tracking.replaced);
-      return ImageSectionResponseDto.fromEntity(savedSection, processedMedia);
     } catch (error) {
-      if (!committed) await queryRunner.rollbackTransaction();
-      // O que subiu e ainda não tem linha é órfão; o que já foi trocado numa linha
-      // gravada deixa o objeto antigo sem referência.
-      await this.discardObjects([...tracking.pendingNew, ...tracking.replaced]);
+      await this.mediaStorage.deleteAfterCommit(log.uploadedUrls);
+      if (error instanceof NotFoundException) throw error;
       this.logger.error("Error updating section", error);
       throw new BadRequestException("Error updating section");
-    } finally {
-      await queryRunner.release();
     }
+
+    await this.mediaStorage.deleteAfterCommit(log.obsoleteUrls);
+    return result;
   }
 
-  private async deleteObsoleteMedia(
-    existingMedia: MediaItemEntity[],
-    incomingMedia: MediaItemDto[],
-  ): Promise<void> {
-    const incomingIds = incomingMedia
-      .map((m) => m.id)
-      .filter((id): id is string => !!id);
-    const toRemove = existingMedia.filter((m) => !incomingIds.includes(m.id));
+  private async applyUpdate(
+    tx: ImageSectionTransaction,
+    id: string,
+    dto: UpdateImageSectionDto,
+    filesDict: FilesDict,
+    reviewerId: string | null,
+    log: MediaChangeLog,
+  ): Promise<ImageSectionResponseDto> {
+    // Trava: duas edições simultâneas da mesma publicação se enfileiram.
+    await tx.lockSection(id);
+    const section = await tx.findSection(id);
+    if (!section) throw new NotFoundException("Section not found");
 
-    if (toRemove.length > 0) {
-      await this.mediaItemProcessor.deleteMediaItems(toRemove, async (url) => {
-        await this.awsS3Service.delete(url);
-      });
-    }
-  }
+    const targetPageId =
+      dto.pageId ?? this.configService.get<string>(FEED_PAGE_ID_ENV);
+    // `findOneBy({ id: undefined })` casaria com qualquer galeria: exige id.
+    const page = targetPageId
+      ? await this.pageRepo.findOneBy({ id: targetPageId })
+      : null;
+    if (!page) throw new NotFoundException("Default page not found");
 
-  private async processMedia(
-    mediaItems: MediaItemDto[],
-    sectionId: string,
-    filesDict: Record<string, Express.Multer.File>,
-    queryRunner: QueryRunner,
-    tracking: FileTracking,
-  ): Promise<MediaItemEntity[]> {
+    const existingMedia = await this.mediaItemProcessor.findMediaItemsByTarget(
+      section.id,
+      MediaTargetType.ImagesPage,
+    );
+    await this.removeUnrequested(existingMedia, dto.mediaItems, tx, log);
+
     const processed: MediaItemEntity[] = [];
-
-    for (const mediaInput of mediaItems) {
-      if (mediaInput.id) {
-        const updated = await this.upsertMedia(
-          mediaInput,
-          sectionId,
-          filesDict,
-          queryRunner,
-          tracking,
-        );
-        processed.push(updated);
-      } else {
-        const created = await this.addMedia(
-          mediaInput,
-          sectionId,
-          filesDict,
-          queryRunner,
-          tracking,
-        );
-        processed.push(created);
-      }
+    for (const input of dto.mediaItems) {
+      processed.push(
+        input.id
+          ? await this.upsertMedia(input, section.id, filesDict, tx, log)
+          : await this.addMedia(input, section.id, filesDict, tx, log),
+      );
     }
-    return processed;
+
+    section.caption = dto.caption;
+    section.description = dto.description;
+    section.public = dto.public || false;
+    section.page = page;
+    // Anexar à galeria é aprovar: registra quem revisou e limpa um motivo anterior.
+    section.reviewStatus = ImageSectionReviewStatus.APPROVED;
+    section.rejectionReason = null;
+    section.reviewedBy = reviewerId ? ({ id: reviewerId } as never) : null;
+    section.reviewedAt = new Date();
+    const saved = await tx.saveSection(section);
+    return ImageSectionResponseDto.fromEntity(saved, processed);
+  }
+
+  private async removeUnrequested(
+    existingMedia: MediaItemEntity[],
+    incoming: MediaItemDto[],
+    tx: ImageSectionTransaction,
+    log: MediaChangeLog,
+  ): Promise<void> {
+    const incomingIds = new Set(
+      incoming.map((m) => m.id).filter((v): v is string => !!v),
+    );
+    for (const media of existingMedia) {
+      if (incomingIds.has(media.id)) continue;
+      if (media.isLocalFile) log.recordObsolete(media.url);
+      await tx.removeMedia(media);
+    }
   }
 
   private async addMedia(
-    mediaInput: MediaItemDto,
+    input: MediaItemDto,
     sectionId: string,
-    filesDict: Record<string, Express.Multer.File>,
-    queryRunner: QueryRunner,
-    tracking: FileTracking,
+    filesDict: FilesDict,
+    tx: ImageSectionTransaction,
+    log: MediaChangeLog,
   ): Promise<MediaItemEntity> {
     const media = this.mediaItemProcessor.buildBaseMediaItem(
-      mediaInput,
+      input,
       sectionId,
       MediaTargetType.ImagesPage,
     );
-
-    if (mediaInput.uploadType === UploadType.UPLOAD && mediaInput.isLocalFile) {
-      const file = filesDict[mediaInput.fieldKey ?? ""];
-      if (!file) {
-        throw new BadRequestException("File not found for upload");
-      }
+    if (input.uploadType === UploadType.UPLOAD && input.isLocalFile) {
+      const file = filesDict[input.fieldKey ?? ""];
+      if (!file) throw new BadRequestException("File not found for upload");
       media.url = await this.awsS3Service.upload(file);
-      tracking.pendingNew.push(media.url);
+      log.recordUpload(media.url);
       media.isLocalFile = true;
       media.originalName = file.originalname;
       media.size = file.size;
     } else {
-      media.url = mediaInput.url?.trim() || "";
+      media.url = input.url?.trim() || "";
       media.isLocalFile = false;
     }
-
-    const saved = await this.mediaItemProcessor.saveMediaItem(media);
-    this.markPersisted(media.url, tracking);
-    return saved;
+    return tx.saveMedia(media);
   }
 
   private async upsertMedia(
-    mediaInput: MediaItemDto,
+    input: MediaItemDto,
     sectionId: string,
-    filesDict: Record<string, Express.Multer.File>,
-    queryRunner: QueryRunner,
-    tracking: FileTracking,
+    filesDict: FilesDict,
+    tx: ImageSectionTransaction,
+    log: MediaChangeLog,
   ): Promise<MediaItemEntity> {
-    const existingMedia = await queryRunner.manager.findOneBy(MediaItemEntity, {
-      id: mediaInput.id,
-    });
-    if (!existingMedia) {
-      throw new NotFoundException(
-        `Mídia com id=${mediaInput.id} não encontrada`,
-      );
+    const existing = input.id ? await tx.findMedia(input.id) : null;
+    // A mídia precisa ser desta publicação: não se edita a de outra por id.
+    if (!existing || existing.targetId !== sectionId) {
+      throw new NotFoundException(`Mídia com id=${input.id} não encontrada`);
     }
 
-    const updatedMedia = this.mediaItemProcessor.buildBaseMediaItem(
-      mediaInput,
+    const media = this.mediaItemProcessor.buildBaseMediaItem(
+      input,
       sectionId,
       MediaTargetType.ImagesPage,
     );
-    updatedMedia.id = existingMedia.id;
+    media.id = existing.id;
 
-    if (mediaInput.uploadType === UploadType.UPLOAD && mediaInput.isLocalFile) {
-      const file = filesDict[mediaInput.fieldKey ?? ""];
+    if (input.uploadType === UploadType.UPLOAD && input.isLocalFile) {
+      const file = filesDict[input.fieldKey ?? ""];
       if (file) {
-        updatedMedia.url = await this.awsS3Service.upload(file);
-        tracking.pendingNew.push(updatedMedia.url);
-        updatedMedia.isLocalFile = true;
-        updatedMedia.originalName = file.originalname;
-        updatedMedia.size = file.size;
+        if (existing.isLocalFile) log.recordObsolete(existing.url);
+        media.url = await this.awsS3Service.upload(file);
+        log.recordUpload(media.url);
+        media.isLocalFile = true;
+        media.originalName = file.originalname;
+        media.size = file.size;
       } else {
-        updatedMedia.url = existingMedia.url;
-        updatedMedia.isLocalFile = existingMedia.isLocalFile;
-        updatedMedia.originalName = existingMedia.originalName;
-        updatedMedia.size = existingMedia.size;
+        media.url = existing.url;
+        media.isLocalFile = existing.isLocalFile;
+        media.originalName = existing.originalName;
+        media.size = existing.size;
       }
     } else {
-      updatedMedia.url = mediaInput.url?.trim() || existingMedia.url;
-      updatedMedia.isLocalFile = false;
+      media.url = input.url?.trim() || existing.url;
+      const sameObject = media.url === existing.url;
+      media.isLocalFile = sameObject ? existing.isLocalFile : false;
+      if (existing.isLocalFile && !sameObject) log.recordObsolete(existing.url);
     }
-
-    const saved = await this.mediaItemProcessor.upsertMediaItem(
-      mediaInput.id,
-      updatedMedia,
-    );
-    this.markPersisted(updatedMedia.url, tracking);
-    // O arquivo antigo só sai de cena se a linha deixou de apontar para ele.
-    if (
-      existingMedia.isLocalFile &&
-      existingMedia.url &&
-      existingMedia.url !== updatedMedia.url
-    ) {
-      tracking.replaced.push(existingMedia.url);
-    }
-    return saved;
+    return tx.saveMedia(media);
   }
-
-  /** A linha já referencia o objeto novo: ele deixa de ser candidato a órfão. */
-  private markPersisted(url: string | undefined, tracking: FileTracking): void {
-    tracking.pendingNew = tracking.pendingNew.filter((u) => u !== url);
-  }
-
-  /** Melhor esforço: objeto não apagado vira registro, não falha da requisição. */
-  private async discardObjects(urls: readonly string[]): Promise<void> {
-    for (const url of urls) {
-      try {
-        await this.awsS3Service.delete(url);
-      } catch (error: unknown) {
-        const reason = error instanceof Error ? error.message : String(error);
-        this.logger.warn(`Objeto não apagado do bucket (${url}): ${reason}`);
-      }
-    }
-  }
-}
-
-/** `pendingNew`: subiu e ainda sem linha. `replaced`: antigo já sem referência. */
-interface FileTracking {
-  pendingNew: string[];
-  replaced: string[];
 }
