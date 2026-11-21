@@ -129,13 +129,39 @@ describe("catálogo de feature flags", () => {
 
     it("não recria nem sobrescreve o que já existe", async () => {
       repository.findByKey.mockImplementation((key: string) =>
-        Promise.resolve(buildFlag(key)),
+        Promise.resolve(
+          Object.assign(buildFlag(key), { description: "Descrição própria." }),
+        ),
       );
 
       await expect(service.seedDefaults()).resolves.toEqual([]);
       expect(repository.save).not.toHaveBeenCalled();
       // Sem criação, nada a invalidar.
       expect(getService.invalidateAll).not.toHaveBeenCalled();
+    });
+
+    it("troca a descrição genérica antiga pela do catálogo sem mexer no estado", async () => {
+      const antiga = buildFlag("pagelas");
+      antiga.enabled = false;
+      antiga.description = "Interruptor do recurso: pagelas.";
+      repository.findByKey.mockImplementation((key: string) =>
+        Promise.resolve(key === "pagelas" ? antiga : null),
+      );
+
+      await service.seedDefaults();
+
+      const definition = DEFAULT_FEATURE_FLAGS.find((f) => f.key === "pagelas");
+      expect(antiga.description).toBe(definition?.description);
+      expect(antiga.enabled).toBe(false);
+    });
+
+    it("todas as flags do catálogo têm descrição própria e detalhada", () => {
+      for (const flag of DEFAULT_FEATURE_FLAGS) {
+        expect(flag.description.startsWith("Interruptor do recurso")).toBe(
+          false,
+        );
+        expect(flag.description.length).toBeGreaterThan(30);
+      }
     });
 
     it("chave duplicada numa flag (corrida entre instâncias) não impede as seguintes", async () => {
@@ -154,6 +180,7 @@ describe("catálogo de feature flags", () => {
     it("preserva o estado escolhido pelo operador numa flag existente", async () => {
       const desligada = buildFlag("email_delivery");
       desligada.enabled = false;
+      desligada.description = "Descrição própria.";
       repository.findByKey.mockImplementation((key: string) =>
         Promise.resolve(key === "email_delivery" ? desligada : null),
       );

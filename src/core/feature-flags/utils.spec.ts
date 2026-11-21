@@ -4,6 +4,7 @@ import { FeatureFlagEntity } from "./entities/feature-flag.entity";
 import {
   catalogDefaultFor,
   audienceOfRoles,
+  isPlaceholderFlagDescription,
   isTargetedForRole,
   metadataWithTargetRoles,
   normalizeTargetRoles,
@@ -86,5 +87,18 @@ describe("catalogDefaultFor", () => {
   it("flag desligada de fábrica e chave fora do catálogo ficam desligadas", () => {
     expect(catalogDefaultFor("content_studio", "admin")).toBe(false);
     expect(catalogDefaultFor("nao_existe", "admin")).toBe(false);
+  });
+});
+
+describe("isPlaceholderFlagDescription", () => {
+  it("reconhece vazia e genérica antiga, mas não descrição própria", () => {
+    expect(isPlaceholderFlagDescription(null)).toBe(true);
+    expect(isPlaceholderFlagDescription("  ")).toBe(true);
+    expect(
+      isPlaceholderFlagDescription("Interruptor do recurso: pagelas."),
+    ).toBe(true);
+    expect(isPlaceholderFlagDescription("Texto escrito pelo admin.")).toBe(
+      false,
+    );
   });
 });

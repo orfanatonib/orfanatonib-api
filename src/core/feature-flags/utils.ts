@@ -4,6 +4,7 @@ import {
   DEFAULT_FEATURE_FLAGS,
   FEATURE_FLAG_AUDIENCES,
   FEATURE_FLAG_TARGET_ROLES_METADATA_KEY,
+  PLACEHOLDER_FLAG_DESCRIPTION_PREFIX,
 } from "./constants";
 import { FeatureFlagEntity } from "./entities/feature-flag.entity";
 import {
@@ -115,5 +116,15 @@ export function isProtectedFlag(
   return (
     flag.isProtected === true ||
     DEFAULT_FEATURE_FLAGS.some((definition) => definition.key === flag.key)
+  );
+}
+
+/** `true` para descrição vazia ou a genérica antiga, que o catálogo pode substituir. */
+export function isPlaceholderFlagDescription(
+  description?: string | null,
+): boolean {
+  const text = description?.trim() ?? "";
+  return (
+    text.length === 0 || text.startsWith(PLACEHOLDER_FLAG_DESCRIPTION_PREFIX)
   );
 }

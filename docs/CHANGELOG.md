@@ -9,6 +9,7 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 - **ADD**: `SHELTER_DIRECTORY_FLAGS` (`anyOf`) nas leituras de apoio de `shelters` (5), `teams` (4), `leader-profiles` (`/simple`, `/my-shelters`), `member-profiles` (`/simple`) e `users/simple-for-select`, que eram abertas a qualquer usuário autenticado mesmo com os recursos desligados.
 - **CHANGE**: as 13 leituras acima saíram de `CORE_UNFLAGGED` (`feature-flags.architecture.spec.ts`), que segue derrubando a suíte se um endpoint novo ficar sem flag.
 - **ADD**: `GET /contact/pending-count`, `/site-feedbacks/pending-count`, `/comments/pending-count` e `/ideas-sections/pending-count` (selos do menu do admin; atrás das flags de moderação/gestão).
+- **CHANGE**: as 55 flags de interface do catálogo (`DEFAULT_FEATURE_FLAGS`) ganharam descrição detalhada (o que liga/desliga e o efeito de desligar), substituindo o texto genérico "Interruptor do recurso: ...". No boot, `seedDefaults` troca só a descrição genérica antiga ou vazia nas linhas existentes; descrição editada por admin é preservada. Seed local (`seed-local-credentials.js`) também atualizado.
 - **CHANGE**: flag `integration` agora se chama "Integração Feira de Ministério" (a chave não muda; migration de dados `RenameIntegrationFeatureFlag`).
 
 ## [Unreleased] - 2026-11-21 - DECISÕES DO SOLICITANTE (planos 01, 06, 07, 08, 31)

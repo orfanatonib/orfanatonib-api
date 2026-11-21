@@ -12,7 +12,10 @@ import { FeatureFlagResponseDto } from "../dto/feature-flag-response.dto";
 import { FeatureFlagEntity } from "../entities/feature-flag.entity";
 import { FeatureFlagsRepository } from "../feature-flags.repository";
 import { toFeatureFlagResponse, toFeatureFlagResponseList } from "../mappers";
-import { metadataWithTargetRoles } from "../utils";
+import {
+  isPlaceholderFlagDescription,
+  metadataWithTargetRoles,
+} from "../utils";
 import { GetFeatureFlagsService } from "./get-feature-flags.service";
 
 @Injectable()
@@ -72,7 +75,11 @@ export class CreateFeatureFlagService implements OnModuleInit {
     const created: FeatureFlagEntity[] = [];
 
     for (const definition of DEFAULT_FEATURE_FLAGS) {
-      if (await this.repository.findByKey(definition.key)) continue;
+      const existing = await this.repository.findByKey(definition.key);
+      if (existing) {
+        await this.refreshPlaceholderDescription(existing, definition);
+        continue;
+      }
 
       const flag = this.repository.create({
         key: definition.key,
@@ -97,6 +104,28 @@ export class CreateFeatureFlagService implements OnModuleInit {
 
     if (created.length > 0) this.getService.invalidateAll();
     return toFeatureFlagResponseList(created);
+  }
+
+  /**
+   * Troca a descrição genérica antiga ("Interruptor do recurso: ...") ou vazia
+   * pela descrição do catálogo. Descrição editada por um admin nunca é tocada.
+   */
+  private async refreshPlaceholderDescription(
+    existing: FeatureFlagEntity,
+    definition: { readonly description: string },
+  ): Promise<void> {
+    if (!isPlaceholderFlagDescription(existing.description)) return;
+    if (existing.description === definition.description) return;
+    try {
+      existing.description = definition.description;
+      await this.repository.save(existing);
+      this.getService.invalidate(existing.key);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(
+        `Não foi possível atualizar a descrição de ${existing.key}: ${message}`,
+      );
+    }
   }
 
   /**

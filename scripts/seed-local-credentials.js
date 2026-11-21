@@ -50,9 +50,9 @@ const ACCOUNTS = [
 
 /** Flags que precisam estar ligadas para as rotas protegidas por flag abrirem. */
 const FEATURE_FLAGS = [
-  { key: 'shelter-management', name: 'Gestão de abrigos', description: 'Habilita a gestão de abrigos e acolhidos' },
-  { key: 'shelter-address', name: 'Endereço do abrigo', description: 'Exibe o endereço do abrigo' },
-  { key: 'shelter-pagelas', name: 'Pagelas', description: 'Habilita as pagelas' },
+  { key: 'shelter-management', name: 'Gestão de abrigos', description: 'Libera a gestão de abrigos e equipes (criar, editar, vincular líderes e membros). Desligada, as telas e consultas de abrigos e equipes ficam bloqueadas.' },
+  { key: 'shelter-address', name: 'Endereço do abrigo', description: 'Mostra o endereço dos abrigos (cartões, detalhes e formulário). Desligada, o endereço fica oculto.' },
+  { key: 'shelter-pagelas', name: 'Pagelas', description: 'Libera as pagelas: registro semanal de cada acolhido por abrigo. Desligada, a tela de Pagelas e a API correspondente ficam bloqueadas.' },
   {
     key: 'integration',
     name: 'Integração Feira de Ministério',

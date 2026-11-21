@@ -96,42 +96,48 @@ export const DEFAULT_FEATURE_FLAGS = [
   {
     key: "public_registration",
     name: "Cadastro pelo site",
-    description: "Interruptor do recurso: cadastro pelo site.",
+    description:
+      "Permite que qualquer visitante crie uma conta pelo site (tela de cadastro e rota de registro da API). Desligada, o botão de cadastro some e novas contas só podem ser criadas por um administrador.",
     enabled: true,
     targetRoles: [],
   },
   {
     key: "google_login",
     name: "Login e cadastro com Google",
-    description: "Interruptor do recurso: login e cadastro com Google.",
+    description:
+      "Permite entrar e se cadastrar usando a conta Google (botão 'Entrar com Google' no login e no cadastro). Desligada, só o login por e-mail e senha continua disponível.",
     enabled: true,
     targetRoles: [],
   },
   {
     key: "password_recovery",
     name: "Recuperação de senha",
-    description: "Interruptor do recurso: recuperação de senha.",
+    description:
+      "Habilita o fluxo 'Esqueci minha senha': link na tela de login, pedido de redefinição e troca da senha pelo link recebido. Desligada, quem esquecer a senha precisa pedir a um administrador.",
     enabled: true,
     targetRoles: [],
   },
   {
     key: "contact_form",
     name: "Formulário de contato",
-    description: "Interruptor do recurso: formulário de contato.",
+    description:
+      "Mostra o formulário 'Fale conosco' do site público e aceita o envio de mensagens de contato. Desligada, o formulário e os botões de contato da página inicial somem e a API recusa novos envios.",
     enabled: true,
     targetRoles: [],
   },
   {
     key: "events_section",
     name: "Página de eventos",
-    description: "Interruptor do recurso: página de eventos.",
+    description:
+      "Exibe a seção/página pública de eventos (lista de próximos eventos). Desligada, a seção some do site e a listagem pública de eventos fica indisponível.",
     enabled: true,
     targetRoles: [],
   },
   {
     key: "shelter_feed",
     name: "Feed dos abrigos",
-    description: "Interruptor do recurso: feed dos abrigos.",
+    description:
+      "Liga o feed dos abrigos: publicações de fotos e vídeos das visitas, visíveis para quem tem acesso ao abrigo. Desligada, o feed inteiro (listagem, envio e moderação) fica indisponível.",
     enabled: true,
     targetRoles: [],
   },
@@ -139,7 +145,7 @@ export const DEFAULT_FEATURE_FLAGS = [
     key: "shelter_feed_celebrations",
     name: "Celebrar publicações do feed",
     description:
-      "Interruptor do recurso: celebrar publicações do feed dos abrigos.",
+      "Permite 'celebrar' (reagir) às publicações do feed dos abrigos. Desligada, o botão de celebrar some e a API recusa novas celebrações; as publicações continuam visíveis.",
     enabled: true,
     targetRoles: [],
   },
@@ -147,154 +153,175 @@ export const DEFAULT_FEATURE_FLAGS = [
     key: "shelter_feed_comments",
     name: "Comentários nas fotos do feed",
     description:
-      "Interruptor do recurso: comentários nas fotos do feed dos abrigos.",
+      "Permite comentar nas fotos/publicações do feed dos abrigos e habilita a moderação desses comentários no painel. Desligada, não é possível comentar nem moderar comentários do feed.",
     enabled: true,
     targetRoles: [],
   },
   {
     key: "home_comments",
     name: "Depoimentos na página inicial",
-    description: "Interruptor do recurso: depoimentos na página inicial.",
+    description:
+      "Exibe os depoimentos aprovados na página inicial do site. Desligada, a seção de depoimentos some e a página inicial deixa de buscar os comentários.",
     enabled: true,
     targetRoles: [],
   },
   {
     key: "public_galleries",
     name: "Galerias públicas de fotos",
-    description: "Interruptor do recurso: galerias públicas de fotos.",
+    description:
+      "Habilita as galerias públicas de fotos do site (páginas de imagens criadas no painel). Desligada, essas páginas deixam de abrir para o público.",
     enabled: true,
     targetRoles: [],
   },
   {
     key: "public_videos",
     name: "Páginas públicas de vídeos",
-    description: "Interruptor do recurso: páginas públicas de vídeos.",
+    description:
+      "Habilita as páginas públicas de vídeos do site (páginas de vídeos criadas no painel). Desligada, essas páginas deixam de abrir para o público.",
     enabled: true,
     targetRoles: [],
   },
   {
     key: "shelter_pages",
     name: "Páginas públicas de abrigo",
-    description: "Interruptor do recurso: páginas públicas de abrigo.",
+    description:
+      "Habilita as páginas públicas de apresentação de cada abrigo no site. Desligada, os links para essas páginas somem e elas deixam de abrir.",
     enabled: true,
     targetRoles: [],
   },
   {
     key: "about_page",
     name: "Página Sobre",
-    description: "Interruptor do recurso: página Sobre.",
+    description:
+      "Exibe a página 'Sobre' do site e seu link no menu. Desligada, a página e o link ficam indisponíveis.",
     enabled: true,
     targetRoles: [],
   },
   {
     key: "shelter_address",
     name: "Endereço dos abrigos",
-    description: "Interruptor do recurso: endereço dos abrigos.",
+    description:
+      "Mostra o endereço dos abrigos (cartões, detalhes e formulário de abrigo). Desligada, o endereço fica oculto e deixa de ser editável/consultável.",
     enabled: true,
     targetRoles: [],
   },
   {
     key: "member_area",
     name: "Área do Membro (hub e casca)",
-    description: "Interruptor do recurso: área do Membro (hub e casca).",
+    description:
+      "Liga a Área do Membro inteira: casca, menu e página inicial do membro, e o botão de acesso a ela no site. Desligada, ninguém entra na Área do Membro e os atalhos para ela somem.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "visit_materials",
     name: "Materiais de visita",
-    description: "Interruptor do recurso: materiais de visita.",
+    description:
+      "Liga os materiais de visita: páginas com roteiros e materiais para as visitas aos abrigos, na Área do Membro e no banner da página inicial. Desligada, esses materiais ficam indisponíveis.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "documents_library",
     name: "Biblioteca de documentos",
-    description: "Interruptor do recurso: biblioteca de documentos.",
+    description:
+      "Liga a biblioteca de documentos da Área do Membro (consulta e download de documentos). Desligada, o item de menu some e a consulta é bloqueada.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "training_videos",
     name: "Vídeos de treinamento",
-    description: "Interruptor do recurso: vídeos de treinamento.",
+    description:
+      "Liga os vídeos de treinamento da Área do Membro (consulta das aulas em vídeo). Desligada, o item de menu some e a consulta é bloqueada.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "ideas_sharing",
     name: "Galeria de ideias",
-    description: "Interruptor do recurso: galeria de ideias.",
+    description:
+      "Liga a galeria de ideias compartilhadas na Área do Membro (consulta das ideias publicadas). Desligada, o item de menu some e a galeria deixa de abrir.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "idea_submission",
     name: "Envio de ideias",
-    description: "Interruptor do recurso: envio de ideias.",
+    description:
+      "Permite que membros enviem novas ideias (botão e banner 'Compartilhe sua ideia'). Desligada, o envio some; as ideias já publicadas continuam visíveis se a galeria estiver ligada.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "shelter_photo_upload",
     name: "Envio de fotos do abrigo",
-    description: "Interruptor do recurso: envio de fotos do abrigo.",
+    description:
+      "Permite que membros e líderes enviem fotos do abrigo pela Área do Membro. Desligada, o botão de envio some e a API recusa novos uploads.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "site_feedback",
     name: "Avaliação do site",
-    description: "Interruptor do recurso: avaliação do site.",
+    description:
+      "Permite que usuários avaliem o site (formulário de avaliação/feedback). Desligada, o formulário some e a API recusa novas avaliações.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "member_manual",
     name: "Manual do Membro",
-    description: "Interruptor do recurso: manual do Membro.",
+    description:
+      "Exibe o manual do Membro na Área do Membro (guia de uso e orientações). Desligada, o item de menu e o conteúdo do manual ficam indisponíveis.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "weekly_meditation",
     name: "Meditação da semana",
-    description: "Interruptor do recurso: meditação da semana.",
+    description:
+      "Exibe a meditação da semana para os membros (página inicial e Área do Membro). Desligada, a meditação da semana deixa de ser mostrada e consultada.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "informative_banners",
     name: "Informativos",
-    description: "Interruptor do recurso: informativos.",
+    description:
+      "Exibe os informativos (banners de avisos) para os membros e permite sua consulta. Desligada, os banners deixam de aparecer e de ser listados.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "comment_submission",
     name: "Envio de depoimentos",
-    description: "Interruptor do recurso: envio de depoimentos.",
+    description:
+      "Permite que visitantes e membros enviem depoimentos/comentários para moderação. Desligada, a API recusa novos envios; os já aprovados continuam conforme 'home_comments'.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "sheltered_area",
     name: "Área dos Acolhidos",
-    description: "Interruptor do recurso: área dos Acolhidos.",
+    description:
+      "Liga a área dos Acolhidos para líderes e membros: listagem e consulta dos acolhidos dos seus abrigos. Desligada, o item de menu e as consultas ficam bloqueados.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "accepted_christs",
     name: "Registro de decisão por Cristo",
-    description: "Interruptor do recurso: registro de decisão por Cristo.",
+    description:
+      "Liga o registro de decisões por Cristo dos acolhidos (marcar e consultar quem aceitou Jesus). Desligada, o registro e a consulta ficam indisponíveis.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "attendance",
     name: "Frequência",
-    description: "Interruptor do recurso: frequência.",
+    description:
+      "Liga o controle de frequência: lançar, consultar e acompanhar presenças das equipes, e o aviso de pendências. Desligada, todo o módulo de presença some do painel e da API.",
     enabled: true,
     targetRoles: ["admin", "leader", "member"],
   },
@@ -302,182 +329,207 @@ export const DEFAULT_FEATURE_FLAGS = [
     key: "integration",
     name: "Integração Feira de Ministério",
     description:
-      "Integração Feira de Ministério: botão na Área do Membro e nos acolhidos, e a página de registro (admin e líder).",
+      "Integração Feira de Ministério: botão 'Integração' na Área do Membro e no cartão dos acolhidos, e a página de registro da integração (admin e líder). Desligada, o botão e a página somem e a API recusa os registros.",
     enabled: true,
     targetRoles: ["admin", "leader"],
   },
   {
     key: "comment_moderation",
     name: "Moderação de depoimentos",
-    description: "Interruptor do recurso: moderação de depoimentos.",
+    description:
+      "Libera no painel a moderação de depoimentos (aprovar, reprovar, apagar) e o contador de pendentes. Desligada, a tela e as ações de moderação ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin"],
   },
   {
     key: "document_management",
     name: "Gestão de documentos",
-    description: "Interruptor do recurso: gestão de documentos.",
+    description:
+      "Libera no painel a gestão de documentos (enviar, editar, excluir arquivos da biblioteca). Desligada, a tela e as ações de gestão ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin"],
   },
   {
     key: "informative_management",
     name: "Gestão de informativos",
-    description: "Interruptor do recurso: gestão de informativos.",
+    description:
+      "Libera no painel a gestão de informativos (criar, editar, ordenar e remover banners de avisos). Desligada, a tela e as ações ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin"],
   },
   {
     key: "feedback_management",
     name: "Gestão de avaliações do site",
-    description: "Interruptor do recurso: gestão de avaliações do site.",
+    description:
+      "Libera no painel a leitura e o tratamento das avaliações do site, com o contador de não lidas. Desligada, a tela e as ações ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin"],
   },
   {
     key: "contact_management",
     name: "Gestão de contatos",
-    description: "Interruptor do recurso: gestão de contatos.",
+    description:
+      "Libera no painel a gestão das mensagens recebidas pelo formulário de contato (ler, marcar como atendida, excluir) e o contador de pendentes. Desligada, a tela e as ações ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin"],
   },
   {
     key: "page_management",
     name: "Criação e gestão de páginas",
-    description: "Interruptor do recurso: criação e gestão de páginas.",
+    description:
+      "Libera no painel a criação e edição das páginas do site (fotos, vídeos, materiais de visita e ideias) e o assistente 'Nova página'. Desligada, essas telas e ações ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin"],
   },
   {
     key: "meditation_management",
     name: "Gestão de meditações",
-    description: "Interruptor do recurso: gestão de meditações.",
+    description:
+      "Libera no painel a gestão das meditações (criar, editar e publicar a meditação da semana). Desligada, a tela e as ações ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin"],
   },
   {
     key: "event_management",
     name: "Gestão de eventos",
-    description: "Interruptor do recurso: gestão de eventos.",
+    description:
+      "Libera a gestão de eventos (criar, editar e remover eventos do site e seus avisos). Desligada, as rotas administrativas de eventos ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin"],
   },
   {
     key: "photo_moderation",
     name: "Moderação de fotos",
-    description: "Interruptor do recurso: moderação de fotos.",
+    description:
+      "Libera no painel a moderação das fotos enviadas pelos abrigos (aprovar, editar, excluir seções de imagens). Desligada, a tela e as ações ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin"],
   },
   {
     key: "idea_moderation",
     name: "Moderação de ideias",
-    description: "Interruptor do recurso: moderação de ideias.",
+    description:
+      "Libera no painel a moderação das ideias compartilhadas (revisar, editar, excluir) e o contador de pendentes. Desligada, a tela e as ações ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin"],
   },
   {
     key: "user_management",
     name: "Gestão de usuários e perfis",
-    description: "Interruptor do recurso: gestão de usuários e perfis.",
+    description:
+      "Libera no painel a gestão de usuários e perfis (listar, editar, ativar/desativar, trocar papel). Desligada, as telas de Usuários e Perfis ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin"],
   },
   {
     key: "leader_management",
     name: "Gestão de líderes",
-    description: "Interruptor do recurso: gestão de líderes.",
+    description:
+      "Libera a gestão de líderes (cadastro, edição, vínculo com abrigos e equipes) para admin e líder. Desligada, a tela de Líderes e suas ações ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin", "leader"],
   },
   {
     key: "member_management",
     name: "Gestão de membros",
-    description: "Interruptor do recurso: gestão de membros.",
+    description:
+      "Libera a gestão de membros (cadastro, edição, vínculo com equipes) para admin e líder. Desligada, a tela de Membros e suas ações ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin", "leader"],
   },
   {
     key: "shelter_management",
     name: "Gestão de abrigos e equipes",
-    description: "Interruptor do recurso: gestão de abrigos e equipes.",
+    description:
+      "Libera a gestão de abrigos e equipes (criar, editar, vincular líderes e membros) e o atalho 'Gerenciar Equipe'. Desligada, as telas e as consultas de abrigos e equipes ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin", "leader"],
   },
   {
     key: "sheltered_management",
     name: "Gestão de acolhidos",
-    description: "Interruptor do recurso: gestão de acolhidos.",
+    description:
+      "Libera a gestão de acolhidos no painel (cadastrar, editar, vincular a abrigo e responsáveis). Desligada, a tela de Acolhidos e suas ações ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin", "leader"],
   },
   {
     key: "pagelas",
     name: "Pagelas",
-    description: "Interruptor do recurso: pagelas.",
+    description:
+      "Libera as pagelas no painel: registro semanal de cada acolhido por abrigo. Desligada, a tela de Pagelas e a API correspondente ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin", "leader"],
   },
   {
     key: "shelter_schedule",
     name: "Agendamentos dos abrigos",
-    description: "Interruptor do recurso: agendamentos dos abrigos.",
+    description:
+      "Libera os agendamentos dos abrigos (calendário de visitas e responsáveis por dia). Desligada, a tela de Agendamentos e suas ações ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin", "leader"],
   },
   {
     key: "criminal_records",
     name: "Antecedentes criminais",
-    description: "Interruptor do recurso: antecedentes criminais.",
+    description:
+      "Libera o controle de antecedentes criminais dos voluntários (envio e conferência dos documentos). Desligada, a tela e as ações ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin", "leader"],
   },
   {
     key: "visit_reports",
     name: "Relatórios de visita",
-    description: "Interruptor do recurso: relatórios de visita.",
+    description:
+      "Libera os relatórios de visita (preenchimento, consulta e lista de pendências por abrigo). Desligada, as telas e a API de relatórios ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin", "leader"],
   },
   {
     key: "content_studio",
     name: "Estúdio: entrada",
-    description: "Interruptor do recurso: estúdio: entrada.",
+    description:
+      "Porta de entrada do Estúdio Orfanato (geração de conteúdo com IA): libera o menu, a Home do Estúdio, a produção e as orientações. Desligada, todo o Estúdio fica inacessível, mesmo com as demais flags do Estúdio ligadas.",
     enabled: false,
     targetRoles: ["admin"],
   },
   {
     key: "content_studio_generation",
     name: "Estúdio: geração",
-    description: "Interruptor do recurso: estúdio: geração.",
+    description:
+      "Permite gerar conteúdo (lições, textos e visuais) com IA no Estúdio. Desligada, os botões de gerar somem e a API recusa novas gerações.",
     enabled: false,
     targetRoles: ["admin"],
   },
   {
     key: "content_studio_review",
     name: "Estúdio: revisão",
-    description: "Interruptor do recurso: estúdio: revisão.",
+    description:
+      "Libera a revisão do Estúdio: fila de revisão, aprovar, devolver para ajuste e histórico por item. Desligada, as telas e ações de revisão ficam bloqueadas.",
     enabled: false,
     targetRoles: ["admin"],
   },
   {
     key: "content_studio_publication",
     name: "Estúdio: publicação",
-    description: "Interruptor do recurso: estúdio: publicação.",
+    description:
+      "Permite publicar no site o conteúdo aprovado do Estúdio (publicação incremental por categoria). Desligada, o botão de publicar some e a API recusa a publicação.",
     enabled: false,
     targetRoles: ["admin"],
   },
   {
     key: "content_studio_provider_admin",
     name: "Estúdio: provedores de IA",
-    description: "Interruptor do recurso: estúdio: provedores de IA.",
+    description:
+      "Libera a configuração dos provedores de IA do Estúdio (chaves, modelos e provedor ativo). Exige também 'content_studio'. Desligada, a tela de provedores fica bloqueada.",
     enabled: false,
     targetRoles: ["admin"],
   },
   {
     key: "observability_audit",
     name: "Auditoria e observabilidade",
-    description: "Interruptor do recurso: auditoria e observabilidade.",
+    description:
+      "Libera a tela de observabilidade e auditoria (trilha de ações e eventos do sistema) para administradores. Desligada, a tela e sua API ficam bloqueadas.",
     enabled: false,
     targetRoles: ["admin"],
   },
@@ -604,6 +656,9 @@ export const DEFAULT_FEATURE_FLAGS = [
     targetRoles: [],
   },
 ] as const;
+
+/** Prefixo da descrição genérica antiga, substituída pela do catálogo no boot. */
+export const PLACEHOLDER_FLAG_DESCRIPTION_PREFIX = "Interruptor do recurso:";
 
 export const FEATURE_FLAGS_DEFAULT_PAGE = 1;
 export const FEATURE_FLAGS_DEFAULT_LIMIT = 12;
