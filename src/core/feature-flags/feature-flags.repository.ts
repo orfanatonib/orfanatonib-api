@@ -94,6 +94,42 @@ export class FeatureFlagsRepository {
     return this.repository.save(flag);
   }
 
+  /**
+   * Liga/desliga só se a versão ainda for a esperada (atômico no banco).
+   * `false` = ninguém foi alterado (versão desatualizada).
+   */
+  async setEnabledIfVersion(
+    id: string,
+    enabled: boolean,
+    expectedVersion: number,
+  ): Promise<boolean> {
+    const result = await this.repository
+      .createQueryBuilder()
+      .update(FeatureFlagEntity)
+      .set({ enabled, version: () => "version + 1" })
+      .where("id = :id AND version = :expectedVersion", {
+        id,
+        expectedVersion,
+      })
+      .execute();
+    return (result.affected ?? 0) > 0;
+  }
+
+  /** Preenche `protected` nas flags de fábrica criadas antes da coluna. */
+  async markProtected(keys: readonly string[]): Promise<number> {
+    if (keys.length === 0) return 0;
+    const result = await this.repository
+      .createQueryBuilder()
+      .update(FeatureFlagEntity)
+      .set({ isProtected: true })
+      .where("`key` IN (:...keys) AND `protected` = :flag", {
+        keys: [...keys],
+        flag: false,
+      })
+      .execute();
+    return result.affected ?? 0;
+  }
+
   async remove(flag: FeatureFlagEntity): Promise<void> {
     await this.repository.remove(flag);
   }

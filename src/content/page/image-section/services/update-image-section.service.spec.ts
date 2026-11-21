@@ -200,7 +200,7 @@ describe("UpdateImageSectionService", () => {
     expect(events).not.toContain(`delete:${GONE}`);
   });
 
-  it("[image-section.patch.image-sections-id#rollback-de-transacao] falha ao salvar a publicação (depois das mídias): rollback e o objeto novo é descartado", async () => {
+  it("[image-section.patch.image-sections-id#rollback-de-transacao] [media-upload.legacy-update.image-section#rollback-transacao] falha ao salvar a publicação (depois das mídias): rollback e o objeto novo é descartado", async () => {
     const { svc, tx, events } = setup();
     tx.saveSection.mockRejectedValueOnce(new Error("tx"));
     await expect(

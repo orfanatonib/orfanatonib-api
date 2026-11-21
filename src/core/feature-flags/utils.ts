@@ -104,3 +104,16 @@ export function catalogDefaultFor(
     (definition.targetRoles as readonly string[]).includes(normalized)
   );
 }
+
+/**
+ * Flag protegida = a coluna `protected` OU qualquer chave do catálogo de
+ * fábrica (linhas anteriores à coluna ainda não têm o campo preenchido).
+ */
+export function isProtectedFlag(
+  flag: Pick<FeatureFlagEntity, "key" | "isProtected">,
+): boolean {
+  return (
+    flag.isProtected === true ||
+    DEFAULT_FEATURE_FLAGS.some((definition) => definition.key === flag.key)
+  );
+}

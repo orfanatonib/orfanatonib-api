@@ -1,12 +1,12 @@
 import {
   Injectable,
-  Logger,
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { RouteService } from "src/infrastructure/route/services/route.service";
 import {
   RouteType,
@@ -18,14 +18,13 @@ import { DocumentEntity } from "../entities/document.entity";
 
 @Injectable()
 export class UpdateDocumentService {
-  private readonly logger = new Logger(UpdateDocumentService.name);
-
   constructor(
     private readonly dataSource: DataSource,
     private readonly documentRepo: DocumentRepository,
     private readonly s3Service: AwsS3Service,
     private readonly mediaProcessor: MediaItemProcessor,
     private readonly routeService: RouteService,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   async execute(
@@ -63,22 +62,13 @@ export class UpdateDocumentService {
         staleUrls,
       );
     } catch (error: unknown) {
-      await this.discard(uploadedUrls);
+      // Falha: o NOVO some do bucket (o antigo segue referenciado). Falha de remoção vai para a fila de limpeza.
+      await this.mediaStorage.deleteAfterCommit(uploadedUrls);
       throw error;
     }
-    await this.discard(staleUrls);
+    // Sucesso: só agora o antigo sai do bucket (depois do commit).
+    await this.mediaStorage.deleteAfterCommit(staleUrls);
     return saved;
-  }
-
-  private async discard(urls: readonly string[]): Promise<void> {
-    for (const url of urls) {
-      try {
-        await this.s3Service.delete(url);
-      } catch (error: unknown) {
-        const reason = error instanceof Error ? error.message : String(error);
-        this.logger.error(`Objeto órfão no bucket (${url}): ${reason}`);
-      }
-    }
   }
 
   private async runUpdate(
@@ -140,8 +130,9 @@ export class UpdateDocumentService {
           "document",
           filesDict,
           existingMedia,
-          async (url) => {
+          (url) => {
             staleUrls.push(url);
+            return Promise.resolve();
           },
           (f) => uploadTracked(f),
         );

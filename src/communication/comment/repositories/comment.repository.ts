@@ -21,6 +21,11 @@ export class CommentRepository extends Repository<CommentEntity> {
       order: { createdAt: "DESC" },
     });
   }
+  /** Comentários que o admin ainda não publicou. */
+  async countPending(): Promise<number> {
+    return this.countBy({ published: false });
+  }
+
   async findAll(): Promise<CommentEntity[]> {
     return this.find({ order: { createdAt: "DESC" } });
   }

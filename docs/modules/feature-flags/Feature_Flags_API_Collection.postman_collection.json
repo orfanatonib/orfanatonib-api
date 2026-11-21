@@ -1,0 +1,314 @@
+{
+  "info": {
+    "name": "Feature Flags API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Rotas de /feature-flags (admin, exceto map e check). 409: FEATURE_FLAG_VERSION_CONFLICT / FEATURE_FLAG_PROTECTED."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "flagKey",
+      "value": "minha_flag"
+    }
+  ],
+  "item": [
+    {
+      "name": "Mapa público (por perfil)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/feature-flags/map",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "feature-flags",
+            "map"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Check de uma flag",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/feature-flags/check/{{flagKey}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "feature-flags",
+            "check",
+            "{{flagKey}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/feature-flags?limit=100",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "feature-flags?limit=100"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Estatísticas",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/feature-flags/stats",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "feature-flags",
+            "stats"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Conferir catálogo (seed)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/feature-flags/seed",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "feature-flags",
+            "seed"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Criar",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/feature-flags",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "feature-flags"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"key\": \"{{flagKey}}\",\n  \"name\": \"Minha flag\",\n  \"enabled\": false,\n  \"targetRoles\": [\n    \"admin\"\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "Ler",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/feature-flags/{{flagKey}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "feature-flags",
+            "{{flagKey}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Editar (com versão)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/feature-flags/{{flagKey}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "feature-flags",
+            "{{flagKey}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Novo nome\",\n  \"expectedVersion\": 1\n}"
+        }
+      }
+    },
+    {
+      "name": "Definir estado (idempotente, com versão)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/feature-flags/{{flagKey}}/enabled",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "feature-flags",
+            "{{flagKey}}",
+            "enabled"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"enabled\": true,\n  \"expectedVersion\": 1\n}"
+        }
+      }
+    },
+    {
+      "name": "Alternar",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/feature-flags/{{flagKey}}/toggle",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "feature-flags",
+            "{{flagKey}}",
+            "toggle"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Remover",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{accessToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/feature-flags/{{flagKey}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "feature-flags",
+            "{{flagKey}}"
+          ]
+        }
+      }
+    }
+  ]
+}

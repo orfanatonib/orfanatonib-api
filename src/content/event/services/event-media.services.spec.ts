@@ -158,7 +158,7 @@ describe("eventos × S3 (sem órfão, sem referência quebrada)", () => {
       expect(storage.deleteAfterCommit).toHaveBeenCalledWith([oldLocal.url]);
     });
 
-    it("falha ao gravar: descarta o novo e NÃO apaga o antigo", async () => {
+    it("[media-upload.legacy-update.event#rollback-banco-falha] falha ao gravar: descarta o novo e NÃO apaga o antigo", async () => {
       const { update, findByTarget, upsert, batch, storage } = setup();
       findByTarget.mockResolvedValue(oldLocal);
       upsert.mockRejectedValue(new Error("db"));

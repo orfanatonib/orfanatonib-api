@@ -48,6 +48,8 @@ const CORE_UNFLAGGED: Readonly<Record<string, string>> = {
     "administração de flags",
   "core/feature-flags/feature-flags.controller.ts::update":
     "administração de flags",
+  "core/feature-flags/feature-flags.controller.ts::setEnabled":
+    "administração de flags",
   "core/feature-flags/feature-flags.controller.ts::toggle":
     "administração de flags",
   "core/feature-flags/feature-flags.controller.ts::remove":

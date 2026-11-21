@@ -10,6 +10,7 @@ import { JwtStrategy } from "./strategies/jwt.strategy";
 import { AuthContextService } from "./services/auth-context.service";
 import { AuthTokenService } from "./services/auth-token.service";
 import { LoginService } from "./services/login.service";
+import { CompletionTokenService } from "./services/completion-token.service";
 import { GoogleLoginService } from "./services/google-login.service";
 import { RegisterService } from "./services/register.service";
 import { GetMeService } from "./services/get-me.service";
@@ -58,6 +59,7 @@ import { toExpiresIn } from "./utils/auth-token.util";
     AuthTokenService,
     LoginService,
     GoogleLoginService,
+    CompletionTokenService,
     RegisterService,
     GetMeService,
     EmailVerificationService,

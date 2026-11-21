@@ -46,7 +46,11 @@ describe("IdeasSectionController", () => {
         },
         {
           provide: GetIdeasSectionService,
-          useValue: { findOne: jest.fn(), findUnattached: jest.fn() },
+          useValue: {
+            findOne: jest.fn(),
+            findUnattached: jest.fn(),
+            pendingCount: jest.fn(),
+          },
         },
         {
           provide: DeleteIdeasSectionService,
@@ -137,6 +141,12 @@ describe("IdeasSectionController", () => {
     getService.findUnattached.mockResolvedValue([]);
 
     expect(await controller.findUnattached()).toEqual([]);
+  });
+
+  it("pendingCount delega ao serviço de leitura", async () => {
+    getService.pendingCount.mockResolvedValue({ pending: 2 });
+
+    expect(await controller.pendingCount()).toEqual({ pending: 2 });
   });
 
   it("findOne delega ao serviço de leitura", async () => {

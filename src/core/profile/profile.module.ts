@@ -10,6 +10,7 @@ import { UserRepository } from "../user/user.repository";
 import { ProfilesQueryRepository } from "./repositories/profiles-query.repository";
 import { PersonalDataRepository } from "./repositories/personal-data.repository";
 import { UserPreferencesRepository } from "./repositories/user-preferences.repository";
+import { ProfileWriteRepository } from "./repositories/profile-write.repository";
 import { UserEntity } from "../user/entities/user.entity";
 import { PersonalData } from "./entities/personal-data.entity";
 import { UserPreferences } from "./entities/user-preferences.entity";
@@ -35,6 +36,7 @@ import { AuthModule } from "../auth/auth.module";
     PersonalDataRepository,
     ProfilesQueryRepository,
     UserPreferencesRepository,
+    ProfileWriteRepository,
   ],
   exports: [
     CreateProfileService,

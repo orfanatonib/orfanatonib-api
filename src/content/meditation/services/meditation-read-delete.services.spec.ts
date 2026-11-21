@@ -2,7 +2,7 @@ import { BadRequestException, NotFoundException } from "@nestjs/common";
 import { MeditationRepository } from "../meditation.repository";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { RouteService } from "src/infrastructure/route/services/route.service";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { DeleteMeditationService } from "./delete-meditation.service";
 import { GetMeditationService } from "./get-meditation.service";
@@ -17,7 +17,7 @@ describe("Meditation get/delete services", () => {
     findMediaItemsByTarget: jest.Mock;
     findMediaItemByTarget: jest.Mock;
     findManyMediaItemsByTargets: jest.Mock;
-    deleteMediaItems: jest.Mock;
+    removeMediaItemsKeepingFiles: jest.Mock;
   };
 
   beforeEach(() => {
@@ -30,7 +30,7 @@ describe("Meditation get/delete services", () => {
       findMediaItemsByTarget: jest.fn().mockResolvedValue([]),
       findMediaItemByTarget: jest.fn().mockResolvedValue(null),
       findManyMediaItemsByTargets: jest.fn().mockResolvedValue([]),
-      deleteMediaItems: jest.fn(),
+      removeMediaItemsKeepingFiles: jest.fn().mockResolvedValue([]),
     };
   });
 
@@ -72,15 +72,17 @@ describe("Meditation get/delete services", () => {
 
   describe("DeleteMeditationService", () => {
     const build = () => {
-      const s3 = { delete: jest.fn() };
+      const storage = {
+        deleteAfterCommit: jest.fn().mockResolvedValue(undefined),
+      };
       const route = { removeRouteByEntity: jest.fn() };
       const service = new DeleteMeditationService(
         repo as unknown as MeditationRepository,
-        s3 as unknown as AwsS3Service,
+        storage as unknown as MediaStorageService,
         route as unknown as RouteService,
         media as unknown as MediaItemProcessor,
       );
-      return { service, route };
+      return { service, route, storage };
     };
 
     it("404 quando não existe e nada é apagado", async () => {
@@ -96,14 +98,28 @@ describe("Meditation get/delete services", () => {
     it("remove mídia, rota e meditação", async () => {
       repo.findOneWithRelations.mockResolvedValue({ id: "m1" });
       media.findMediaItemsByTarget.mockResolvedValue([{ id: "x" }]);
-      const { service, route } = build();
+      media.removeMediaItemsKeepingFiles.mockResolvedValue(["https://b/x.pdf"]);
+      const { service, route, storage } = build();
       await service.remove("m1");
-      expect(media.deleteMediaItems).toHaveBeenCalledTimes(1);
+      expect(media.removeMediaItemsKeepingFiles).toHaveBeenCalledTimes(1);
+      expect(storage.deleteAfterCommit).toHaveBeenCalledWith([
+        "https://b/x.pdf",
+      ]);
       expect(route.removeRouteByEntity).toHaveBeenCalledWith(
         MediaTargetType.Meditation,
         "m1",
       );
       expect(repo.delete).toHaveBeenCalledWith("m1");
+    });
+
+    it("[media-upload.legacy-update.meditation#delete-falha-no-banco] se apagar a meditação falha, nenhum objeto sai do bucket", async () => {
+      repo.findOneWithRelations.mockResolvedValue({ id: "m1" });
+      media.findMediaItemsByTarget.mockResolvedValue([{ id: "x" }]);
+      media.removeMediaItemsKeepingFiles.mockResolvedValue(["https://b/x.pdf"]);
+      repo.delete.mockRejectedValue(new Error("db"));
+      const { service, storage } = build();
+      await expect(service.remove("m1")).rejects.toThrow("db");
+      expect(storage.deleteAfterCommit).not.toHaveBeenCalled();
     });
   });
 });

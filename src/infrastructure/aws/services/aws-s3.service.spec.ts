@@ -53,14 +53,16 @@ beforeEach(() => {
 describe("AwsS3Service.upload", () => {
   it("grava com chave <env>/uploads/<uuid>_<nome saneado> e devolve a URL do endpoint", async () => {
     const url = await build().upload(png());
-    const key = (send.mock.calls[0][0] as { input: { Key: string } }).input.Key;
+    const key = (
+      (send.mock.calls as unknown[][])[0][0] as { input: { Key: string } }
+    ).input.Key;
     expect(key).toMatch(
       /^local\/uploads\/[0-9a-f-]{36}_Foto_da_Crian_a__1_.png$/,
     );
     expect(url).toBe(`${ENDPOINT}/${BUCKET}/${key}`);
   });
 
-  it("dois uploads do mesmo nome nunca colidem na chave", async () => {
+  it("[media-upload.legacy.aws-s3#chave-unica-sem-colisao] dois uploads do mesmo nome nunca colidem na chave", async () => {
     const svc = build();
     const a = await svc.upload(png("a.png"));
     const b = await svc.upload(png("a.png"));
@@ -75,7 +77,7 @@ describe("AwsS3Service.upload", () => {
     );
   });
 
-  it("arquivo recusado pela política (MIME x conteúdo) é 400 e nada vai ao bucket", async () => {
+  it("[media-upload.legacy.aws-s3#mime-x-conteudo-recusado] arquivo recusado pela política (MIME x conteúdo) é 400 e nada vai ao bucket", async () => {
     const fake = {
       ...png("x.png"),
       buffer: Buffer.from("isto não é um png"),
@@ -103,7 +105,7 @@ describe("AwsS3Service.upload", () => {
 });
 
 describe("AwsS3Service.delete", () => {
-  it("dentro de uma requisição a exclusão é ADIADA (nada vai ao S3 agora)", async () => {
+  it("[media-upload.legacy.aws-s3#exclusao-adiada-no-escopo] dentro de uma requisição a exclusão é ADIADA (nada vai ao S3 agora)", async () => {
     const scope = new UploadScope();
     await uploadScopeStorage.run(scope, () =>
       build().delete(`${ENDPOINT}/${BUCKET}/local/uploads/a.png`),
@@ -123,11 +125,12 @@ describe("AwsS3Service.delete", () => {
   ])("fora de requisição extrai a chave de %s e apaga", async (url, key) => {
     await build().delete(url);
     expect(
-      (send.mock.calls[0][0] as { input: { Key: string } }).input.Key,
+      ((send.mock.calls as unknown[][])[0][0] as { input: { Key: string } })
+        .input.Key,
     ).toBe(key);
   });
 
-  it("URL de outra origem não apaga nada e é registrada como ERRO (não só aviso)", async () => {
+  it("[media-upload.legacy.aws-s3#url-de-outra-origem-e-erro] URL de outra origem não apaga nada e é registrada como ERRO (não só aviso)", async () => {
     const svc = build();
     const error = jest
       .spyOn(svc["logger"], "error")
@@ -137,7 +140,7 @@ describe("AwsS3Service.delete", () => {
     expect(error).toHaveBeenCalled();
   });
 
-  it("exclusão que falha vai para o handler da fila de limpeza com a chave e o motivo", async () => {
+  it("[media-upload.legacy.aws-s3#falha-de-exclusao-vai-para-fila] exclusão que falha vai para o handler da fila de limpeza com a chave e o motivo", async () => {
     const svc = build();
     const handler = jest.fn().mockResolvedValue(undefined);
     svc.setDeleteFailureHandler(handler);
@@ -156,7 +159,7 @@ describe("AwsS3Service.keyFromOwnedUrl / downloadOwned", () => {
     expect(svc.keyFromOwnedUrl("https://evil.com/a.png")).toBeNull();
   });
 
-  it("recusa baixar URL de outra origem (SSRF) sem chamar o S3", async () => {
+  it("[media-upload.legacy.aws-s3#ssrf-download-recusado] recusa baixar URL de outra origem (SSRF) sem chamar o S3", async () => {
     await expect(
       build().downloadOwned("https://evil.com/a.png", 100),
     ).rejects.toBeInstanceOf(BadRequestException);

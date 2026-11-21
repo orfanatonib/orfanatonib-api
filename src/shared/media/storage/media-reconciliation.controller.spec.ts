@@ -8,7 +8,7 @@ import { MediaReconciliationController } from "./media-reconciliation.controller
 import { ReconcileMediaQueryDto } from "./media-reconciliation.dto";
 
 describe("MediaReconciliationController", () => {
-  it("só admin", () => {
+  it("[media-upload.reconcile.post#perfil-admin] só admin", () => {
     const guards = Reflect.getMetadata(
       GUARDS_METADATA,
       MediaReconciliationController,
@@ -18,7 +18,7 @@ describe("MediaReconciliationController", () => {
     );
   });
 
-  it("dry-run é o padrão; dryRun=false e minAgeHours são repassados", async () => {
+  it("[media-upload.reconcile.post#dry-run-padrao] dry-run é o padrão; dryRun=false e minAgeHours são repassados", async () => {
     const service = { reconcile: jest.fn().mockResolvedValue({}) };
     const controller = new MediaReconciliationController(service as never);
     await controller.reconcile({});
@@ -33,7 +33,7 @@ describe("MediaReconciliationController", () => {
     });
   });
 
-  it("DTO converte texto de query e recusa valores inválidos", async () => {
+  it("[media-upload.reconcile.post#validacao] DTO converte texto de query e recusa valores inválidos", async () => {
     const ok = plainToInstance(ReconcileMediaQueryDto, {
       dryRun: "false",
       minAgeHours: "2",

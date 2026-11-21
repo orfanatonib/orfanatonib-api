@@ -1,6 +1,8 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { ResourceConflictException } from "src/common/exceptions";
-import { ResourceNotFoundException } from "src/common/exceptions";
+import {
+  ResourceConflictException,
+  UnauthenticatedException,
+} from "src/common/exceptions";
 import { CreateUserService } from "src/core/user/services/create-user.service";
 import { GetUsersService } from "src/core/user/services/get-user.service";
 import { UpdateUserService } from "src/core/user/services/update-user.service";
@@ -20,6 +22,7 @@ import {
 } from "../constants/auth.constants";
 import { toAuthUserDto } from "../mappers/auth-user.mapper";
 import { errorMessageOf } from "../utils/auth-token.util";
+import { CompletionTokenService } from "./completion-token.service";
 import { EmailVerificationService } from "./email-verification.service";
 
 @Injectable()
@@ -32,6 +35,7 @@ export class RegisterService {
     private readonly updateUserService: UpdateUserService,
     private readonly updateMemberProfileService: UpdateMemberProfileService,
     private readonly emailVerification: EmailVerificationService,
+    private readonly completionTokens: CompletionTokenService,
   ) {}
 
   /** Cadastro direto: a conta nasce inativa, aguardando validação. */
@@ -74,16 +78,7 @@ export class RegisterService {
   ): Promise<
     MessageResponseDto & { emailVerification: EmailVerificationStatusDto }
   > {
-    const user = await this.getUsersService.findByEmail(data.email);
-    if (!user) {
-      throw new ResourceNotFoundException(AuthErrorMessages.USER_NOT_FOUND);
-    }
-    if (user.completed) {
-      throw new ResourceConflictException(
-        AuthErrorMessages.USER_ALREADY_COMPLETED,
-      );
-    }
-
+    const user = await this.pendingUserOf(data.completionToken);
     const finalRole = data.role ?? user.role;
 
     await this.updateUserService.update(user.id, {
@@ -102,6 +97,28 @@ export class RegisterService {
       message: AuthSuccessMessages.REGISTRATION_COMPLETED,
       emailVerification,
     };
+  }
+
+  /**
+   * Dono do token, desde que a conta ainda esteja pendente. Token inválido,
+   * expirado, de outro propósito, usuário inexistente e conta já completa dão
+   * a mesma resposta: quem chama não descobre quais e-mails existem.
+   */
+  private async pendingUserOf(token: string) {
+    const userId = this.completionTokens.verify(token);
+    const user = userId
+      ? await this.getUsersService.findByIdOrNull(userId)
+      : null;
+
+    if (!user || user.completed) {
+      this.logger.warn(
+        AuthLogs.COMPLETION_TOKEN_REJECTED(userId ? "not pending" : "token"),
+      );
+      throw new UnauthenticatedException(
+        AuthErrorMessages.COMPLETION_TOKEN_INVALID,
+      );
+    }
+    return user;
   }
 
   /**

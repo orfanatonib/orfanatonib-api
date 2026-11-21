@@ -10,6 +10,7 @@ import { DeleteMemberProfileService } from "src/shelter/member-profile/services/
 import { CreateLeaderProfileService } from "src/shelter/leader-profile/services/create-leader-profile.service";
 import { DeleteLeaderProfileService } from "src/shelter/leader-profile/services/delete-leader-profile.service";
 import { UserRole } from "src/core/auth/auth.types";
+import { RuleException } from "src/common/exceptions";
 import { UserErrorMessages, UserLogs } from "../constants/user.constants";
 import { NotificationService } from "src/communication/notification/services/notification.service";
 
@@ -37,6 +38,11 @@ export class UpdateUserService {
   async update(id: string, dto: Partial<UpdateUserDto>): Promise<UserEntity> {
     const current = await this.userRepo.findById(id);
     if (!current) throw new NotFoundException(UserErrorMessages.NOT_FOUND);
+
+    // Promover a admin só direto no banco; manter um admin como admin segue valendo.
+    if (dto.role === UserRole.ADMIN && current.role !== UserRole.ADMIN) {
+      throw new RuleException(UserErrorMessages.ADMIN_GRANT_FORBIDDEN);
+    }
 
     if (dto.password) {
       dto.password = await bcrypt.hash(dto.password, 10);

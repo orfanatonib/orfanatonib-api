@@ -4,7 +4,56 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-21 - USUÁRIOS E PERFIS (plano 07, fechamento)
+
+- **FIX**: data de nascimento de `POST/PUT /profiles*` era gravada **um dia antes** em servidor com fuso negativo (`new Date("2001-05-10")` é meia-noite UTC e o driver grava `date` pelos componentes locais); agora `parseBirthDate` usa meia-noite local.
+- **FIX**: `PUT /users/:id` e `POST /users` aceitavam `"talvez"`/`"false"` como `true` em `active`/`completed`/`commonUser` (conversão implícita do pipe global antes do `@IsBoolean`); agora 400 (`StrictBoolean`).
+- **FIX**: `DELETE /users/:id` de usuário inexistente respondia 200; agora 404 sem apagar nada. Falha ao limpar a foto **depois** do usuário apagado não derruba a resposta (fica no log; a reconciliação de mídia recolhe a sobra).
+- **FIX**: `POST /users` desfaz o usuário criado quando o perfil de líder/membro falha (antes ficava um usuário com papel e sem perfil).
+- **FIX**: duas trocas simultâneas da foto do mesmo usuário deixavam um objeto órfão no S3; agora são serializadas por usuário (`KeyedQueue`, por instância da API).
+- **CHANGE**: `POST/PUT/DELETE /profiles*` gravam dados pessoais e preferências numa única transação (`ProfileWriteRepository`).
+- **TEST**: Jest `user-profile-collaborator-failure.spec.ts` (11 casos `falha-do-colaborador-sem-efeito-parcial`), `keyed-queue`, `birth-date.util`; E2E full-stack `user-profile-*.api.spec.ts` + `user-profile.ui.spec.ts` (mobile 375 px) — matriz `user-profile` em 199/199.
+- **DOCS**: README do módulo `users` (endpoints reais, garantias, riscos) e coleção Postman com `/profile`, `/profiles*`, `/users/simple*`, `/users/:id/profile`, `/users/:id/image`.
+- **PENDENTE (decisão do solicitante)**: destino de `PATCH /users/:id/image` e `DELETE /profiles/:id` (sem chamador no front).
+
+## [Unreleased] - 2026-11-21 - AUTH SEGURANÇA (plano 06, achados 1 a 3)
+
+- **SECURITY**: `POST /auth/complete-register` exige o `completionToken` emitido por `POST /auth/google` (JWT `complete_register`, 15 min, chave derivada de `JWT_SECRET`, uso único pela conclusão da conta). **Quebra de contrato**: o corpo não aceita mais `email` (400); token inválido/expirado/reusado/conta ativa ou inexistente => 401 genérico. Sem migration.
+- **SECURITY**: ninguém vira admin pela API. `POST /auth/register` e `complete-register` aceitam só `member|leader` (admin => 400); `POST /users` com `role: admin` e `PUT /users/:id` que promove a admin => 400, mesmo por admin (`UserErrorMessages.ADMIN_GRANT_FORBIDDEN`; mudança mínima em `create-user.service.ts`/`update-user.service.ts`). Promoção só por `UPDATE users SET role='admin'` (README do módulo auth).
+- **SECURITY**: `POST /auth/forgot-password` responde sempre 201 com o mesmo corpo genérico (antes 400 para e-mail inexistente) e processa em segundo plano; conta Google pendente não recebe link. Revisão da enumeração: `resend-verification`/`login` já eram iguais; `register` duplicado (409) é inerente.
+- **CHANGE (script)**: `scripts/seed-local-credentials.js` cria/promove o admin local direto no banco (bcrypt), em vez de `/auth/register`.
+- **TEST**: Jest (`completion-token.service.spec.ts`, register/google/password-recovery/DTO/users) e E2E full-stack (`auth-account`, `auth-admin-grant`, `auth-flows.ui` com `/cadastrar-google` e `/esqueci-minha-senha` em 375 px); matriz `auth` com os IDs novos.
+
+## [Unreleased] - 2026-11-21 - FEATURE FLAGS (plano 08, fechamento)
+
+- **ADD**: `PUT /feature-flags/:key/enabled` (estado desejado, idempotente) e controle otimista por `version`/`expectedVersion` (409 `FEATURE_FLAG_VERSION_CONFLICT`), também no `PATCH /:key`.
+- **CHANGE**: renomear/remover flag de fábrica passa de 400 para **409** `FEATURE_FLAG_PROTECTED`; resposta de flag ganha `protected` e `version`.
+- **ADD (migration)**: `AddFeatureFlagProtectedVersion` — colunas `protected` e `version`, remove `environment` (gerada por `migration:generate`).
+- **ADD**: cache entre instâncias — TTL de 5 s nas `email_*` e invalidação por Redis pub/sub opcional (fallback em memória, sem exigir Redis).
+- **FIX**: `PATCH /feature-flags/:key` com `name`/`enabled`/`key` nulos respondia 500; agora 400.
+- **ADD (app)**: painel por área com selos "Imposta na API"/"Protegida" e aviso de perfil; releitura das flags ao voltar o foco da aba; `FeatureFlagsMap` tipado pelas chaves do enum; contrato catálogo × front × catálogo da API.
+- **TEST**: matriz E2E full-stack do plano 08 (`feature-flags-matrix.api.spec.ts`, `feature-flags-panel.ui.spec.ts` com mobile 375 px) — gate `check-scenario-coverage --unit=feature-flags` em 80/80.
+
+## [Unreleased] - 2026-11-21 - E-MAIL E NOTIFICAÇÕES (plano 10)
+
+- **CHANGE**: flags de e-mail renomeadas para o padrão `email_*` (`email-delivery` → `email_delivery`, `email-<tipo>` → `email_<tipo>`; `email-email-verification` → `email_verification`) com cópia de estado no boot (rollout em dois passos). Atenção: runbooks/alarmes que citem as chaves antigas precisam ser atualizados. As chaves `email-*` legadas continuam no banco e escondidas do mapa público; remover o prefixo `email-` de `INTERNAL_FEATURE_FLAG_PREFIXES` fica para o passo N+1, depois que o plano 08 apagar as linhas.
+- **ADD**: invariante `email-flag-catalog.spec.ts` (todo `EmailTemplateKey` tem flag interna própria). O aviso de foto nova usa o template `image-shared-notification` (flag `email_image_shared_notification`); a chave `email_photo_uploaded` que existe no banco local é resíduo de um template removido do catálogo.
+- **DOCS**: provedor de e-mail é **somente SMTP do Gmail** (`GMAIL_SMTP_*`); sem SES/SNS. README do módulo, coleção Postman `Notifications_API_Collection` (prévias) e E2E `email-outbox.api.spec.ts` (prova por `SELECT` em `email_outbox`).
+
+## [Unreleased] - 2026-11-21 - AUTH (plano 06)
+
+- **FIX**: `POST /auth/verify-email` confirma o e-mail do usuário **antes** de gastar o token (sem transação: se a confirmação falhar, o link continua válido; antes o token era gasto e o e-mail ficava não confirmado).
+- **FIX**: `POST /auth/reset-password` não devolve erro se só o aviso "senha alterada" não puder ser enfileirado (a senha já mudou e o token já foi apagado); a falha vai para o log.
+- **TEST**: `collaborator-failure.spec.ts` (casos `falha-do-colaborador-sem-efeito-parcial` da matriz do plano 06), `email-verification-token.repository.spec.ts` (expiração, uso único, invalidação).
+- **DOCS**: `docs/modules/auth` (chamadores de `/auth/refresh` e `/auth/complete-register`, riscos conhecidos, cobertura E2E) e coleção Postman com `verify-email`, `resend-verification`, `forgot-password`, `reset-password/validate` e `reset-password`.
+- **PENDENTE (decisão do solicitante)**: `role: "admin"` aceito no cadastro público; `complete-register` sem prova de posse do e-mail; tokens em `localStorage`; rate limit desligado fora do opt-in. Ver README do módulo.
+
 ## [Unreleased] - 2026-10-02 - ESTÚDIO ORFANATO
+
+- **CHANGE**: mídia e upload (plano 05, fechamento 2026-11-21): `UpdateDocumentService`, `UpdateMeditationService`, `DeleteMeditationService` e `DeleteUserService` removem objetos antigos **depois do commit** por `MediaStorageService.deleteAfterCommit` (falha de remoção vai para `media_cleanup_queue`; falha da transação descarta só o objeto novo). Contrato HTTP inalterado.
+- **ADD**: trava de arquitetura `legacy-s3-usage.architecture.spec.ts` (feature nova não importa `AwsS3Service`) e `upload-limits.architecture.spec.ts` (todo handler de upload tem `limits`); bucket em memória para testes (`src/shared/media/testing`).
+- **DOCS**: `UploadScopeInterceptor` oficializado como padrão de segurança por requisição (`docs/modules/media-storage`), coleção Postman `Media_Storage_API_Collection`.
+- **ADD (app)**: `utils/mediaUpload` (validação de tipo/tamanho antes do envio, progresso) na foto de perfil; E2E `e2e/live/media-upload` (UI 375 px + 12 cenários S3).
 
 - **CHANGE**: publicações de fotos dos abrigos (plano 32): `create/update/delete-image-section.service` deixam de usar `DataSource`/`QueryRunner`; a transação fica em `ImageSectionTransactionRepository` (mesmo `EntityManager` em todas as escritas, incluindo as linhas de mídia do `PATCH`). `FEED_ORFANATO_PAGE_ID` passa a ser lido pelo `ConfigService` com a constante `FEED_PAGE_ID_ENV`.
 - **FIX**: `PATCH`/`DELETE /image-sections/:id` com id inexistente respondem `404` (antes `400` genérico); `PATCH` trava a publicação (`SELECT ... FOR UPDATE`, edições simultâneas se enfileiram) e recusa mídia que pertence a outra publicação. `DELETE` remove linhas e publicação na transação e só apaga os objetos depois do commit (antes apagava o objeto dentro da transação); falha de remoção vai para `media_cleanup_queue`. `POST` remove linhas e objetos se a transação cair depois de as mídias gravarem.

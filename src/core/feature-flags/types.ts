@@ -25,3 +25,18 @@ export const FEATURE_FLAG_ROLE_ORDER: UserRole[] = [
   UserRole.LEADER,
   UserRole.MEMBER,
 ];
+
+/** Mensagem trafegada no canal de invalidação; `key = null` invalida tudo. */
+export interface FeatureFlagInvalidationMessage {
+  origin: string;
+  key: string | null;
+}
+
+export type RemoteInvalidationHandler = (key: string | null) => void;
+
+/** Porta do transporte (Redis pub/sub em produção, falso nos testes). */
+export interface FeatureFlagInvalidationTransport {
+  publish(message: string): Promise<void>;
+  subscribe(onMessage: (message: string) => void): Promise<void>;
+  close(): Promise<void>;
+}

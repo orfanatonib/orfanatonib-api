@@ -1,18 +1,17 @@
 import {
-  IsEmail,
-  IsEnum,
+  IsIn,
   IsNotEmpty,
   IsOptional,
   IsString,
   MinLength,
 } from "class-validator";
-import { UserRole } from "../auth.types";
+import { GRANTABLE_ROLES, GrantableRole } from "../auth.types";
 
 export class CompleteUserDto {
+  /** Prova de posse da conta Google, devolvida por `POST /auth/google`. */
   @IsString()
   @IsNotEmpty()
-  @IsEmail()
-  email: string;
+  completionToken: string;
 
   @IsString()
   @IsNotEmpty()
@@ -27,8 +26,8 @@ export class CompleteUserDto {
   password?: string;
 
   @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
+  @IsIn(GRANTABLE_ROLES)
+  role?: GrantableRole;
 
   @IsOptional()
   @IsString()

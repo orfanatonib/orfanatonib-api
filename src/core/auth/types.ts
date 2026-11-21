@@ -28,3 +28,10 @@ export interface RequestTokenCarriers {
   cookies?: Record<string, unknown>;
   query?: Record<string, unknown>;
 }
+
+/** Claims do token de conclusão do cadastro Google. `sub` é o id do usuário. */
+export interface CompletionTokenClaims {
+  sub: string;
+  purpose: string;
+  jti: string;
+}

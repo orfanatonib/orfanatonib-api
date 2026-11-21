@@ -6,6 +6,7 @@ import {
   MinLength,
   IsBoolean,
 } from "class-validator";
+import { StrictBoolean } from "./strict-boolean.decorator";
 import { UserRole } from "src/core/auth/auth.types";
 
 export class UpdateUserDto {
@@ -30,14 +31,17 @@ export class UpdateUserDto {
   role?: UserRole;
 
   @IsOptional()
+  @StrictBoolean()
   @IsBoolean()
   completed?: boolean;
 
   @IsOptional()
+  @StrictBoolean()
   @IsBoolean()
   commonUser?: boolean;
 
   @IsOptional()
+  @StrictBoolean()
   @IsBoolean()
   active?: boolean;
 }

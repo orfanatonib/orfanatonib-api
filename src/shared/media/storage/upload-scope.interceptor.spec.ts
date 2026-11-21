@@ -28,7 +28,7 @@ const NEW = "http://x/b/local/uploads/new.png";
 const OLD = "http://x/b/local/uploads/old.png";
 
 describe("UploadScopeInterceptor", () => {
-  it("sucesso: exclusões adiadas rodam depois, mas só se ninguém mais referencia o arquivo", async () => {
+  it("[media-upload.scope.interceptor#sucesso-aplica-exclusoes] sucesso: exclusões adiadas rodam depois, mas só se ninguém mais referencia o arquivo", async () => {
     const { interceptor, http, s3 } = setup([OLD]);
     const handler = {
       handle: () => {
@@ -44,7 +44,7 @@ describe("UploadScopeInterceptor", () => {
     expect(s3.deleteKey).toHaveBeenCalledWith("local/uploads/gone.png");
   });
 
-  it("falha: exclusões adiadas são descartadas e só uploads SEM referência são removidos", async () => {
+  it("[media-upload.scope.interceptor#falha-descarta-uploads-sem-referencia] falha: exclusões adiadas são descartadas e só uploads SEM referência são removidos", async () => {
     const { interceptor, http, s3 } = setup([
       "http://x/b/local/uploads/kept.png",
     ]);
@@ -64,7 +64,7 @@ describe("UploadScopeInterceptor", () => {
     expect(s3.deleteKey).toHaveBeenCalledWith("local/uploads/new.png");
   });
 
-  it("falha ao apagar vai para a fila de limpeza; contexto não-HTTP passa direto", async () => {
+  it("[media-upload.scope.interceptor#falha-de-remocao-vai-para-fila] falha ao apagar vai para a fila de limpeza; contexto não-HTTP passa direto", async () => {
     const { interceptor, http, s3, queue } = setup();
     s3.deleteKey.mockRejectedValue(new Error("denied"));
     const handler = {

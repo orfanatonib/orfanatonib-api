@@ -10,6 +10,7 @@ describe("GetCommentService", () => {
     findAll: jest.fn<Promise<CommentEntity[]>, []>(),
     findAllPublished: jest.fn<Promise<CommentEntity[]>, []>(),
     findById: jest.fn<Promise<CommentEntity | null>, [string]>(),
+    countPending: jest.fn<Promise<number>, []>(),
   };
 
   let service: GetCommentService;
@@ -60,5 +61,12 @@ describe("GetCommentService", () => {
     await expect(service.findOne("missing-id")).rejects.toThrow(
       ResourceNotFoundException,
     );
+  });
+
+  it("counts the comments still waiting for moderation", async () => {
+    repository.countPending.mockResolvedValue(3);
+
+    await expect(service.pendingCount()).resolves.toEqual({ pending: 3 });
+    expect(repository.countPending).toHaveBeenCalledTimes(1);
   });
 });

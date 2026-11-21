@@ -136,7 +136,7 @@ npx jest src/core/feature-flags
 npx playwright test --config=playwright.live.config.ts e2e/live/feature-flags.ui.spec.ts
 ```
 
-9 suítes e 93 testes. Cobertura: **93.9% stmts / 95.2% linhas**.
+12+ suítes, 155 testes (`npx jest --runInBand src/core/feature-flags`).
 
 ---
 
@@ -145,8 +145,8 @@ npx playwright test --config=playwright.live.config.ts e2e/live/feature-flags.ui
 - Com filtro de público, `findAllPaginated` carrega todas as flags e fatia em
   memória: o público vive no `metadata` JSON e não dá para paginar no SQL.
   Irrelevante em 15 linhas; relevante se o catálogo crescer muito.
-- O cache é por instância. Com mais de uma, alternar uma flag leva até 60 s
-  para valer nas demais.
+- O cache é por instância (ver "Cache entre instâncias" abaixo). Sem Redis,
+  alternar uma flag leva até 60 s (5 s nas `email_*`) para valer nas demais.
 
 ## Catálogo por recurso e imposição na API (planos 08/09)
 
@@ -175,3 +175,18 @@ npx playwright test --config=playwright.live.config.ts e2e/live/feature-flags.ui
   `email_` e, durante a versão N, também `email-` (não vazam no mapa público).
 - **Front:** `FeatureFlagKeys` com as mesmas 54 chaves; `FeatureFlagRoute` em 55
   rotas; o slice ignora resposta de requisição antiga (troca de sessão).
+
+## Escrita segura: versão, idempotência e flag protegida (plano 08, fechamento 2026-11-21)
+
+- `PUT /feature-flags/:key/enabled` `{ enabled, expectedVersion? }` — **estado desejado, idempotente**: repetir não grava nem sobe a versão (200 com a flag atual). Com `expectedVersion`, a escrita é um `UPDATE ... WHERE version = ?` atômico; versão velha = **409** `details.code = FEATURE_FLAG_VERSION_CONFLICT` (`expectedVersion` e `currentVersion` no `details`). `PATCH /:key` também aceita `expectedVersion`. `PATCH /:key/toggle` continua existindo (sem controle de versão).
+- Colunas novas em `feature_flags`: `protected` (flag de fábrica; o boot preenche nas linhas antigas) e `version` (`@VersionColumn`, default 1). A resposta traz `protected` e `version`. Renomear/remover flag protegida = **409** `FEATURE_FLAG_PROTECTED` (antes 400). A coluna `environment` foi removida do banco (migration `AddFeatureFlagProtectedVersion`, gerada por `migration:generate`; só toca `feature_flags`).
+- `PATCH` com `name`/`enabled`/`key` nulos devolve 400 (antes 500 por violar NOT NULL).
+
+## Cache entre instâncias
+
+- TTL: 60 s para flags de interface; **5 s** para as operacionais (`email_*`, chaves-mestras de envio).
+- Invalidação ativa por Redis pub/sub (canal `orfanato:feature-flags:invalidate`) **opcional**: ligada quando `REDIS_URL` existe (a mesma da fila BullMQ); `FEATURE_FLAGS_BUS=memory` a desliga. Sem Redis, ou com Redis fora do ar, nada muda: o cache segue só com TTL e a falha vira `warn` (nunca derruba boot nem escrita). `FeatureFlagsInvalidationBus` ignora o eco das próprias mensagens.
+
+## Painel (app)
+
+Agrupado por área (Site público, Área do membro, Conteúdo e moderação, Pessoas e abrigos, Estúdio, E-mails, Outras) com abas roláveis; selo **Imposta na API** (flag consultada por algum handler/serviço da API — contrato testado contra o código da API), selo **Protegida**, aviso de perfil (`audienceWarning`) no cartão e no formulário, alternar com versão (409 recarrega o painel). O mapa de flags é relido em segundo plano ao voltar o foco da aba (mín. 15 s entre leituras).

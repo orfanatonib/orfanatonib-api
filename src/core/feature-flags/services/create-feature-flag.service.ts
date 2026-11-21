@@ -41,10 +41,9 @@ export class CreateFeatureFlagService implements OnModuleInit {
     // falta (senão a nova nasceria com o padrão e ignoraria o que o admin
     // configurou) e só depois aposentar.
     await this.copyRenamedFlags();
-    return {
-      created: await this.seedDefaults(),
-      retired: await this.retireLegacyFlags(),
-    };
+    const created = await this.seedDefaults();
+    await this.backfillProtected();
+    return { created, retired: await this.retireLegacyFlags() };
   }
 
   async create(dto: CreateFeatureFlagDto): Promise<FeatureFlagResponseDto> {
@@ -59,6 +58,7 @@ export class CreateFeatureFlagService implements OnModuleInit {
       name: dto.name,
       description: dto.description ?? null,
       enabled: dto.enabled ?? false,
+      isProtected: false,
       metadata: metadataWithTargetRoles(dto.metadata, dto.targetRoles),
     });
 
@@ -79,6 +79,7 @@ export class CreateFeatureFlagService implements OnModuleInit {
         name: definition.name,
         description: definition.description,
         enabled: definition.enabled,
+        isProtected: true,
         metadata: metadataWithTargetRoles(null, definition.targetRoles),
       });
       try {
@@ -122,6 +123,7 @@ export class CreateFeatureFlagService implements OnModuleInit {
               name: definition?.name ?? source.name,
               description: definition?.description ?? source.description,
               enabled: source.enabled,
+              isProtected: definition !== undefined,
               metadata: source.metadata,
             }),
           );
@@ -141,6 +143,19 @@ export class CreateFeatureFlagService implements OnModuleInit {
 
     if (copied.length > 0) this.getService.invalidateAll();
     return copied;
+  }
+
+  /** Flags de fábrica criadas antes da coluna `protected` passam a tê-la. */
+  async backfillProtected(): Promise<number> {
+    try {
+      return await this.repository.markProtected(
+        DEFAULT_FEATURE_FLAGS.map((definition) => definition.key),
+      );
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.warn(`Não foi possível marcar flags protegidas: ${message}`);
+      return 0;
+    }
   }
 
   async retireLegacyFlags(): Promise<string[]> {

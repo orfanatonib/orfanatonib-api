@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Optional } from "@nestjs/common";
 
 import { ResourceNotFoundException } from "src/common/exceptions";
 import { UserRole } from "src/core/auth/auth.types";
@@ -8,6 +8,7 @@ import { SortOrder } from "src/shared/enums/sort-order.enum";
 import {
   FEATURE_FLAGS_CACHE_TTL_MS,
   FEATURE_FLAGS_DEFAULT_LIMIT,
+  FEATURE_FLAGS_INTERNAL_CACHE_TTL_MS,
   FEATURE_FLAGS_DEFAULT_PAGE,
   FEATURE_FLAG_MAP_CACHE_SCOPE,
   FEATURE_FLAG_SWITCH_CACHE_SCOPE,
@@ -19,6 +20,7 @@ import { QueryFeatureFlagsDto } from "../dto/query-feature-flags.dto";
 import { FeatureFlagEntity } from "../entities/feature-flag.entity";
 import { FeatureFlagsRepository } from "../feature-flags.repository";
 import { toFeatureFlagResponse } from "../mappers";
+import { FeatureFlagsInvalidationBus } from "./feature-flags-invalidation.bus";
 import { FeatureFlagAudience } from "../types";
 import {
   audienceOfRoles,
@@ -40,7 +42,13 @@ export class GetFeatureFlagsService {
     { map: Record<string, boolean>; timestamp: number }
   >();
 
-  constructor(private readonly repository: FeatureFlagsRepository) {}
+  constructor(
+    private readonly repository: FeatureFlagsRepository,
+    @Optional() private readonly bus?: FeatureFlagsInvalidationBus,
+  ) {
+    // Mudança feita em OUTRA instância: descarta só o cache local (sem eco).
+    this.bus?.onRemoteInvalidation((key) => this.clearLocal(key));
+  }
 
   async findEntityOrFail(key: string): Promise<FeatureFlagEntity> {
     const flag = await this.repository.findByKey(key);
@@ -182,16 +190,34 @@ export class GetFeatureFlagsService {
   }
 
   invalidate(key: string): void {
-    for (const cacheKey of this.cache.keys()) {
-      if (cacheKey.startsWith(`${key}:`)) this.cache.delete(cacheKey);
+    this.clearLocal(key);
+    this.bus?.publish(key);
+  }
+
+  invalidateAll(): void {
+    this.clearLocal(null);
+    this.bus?.publish(null);
+  }
+
+  /** `key = null` limpa tudo. Não publica: serve à escrita local e ao eco remoto. */
+  private clearLocal(key: string | null): void {
+    if (key === null) {
+      this.cache.clear();
+    } else {
+      for (const cacheKey of this.cache.keys()) {
+        if (cacheKey.startsWith(`${key}:`)) this.cache.delete(cacheKey);
+      }
     }
     // O mapa é por papel, não por chave: qualquer alteração o invalida inteiro.
     this.mapCache.clear();
   }
 
-  invalidateAll(): void {
-    this.cache.clear();
-    this.mapCache.clear();
+  /** Flag operacional (`email_*`) vale em segundos em qualquer instância. */
+  private ttlFor(cacheKey: string): number {
+    const flagKey = cacheKey.slice(0, cacheKey.indexOf(":"));
+    return isInternalFeatureFlag(flagKey)
+      ? FEATURE_FLAGS_INTERNAL_CACHE_TTL_MS
+      : FEATURE_FLAGS_CACHE_TTL_MS;
   }
 
   private readMapCache(key: string): Record<string, boolean> | undefined {
@@ -207,7 +233,7 @@ export class GetFeatureFlagsService {
   private readCache(key: string): boolean | undefined {
     const cached = this.cache.get(key);
     if (!cached) return undefined;
-    if (Date.now() - cached.timestamp >= FEATURE_FLAGS_CACHE_TTL_MS) {
+    if (Date.now() - cached.timestamp >= this.ttlFor(key)) {
       this.cache.delete(key);
       return undefined;
     }

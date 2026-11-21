@@ -26,6 +26,14 @@ export const EMAIL_VERIFICATION_TOKEN_BYTES = 32;
 export const EMAIL_VERIFICATION_PATH = "verificar-email";
 
 /**
+ * Token de conclusão do cadastro Google: prova de posse da identidade Google,
+ * emitido só depois de o Google ter validado o `idToken`. Curto e com propósito
+ * próprio; não é o JWT de sessão.
+ */
+export const COMPLETION_TOKEN_TTL_MINUTES = 15;
+export const COMPLETION_TOKEN_PURPOSE = "complete_register";
+
+/**
  * Trechos que a `google-auth-library` devolve na mensagem de erro. Não há
  * código de erro tipado na biblioteca, então a classificação é por texto.
  */
@@ -58,6 +66,9 @@ export const AuthErrorMessages = {
   ADMIN_OR_LEADER_ONLY: "Access restricted to administrators and leaders",
   VERIFICATION_TOKEN_INVALID: "Link de confirmação inválido ou expirado.",
   EMAIL_ALREADY_VERIFIED: "Este e-mail já foi confirmado.",
+  /** Única resposta de `complete-register` para qualquer token recusado. */
+  COMPLETION_TOKEN_INVALID:
+    "Sessão de cadastro inválida ou expirada. Entre com o Google novamente.",
 } as const;
 
 export const AuthVerificationMessages = {
@@ -99,6 +110,12 @@ export const AuthLogs = {
     `Verification email queued for user ${userId}`,
   VERIFICATION_SEND_FAILED: (userId: string, reason: string) =>
     `Failed to queue verification email for user ${userId}: ${reason}`,
+  PASSWORD_CHANGED_EMAIL_FAILED: (userId: string, reason: string) =>
+    `Failed to queue password-changed email for user ${userId}: ${reason}`,
+  COMPLETION_TOKEN_REJECTED: (reason: string) =>
+    `complete-register rejected: ${reason}`,
+  PASSWORD_RECOVERY_FAILED: (reason: string) =>
+    `Failed to process password recovery request: ${reason}`,
   VERIFICATION_CONFIRMED: (userId: string) =>
     `Email verified for user ${userId}`,
 } as const;

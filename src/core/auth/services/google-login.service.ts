@@ -17,6 +17,7 @@ import { GoogleLoginResult } from "../dto/auth.response.dto";
 import { toAuthUserDto } from "../mappers/auth-user.mapper";
 import { errorMessageOf, messageMatches } from "../utils/auth-token.util";
 import { AuthTokenService } from "./auth-token.service";
+import { CompletionTokenService } from "./completion-token.service";
 
 @Injectable()
 export class GoogleLoginService {
@@ -28,6 +29,7 @@ export class GoogleLoginService {
     private readonly getUsersService: GetUsersService,
     private readonly createUserService: CreateUserService,
     private readonly tokenService: AuthTokenService,
+    private readonly completionTokens: CompletionTokenService,
   ) {
     this.googleClient = new OAuth2Client(this.clientId());
   }
@@ -122,6 +124,8 @@ export class GoogleLoginService {
       completed: user.completed,
       commonUser: user.commonUser,
       newUser: true,
+      // Só chega aqui quem acabou de provar a posse da conta Google.
+      completionToken: this.completionTokens.issueFor(user.id),
     };
   }
 

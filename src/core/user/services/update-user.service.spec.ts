@@ -2,11 +2,14 @@ import { UserRole } from "src/core/auth/auth.types";
 
 import { UpdateUserService } from "./update-user.service";
 
-function build(createLeader: jest.Mock = jest.fn().mockResolvedValue({})) {
+function build(
+  createLeader: jest.Mock = jest.fn().mockResolvedValue({}),
+  currentRole: UserRole = UserRole.MEMBER,
+) {
   const userRepo = {
     findById: jest
       .fn()
-      .mockResolvedValue({ id: "u1", role: UserRole.MEMBER, active: true }),
+      .mockResolvedValue({ id: "u1", role: currentRole, active: true }),
     update: jest.fn().mockResolvedValue({ id: "u1", active: true }),
   };
   const noop = { removeByUserId: jest.fn().mockResolvedValue(undefined) };
@@ -36,5 +39,24 @@ describe("UpdateUserService: troca de papel", () => {
     const { svc, userRepo } = build();
     await svc.update("u1", { role: UserRole.LEADER });
     expect(userRepo.update).toHaveBeenCalled();
+  });
+});
+
+describe("UpdateUserService: ninguém vira admin pela API", () => {
+  it("[auth.post.auth-register#role-admin-recusado] promover membro ou líder a admin é recusado com 400 e nada é gravado", async () => {
+    for (const current of [UserRole.MEMBER, UserRole.LEADER]) {
+      const { svc, userRepo } = build(undefined, current);
+      await expect(
+        svc.update("u1", { role: UserRole.ADMIN }),
+      ).rejects.toMatchObject({ status: 400 });
+      expect(userRepo.update).not.toHaveBeenCalled();
+    }
+  });
+
+  it("um admin existente segue editável (mesmo papel e outros campos) e pode ser rebaixado", async () => {
+    const { svc, userRepo } = build(undefined, UserRole.ADMIN);
+    await svc.update("u1", { role: UserRole.ADMIN, name: "Novo nome" });
+    await svc.update("u1", { role: UserRole.MEMBER });
+    expect(userRepo.update).toHaveBeenCalledTimes(2);
   });
 });

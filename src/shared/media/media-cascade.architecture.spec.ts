@@ -48,7 +48,7 @@ describe("cascata de mídia na exclusão do dono", () => {
     expect(files.length).toBeGreaterThanOrEqual(20);
   });
 
-  it("todo delete-*.service trata a mídia ou está na lista de donos sem mídia", () => {
+  it("[media-upload.cascade#delete-trata-midia] todo delete-*.service trata a mídia ou está na lista de donos sem mídia", () => {
     const offenders = files.filter(
       (file) =>
         !NO_MEDIA_OWNERS.has(file) &&

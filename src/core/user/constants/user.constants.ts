@@ -1,5 +1,7 @@
 export const UserErrorMessages = {
   NOT_FOUND: "UserEntity not found",
+  ADMIN_GRANT_FORBIDDEN:
+    "A API não concede o papel de administrador. A promoção é feita direto no banco.",
   USER_NOT_FOUND: "Usuário não encontrado",
   EMAIL_IN_USE: "Este email já está em uso por outro usuário",
   CURRENT_PASSWORD_REQUIRED: "A senha atual é obrigatória para usuários comuns",

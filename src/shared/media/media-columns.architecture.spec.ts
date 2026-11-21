@@ -136,7 +136,7 @@ suite(
     const listedKeys = new Set(listed.map(key));
     const ignored = new Set(NOT_A_REFERENCE.map(key));
 
-    it("toda coluna de mídia das entidades está nas listas do helper (ou é exceção explícita)", () => {
+    it("[media-upload.columns#helper-igual-entidades] toda coluna de mídia das entidades está nas listas do helper (ou é exceção explícita)", () => {
       const missing = columns
         .filter((c) => !listedKeys.has(key(c)) && !ignored.has(key(c)))
         .map(key);

@@ -38,7 +38,7 @@ describe("media-storage.utils", () => {
     expect(extractStorageKey("https://youtube.com/x", "b")).toBeNull();
   });
 
-  it("validateUploadedFile: aceita, recusa MIME, tamanho e vazio", () => {
+  it("[media-upload.storage.validate#mime-tamanho-vazio] validateUploadedFile: aceita, recusa MIME, tamanho e vazio", () => {
     expect(
       validateUploadedFile(
         { mimetype: "image/png", size: 10 },
@@ -98,7 +98,7 @@ describe("validateUploadedFile: conteúdo × MIME declarado", () => {
     ).toMatchObject({ ok: true });
   });
 
-  it("recusa HTML disfarçado de imagem ou PDF (content)", () => {
+  it("[media-upload.storage.validate#assinatura-divergente] recusa HTML disfarçado de imagem ou PDF (content)", () => {
     expect(
       validateUploadedFile(
         { mimetype: "image/png", size: html.length, buffer: html },

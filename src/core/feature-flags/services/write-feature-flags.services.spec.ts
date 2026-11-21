@@ -21,6 +21,8 @@ function buildFlag(key = "shelter_management"): FeatureFlagEntity {
     name: "Gestão de acolhidos",
     description: "Descrição original",
     enabled: true,
+    isProtected: false,
+    version: 1,
     metadata: metadataWithTargetRoles({ rollout: 50 }, ["leader"]),
     createdAt: new Date(),
     updatedAt: new Date(),

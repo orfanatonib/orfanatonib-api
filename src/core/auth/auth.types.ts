@@ -6,6 +6,13 @@ export enum UserRole {
   LEADER = "leader",
 }
 
+/**
+ * Papéis que a API concede. `admin` fica de fora de propósito: só se promove
+ * alguém a admin direto no banco (ver README do módulo de auth).
+ */
+export const GRANTABLE_ROLES = [UserRole.MEMBER, UserRole.LEADER] as const;
+export type GrantableRole = (typeof GRANTABLE_ROLES)[number];
+
 export type JwtPayload = {
   sub: string;
   email?: string;

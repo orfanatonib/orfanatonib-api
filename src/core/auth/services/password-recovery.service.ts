@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { RuleException } from "src/common/exceptions";
 import * as crypto from "crypto";
 import { GetUsersService } from "../../user/services/get-user.service";
@@ -11,6 +11,8 @@ import {
   PasswordRecoveryStatus,
   PasswordRecoveryMessages,
 } from "../constants/password-recovery.constants";
+import { AuthLogs } from "../constants/auth.constants";
+import { errorMessageOf } from "../utils/auth-token.util";
 import {
   PASSWORD_RESET_TOKEN_BYTES,
   PASSWORD_RESET_TTL_MINUTES,
@@ -23,6 +25,8 @@ import {
 
 @Injectable()
 export class PasswordRecoveryService {
+  private readonly logger = new Logger(PasswordRecoveryService.name);
+
   constructor(
     private readonly getUsersService: GetUsersService,
     private readonly updateUserService: UpdateUserService,
@@ -30,40 +34,54 @@ export class PasswordRecoveryService {
     private readonly passwordResetTokenRepo: PasswordResetTokenRepository,
   ) {}
 
-  async forgotPassword(
-    data: ForgotPasswordDto,
-  ): Promise<PasswordRecoveryResponse> {
-    const user = await this.getUsersService.findByEmail(data.email);
-    if (!user) {
-      throw new RuleException(PasswordRecoveryMessages.USER_NOT_FOUND);
-    }
+  /**
+   * Resposta imediata e idêntica para qualquer e-mail: o envio roda em segundo
+   * plano e só acontece se a conta existir e estiver completa. Quem pede não
+   * descobre quais e-mails existem, nem pelo corpo nem pelo tempo.
+   */
+  forgotPassword(data: ForgotPasswordDto): Promise<PasswordRecoveryResponse> {
+    void this.deliverResetLink(data.email);
 
-    const resetToken = crypto
-      .randomBytes(PASSWORD_RESET_TOKEN_BYTES)
-      .toString("hex");
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + PASSWORD_RESET_TTL_MINUTES);
-
-    await this.passwordResetTokenRepo.invalidateTokensForUser(user.id);
-    await this.passwordResetTokenRepo.createToken(
-      user.id,
-      resetToken,
-      expiresAt,
-    );
-
-    // O link é montado aqui: o módulo de notificação não conhece as rotas
-    // do frontend nem a validade do token deste fluxo.
-    await this.notificationService.sendPasswordResetEmail(
-      user.email,
-      user.name,
-      `${this.notificationService.appUrl()}/recuperar-senha/${resetToken}`,
-      PASSWORD_RESET_TTL_MINUTES,
-    );
-
-    return {
+    return Promise.resolve({
       status: PasswordRecoveryStatus.RESET_LINK_SENT,
       message: PasswordRecoveryMessages.RESET_LINK_SENT,
-    };
+    });
+  }
+
+  /** Nunca lança: roda desanexado da resposta HTTP. */
+  async deliverResetLink(email: string): Promise<void> {
+    try {
+      const user = await this.getUsersService.findByEmail(email);
+      // Conta Google pendente não tem senha a recuperar.
+      if (!user || !user.completed) return;
+
+      const resetToken = crypto
+        .randomBytes(PASSWORD_RESET_TOKEN_BYTES)
+        .toString("hex");
+      const expiresAt = new Date(
+        Date.now() + PASSWORD_RESET_TTL_MINUTES * 60 * 1000,
+      );
+
+      await this.passwordResetTokenRepo.invalidateTokensForUser(user.id);
+      await this.passwordResetTokenRepo.createToken(
+        user.id,
+        resetToken,
+        expiresAt,
+      );
+
+      // O link é montado aqui: o módulo de notificação não conhece as rotas
+      // do frontend nem a validade do token deste fluxo.
+      await this.notificationService.sendPasswordResetEmail(
+        user.email,
+        user.name,
+        `${this.notificationService.appUrl()}/recuperar-senha/${resetToken}`,
+        PASSWORD_RESET_TTL_MINUTES,
+      );
+    } catch (error: unknown) {
+      this.logger.error(
+        AuthLogs.PASSWORD_RECOVERY_FAILED(errorMessageOf(error)),
+      );
+    }
   }
 
   async validateResetToken(token: string): Promise<ValidateResetTokenResponse> {
@@ -90,10 +108,18 @@ export class PasswordRecoveryService {
 
     await this.passwordResetTokenRepo.deleteToken(dto.token);
 
-    await this.notificationService.sendPasswordChangedEmail(
-      user.email,
-      user.name,
-    );
+    // O aviso é cortesia: a senha já mudou e o token já foi gasto, então uma
+    // falha na fila de e-mail não pode transformar o reset em erro.
+    try {
+      await this.notificationService.sendPasswordChangedEmail(
+        user.email,
+        user.name,
+      );
+    } catch (error: unknown) {
+      this.logger.warn(
+        AuthLogs.PASSWORD_CHANGED_EMAIL_FAILED(user.id, errorMessageOf(error)),
+      );
+    }
 
     return { message: PasswordRecoveryMessages.PASSWORD_CHANGED };
   }

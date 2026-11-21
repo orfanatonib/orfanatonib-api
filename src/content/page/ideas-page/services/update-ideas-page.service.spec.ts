@@ -256,7 +256,7 @@ describe("UpdateIdeasPageService", () => {
     expect(storage.deleteAfterCommit).not.toHaveBeenCalled();
   });
 
-  it("[ideas-page.patch.ideas-pages-id#rollback-de-transacao] rollback: falha do banco depois do upload descarta o novo e não apaga o antigo", async () => {
+  it("[ideas-page.patch.ideas-pages-id#rollback-de-transacao] [media-upload.legacy-update.ideas-page#rollback-transacao] rollback: falha do banco depois do upload descarta o novo e não apaga o antigo", async () => {
     const m = oldMedia("m1");
     const { service, storage, removed } = setup({
       media: [m],

@@ -38,15 +38,49 @@ function build(
     updateByUserId: jest.fn((_id: string, d: object) => Promise.resolve(d)),
     deleteByUserId: jest.fn().mockResolvedValue(undefined),
   };
-  const deps = [users, personalRepo, prefsRepo] as never[];
+  // Fake sequencial do repositório transacional: reaproveita os mocks por tabela para as asserções.
+  const writer = {
+    saveSections: jest.fn(
+      async (
+        id: string,
+        input: { personalData?: object; preferences?: object },
+      ) => {
+        const personalData = input.personalData
+          ? personal
+            ? await personalRepo.updateByUserId(id, input.personalData)
+            : await personalRepo.createForUser(id, input.personalData)
+          : null;
+        const preferences = input.preferences
+          ? prefs
+            ? await prefsRepo.updateByUserId(id, input.preferences)
+            : await prefsRepo.createForUser(id, input.preferences)
+          : null;
+        return { personalData, preferences };
+      },
+    ),
+    deleteSections: jest.fn(async (id: string) => {
+      await personalRepo.deleteByUserId(id);
+      await prefsRepo.deleteByUserId(id);
+    }),
+  };
   return {
     users,
     personalRepo,
     prefsRepo,
-    create: new CreateProfileService(...(deps as [never, never, never])),
-    update: new UpdateProfileService(...(deps as [never, never, never])),
-    remove: new DeleteProfileService(...(deps as [never, never, never])),
-    getOne: new GetOneProfileService(...(deps as [never, never, never])),
+    writer,
+    create: new CreateProfileService(users as never, writer as never),
+    update: new UpdateProfileService(
+      users as never,
+      personalRepo as never,
+      prefsRepo as never,
+      writer as never,
+    ),
+    remove: new DeleteProfileService(users as never, writer as never),
+    getOne: new GetOneProfileService(
+      users as never,
+      personalRepo as never,
+      prefsRepo as never,
+    ),
   };
 }
 

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { ResourceNotFoundException } from "src/common/exceptions";
 import { COMMENT_MESSAGES } from "../constants";
+import { CommentPendingCountDto } from "../dto/comment-pending-count.dto";
 import { CommentEntity } from "../entities/comment.entity";
 import { CommentRepository } from "../repositories/comment.repository";
 
@@ -14,6 +15,10 @@ export class GetCommentService {
 
   async findAll(): Promise<CommentEntity[]> {
     return this.commentRepository.findAll();
+  }
+
+  async pendingCount(): Promise<CommentPendingCountDto> {
+    return { pending: await this.commentRepository.countPending() };
   }
 
   async findOne(id: string): Promise<CommentEntity> {

@@ -8,6 +8,7 @@ import {
 import { DataSource } from "typeorm";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { MeditationRepository } from "../meditation.repository";
 import { UpdateMeditationDto } from "../dto/update-meditation.dto";
 import { MeditationEntity } from "../entities/meditation.entity";
@@ -23,6 +24,7 @@ export class UpdateMeditationService {
     private readonly dataSource: DataSource,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly s3Service: AwsS3Service,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   async update(
@@ -68,6 +70,38 @@ export class UpdateMeditationService {
       throw new ConflictException("Conflict with another existing meditation.");
     }
 
+    // Ordem segura: o objeto novo sobe antes; o antigo só sai do bucket DEPOIS do commit.
+    // Se a transação falha, o NOVO é descartado e o antigo segue referenciado.
+    const uploadedUrls: string[] = [];
+    const staleUrls: string[] = [];
+    let saved: MeditationEntity;
+    try {
+      saved = await this.runUpdate(
+        existing,
+        dto,
+        file,
+        startDate,
+        endDate,
+        uploadedUrls,
+        staleUrls,
+      );
+    } catch (error: unknown) {
+      await this.mediaStorage.deleteAfterCommit(uploadedUrls);
+      throw error;
+    }
+    await this.mediaStorage.deleteAfterCommit(staleUrls);
+    return saved;
+  }
+
+  private async runUpdate(
+    existing: MeditationEntity,
+    dto: UpdateMeditationDto & { isLocalFile?: boolean },
+    file: Express.Multer.File | undefined,
+    startDate: Date,
+    endDate: Date,
+    uploadedUrls: string[],
+    staleUrls: string[],
+  ): Promise<MeditationEntity> {
     return await this.dataSource.transaction(async (manager) => {
       const updatedMeditation = manager.merge(MeditationEntity, existing, {
         ...dto,
@@ -121,8 +155,15 @@ export class UpdateMeditationService {
           MediaTargetType.Meditation,
           filesDict,
           existingMedia,
-          (url) => this.s3Service.delete(url),
-          (file) => this.s3Service.upload(file),
+          (url) => {
+            staleUrls.push(url);
+            return Promise.resolve();
+          },
+          async (f) => {
+            const url = await this.s3Service.upload(f);
+            uploadedUrls.push(url);
+            return url;
+          },
         );
       }
 

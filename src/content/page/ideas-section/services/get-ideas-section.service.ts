@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { ResourceNotFoundException } from "src/common/exceptions";
 
 import { IDEAS_SECTION_MESSAGES } from "../constants";
+import { IdeasSectionPendingCountDto } from "../dto/ideas-section-pending-count.dto";
 import { IdeasSectionResponseDto } from "../dto/ideas-section-response.dto";
 import {
   groupMediasByTarget,
@@ -16,6 +17,10 @@ export class GetIdeasSectionService {
     private readonly repository: IdeasSectionRepository,
     private readonly mediaService: IdeasSectionMediaService,
   ) {}
+
+  async pendingCount(): Promise<IdeasSectionPendingCountDto> {
+    return { pending: await this.repository.countUnattached() };
+  }
 
   async findOne(id: string): Promise<IdeasSectionResponseDto> {
     const section = await this.repository.findById(id);

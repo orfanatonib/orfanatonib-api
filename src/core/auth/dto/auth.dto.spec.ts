@@ -64,10 +64,47 @@ describe("RegisterUserDto", () => {
   });
 });
 
+describe("RegisterUserDto: papel admin", () => {
+  const base = {
+    name: "Maria",
+    email: "maria@orfanatonib.test",
+    phone: "92999990000",
+    password: "E2e@12345",
+  };
+
+  it("[auth.post.auth-register#role-admin-recusado] refuses admin and any value outside member/leader", () => {
+    for (const role of [UserRole.ADMIN, "Admin", "superuser", "", undefined]) {
+      expect(validate(RegisterUserDto, { ...base, role }).fields).toEqual([
+        "role",
+      ]);
+    }
+    for (const role of [UserRole.MEMBER, UserRole.LEADER]) {
+      expect(validate(RegisterUserDto, { ...base, role }).fields).toEqual([]);
+    }
+  });
+
+  it("[auth.post.auth-complete-register#role-admin-recusado] complete-register refuses admin too", () => {
+    const complete = {
+      completionToken: "t",
+      name: "Maria",
+      phone: "92999990000",
+    };
+    expect(
+      validate(CompleteUserDto, { ...complete, role: UserRole.ADMIN }).fields,
+    ).toEqual(["role"]);
+  });
+});
+
 describe("CompleteUserDto", () => {
+  it("requires the completion token; the e-mail is no longer accepted as identity", () => {
+    expect(
+      validate(CompleteUserDto, { name: "Maria", phone: "92999990000" }).fields,
+    ).toEqual(["completionToken"]);
+  });
+
   it("keeps password and role optional: Google fills them in later", () => {
     const { fields } = validate(CompleteUserDto, {
-      email: "maria@orfanatonib.test",
+      completionToken: "t",
       name: "Maria",
       phone: "92999990000",
     });
@@ -77,7 +114,7 @@ describe("CompleteUserDto", () => {
 
   it("still refuses a short password when one is sent", () => {
     const { fields } = validate(CompleteUserDto, {
-      email: "maria@orfanatonib.test",
+      completionToken: "t",
       name: "Maria",
       phone: "92999990000",
       password: "123",

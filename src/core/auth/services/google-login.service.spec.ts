@@ -5,6 +5,7 @@ import { CreateUserService } from "src/core/user/services/create-user.service";
 import { GetUsersService } from "src/core/user/services/get-user.service";
 import { GoogleLoginService } from "./google-login.service";
 import { AuthTokenService } from "./auth-token.service";
+import { CompletionTokenService } from "./completion-token.service";
 import { UserRole } from "../auth.types";
 import {
   AuthErrorMessages,
@@ -31,6 +32,7 @@ describe("GoogleLoginService", () => {
   const getUsersService = { findByEmail: jest.fn() };
   const createUserService = { create: jest.fn() };
   const tokenService = { issueFor: jest.fn() };
+  const completionTokens = { issueFor: jest.fn() };
 
   let service: GoogleLoginService;
 
@@ -44,6 +46,7 @@ describe("GoogleLoginService", () => {
         { provide: GetUsersService, useValue: getUsersService },
         { provide: CreateUserService, useValue: createUserService },
         { provide: AuthTokenService, useValue: tokenService },
+        { provide: CompletionTokenService, useValue: completionTokens },
       ],
     }).compile();
     moduleRef.useLogger(false);
@@ -59,6 +62,7 @@ describe("GoogleLoginService", () => {
       buildUserEntity({ active: false, completed: false }),
     );
     tokenService.issueFor.mockResolvedValue(buildTokens());
+    completionTokens.issueFor.mockReturnValue("completion-jwt");
   });
 
   it("validates the credential against the configured client id", async () => {
@@ -103,7 +107,9 @@ describe("GoogleLoginService", () => {
       completed: false,
       commonUser: false,
       newUser: true,
+      completionToken: "completion-jwt",
     });
+    expect(completionTokens.issueFor).toHaveBeenCalledWith("user-id");
     expect(tokenService.issueFor).not.toHaveBeenCalled();
   });
 
@@ -118,6 +124,14 @@ describe("GoogleLoginService", () => {
     });
     expect(createUserService.create).not.toHaveBeenCalled();
     expect(tokenService.issueFor).not.toHaveBeenCalled();
+    expect(completionTokens.issueFor).toHaveBeenCalledWith("user-id");
+  });
+
+  it("[auth.post.auth-google#conclusao-so-com-posse] a complete account never receives a completion token", async () => {
+    const result = await service.execute("credential");
+
+    expect(result).not.toHaveProperty("completionToken");
+    expect(completionTokens.issueFor).not.toHaveBeenCalled();
   });
 
   it("reports an inactive account without issuing tokens", async () => {
@@ -170,5 +184,19 @@ describe("GoogleLoginService", () => {
     await expect(service.execute("credential")).rejects.toThrow(
       "conexão perdida",
     );
+  });
+  it("[auth.post.auth-google#falha-do-colaborador-sem-efeito-parcial] se a criação da conta falha, nada é emitido nem devolvido como sucesso", async () => {
+    getUsersService.findByEmail.mockResolvedValue(null);
+    createUserService.create.mockRejectedValue(new Error("banco fora"));
+
+    await expect(service.execute("credential")).rejects.toThrow("banco fora");
+    expect(tokenService.issueFor).not.toHaveBeenCalled();
+  });
+
+  it("[auth.post.auth-google#falha-do-colaborador-sem-efeito-parcial] se a emissão dos tokens falha, o login falha inteiro", async () => {
+    tokenService.issueFor.mockRejectedValue(new Error("banco fora"));
+
+    await expect(service.execute("credential")).rejects.toThrow("banco fora");
+    expect(createUserService.create).not.toHaveBeenCalled();
   });
 });

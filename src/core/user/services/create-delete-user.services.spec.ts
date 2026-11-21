@@ -53,9 +53,12 @@ describe("CreateUserService", () => {
     expect(leader.createForUser).toHaveBeenCalledWith("u1");
   });
 
-  it("admin não ganha perfil de líder/membro", async () => {
-    const { member, leader, svc } = setup();
-    await svc.create(dto(UserRole.ADMIN));
+  it("[auth.post.auth-register#role-admin-recusado] a API nunca cria um admin: recusa com 400 e não grava nada", async () => {
+    const { repo, member, leader, svc } = setup();
+    await expect(svc.create(dto(UserRole.ADMIN))).rejects.toMatchObject({
+      status: 400,
+    });
+    expect(repo.create).not.toHaveBeenCalled();
     expect(member.createForUser).not.toHaveBeenCalled();
     expect(leader.createForUser).not.toHaveBeenCalled();
   });
@@ -65,6 +68,7 @@ describe("DeleteUserService", () => {
   const setup = () => {
     const order: string[] = [];
     const repo = {
+      findById: jest.fn().mockResolvedValue({ id: "u1" }),
       delete: jest.fn(async () => {
         order.push("user");
       }),
@@ -83,11 +87,16 @@ describe("DeleteUserService", () => {
       findMediaItemByTarget: jest
         .fn()
         .mockResolvedValue({ id: "m1", isLocalFile: true, url: "u" }),
-      removeMediaItem: jest.fn(async () => {
+      removeMediaItemsKeepingFiles: jest.fn(async () => {
         order.push("image");
+        return ["u"];
       }),
     };
-    const s3 = { delete: jest.fn() };
+    const storage = {
+      deleteAfterCommit: jest.fn(async () => {
+        order.push("bucket");
+      }),
+    };
     return {
       order,
       repo,
@@ -97,28 +106,37 @@ describe("DeleteUserService", () => {
         member as never,
         leader as never,
         media as never,
-        s3 as never,
+        storage as never,
       ),
     };
   };
 
-  it("apaga perfis e usuário primeiro; a foto só depois (falha acima não deixa a mídia sem dono)", async () => {
+  it("[media-upload.legacy-update.user#delete-ordem] apaga perfis e usuário primeiro; a foto só depois (falha acima não deixa a mídia sem dono)", async () => {
     const { svc, order } = setup();
     await svc.remove("u1");
-    expect(order).toEqual(["member", "leader", "user", "image"]);
+    expect(order).toEqual(["member", "leader", "user", "image", "bucket"]);
+  });
+
+  it("[user-profile.delete.users-id#nao-encontrado] usuário inexistente: 404 e nada é apagado (nem perfis, nem foto)", async () => {
+    const { svc, repo, media, order } = setup();
+    repo.findById.mockResolvedValue(null);
+    await expect(svc.remove("x")).rejects.toMatchObject({ status: 404 });
+    expect(repo.delete).not.toHaveBeenCalled();
+    expect(media.removeMediaItemsKeepingFiles).not.toHaveBeenCalled();
+    expect(order).toEqual([]);
   });
 
   it("falha ao apagar o usuário: a foto não é tocada", async () => {
     const { svc, repo, media } = setup();
     repo.delete.mockRejectedValue(new Error("db"));
     await expect(svc.remove("u1")).rejects.toThrow("db");
-    expect(media.removeMediaItem).not.toHaveBeenCalled();
+    expect(media.removeMediaItemsKeepingFiles).not.toHaveBeenCalled();
   });
 
   it("sem foto não toca na mídia", async () => {
     const { svc, media } = setup();
     media.findMediaItemByTarget.mockResolvedValue(null);
     await svc.remove("u1");
-    expect(media.removeMediaItem).not.toHaveBeenCalled();
+    expect(media.removeMediaItemsKeepingFiles).not.toHaveBeenCalled();
   });
 });

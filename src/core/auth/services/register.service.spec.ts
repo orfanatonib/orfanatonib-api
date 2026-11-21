@@ -1,7 +1,7 @@
 import { Test } from "@nestjs/testing";
 import {
   ResourceConflictException,
-  ResourceNotFoundException,
+  UnauthenticatedException,
 } from "src/common/exceptions";
 import { CreateUserService } from "src/core/user/services/create-user.service";
 import { GetUsersService } from "src/core/user/services/get-user.service";
@@ -9,6 +9,7 @@ import { UpdateUserService } from "src/core/user/services/update-user.service";
 import { UpdateMemberProfileService } from "src/shelter/member-profile/services/update-member-profile.service";
 import { RegisterService } from "./register.service";
 import { EmailVerificationService } from "./email-verification.service";
+import { CompletionTokenService } from "./completion-token.service";
 import { UserRole } from "../auth.types";
 import {
   AuthErrorMessages,
@@ -21,7 +22,8 @@ import {
 } from "../auth.fixtures";
 
 describe("RegisterService", () => {
-  const getUsersService = { findByEmail: jest.fn() };
+  const getUsersService = { findByEmail: jest.fn(), findByIdOrNull: jest.fn() };
+  const completionTokens = { verify: jest.fn() };
   const createUserService = { create: jest.fn() };
   const updateUserService = { update: jest.fn() };
   const updateMemberProfileService = { assignTeamForUser: jest.fn() };
@@ -46,6 +48,7 @@ describe("RegisterService", () => {
           provide: EmailVerificationService,
           useValue: emailVerification,
         },
+        { provide: CompletionTokenService, useValue: completionTokens },
       ],
     }).compile();
     moduleRef.useLogger(false);
@@ -53,6 +56,7 @@ describe("RegisterService", () => {
     service = moduleRef.get(RegisterService);
 
     getUsersService.findByEmail.mockResolvedValue(null);
+    completionTokens.verify.mockReturnValue("user-id");
     createUserService.create.mockResolvedValue(buildUserEntity());
     updateUserService.update.mockResolvedValue(buildUserEntity());
     updateMemberProfileService.assignTeamForUser.mockResolvedValue(undefined);
@@ -137,9 +141,21 @@ describe("RegisterService", () => {
   });
 
   describe("completeRegister", () => {
-    it("fills in the account that came from Google", async () => {
+    const rejectedAsUnauthenticated = async () => {
+      const error = await service
+        .completeRegister(buildCompleteRegisterDto())
+        .catch((e: unknown) => e);
+      expect(error).toBeInstanceOf(UnauthenticatedException);
+      expect((error as UnauthenticatedException).message).toBe(
+        AuthErrorMessages.COMPLETION_TOKEN_INVALID,
+      );
+      expect(updateUserService.update).not.toHaveBeenCalled();
+      expect(emailVerification.requestFor).not.toHaveBeenCalled();
+    };
+
+    it("[auth.post.auth-complete-register#feliz] fills in the account owned by the completion token", async () => {
       const pending = buildUserEntity({ completed: false });
-      getUsersService.findByEmail.mockResolvedValue(pending);
+      getUsersService.findByIdOrNull.mockResolvedValue(pending);
       const dto = buildCompleteRegisterDto({ role: UserRole.LEADER });
 
       await expect(service.completeRegister(dto)).resolves.toEqual({
@@ -150,6 +166,8 @@ describe("RegisterService", () => {
         },
       });
 
+      expect(completionTokens.verify).toHaveBeenCalledWith("completion-token");
+      expect(getUsersService.findByEmail).not.toHaveBeenCalled();
       expect(updateUserService.update).toHaveBeenCalledWith("user-id", {
         name: dto.name,
         phone: dto.phone,
@@ -159,31 +177,45 @@ describe("RegisterService", () => {
       });
     });
 
-    it("reports 404 for an email that has no account", async () => {
-      getUsersService.findByEmail.mockResolvedValue(null);
+    it("[auth.post.auth-complete-register#token-invalido] an invalid, expired or wrong-purpose token (verify returns null) is a generic 401 with no lookup or write", async () => {
+      completionTokens.verify.mockReturnValue(null);
 
-      await expect(
-        service.completeRegister(buildCompleteRegisterDto()),
-      ).rejects.toThrow(
-        new ResourceNotFoundException(AuthErrorMessages.USER_NOT_FOUND),
-      );
+      await rejectedAsUnauthenticated();
+      expect(getUsersService.findByIdOrNull).not.toHaveBeenCalled();
     });
 
-    it("reports a conflict when the registration is already complete", async () => {
-      getUsersService.findByEmail.mockResolvedValue(
+    it("[auth.post.auth-complete-register#token-expirado] an expired token is rejected exactly like any invalid one", async () => {
+      completionTokens.verify.mockReturnValue(null);
+
+      await rejectedAsUnauthenticated();
+    });
+
+    it("[auth.post.auth-complete-register#token-proposito-errado] a token of another purpose (e.g. the session JWT) is rejected exactly like any invalid one", async () => {
+      completionTokens.verify.mockReturnValue(null);
+
+      await rejectedAsUnauthenticated();
+    });
+
+    it("[auth.post.auth-complete-register#token-reusado] a token whose account is already complete (used once) is the same generic 401", async () => {
+      getUsersService.findByIdOrNull.mockResolvedValue(
         buildUserEntity({ completed: true }),
       );
 
-      await expect(
-        service.completeRegister(buildCompleteRegisterDto()),
-      ).rejects.toThrow(
-        new ResourceConflictException(AuthErrorMessages.USER_ALREADY_COMPLETED),
+      await rejectedAsUnauthenticated();
+    });
+
+    it("[auth.post.auth-complete-register#conta-ativa] an active account is never altered, and the answer does not tell it apart from a missing one", async () => {
+      getUsersService.findByIdOrNull.mockResolvedValue(
+        buildUserEntity({ completed: true, active: true }),
       );
-      expect(updateUserService.update).not.toHaveBeenCalled();
+      await rejectedAsUnauthenticated();
+
+      getUsersService.findByIdOrNull.mockResolvedValue(null);
+      await rejectedAsUnauthenticated();
     });
 
     it("keeps the role the account already had when the payload omits it", async () => {
-      getUsersService.findByEmail.mockResolvedValue(
+      getUsersService.findByIdOrNull.mockResolvedValue(
         buildUserEntity({ completed: false, role: UserRole.MEMBER }),
       );
 

@@ -8,6 +8,7 @@ import {
 import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { GetUsersService } from "./get-user.service";
 import { UserErrorMessages, UserLogs } from "../constants/user.constants";
+import { KeyedQueue } from "../utils/keyed-queue";
 
 const USER_MEDIA_TARGET = "UserEntity";
 const USER_MEDIA_ENTITY = "User";
@@ -34,6 +35,8 @@ interface UserImageMediaDto {
 @Injectable()
 export class UpdateUserImageService {
   private readonly logger = new Logger(UpdateUserImageService.name);
+
+  private readonly imageQueue = new KeyedQueue();
 
   constructor(
     private readonly getUsersService: GetUsersService,
@@ -108,7 +111,18 @@ export class UpdateUserImageService {
    * antigo. Se o envio ou a gravação falham, o antigo continua referenciado e
    * o novo é descartado (nunca fica objeto órfão nem referência quebrada).
    */
-  async updateUserImage(
+  updateUserImage(
+    userId: string,
+    body: UserImageBody,
+    files: Express.Multer.File[],
+  ) {
+    // Uma troca por usuário de cada vez: duas simultâneas deixariam um objeto órfão no bucket.
+    return this.imageQueue.run(userId, () =>
+      this.applyUserImage(userId, body, files),
+    );
+  }
+
+  private async applyUserImage(
     userId: string,
     body: UserImageBody,
     files: Express.Multer.File[],

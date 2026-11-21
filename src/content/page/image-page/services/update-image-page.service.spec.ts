@@ -215,7 +215,7 @@ describe("UpdateImagePageService", () => {
     expect(storage.deleteAfterCommit).toHaveBeenCalledWith([]);
   });
 
-  it("[image-page.patch.image-pages-id#rollback-de-transacao] falha no 2º item (rollback): antigos intactos e uploads novos descartados", async () => {
+  it("[image-page.patch.image-pages-id#rollback-de-transacao] [media-upload.legacy-update.image-page#rollback-transacao] falha no 2º item (rollback): antigos intactos e uploads novos descartados", async () => {
     const { svc, s3, storage, processor, tx } = setup();
     tx.saveMedia
       .mockResolvedValueOnce({ id: "m1" } as never)

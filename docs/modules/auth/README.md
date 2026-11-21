@@ -158,21 +158,21 @@ ficam no catálogo compartilhado (`src/common/exceptions/`).
 npx jest src/core/auth
 ```
 
-15 suítes cobrindo controller, os sete serviços, mappers, guards, strategy,
-repositório, utils e a validação dos DTOs. Cobertura acima de 95% em statements
-e linhas, 100% em branches.
+18 suítes (173 testes) cobrindo controller, os serviços, mappers, guards, strategy,
+os dois repositórios de token, utils e a validação dos DTOs. `collaborator-failure.spec.ts`
+traz os casos `falha-do-colaborador-sem-efeito-parcial` da matriz.
 
-Ao vivo: `orfanatonib-app/e2e/live/auth.api.spec.ts` (14 cenários contra a API e
-o MySQL reais), incluindo a rotação e a invalidação do refresh.
+Ao vivo (`orfanatonib-app/e2e/live/auth/`, contra a API e o MySQL reais, prova por `SELECT`, negativos com banco inalterado):
+`auth.api.spec.ts`, `auth-matrix.api.spec.ts`, `auth-session.api.spec.ts` (login/refresh/logout/me/google por perfil),
+`auth-account.api.spec.ts` (register/complete/verify/resend/forgot/validate/reset por perfil),
+`auth-pages.ui.spec.ts` e `auth-flows.ui.spec.ts` (telas, flags e 375 px). Matriz: `node scripts/check-scenario-coverage.mjs --unit=auth` → 147/148;
+falta só `auth.post.auth-google#feliz` (um ID token válido só o Google assina; o E2E não simula provedor).
+Expiração de token: não é forjável por API (o banco do E2E é só leitura); coberta em `*-token.repository.spec.ts`.
 
 ---
 
 ## 📌 Débitos conhecidos
 
-- **`POST /auth/forgot-password` revela quais e-mails existem**: um e-mail sem
-  conta responde `400 "Email não encontrado na base de dados."`. Responder
-  sempre sucesso fecharia a enumeração, mas tira o retorno de quem só errou de
-  digitação — é decisão de produto, não de refatoração, e ficou como está.
 - `core/user` e `core/profile` ainda não passaram pelo padrão; os contratos que
   o auth usa foram adicionados, mas os módulos em si seguem na fila.
 
@@ -184,6 +184,41 @@ o MySQL reais), incluindo a rotação e a invalidação do refresh.
 | `POST /auth/forgot-password`, `GET /auth/reset-password/validate`, `POST /auth/reset-password` | `password_recovery` | idem |
 
 Com a flag desligada **nada é gravado** (E2E confere `users`/`password_reset_tokens` inalterados). Sessão ausente, token malformado, assinatura adulterada e `alg=none` ⇒ `401`. Login com e-mail inexistente e com senha errada devolvem a **mesma mensagem** (não revela se o e-mail existe).
+
+## Quem chama `/auth/refresh` e `/auth/complete-register` (decisão 2026-11-21)
+Os dois **têm chamador** no front (o inventário automático não os achava porque o endpoint sai de uma variável ou de um interceptor):
+
+| Endpoint | Chamador | Evidência |
+|---|---|---|
+| `POST /auth/refresh` | interceptor de resposta 401 do Axios (renovação única compartilhada por `refreshPromise`) | `orfanatonib-app/src/config/axiosConfig.ts:71-91` |
+| `POST /auth/complete-register` | rota `/cadastrar-google` → `Register commonUser={false}` → `apiCompleteRegister(…)`, depois do login Google devolver `newUser` + `completionToken` | `src/routes/publicRoutes.tsx:47-53`, `src/features/auth/api.ts` (`apiCompleteRegister`), `src/pages/Login/Login.tsx:169-174` |
+
+Ficam. Cobertura: `auth-session.api.spec.ts` (refresh: rotação, reuso, perfis, escopo) e `auth-account.api.spec.ts` (complete-register).
+
+### Segurança fechada em 2026-11-21 (plano 06, achados 1 a 3)
+
+**Ninguém vira admin pela API.** `RegisterUserDto.role` e `CompleteUserDto.role` aceitam só `member|leader` (`GRANTABLE_ROLES` em `auth.types.ts`; `admin` ou qualquer outro valor => 400 e nada é criado). `CreateUserService` recusa `role: admin` e `UpdateUserService` recusa PROMOVER a admin (400 `ADMIN_GRANT_FORBIDDEN`), mesmo vindo de um admin autenticado (`POST/PUT /users`). Um admin existente continua editável (mesmo papel, outros campos) e pode ser rebaixado; voltar a admin exige o banco.
+
+**Como promover alguém a admin (direto no banco).** Confira o e-mail antes e rode só no ambiente certo; em staging/produção faça com backup/snapshot e por quem tem acesso ao banco:
+
+```sql
+-- 1) confira quem será promovido
+SELECT id, email, role, active FROM users WHERE email = 'pessoa@exemplo.org';
+-- 2) promova (NUNCA rode sem o WHERE e sem conferir o passo 1)
+UPDATE users SET role = 'admin' WHERE email = 'pessoa@exemplo.org';
+```
+
+Quem já tinha perfil de líder/membro pode ficar com o perfil antigo; remova-o pela tela de usuários antes de promover. A pessoa precisa entrar de novo para o JWT trazer o papel novo. O admin local (`e2e.admin@orfanatonib.test`) é criado/promovido direto no banco por `scripts/seed-local-credentials.js` (bcrypt, idempotente).
+
+**`complete-register` exige prova de posse da identidade Google.** `POST /auth/google`, para conta nova ou pendente (`completed=false`), devolve `completionToken`: JWT com `{sub: id do usuário, purpose: "complete_register", jti}`, validade 15 min (`COMPLETION_TOKEN_TTL_MINUTES`), assinado com uma chave derivada de `JWT_SECRET` (HMAC-SHA256 com o propósito) — por isso nunca vale como JWT de sessão, nem o contrário. `complete-register` não aceita mais `email` (400): a conta vem do token. Uso único sem tabela nova: a conclusão grava `completed=true` e a rota recusa qualquer token de conta já completa (reuso, conta ativa e conta inexistente dão o mesmo 401 `Sessão de cadastro inválida ou expirada...`). Sem migration (reaproveita a coluna `completed`). Front: o token fica só no estado Redux em memória (`googleUser.completionToken`, fora do `whitelist` do persist), nunca em `localStorage`; recarregar a página exige entrar com o Google de novo.
+
+**Enumeração de e-mails.** `forgot-password` responde sempre `201` com o mesmo corpo genérico e não espera o banco nem o envio: a busca, o token e o e-mail rodam em segundo plano (`deliverResetLink`, nunca lança), só para conta existente e completa. `complete-register` com token inválido não diferencia inexistente de não pendente. Auditoria do módulo: `resend-verification` já respondia igual (conferido); `login` responde a mesma mensagem para e-mail inexistente e senha errada; `reset-password/validate` e `reset-password` só revelam o e-mail a quem tem o token. `register` com e-mail já cadastrado responde `409` — inerente a qualquer cadastro com e-mail único; aceito e documentado (mitigação: rate limit, decisão abaixo). `POST /auth/google` devolve `newUser:false` para conta existente, mas só a quem apresenta um ID token válido do próprio Google.
+
+### Decisões ainda abertas do solicitante
+- **Tokens em `localStorage`/redux-persist** (T3.1) e **rate limit** (`RATE_LIMIT_ENABLED`, T3.2).
+
+## Falha parcial (2026-11-21)
+`POST /auth/verify-email` confirma o e-mail **antes** de gastar o token (sem transação; se a confirmação falhar o link continua válido). `POST /auth/reset-password` não falha mais se só o aviso "senha alterada" não puder ser enfileirado (a senha já mudou e o token já foi apagado).
 
 ## Segredo do JWT
 `JWT_SECRET` é lido num único ponto (`readJwtSecret` → `getOrThrow`) e é obrigatório no boot (`validateEnv`).

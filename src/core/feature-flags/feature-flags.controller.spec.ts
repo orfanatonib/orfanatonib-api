@@ -34,7 +34,11 @@ describe("FeatureFlagsController", () => {
     isEnabledForRole: jest.fn(),
     findOne: jest.fn(),
   };
-  const updateService = { update: jest.fn(), toggle: jest.fn() };
+  const updateService = {
+    update: jest.fn(),
+    toggle: jest.fn(),
+    setEnabled: jest.fn(),
+  };
   const deleteService = { remove: jest.fn() };
   const authContext = { getRole: jest.fn() };
 
@@ -79,6 +83,7 @@ describe("FeatureFlagsController", () => {
     "findOne",
     "update",
     "toggle",
+    "setEnabled",
     "remove",
   ] as const)("protects %s with JWT and administrator guards", (method) => {
     const guards = readMethodGuards(method);
@@ -94,6 +99,21 @@ describe("FeatureFlagsController", () => {
       expect(guards).not.toContain(AdminRoleGuard);
     },
   );
+
+  it("delegates PUT :key/enabled with the desired state and version", async () => {
+    updateService.setEnabled.mockResolvedValue({ ...flag, enabled: false });
+    const dto = { enabled: false, expectedVersion: 4 };
+
+    await expect(
+      controller.setEnabled("shelter-management", dto),
+    ).resolves.toMatchObject({
+      enabled: false,
+    });
+    expect(updateService.setEnabled).toHaveBeenCalledWith(
+      "shelter-management",
+      dto,
+    );
+  });
 
   it("delegates the paginated administration listing", async () => {
     const query: QueryFeatureFlagsDto = { page: 2, limit: 10 };

@@ -50,6 +50,7 @@ describe("serviços de ideias compartilhadas", () => {
           useValue: {
             findById: jest.fn(),
             findUnattached: jest.fn(),
+            countUnattached: jest.fn(),
             findPageById: jest.fn(),
             createUnattached: jest.fn(),
             updateData: jest.fn(),
@@ -331,6 +332,13 @@ describe("serviços de ideias compartilhadas", () => {
 
       expect(mediaService.findBySections).toHaveBeenCalledTimes(1);
       expect(response.map((item) => item.medias.length)).toEqual([2, 1]);
+    });
+
+    it("o selo do painel usa a contagem do repositório", async () => {
+      repository.countUnattached.mockResolvedValue(5);
+
+      expect(await service.pendingCount()).toEqual({ pending: 5 });
+      expect(mediaService.findBySections).not.toHaveBeenCalled();
     });
 
     it("sem seção alguma, não consulta mídia", async () => {

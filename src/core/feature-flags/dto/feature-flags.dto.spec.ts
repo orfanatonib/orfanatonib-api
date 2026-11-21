@@ -3,6 +3,7 @@ import { validateSync } from "class-validator";
 
 import { CreateFeatureFlagDto } from "./create-feature-flag.dto";
 import { QueryFeatureFlagsDto } from "./query-feature-flags.dto";
+import { SetFeatureFlagEnabledDto } from "./set-feature-flag-enabled.dto";
 import { UpdateFeatureFlagDto } from "./update-feature-flag.dto";
 import { FEATURE_FLAGS_MAX_LIMIT } from "../constants";
 
@@ -125,5 +126,37 @@ describe("UpdateFeatureFlagDto", () => {
     expect(check(UpdateFeatureFlagDto, { key: "MAIUSCULA" }).dto.key).toBe(
       "maiuscula",
     );
+  });
+});
+
+describe("SetFeatureFlagEnabledDto", () => {
+  it("exige enabled booleano", () => {
+    expect(check(SetFeatureFlagEnabledDto, {}).fields).toContain("enabled");
+    expect(
+      check(SetFeatureFlagEnabledDto, { enabled: "true" }).fields,
+    ).toContain("enabled");
+    expect(check(SetFeatureFlagEnabledDto, { enabled: true }).fields).toEqual(
+      [],
+    );
+  });
+
+  it.each([0, -1, 1.5, "2"])("recusa expectedVersion inválida %p", (value) => {
+    expect(
+      check(SetFeatureFlagEnabledDto, { enabled: true, expectedVersion: value })
+        .fields,
+    ).toContain("expectedVersion");
+  });
+
+  it("aceita expectedVersion inteira positiva (também no PATCH)", () => {
+    expect(
+      check(SetFeatureFlagEnabledDto, { enabled: false, expectedVersion: 3 })
+        .fields,
+    ).toEqual([]);
+    expect(
+      check(UpdateFeatureFlagDto, { name: "x", expectedVersion: 3 }).fields,
+    ).toEqual([]);
+    expect(
+      check(UpdateFeatureFlagDto, { expectedVersion: 0 }).fields,
+    ).toContain("expectedVersion");
   });
 });

@@ -1,0 +1,126 @@
+{
+ "info": {
+  "name": "Media Storage API Collection",
+  "description": "Armazenamento de mídia (plano 05). Único endpoint HTTP da unidade: reconciliação bucket x banco, só admin (401 sem token, 403 para líder/membro). Dry-run por padrão: dryRun=false remove órfãos com mais de minAgeHours (padrão 24 h); referência sem objeto é só reportada. Uploads em si são feitos pelos endpoints de cada feature (multipart, limites por rota em upload-limits.constants.ts; 400 MEDIA_MIME/MEDIA_SIZE/MEDIA_CONTENT/MEDIA_EMPTY para arquivo recusado; 413 acima do limite do Multer).",
+  "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+  "version": "1.0.0"
+ },
+ "auth": {
+  "type": "bearer",
+  "bearer": [
+   {
+    "key": "token",
+    "value": "{{access_token}}",
+    "type": "string"
+   }
+  ]
+ },
+ "variable": [
+  {
+   "key": "base_url",
+   "value": "{{base_url}}"
+  }
+ ],
+ "item": [
+  {
+   "name": "Media Storage",
+   "item": [
+    {
+     "name": "Relatório (dry-run, padrão)",
+     "request": {
+      "method": "POST",
+      "header": [],
+      "url": {
+       "raw": "{{base_url}}/media-storage/reconcile",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "media-storage",
+        "reconcile"
+       ],
+       "query": []
+      },
+      "description": "Lista bucket por prefixo do ambiente x media_items. Não apaga nada. Resposta: órfãos, referências quebradas e contagens."
+     }
+    },
+    {
+     "name": "Relatório explícito (dryRun=true)",
+     "request": {
+      "method": "POST",
+      "header": [],
+      "url": {
+       "raw": "{{base_url}}/media-storage/reconcile?dryRun=true",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "media-storage",
+        "reconcile"
+       ],
+       "query": [
+        {
+         "key": "dryRun",
+         "value": "true"
+        }
+       ]
+      },
+      "description": "Igual ao padrão."
+     }
+    },
+    {
+     "name": "Remover órfãos com mais de 24 h",
+     "request": {
+      "method": "POST",
+      "header": [],
+      "url": {
+       "raw": "{{base_url}}/media-storage/reconcile?dryRun=false&minAgeHours=24",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "media-storage",
+        "reconcile"
+       ],
+       "query": [
+        {
+         "key": "dryRun",
+         "value": "false"
+        },
+        {
+         "key": "minAgeHours",
+         "value": "24"
+        }
+       ]
+      },
+      "description": "Destrutivo: remove do bucket os objetos sem referência mais antigos que a janela. Referência sem objeto NUNCA é apagada. minAgeHours: 0 a 720."
+     }
+    },
+    {
+     "name": "Validação (minAgeHours inválido)",
+     "request": {
+      "method": "POST",
+      "header": [],
+      "url": {
+       "raw": "{{base_url}}/media-storage/reconcile?minAgeHours=9999",
+       "host": [
+        "{{base_url}}"
+       ],
+       "path": [
+        "media-storage",
+        "reconcile"
+       ],
+       "query": [
+        {
+         "key": "minAgeHours",
+         "value": "9999"
+        }
+       ]
+      },
+      "description": "400: fora de 0..720."
+     }
+    }
+   ]
+  }
+ ]
+}

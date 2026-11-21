@@ -51,6 +51,8 @@ export class GooglePendingRegistrationDto {
   completed!: boolean;
   commonUser!: boolean;
   newUser!: boolean;
+  /** Token de uso único (≈15 min) exigido por `complete-register`. */
+  completionToken!: string;
 }
 
 /** Google, conta completa mas inativa. */

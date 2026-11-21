@@ -1,6 +1,19 @@
 /** `details.code` do 403 devolvido quando a flag do recurso está desligada para o ator. */
 export const FEATURE_DISABLED_CODE = "FEATURE_DISABLED";
 export const FEATURE_FLAGS_CACHE_TTL_MS = 60_000;
+/**
+ * TTL das flags operacionais (`email_*`): são chaves-mestras de envio e o
+ * administrador espera que "desligar" valha logo, em qualquer instância.
+ */
+export const FEATURE_FLAGS_INTERNAL_CACHE_TTL_MS = 5_000;
+/** Canal Redis (pub/sub) de invalidação do cache entre instâncias. */
+export const FEATURE_FLAGS_INVALIDATION_CHANNEL =
+  "orfanato:feature-flags:invalidate";
+/** `details.code` do 409 de escrita sobre flag protegida. */
+export const FEATURE_FLAG_PROTECTED_CODE = "FEATURE_FLAG_PROTECTED";
+/** `details.code` do 409 de versão desatualizada (controle otimista). */
+export const FEATURE_FLAG_VERSION_CONFLICT_CODE =
+  "FEATURE_FLAG_VERSION_CONFLICT";
 export const FEATURE_FLAG_SWITCH_CACHE_SCOPE = "__switch__";
 export const FEATURE_FLAG_MAP_CACHE_SCOPE = "__map__";
 export const FEATURE_FLAG_TARGET_ROLES_METADATA_KEY = "targetRoles";
@@ -287,8 +300,9 @@ export const DEFAULT_FEATURE_FLAGS = [
   },
   {
     key: "integration",
-    name: "Integração",
-    description: "Interruptor do recurso: integração.",
+    name: "Integração Feira de Ministério",
+    description:
+      "Integração Feira de Ministério: botão na Área do Membro e nos acolhidos, e a página de registro (admin e líder).",
     enabled: true,
     targetRoles: ["admin", "leader"],
   },

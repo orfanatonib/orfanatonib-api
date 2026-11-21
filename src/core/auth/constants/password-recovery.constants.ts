@@ -1,11 +1,11 @@
 export enum PasswordRecoveryStatus {
   RESET_LINK_SENT = "RESET_LINK_SENT",
-  USER_NOT_FOUND = "USER_NOT_FOUND",
 }
 
 export const PasswordRecoveryMessages = {
-  RESET_LINK_SENT: "Email de recuperação de senha enviado com sucesso.",
-  USER_NOT_FOUND: "Email não encontrado na base de dados.",
+  /** Resposta única do `forgot-password`, exista o e-mail ou não. */
+  RESET_LINK_SENT:
+    "Se o e-mail estiver cadastrado, enviaremos as instruções para redefinir a senha.",
   TOKEN_INVALID: "Token inválido ou expirado.",
   PASSWORD_CHANGED: "Senha alterada com sucesso.",
 } as const;

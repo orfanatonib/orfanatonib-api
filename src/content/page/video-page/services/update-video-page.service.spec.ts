@@ -127,7 +127,7 @@ describe("UpdateVideosPageService", () => {
     expect(storage.deleteAfterCommit).toHaveBeenCalledWith([localOld.url]);
   });
 
-  it("[video-page.patch.video-pages-id#rollback-de-transacao] falha depois do upload: rollback, novos descartados e antigos NÃO apagados", async () => {
+  it("[video-page.patch.video-pages-id#rollback-de-transacao] [media-upload.legacy-update.video-page#rollback-transacao] falha depois do upload: rollback, novos descartados e antigos NÃO apagados", async () => {
     const { svc, storage } = setup([localOld, linkOld], {
       savePage: jest.fn().mockRejectedValue(new Error("banco")),
     });

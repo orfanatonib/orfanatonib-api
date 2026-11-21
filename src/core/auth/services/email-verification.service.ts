@@ -87,8 +87,12 @@ export class EmailVerificationService {
       throw new RuleException(AuthErrorMessages.VERIFICATION_TOKEN_INVALID);
     }
 
-    await this.tokens.markUsed(entry.id, new Date());
-    await this.updateUserService.markEmailVerified(entry.userId, new Date());
+    // Sem transação: a ordem limita o estrago. Se a confirmação do e-mail falhar,
+    // o token continua válido e o usuário pode tentar de novo; o contrário
+    // (token gasto e e-mail não confirmado) o deixaria sem saída.
+    const now = new Date();
+    await this.updateUserService.markEmailVerified(entry.userId, now);
+    await this.tokens.markUsed(entry.id, now);
 
     this.logger.log(AuthLogs.VERIFICATION_CONFIRMED(entry.userId));
 

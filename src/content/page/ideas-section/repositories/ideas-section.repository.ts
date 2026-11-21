@@ -31,6 +31,11 @@ export class IdeasSectionRepository {
     });
   }
 
+  /** Quantas ideias aguardam o admin (mesmo critério de `findUnattached`). */
+  async countUnattached(): Promise<number> {
+    return this.sections.count({ where: { page: IsNull() } });
+  }
+
   /**
    * Seções ainda não vinculadas a nenhuma página — o acervo que a tela de
    * ideias compartilhadas administra.

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument -- dublês de teste */
 import { BadRequestException, Logger } from "@nestjs/common";
 
 import { CreateDocumentService } from "./create-document.service";
@@ -117,6 +118,9 @@ describe("UpdateDocumentService: o objeto antigo só some depois do commit", () 
       upload: jest.fn().mockResolvedValue("https://b/new.pdf"),
       delete: jest.fn().mockResolvedValue(undefined),
     };
+    const mediaStorage = {
+      deleteAfterCommit: jest.fn().mockResolvedValue(undefined),
+    };
     const media = {
       findMediaItemsByTarget: jest
         .fn()
@@ -144,8 +148,9 @@ describe("UpdateDocumentService: o objeto antigo só some depois do commit", () 
       s3 as never,
       media as never,
       {} as never,
+      mediaStorage as never,
     );
-    return { svc, s3, media };
+    return { svc, s3, media, mediaStorage };
   }
 
   const dto = {
@@ -154,24 +159,29 @@ describe("UpdateDocumentService: o objeto antigo só some depois do commit", () 
     media: { title: "t", isLocalFile: true },
   } as never;
 
-  it("feliz: sobe o novo, e só depois do commit apaga o antigo", async () => {
+  it("[media-upload.legacy-update.document#feliz] feliz: sobe o novo, e só depois do commit apaga o antigo", async () => {
     const order: string[] = [];
-    const { svc, s3 } = setup(async (v) => {
+    const { svc, mediaStorage } = setup(async (v) => {
       order.push("commit");
       return v;
     });
-    s3.delete.mockImplementation(async () => order.push("delete-old"));
+    mediaStorage.deleteAfterCommit.mockImplementation(
+      async (urls: string[]) => {
+        order.push(`delete:${urls.join(",")}`);
+      },
+    );
     await svc.execute("d1", dto, file);
-    expect(order).toEqual(["commit", "delete-old"]);
-    expect(s3.delete).toHaveBeenCalledWith("https://b/old.pdf");
+    expect(order).toEqual(["commit", "delete:https://b/old.pdf"]);
   });
 
-  it("transação falha depois do upload: apaga o NOVO e preserva o antigo", async () => {
-    const { svc, s3 } = setup(async () => {
+  it("[media-upload.legacy-update.document#rollback-transacao] transação falha depois do upload: apaga o NOVO e preserva o antigo", async () => {
+    const { svc, mediaStorage } = setup(async () => {
       throw new Error("tx");
     });
     await expect(svc.execute("d1", dto, file)).rejects.toThrow("tx");
-    expect(s3.delete).toHaveBeenCalledWith("https://b/new.pdf");
-    expect(s3.delete).not.toHaveBeenCalledWith("https://b/old.pdf");
+    expect(mediaStorage.deleteAfterCommit).toHaveBeenCalledTimes(1);
+    expect(mediaStorage.deleteAfterCommit).toHaveBeenCalledWith([
+      "https://b/new.pdf",
+    ]);
   });
 });

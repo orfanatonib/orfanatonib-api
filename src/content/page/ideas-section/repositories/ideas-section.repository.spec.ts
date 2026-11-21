@@ -21,6 +21,7 @@ describe("IdeasSectionRepository", () => {
           useValue: {
             findOne: jest.fn().mockResolvedValue(buildSection()),
             find: jest.fn().mockResolvedValue([]),
+            count: jest.fn().mockResolvedValue(0),
             create: jest.fn((data: unknown) => data),
             save: jest.fn((data: unknown) => data),
             update: jest.fn().mockResolvedValue({ affected: 1 }),
@@ -67,6 +68,13 @@ describe("IdeasSectionRepository", () => {
       relations: ["user"],
       order: { createdAt: "DESC" },
     });
+  });
+
+  it("conta só as seções sem página, o mesmo critério da listagem", async () => {
+    sections.count.mockResolvedValue(4);
+
+    expect(await repository.countUnattached()).toBe(4);
+    expect(sections.count).toHaveBeenCalledWith({ where: { page: IsNull() } });
   });
 
   it("cria a seção sem página e com o autor", async () => {

@@ -14,6 +14,7 @@
 const fs = require('fs');
 const path = require('path');
 const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
 
 const API_URL = process.env.API_URL || `http://localhost:${process.env.PORT || 3000}`;
 const ENV_FILE = process.env.ENV_FILE || 'env/local.env';
@@ -52,6 +53,12 @@ const FEATURE_FLAGS = [
   { key: 'shelter-management', name: 'Gestão de abrigos', description: 'Habilita a gestão de abrigos e acolhidos' },
   { key: 'shelter-address', name: 'Endereço do abrigo', description: 'Exibe o endereço do abrigo' },
   { key: 'shelter-pagelas', name: 'Pagelas', description: 'Habilita as pagelas' },
+  {
+    key: 'integration',
+    name: 'Integração Feira de Ministério',
+    description:
+      'Integração Feira de Ministério: botão na Área do Membro e nos acolhidos, e a página de registro (admin e líder).',
+  },
 ];
 
 /**
@@ -107,6 +114,32 @@ async function waitForApi() {
 }
 
 /**
+ * A API nunca concede o papel `admin` (cadastro, `POST/PUT /users`,
+ * complete-register): o admin local nasce, ou é promovido, direto no banco.
+ * O hash é o da API (bcryptjs, 10 rounds). Idempotente: cria se não existe;
+ * se existe, promove e ativa sem tocar na senha.
+ */
+async function ensureAdminInDatabase(connection, account) {
+  const [rows] = await connection.execute('SELECT id FROM users WHERE email = ? LIMIT 1', [account.email]);
+
+  if (rows.length === 0) {
+    const hash = await bcrypt.hash(account.password, 10);
+    await connection.execute(
+      `INSERT INTO users (id, email, password, phone, name, active, completed, commonUser, role, emailVerifiedAt, createdAt, updatedAt)
+       VALUES (UUID(), ?, ?, ?, ?, 1, 1, 0, 'admin', NOW(6), NOW(6), NOW(6))`,
+      [account.email, hash, account.phone, account.name],
+    );
+    return 'criado direto no banco';
+  }
+
+  await connection.execute(
+    "UPDATE users SET role = 'admin', active = 1, completed = 1, emailVerifiedAt = COALESCE(emailVerifiedAt, NOW(6)) WHERE email = ?",
+    [account.email],
+  );
+  return 'já existia (promovido e ativado)';
+}
+
+/**
  * Registra pela própria API, para o hash da senha ser o que a aplicação usa.
  * A existência é checada antes: registrar de novo faz a API responder 401
  * "User already exists", que polui o log com um bloco de erro a cada boot.
@@ -157,6 +190,11 @@ async function main() {
 
   try {
     for (const account of ACCOUNTS) {
+      if (account.role === 'admin') {
+        log(`${account.label}: ${account.email} (${await ensureAdminInDatabase(connection, account)})`);
+        continue;
+      }
+
       const [rows] = await connection.execute(
         'SELECT id FROM users WHERE email = ? LIMIT 1',
         [account.email],
@@ -176,19 +214,19 @@ async function main() {
     }
 
     // O registro nasce inativo e sem perfil completo; o e2e precisa poder logar.
-    for (const account of ACCOUNTS) {
+    for (const account of ACCOUNTS.filter((a) => a.role !== 'admin')) {
       await connection.execute(
         'UPDATE users SET role = ?, active = 1, completed = 1 WHERE email = ?',
         [account.role, account.email],
       );
     }
-    log(`${ACCOUNTS.length} contas ativadas (senha: ${ACCOUNTS[0].password})`);
+    log(`${ACCOUNTS.length} contas prontas (senha: ${ACCOUNTS[0].password})`);
 
     for (const flag of FEATURE_FLAGS) {
       await connection.execute(
-        `INSERT INTO feature_flags (id, \`key\`, name, description, enabled, environment, created_at, updated_at)
-         VALUES (UUID(), ?, ?, ?, 1, 'local', NOW(6), NOW(6))
-         ON DUPLICATE KEY UPDATE enabled = 1, updated_at = NOW(6)`,
+        `INSERT INTO feature_flags (id, \`key\`, name, description, enabled, created_at, updated_at)
+         VALUES (UUID(), ?, ?, ?, 1, NOW(6), NOW(6))
+         ON DUPLICATE KEY UPDATE enabled = 1, name = VALUES(name), description = VALUES(description), updated_at = NOW(6)`,
         [flag.key, flag.name, flag.description],
       );
     }
@@ -196,8 +234,8 @@ async function main() {
 
     for (const flag of DISABLED_FEATURE_FLAGS) {
       await connection.execute(
-        `INSERT INTO feature_flags (id, \`key\`, name, description, enabled, environment, created_at, updated_at)
-         VALUES (UUID(), ?, ?, ?, 0, 'local', NOW(6), NOW(6))
+        `INSERT INTO feature_flags (id, \`key\`, name, description, enabled, created_at, updated_at)
+         VALUES (UUID(), ?, ?, ?, 0, NOW(6), NOW(6))
          ON DUPLICATE KEY UPDATE enabled = 0, updated_at = NOW(6)`,
         [flag.key, flag.name, flag.description],
       );

@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -25,6 +26,7 @@ import { isInternalFeatureFlag } from "./constants";
 import { CreateFeatureFlagDto } from "./dto/create-feature-flag.dto";
 import { FeatureFlagResponseDto } from "./dto/feature-flag-response.dto";
 import { FeatureFlagStatsDto } from "./dto/feature-flag-stats.dto";
+import { SetFeatureFlagEnabledDto } from "./dto/set-feature-flag-enabled.dto";
 import { QueryFeatureFlagsDto } from "./dto/query-feature-flags.dto";
 import { UpdateFeatureFlagDto } from "./dto/update-feature-flag.dto";
 import { CreateFeatureFlagService } from "./services/create-feature-flag.service";
@@ -119,6 +121,16 @@ export class FeatureFlagsController {
     @Body() dto: UpdateFeatureFlagDto,
   ): Promise<FeatureFlagResponseDto> {
     return this.updateService.update(key, dto);
+  }
+
+  /** Estado desejado: idempotente e, com `expectedVersion`, otimista (409). */
+  @UseGuards(JwtAuthGuard, AdminRoleGuard)
+  @Put(":key/enabled")
+  async setEnabled(
+    @Param("key") key: string,
+    @Body() dto: SetFeatureFlagEnabledDto,
+  ): Promise<FeatureFlagResponseDto> {
+    return this.updateService.setEnabled(key, dto);
   }
 
   @UseGuards(JwtAuthGuard, AdminRoleGuard)

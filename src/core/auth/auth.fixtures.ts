@@ -149,7 +149,7 @@ export const buildCompleteRegisterDto = (
   overrides: Partial<CompleteUserDto> = {},
 ): CompleteUserDto =>
   Object.assign(new CompleteUserDto(), {
-    email: "maria@orfanatonib.test",
+    completionToken: "completion-token",
     name: "Maria Souza",
     phone: "92999990000",
     password: "E2e@12345",

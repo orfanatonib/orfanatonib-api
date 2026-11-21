@@ -20,6 +20,7 @@ import { GetCommentService } from "./services/get-comment.service";
 import { UpdateCommentService } from "./services/update-comment.service";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { CommentResponseDto } from "./dto/comment-response.dto";
+import { CommentPendingCountDto } from "./dto/comment-pending-count.dto";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
 import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
@@ -63,6 +64,15 @@ export class CommentController {
   async findAllPublished(): Promise<CommentResponseDto[]> {
     const comments = await this.getCommentService.findAllPublished();
     return plainToInstance(CommentResponseDto, comments);
+  }
+
+  /** Selo do painel do admin: quantos comentários aguardam moderação. */
+  @FeatureFlag(FeatureFlagKeys.COMMENT_MODERATION)
+  @UseGuards(FeatureFlagGuard)
+  @Get("pending-count")
+  @UseGuards(JwtAuthGuard, AdminRoleGuard)
+  async pendingCount(): Promise<CommentPendingCountDto> {
+    return this.getCommentService.pendingCount();
   }
 
   @FeatureFlag(FeatureFlagKeys.COMMENT_MODERATION)

@@ -29,6 +29,7 @@ describe("catálogo de feature flags", () => {
     create: jest.fn(),
     save: jest.fn(),
     remove: jest.fn(),
+    markProtected: jest.fn(),
   };
   const getService = { invalidate: jest.fn(), invalidateAll: jest.fn() };
 
@@ -56,6 +57,7 @@ describe("catálogo de feature flags", () => {
       Promise.resolve(flag),
     );
     repository.remove.mockResolvedValue(undefined);
+    repository.markProtected.mockResolvedValue(0);
   });
 
   describe("definições de fábrica", () => {

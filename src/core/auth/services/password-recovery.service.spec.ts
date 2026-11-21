@@ -11,6 +11,7 @@ describe("PasswordRecoveryService", () => {
     id: "user-id",
     email: "user@example.com",
     name: "Maria",
+    completed: true,
   };
   const findByEmail = jest.fn<Promise<typeof user | undefined>, [string]>();
   const update = jest.fn<Promise<void>, [string, { password: string }]>();
@@ -70,8 +71,11 @@ describe("PasswordRecoveryService", () => {
     service = moduleRef.get(PasswordRecoveryService);
   });
 
-  it("creates a reset token and sends it directly without provider identity checks", async () => {
+  const flush = () => new Promise<void>((resolve) => setImmediate(resolve));
+
+  it("creates a reset token and sends it for an existing complete account (in the background)", async () => {
     const result = await service.forgotPassword({ email: user.email });
+    await flush();
 
     expect(invalidateTokensForUser).toHaveBeenCalledWith(user.id);
     expect(createToken).toHaveBeenCalledTimes(1);
@@ -89,12 +93,39 @@ describe("PasswordRecoveryService", () => {
     expect(result.status).toBe(PasswordRecoveryStatus.RESET_LINK_SENT);
   });
 
-  it("rejects a password reset request for an unknown email", async () => {
-    findByEmail.mockResolvedValueOnce(undefined);
+  it("[auth.post.auth-forgot-password#resposta-identica] answers exactly the same for an existing and an unknown email, and sends nothing for the unknown one", async () => {
+    const existing = await service.forgotPassword({ email: user.email });
+    await flush();
+    sendPasswordResetEmail.mockClear();
+    createToken.mockClear();
+
+    findByEmail.mockResolvedValue(undefined);
+    const unknown = await service.forgotPassword({
+      email: "missing@example.com",
+    });
+    await flush();
+
+    expect(unknown).toEqual(existing);
+    expect(createToken).not.toHaveBeenCalled();
+    expect(sendPasswordResetEmail).not.toHaveBeenCalled();
+  });
+
+  it("[auth.post.auth-forgot-password#resposta-identica] does not wait for the lookup or the e-mail before answering", async () => {
+    findByEmail.mockReturnValue(new Promise(() => undefined));
 
     await expect(
-      service.forgotPassword({ email: "missing@example.com" }),
-    ).rejects.toMatchObject({ status: 400 });
+      service.forgotPassword({ email: user.email }),
+    ).resolves.toMatchObject({
+      status: PasswordRecoveryStatus.RESET_LINK_SENT,
+    });
+  });
+
+  it("[auth.post.auth-forgot-password#resposta-identica] skips a pending Google account (not completed) silently", async () => {
+    findByEmail.mockResolvedValue({ ...user, completed: false });
+
+    await service.forgotPassword({ email: user.email });
+    await flush();
+
     expect(createToken).not.toHaveBeenCalled();
     expect(sendPasswordResetEmail).not.toHaveBeenCalled();
   });

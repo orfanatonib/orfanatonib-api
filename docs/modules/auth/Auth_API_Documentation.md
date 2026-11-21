@@ -64,7 +64,17 @@ Esta collection contém todos os endpoints do Auth Controller da API.
 | Método | Endpoint | Descrição | Autenticação |
 |--------|----------|-----------|--------------|
 | POST | `/auth/register` | Registrar novo usuário | ❌ |
-| POST | `/auth/complete-register` | Completar registro | ❌ |
+| POST | `/auth/complete-register` | Completar registro (exige o `completionToken` do `/auth/google`; sem `email` no corpo) | ❌ |
+
+### ✉️ Confirmação de e-mail e recuperação de senha
+
+| Método | Endpoint | Descrição | Autenticação | Flag |
+|--------|----------|-----------|--------------|------|
+| POST | `/auth/verify-email` | Confirmar e-mail (token de uso único) | ❌ | — |
+| POST | `/auth/resend-verification` | Reenviar o link (resposta igual para qualquer e-mail) | ❌ | — |
+| POST | `/auth/forgot-password` | Pedir o link de redefinição (resposta sempre igual, não revela se o e-mail existe) | ❌ | `password_recovery` |
+| GET | `/auth/reset-password/validate?token=` | Conferir o token sem consumi-lo | ❌ | `password_recovery` |
+| POST | `/auth/reset-password` | Trocar a senha (token de uso único) | ❌ | `password_recovery` |
 
 ## 🔧 Variáveis de Ambiente
 
@@ -199,7 +209,7 @@ A collection inclui testes automatizados que:
 - Todos os endpoints que requerem autenticação precisam do header `Authorization: Bearer {{access_token}}`
 - O token JWT tem tempo de expiração limitado
 - Use o endpoint `/auth/refresh` para renovar tokens expirados
-- O campo `role` aceita: `admin`, `member`, `leader`
+- O campo `role` do cadastro aceita só `member` e `leader`; `admin` => 400 (ninguém vira admin pela API: promoção direta no banco, ver README do módulo)
 - O campo `phone` deve estar no formato internacional (ex: +5511999999999)
 
 ## 🐛 Troubleshooting
@@ -212,7 +222,7 @@ Se receber erro 401 (Unauthorized):
 ### Email Já Existe
 Se receber erro 409 (Conflict) no registro:
 - Use um email diferente
-- Ou use `/auth/complete-register` se o usuário já existe
+- Ou use `/auth/complete-register` com o `completionToken` devolvido pelo login Google
 
 ### Dados Inválidos
 Verifique se:

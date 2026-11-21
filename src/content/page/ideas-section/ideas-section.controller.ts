@@ -17,6 +17,7 @@ import { AnyFilesInterceptor } from "@nestjs/platform-express";
 import { UnauthenticatedException } from "src/common/exceptions";
 import { AuthenticatedRequest } from "src/core/auth/auth.types";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { IdeasSectionPendingCountDto } from "./dto/ideas-section-pending-count.dto";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 
 import {
@@ -128,6 +129,15 @@ export class IdeasSectionController {
   @UseGuards(AdminRoleGuard)
   async findUnattached(): Promise<IdeasSectionResponseDto[]> {
     return this.getService.findUnattached();
+  }
+
+  /** Selo do painel do admin: quantas ideias aguardam publicação. */
+  @FeatureFlag(FeatureFlagKeys.IDEA_MODERATION)
+  @UseGuards(FeatureFlagGuard)
+  @Get("pending-count")
+  @UseGuards(AdminRoleGuard)
+  async pendingCount(): Promise<IdeasSectionPendingCountDto> {
+    return this.getService.pendingCount();
   }
 
   @FeatureFlag(FeatureFlagKeys.IDEA_MODERATION)

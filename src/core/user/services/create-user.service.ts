@@ -8,7 +8,8 @@ import { UserEntity } from "../entities/user.entity";
 import { UserRole } from "src/core/auth/auth.types";
 import { CreateMemberProfileService } from "src/shelter/member-profile/services/create-member-profile.service";
 import { CreateLeaderProfileService } from "src/shelter/leader-profile/services/create-leader-profile.service";
-import { UserLogs } from "../constants/user.constants";
+import { RuleException } from "src/common/exceptions";
+import { UserErrorMessages, UserLogs } from "../constants/user.constants";
 
 @Injectable()
 export class CreateUserService {
@@ -21,6 +22,10 @@ export class CreateUserService {
   ) {}
 
   async create(dto: CreateUserDto): Promise<UserEntity> {
+    // Ninguém nasce admin pela API, nem por um admin autenticado.
+    if (dto.role === UserRole.ADMIN) {
+      throw new RuleException(UserErrorMessages.ADMIN_GRANT_FORBIDDEN);
+    }
     const hashedPassword = await bcrypt.hash(dto.password, 10);
     const user = await this.userRepo.create({
       email: dto.email,
@@ -33,10 +38,21 @@ export class CreateUserService {
       commonUser: dto.commonUser,
     });
 
-    if (user.role === UserRole.LEADER) {
-      await this.createLeaderService.createForUser(user.id);
-    } else if (user.role === UserRole.MEMBER) {
-      await this.createMemberService.createForUser(user.id);
+    try {
+      if (user.role === UserRole.LEADER) {
+        await this.createLeaderService.createForUser(user.id);
+      } else if (user.role === UserRole.MEMBER) {
+        await this.createMemberService.createForUser(user.id);
+      }
+    } catch (error) {
+      // Sem perfil o usuário ficaria com papel e sem a linha que o papel exige: desfaz a criação.
+      await this.userRepo.delete(user.id).catch((rollbackError: unknown) => {
+        this.logger.error(
+          `Falha ao desfazer o usuário ${user.id} após erro no perfil`,
+          rollbackError instanceof Error ? rollbackError.stack : undefined,
+        );
+      });
+      throw error;
     }
 
     this.logger.log(UserLogs.CREATED(user.id));

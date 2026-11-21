@@ -40,8 +40,12 @@
         ],
         "url": {
           "raw": "{{base_url}}/users?page=1&limit=12&sort=updatedAt&order=DESC",
-          "host": ["{{base_url}}"],
-          "path": ["users"],
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users"
+          ],
           "query": [
             {
               "key": "page",
@@ -95,8 +99,12 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/users",
-              "host": ["{{base_url}}"],
-              "path": ["users"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ]
             }
           },
           "status": "OK",
@@ -125,8 +133,13 @@
         ],
         "url": {
           "raw": "{{base_url}}/users/{{user_id}}",
-          "host": ["{{base_url}}"],
-          "path": ["users", "{{user_id}}"]
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users",
+            "{{user_id}}"
+          ]
         },
         "description": "Busca um usuário específico pelo ID"
       },
@@ -138,8 +151,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/users/uuid-user",
-              "host": ["{{base_url}}"],
-              "path": ["users", "uuid-user"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "uuid-user"
+              ]
             }
           },
           "status": "OK",
@@ -161,8 +179,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/users/invalid-id",
-              "host": ["{{base_url}}"],
-              "path": ["users", "invalid-id"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "invalid-id"
+              ]
             }
           },
           "status": "Not Found",
@@ -200,8 +223,12 @@
         },
         "url": {
           "raw": "{{base_url}}/users",
-          "host": ["{{base_url}}"],
-          "path": ["users"]
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users"
+          ]
         },
         "description": "Cria um novo usuário. Se role for 'member' ou 'leader', cria automaticamente o profile correspondente."
       },
@@ -227,8 +254,12 @@
             },
             "url": {
               "raw": "{{base_url}}/users",
-              "host": ["{{base_url}}"],
-              "path": ["users"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ]
             }
           },
           "status": "Created",
@@ -264,8 +295,12 @@
             },
             "url": {
               "raw": "{{base_url}}/users",
-              "host": ["{{base_url}}"],
-              "path": ["users"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ]
             }
           },
           "status": "Bad Request",
@@ -303,8 +338,13 @@
         },
         "url": {
           "raw": "{{base_url}}/users/{{user_id}}",
-          "host": ["{{base_url}}"],
-          "path": ["users", "{{user_id}}"]
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users",
+            "{{user_id}}"
+          ]
         },
         "description": "Atualiza um usuário existente. Suporta mudança de role com orquestração automática de profiles."
       },
@@ -330,8 +370,13 @@
             },
             "url": {
               "raw": "{{base_url}}/users/uuid-user",
-              "host": ["{{base_url}}"],
-              "path": ["users", "uuid-user"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "uuid-user"
+              ]
             }
           },
           "status": "OK",
@@ -369,8 +414,13 @@
         },
         "url": {
           "raw": "{{base_url}}/users/{{user_id}}",
-          "host": ["{{base_url}}"],
-          "path": ["users", "{{user_id}}"]
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users",
+            "{{user_id}}"
+          ]
         },
         "description": "Muda o role do usuário. Remove profile antigo e cria novo automaticamente."
       },
@@ -396,8 +446,13 @@
             },
             "url": {
               "raw": "{{base_url}}/users/uuid-user",
-              "host": ["{{base_url}}"],
-              "path": ["users", "uuid-user"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "uuid-user"
+              ]
             }
           },
           "status": "OK",
@@ -426,8 +481,13 @@
         ],
         "url": {
           "raw": "{{base_url}}/users/{{user_id}}",
-          "host": ["{{base_url}}"],
-          "path": ["users", "{{user_id}}"]
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "users",
+            "{{user_id}}"
+          ]
         },
         "description": "Remove um usuário e seus profiles associados automaticamente."
       },
@@ -439,8 +499,13 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/users/uuid-user",
-              "host": ["{{base_url}}"],
-              "path": ["users", "uuid-user"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "uuid-user"
+              ]
             }
           },
           "status": "OK",
@@ -467,8 +532,12 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/users?role=member",
-              "host": ["{{base_url}}"],
-              "path": ["users"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ],
               "query": [
                 {
                   "key": "role",
@@ -485,8 +554,12 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/users?role=leader",
-              "host": ["{{base_url}}"],
-              "path": ["users"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ],
               "query": [
                 {
                   "key": "role",
@@ -503,8 +576,12 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/users?active=true",
-              "host": ["{{base_url}}"],
-              "path": ["users"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ],
               "query": [
                 {
                   "key": "active",
@@ -521,8 +598,12 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/users?completed=true",
-              "host": ["{{base_url}}"],
-              "path": ["users"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ],
               "query": [
                 {
                   "key": "completed",
@@ -539,8 +620,12 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/users?q=João",
-              "host": ["{{base_url}}"],
-              "path": ["users"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ],
               "query": [
                 {
                   "key": "q",
@@ -576,8 +661,12 @@
             },
             "url": {
               "raw": "{{base_url}}/users",
-              "host": ["{{base_url}}"],
-              "path": ["users"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ]
             },
             "description": "Cria usuário member e automaticamente cria Member Profile"
           },
@@ -603,8 +692,12 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/users",
-                  "host": ["{{base_url}}"],
-                  "path": ["users"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
                 }
               },
               "status": "Created",
@@ -642,8 +735,12 @@
             },
             "url": {
               "raw": "{{base_url}}/users",
-              "host": ["{{base_url}}"],
-              "path": ["users"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ]
             },
             "description": "Cria usuário leader e automaticamente cria Leader Profile"
           },
@@ -669,8 +766,12 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/users",
-                  "host": ["{{base_url}}"],
-                  "path": ["users"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users"
+                  ]
                 }
               },
               "status": "Created",
@@ -708,8 +809,13 @@
             },
             "url": {
               "raw": "{{base_url}}/users/{{user_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["users", "{{user_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}"
+              ]
             },
             "description": "Muda role de member para leader. Remove Member Profile e cria Leader Profile automaticamente."
           },
@@ -735,8 +841,13 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/users/uuid-user",
-                  "host": ["{{base_url}}"],
-                  "path": ["users", "uuid-user"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users",
+                    "uuid-user"
+                  ]
                 }
               },
               "status": "OK",
@@ -774,8 +885,13 @@
             },
             "url": {
               "raw": "{{base_url}}/users/{{user_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["users", "{{user_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}"
+              ]
             },
             "description": "Muda role de leader para member. Remove Leader Profile e cria Member Profile automaticamente."
           },
@@ -801,8 +917,13 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/users/uuid-user",
-                  "host": ["{{base_url}}"],
-                  "path": ["users", "uuid-user"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users",
+                    "uuid-user"
+                  ]
                 }
               },
               "status": "OK",
@@ -840,8 +961,13 @@
             },
             "url": {
               "raw": "{{base_url}}/users/{{user_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["users", "{{user_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}"
+              ]
             },
             "description": "Desativa usuário e remove automaticamente o Member/Leader Profile.\n\n⚠️ IMPORTANTE: Usuário desativado NÃO aparece nas listagens de Member/Leader Profiles!"
           },
@@ -867,8 +993,13 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/users/uuid-user",
-                  "host": ["{{base_url}}"],
-                  "path": ["users", "uuid-user"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users",
+                    "uuid-user"
+                  ]
                 }
               },
               "status": "OK",
@@ -906,8 +1037,13 @@
             },
             "url": {
               "raw": "{{base_url}}/users/{{user_id}}",
-              "host": ["{{base_url}}"],
-              "path": ["users", "{{user_id}}"]
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}"
+              ]
             },
             "description": "Ativa usuário e recria automaticamente o Member/Leader Profile baseado no role.\n\n⚠️ IMPORTANTE: Usuários com active=false NÃO aparecem nas listagens de Member/Leader Profiles!"
           },
@@ -933,8 +1069,13 @@
                 },
                 "url": {
                   "raw": "{{base_url}}/users/uuid-user",
-                  "host": ["{{base_url}}"],
-                  "path": ["users", "uuid-user"]
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users",
+                    "uuid-user"
+                  ]
                 }
               },
               "status": "OK",
@@ -958,8 +1099,12 @@
             "header": [],
             "url": {
               "raw": "{{base_url}}/users?active=false",
-              "host": ["{{base_url}}"],
-              "path": ["users"],
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users"
+              ],
               "query": [
                 {
                   "key": "active",
@@ -977,8 +1122,12 @@
                 "header": [],
                 "url": {
                   "raw": "{{base_url}}/users?active=false",
-                  "host": ["{{base_url}}"],
-                  "path": ["users"],
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "users"
+                  ],
                   "query": [
                     {
                       "key": "active",
@@ -1000,6 +1149,392 @@
               "body": "{\n  \"items\": [\n    {\n      \"id\": \"uuid-user\",\n      \"name\": \"Usuário Desativado\",\n      \"email\": \"desativado@example.com\",\n      \"phone\": \"+5511999999999\",\n      \"role\": \"member\",\n      \"active\": false,\n      \"completed\": true,\n      \"commonUser\": true,\n      \"createdAt\": \"2025-09-27T21:00:00.000Z\",\n      \"updatedAt\": \"2025-09-27T21:55:00.000Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"limit\": 12,\n    \"total\": 1,\n    \"totalPages\": 1,\n    \"sort\": \"updatedAt\",\n    \"order\": \"DESC\"\n  }\n}"
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Plano 07 - Perfil e perfis",
+      "item": [
+        {
+          "name": "Perfil - Meu usuário",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile"
+              ]
+            },
+            "description": "Qualquer sessão. Devolve o próprio usuário (sem senha nem refresh token)."
+          },
+          "response": []
+        },
+        {
+          "name": "Perfil - Atualizar meus dados",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile"
+              ]
+            },
+            "description": "Só name/email/phone. id/userId no corpo => 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nome Novo\",\n  \"phone\": \"11999990000\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Perfil - Trocar senha",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/profile/password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile",
+                "password"
+              ]
+            },
+            "description": "Senha igual à atual => 400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"(obrigatória se commonUser)\",\n  \"newPassword\": \"Nova@12345\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Perfil - Trocar foto (link)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/profile/image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profile",
+                "image"
+              ]
+            },
+            "description": "Para arquivo use multipart: campo imageData (JSON) + file.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Link\",\n  \"url\": \"https://example.com/foto.png\",\n  \"uploadType\": \"link\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Perfil completo - Criar/atualizar o meu",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/profiles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profiles"
+              ]
+            },
+            "description": "Upsert atômico do PRÓPRIO perfil. Flag user_management ou member_area.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personalData\": {\n    \"birthDate\": \"2001-05-10\",\n    \"gender\": \"F\",\n    \"gaLeaderName\": \"Líder GA\"\n  },\n  \"preferences\": {\n    \"favoriteColor\": \"azul\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Perfil completo - Ler o meu",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profiles/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profiles",
+                "me"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Perfil completo - Atualizar o meu",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/profiles/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profiles",
+                "me"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personalData\": {\n    \"gender\": \"M\"\n  },\n  \"preferences\": {\n    \"favoriteFood\": \"pizza\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Perfil completo - Listar (admin/líder)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profiles?page=1&limit=12&sortBy=name&order=ASC",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profiles"
+              ]
+            },
+            "description": "Líder só enxerga a própria equipe."
+          },
+          "response": []
+        },
+        {
+          "name": "Perfil completo - Ler de outro (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profiles/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profiles",
+                "{{user_id}}"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Perfil completo - Atualizar de outro (admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/profiles/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profiles",
+                "{{user_id}}"
+              ]
+            },
+            "description": "",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"personalData\": {\n    \"gender\": \"F\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Perfil completo - Apagar dados de perfil (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/profiles/{{user_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "profiles",
+                "{{user_id}}"
+              ]
+            },
+            "description": "Apaga dados pessoais e preferências; o usuário continua. Sem chamador no front (decisão pendente)."
+          },
+          "response": []
+        },
+        {
+          "name": "Usuários - Lista simples (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/simple",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "simple"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Usuários - Lista para seleção (admin/líder)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/simple-for-select",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "simple-for-select"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Usuários - Perfil de um usuário (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}/profile",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}",
+                "profile"
+              ]
+            },
+            "description": ""
+          },
+          "response": []
+        },
+        {
+          "name": "Usuários - Trocar foto de um usuário (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/users/{{user_id}}/image",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "users",
+                "{{user_id}}",
+                "image"
+              ]
+            },
+            "description": "Sem chamador no front (decisão pendente).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Link\",\n  \"url\": \"https://example.com/foto.png\",\n  \"uploadType\": \"link\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
         }
       ]
     }

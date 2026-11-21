@@ -3,7 +3,7 @@ import { MediaCleanupService } from "./media-cleanup.service";
 import { MediaReconciliationService } from "./media-reconciliation.service";
 
 describe("MediaCleanupService", () => {
-  it("remove da fila quando apaga; incrementa e marca failedAt ao estourar", async () => {
+  it("[media-upload.cleanup.job#reprocessa-e-marca-failed] remove da fila quando apaga; incrementa e marca failedAt ao estourar", async () => {
     const ok = { storageKey: "k1", attempts: 0 };
     const bad = {
       storageKey: "k2",
@@ -59,7 +59,7 @@ describe("MediaReconciliationService", () => {
     };
   }
 
-  it("dry-run reporta sem apagar", async () => {
+  it("[media-upload.reconcile.job#dry-run] dry-run reporta sem apagar", async () => {
     const { svc, s3 } = setup();
     const r = await svc.reconcile({ dryRun: true, now });
     expect(r.orphanKeys).toEqual(["local/E/1/orphan-old.png"]);
@@ -68,7 +68,7 @@ describe("MediaReconciliationService", () => {
     expect(s3.deleteKey).not.toHaveBeenCalled();
   });
 
-  it("execução apaga só órfão antigo, nunca a referência quebrada nem o recente", async () => {
+  it("[media-upload.reconcile.job#execucao-so-orfao-antigo] execução apaga só órfão antigo, nunca a referência quebrada nem o recente", async () => {
     const { svc, s3 } = setup();
     const r = await svc.reconcile({ dryRun: false, now });
     expect(r.removedKeys).toEqual(["local/E/1/orphan-old.png"]);

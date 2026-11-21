@@ -1,6 +1,11 @@
 import { FeatureFlagResponseDto } from "./dto/feature-flag-response.dto";
 import { FeatureFlagEntity } from "./entities/feature-flag.entity";
-import { audienceOfRoles, publicMetadataOf, targetRolesOf } from "./utils";
+import {
+  audienceOfRoles,
+  isProtectedFlag,
+  publicMetadataOf,
+  targetRolesOf,
+} from "./utils";
 
 function toIsoString(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : String(value);
@@ -17,6 +22,8 @@ export function toFeatureFlagResponse(
     name: flag.name,
     description: flag.description ?? null,
     enabled: flag.enabled,
+    protected: isProtectedFlag(flag),
+    version: flag.version ?? 1,
     targetRoles,
     audience: audienceOfRoles(targetRoles),
     metadata: publicMetadataOf(flag),

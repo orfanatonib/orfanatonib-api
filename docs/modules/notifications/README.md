@@ -59,7 +59,7 @@ src/communication/notification/
 
 ## ✉️ Os templates
 
-Onze, todos com dados tipados. A chave e os dados andam juntos: passar o
+Dezesseis, todos com dados tipados. A chave e os dados andam juntos: passar o
 payload de um template em outro **não compila**.
 
 ```ts
@@ -83,6 +83,9 @@ await this.dispatcher.dispatch(
 | `team-assignment-changed` | membro entra ou sai de uma equipe |
 | `pagela-reminder` | pagelas pendentes após a visita |
 | `visit-report-reminder` | visita sem relatório |
+| `image-shared-notification` | foto nova no feed de abrigos (coordenação revisa) |
+| `image-rejected-notification` | publicação reprovada (autor) |
+| `feed-comment-pending` / `feed-comment-approved` / `feed-comment-rejected` | moderação de comentários do feed |
 
 ### Escrever um template novo
 
@@ -122,8 +125,15 @@ Só admin, e nada é enviado.
 
 | Flag | Efeito |
 |------|--------|
-| `email-delivery` | chave-mestra: desligada, **nenhum** e-mail sai |
-| `email-<chave do template>` | desliga um tipo (ex.: `email-pagela-reminder`) |
+| `email_delivery` | chave-mestra: desligada, **nenhum** e-mail sai |
+| `email_<tipo>` | desliga um tipo (ex.: `email_pagela_reminder`, `email_image_shared_notification`) |
+
+Regra: **todo template nasce com a própria flag `email_*`** (`emailFeatureFlagKey`);
+o teste `email-flag-catalog.spec.ts` falha se um `EmailTemplateKey` ficar sem flag.
+As flags são internas (prefixo `email_`): não aparecem em `GET /feature-flags/map`.
+As chaves legadas `email-*` ainda existem no banco (rollout em dois passos do
+plano 08) e seguem escondidas do mapa público; a remoção do prefixo `email-` em
+`INTERNAL_FEATURE_FLAG_PREFIXES` só pode ocorrer **depois** de o plano 08 apagar essas linhas.
 
 **Flag ausente = ligada.** `isEnabled` devolve `false` para flag inexistente, o
 que desligaria a recuperação de senha num banco sem as linhas; por isso o
@@ -132,10 +142,9 @@ módulo usa `isEnabledOrDefault(chave, true)`.
 O e-mail barrado por flag **fica registrado** no outbox como `skipped`:
 desligar o envio não apaga o rastro de que a aplicação quis avisar alguém.
 
-No ambiente local o seed cria `email-delivery` **desligada** — sem isso, rodar
+No ambiente local `email_delivery` fica **desligada** — sem isso, rodar
 os testes dispararia e-mail de verdade, porque `env/local.env` costuma ter
-credencial real do Gmail. O serviço tem cache de 60 s: mudar a flag leva até um
-minuto para valer.
+credencial real do Gmail. Flags internas têm cache de 5 s: mudar a flag leva até 5 s para valer.
 
 ---
 
@@ -190,10 +199,18 @@ configuração. Antes o provider lia a credencial no construtor: um ambiente sem
 
 ```bash
 npx jest src/communication/notification src/shelter/reminders
-npx playwright test --config=playwright.live.config.ts e2e/live/notifications.api.spec.ts
+npx playwright test --config=playwright.live.config.ts e2e/live/notifications/email-outbox.api.spec.ts e2e/live/notifications/email-previews.api.spec.ts   # no repo do app
 ```
 
 ---
+
+### E2E (repositório do app, `e2e/live/notifications/`)
+
+- `email-previews.api.spec.ts`: autorização das 3 rotas de prévia (4 perfis + 404).
+- `email-outbox.api.spec.ts`: `SELECT` em `email_outbox` — flag do tipo desligada ou mestra desligada ⇒ linhas `skipped`; ambas ligadas ⇒ linhas `pending/sent/failed` por admin ativo com template e assunto corretos; SMTP indisponível não desfaz a origem (a entrega é do worker); payload inválido ⇒ 400 e outbox inalterado. O sink é a tabela: **SMTP nunca é real** e a rodada começa com todas as `email_*` desligadas (projeto `setup`).
+- Idempotência por `dedupeKey`: sem rota que a exercite (só o agendador de lembretes); coberta em `email-outbox.service.spec.ts`.
+- O outbox é trilha de auditoria: não há rota para apagar linhas, então as do E2E ficam (identificáveis pelo `RUN_TAG` no corpo).
+- Sem tela administrativa de e-mail/prévia: não há E2E de UI nem mobile 375 px.
 
 ## 📌 Débitos conhecidos
 

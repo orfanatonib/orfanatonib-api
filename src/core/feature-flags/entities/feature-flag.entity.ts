@@ -4,6 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  VersionColumn,
 } from "typeorm";
 
 @Entity("feature_flags")
@@ -22,6 +23,14 @@ export class FeatureFlagEntity {
 
   @Column({ default: false })
   enabled: boolean;
+
+  /** Flag de fábrica: não pode ser renomeada nem removida (desligue-a). */
+  @Column({ name: "protected", type: "boolean", default: false })
+  isProtected: boolean;
+
+  /** Controle otimista: incrementado a cada escrita. */
+  @VersionColumn({ default: 1 })
+  version: number;
 
   @Column({ type: "json", nullable: true })
   metadata: Record<string, unknown> | null;
