@@ -43,6 +43,19 @@ jobs:
       - name: 🏗 Build project
         run: npm run build
 
+      # PENDENTE (decisao do solicitante, plano 01 regra 16): migrations NAO rodam na CI.
+      # Passo preparado e DESATIVADO. Para ativar: remover o comentario, confirmar o
+      # destino do banco e a politica de rollback (migration:revert) com o solicitante.
+      # - name: Run database migrations
+      #   env:
+      #     ENVIRONMENT: ${{ env.ENVIRONMENT }}
+      #     DB_HOST: ${{ secrets.DB_HOST }}
+      #     DB_PORT: ${{ secrets.DB_PORT }}
+      #     DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      #     DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      #     DB_NAME: ${{ secrets.STAGING_DB_NAME }}
+      #   run: npx typeorm-ts-node-commonjs migration:run -d database/data-source.ts
+
       - name: 🔐 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -76,20 +89,18 @@ jobs:
       - name: 🐳 Build Docker image
         env:
           ECR_REPOSITORY: ${{ steps.ecr-info.outputs.repository_uri }}
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "🔨 Building image: ${ECR_REPOSITORY}:${IMAGE_TAG}"
           docker build -f Dockerfile -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
-          docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REPOSITORY}:${{ github.sha }}
 
       - name: 📤 Push image to ECR
         env:
           ECR_REPOSITORY: ${{ steps.ecr-info.outputs.repository_uri }}
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "📤 Pushing image: ${ECR_REPOSITORY}:${IMAGE_TAG}"
           docker push ${ECR_REPOSITORY}:${IMAGE_TAG}
-          docker push ${ECR_REPOSITORY}:${{ github.sha }}
           echo "✅ Images pushed successfully!"
 
       - name: 🔍 Get EC2 instance info
@@ -143,7 +154,7 @@ jobs:
         env:
           INSTANCE_ID: ${{ steps.ec2-info.outputs.instance_id }}
           ECR_REPOSITORY: ${{ steps.ecr-info.outputs.repository_uri }}
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "🚀 Deploying to EC2 instance: $INSTANCE_ID"
 
@@ -245,7 +256,7 @@ jobs:
           echo ""
           echo "📋 Summary:"
           echo "   Environment: staging"
-          echo "   Image: ${{ steps.ecr-info.outputs.repository_uri }}:latest"
+          echo "   Image: ${{ steps.ecr-info.outputs.repository_uri }}:${{ github.sha }}"
           echo "   Commit: ${{ github.sha }}"
           echo ""
           echo "🌐 API URL: https://staging-api.orfanatonib.com"

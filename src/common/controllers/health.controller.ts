@@ -31,7 +31,9 @@ export class HealthController {
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
       aiProviderMode:
-        this.config.get<string>("AI_PROVIDER_MODE") === "fake" ? "fake" : "live",
+        this.config.get<string>("AI_PROVIDER_MODE") === "fake"
+          ? "fake"
+          : "live",
     };
   }
 

@@ -41,6 +41,19 @@ jobs:
       - name: Build project
         run: npm run build
 
+      # PENDENTE (decisao do solicitante, plano 01 regra 16): migrations NAO rodam na CI.
+      # Passo preparado e DESATIVADO. Para ativar: remover o comentario, confirmar o
+      # destino do banco e a politica de rollback (migration:revert) com o solicitante.
+      # - name: Run database migrations
+      #   env:
+      #     ENVIRONMENT: production
+      #     DB_HOST: ${{ secrets.DB_HOST }}
+      #     DB_PORT: ${{ secrets.DB_PORT }}
+      #     DB_USERNAME: ${{ secrets.DB_USERNAME }}
+      #     DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      #     DB_NAME: ${{ secrets.DB_NAME }}
+      #   run: npx typeorm-ts-node-commonjs migration:run -d database/data-source.ts
+
       # 🔐 Credenciais de DEPLOY (Conta onde está o ECS/ECR)
       - name: Configure AWS credentials (Deploy Account)
         uses: aws-actions/configure-aws-credentials@v4
@@ -59,9 +72,8 @@ jobs:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -f Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker build -f Dockerfile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
       - name: Download task definition

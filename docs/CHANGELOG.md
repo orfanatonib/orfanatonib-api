@@ -40,6 +40,8 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 - **ADD**: teste de arquitetura da cascata de mídia (todo `delete-*.service`), spec do `AwsS3Service` e diagrama de fluxo da mídia.
 - **CHANGE**: imagem Docker com `npm ci`, `USER node`, `HEALTHCHECK` e `.dockerignore`; `DockerFile` virou `Dockerfile` (workflows e script de deploy local atualizados).
 - **DOCS**: saúde (`/health`, `/health/ready`), CORS, rate limit e Docker em `docs/modules/bootstrap-config`.
+- **CHANGE**: CI da API (plano 01, T4.2): novo `npm run lint:check` (ESLint sem `--fix`, escopado à unidade) é o gate dos `build-staging/prod.yml`; `lint:fix` separado. Deploys de staging e prod publicam só a tag imutável `${{ github.sha }}` (sem `latest`). Passo de migrations preparado e **desativado** (comentado) nos workflows de deploy, à espera da decisão do solicitante.
+- **CHANGE (app)**: `App.tsx` extraído para `src/routes/` com `React.lazy` + esqueleto por rota (plano 01, T5.1); E2E de boot e rotas lazy em `e2e/live/bootstrap-config/bootstrap-config.ui.spec.ts` (inclui 375x812).
 - **ADD**: observabilidade e auditoria (plano 12): `requestId` do servidor em
   `X-Request-Id`, logger estruturado com redação, auditoria automática das
   mutações e dos jobs agendados (só `actorId`, sem nome/corpo/query/IP), storage

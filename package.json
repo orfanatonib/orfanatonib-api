@@ -12,6 +12,8 @@
     "start:staging": "dotenv -e env/staging.env -- nest start --watch",
     "start:prod": "dotenv -e env/prod.env -- nest start --watch",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint:check": "eslint \"src/app*.ts\" \"src/main.ts\" \"src/config/**/*.ts\" \"src/common/controllers/**/*.ts\"",
     "diagrams:generate": "node scripts/generate-diagrams.js",
     "dynamodb:local:ensure-table": "node --require ts-node/register/transpile-only --require tsconfig-paths/register scripts/dynamodb-local/ensure-table.ts",
     "logs:doctor": "node --require ts-node/register/transpile-only --require tsconfig-paths/register scripts/logs-doctor/logs-doctor.ts",
