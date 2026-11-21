@@ -182,6 +182,12 @@ npx playwright test --config=playwright.live.config.ts e2e/live/feature-flags.ui
 - Colunas novas em `feature_flags`: `protected` (flag de fábrica; o boot preenche nas linhas antigas) e `version` (`@VersionColumn`, default 1). A resposta traz `protected` e `version`. Renomear/remover flag protegida = **409** `FEATURE_FLAG_PROTECTED` (antes 400). A coluna `environment` foi removida do banco (migration `AddFeatureFlagProtectedVersion`, gerada por `migration:generate`; só toca `feature_flags`).
 - `PATCH` com `name`/`enabled`/`key` nulos devolve 400 (antes 500 por violar NOT NULL).
 
+## Cobertura total e leituras compartilhadas (2026-11-21)
+
+Todo endpoint de funcionalidade tem `@FeatureFlag`; o teste `src/core/feature-flags/feature-flags.architecture.spec.ts` (lista `CORE_UNFLAGGED`, com o motivo de cada isenção) varre os controllers e falha se um endpoint novo ficar sem flag. Ficam de fora, com o motivo no próprio teste: raiz e `health`, `auth`, o próprio `feature-flags`, `email-previews`, `media-storage`, `routes` (o app filtra pela flag do tipo de página), e a conta do usuário (`profile`, `profiles/me`).
+
+As leituras de apoio (listas de abrigos, equipes, líderes, membros e usuários para seletores) usam `SHELTER_DIRECTORY_FLAGS` (`shared-read-flags.ts`, `anyOf`): respondem enquanto ao menos um dos recursos que as consomem estiver ligado.
+
 ## Cache entre instâncias
 
 - TTL: 60 s para flags de interface; **5 s** para as operacionais (`email_*`, chaves-mestras de envio).

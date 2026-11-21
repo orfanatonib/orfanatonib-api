@@ -46,6 +46,7 @@ import {
 import { IMAGE_UPLOAD_OPTIONS } from "src/shared/media/storage/upload-limits.constants";
 import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { SHELTER_DIRECTORY_FLAGS } from "src/core/feature-flags/shared-read-flags";
 
 @Controller("shelters")
 export class SheltersController {
@@ -57,6 +58,8 @@ export class SheltersController {
   ) {}
 
   @UseGuards(JwtAuthGuard)
+  @FeatureFlag(SHELTER_DIRECTORY_FLAGS)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   findAllPaginated(
     @Query() query: QuerySheltersDto,
@@ -69,6 +72,8 @@ export class SheltersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @FeatureFlag(SHELTER_DIRECTORY_FLAGS)
+  @UseGuards(FeatureFlagGuard)
   @Get("simple")
   findAllSimple(
     @Req() request: AuthenticatedRequest,
@@ -77,6 +82,8 @@ export class SheltersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @FeatureFlag(SHELTER_DIRECTORY_FLAGS)
+  @UseGuards(FeatureFlagGuard)
   @Get("list")
   list(
     @Req() request: AuthenticatedRequest,
@@ -92,6 +99,8 @@ export class SheltersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @FeatureFlag(SHELTER_DIRECTORY_FLAGS)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   findOne(
     @Param("id", new ParseUUIDPipe()) id: string,
@@ -101,6 +110,8 @@ export class SheltersController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @FeatureFlag(SHELTER_DIRECTORY_FLAGS)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id/teams-quantity")
   getTeamsQuantity(
     @Param("id", new ParseUUIDPipe()) id: string,

@@ -4,6 +4,13 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-21 - FLAGS EM TODOS OS ENDPOINTS
+
+- **ADD**: `SHELTER_DIRECTORY_FLAGS` (`anyOf`) nas leituras de apoio de `shelters` (5), `teams` (4), `leader-profiles` (`/simple`, `/my-shelters`), `member-profiles` (`/simple`) e `users/simple-for-select`, que eram abertas a qualquer usuário autenticado mesmo com os recursos desligados.
+- **CHANGE**: as 13 leituras acima saíram de `CORE_UNFLAGGED` (`feature-flags.architecture.spec.ts`), que segue derrubando a suíte se um endpoint novo ficar sem flag.
+- **ADD**: `GET /contact/pending-count`, `/site-feedbacks/pending-count`, `/comments/pending-count` e `/ideas-sections/pending-count` (selos do menu do admin; atrás das flags de moderação/gestão).
+- **CHANGE**: flag `integration` agora se chama "Integração Feira de Ministério" (a chave não muda; migration de dados `RenameIntegrationFeatureFlag`).
+
 ## [Unreleased] - 2026-11-21 - DECISÕES DO SOLICITANTE (planos 01, 06, 07, 08, 31)
 
 - **REMOVE (breaking)**: `PATCH /users/:id/image` e `DELETE /profiles/:id` (sem chamador no front). Saem handlers, `DeleteProfileService`, `ProfileWriteRepository.deleteSections`, `deleteByUserId` dos repositórios de perfil, `UpdateUserImageDto`, specs, E2E, Postman e `Users_Image_Endpoint_Documentation.md`. Matriz `user-profile` em 177/177.

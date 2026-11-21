@@ -82,31 +82,6 @@ const CORE_UNFLAGGED: Readonly<Record<string, string>> = {
   "infrastructure/route/route.controller.ts::findOne":
     "rotas dinâmicas (flag por tipo no front)",
   // Consultas transversais usadas por vários fluxos (seleção de abrigo, equipe, líder, membro)
-  "core/user/user.controller.ts::findAllSimpleForSelect":
-    "lista para seleção (admin/líder)",
-  "shelter/leader-profile/leader-profiles.controller.ts::listSimple":
-    "lista para seleção",
-  "shelter/leader-profile/leader-profiles.controller.ts::findMyShelters":
-    "abrigos do líder (alimenta a Área do Membro e o painel)",
-  "shelter/member-profile/member-profiles.controller.ts::listSimple":
-    "lista para seleção",
-  "shelter/shelter/shelters.controller.ts::findAllPaginated":
-    "leitura transversal de abrigos (escopo no serviço)",
-  "shelter/shelter/shelters.controller.ts::findAllSimple":
-    "leitura transversal de abrigos (escopo no serviço)",
-  "shelter/shelter/shelters.controller.ts::list":
-    "leitura transversal de abrigos (escopo no serviço)",
-  "shelter/shelter/shelters.controller.ts::findOne":
-    "leitura transversal de abrigos (escopo no serviço)",
-  "shelter/shelter/shelters.controller.ts::getTeamsQuantity":
-    "leitura transversal de abrigos (escopo no serviço)",
-  "shelter/team/teams.controller.ts::findAll":
-    "leitura transversal de equipes (escopo no serviço)",
-  "shelter/team/teams.controller.ts::findMyTeams": "equipes do ator",
-  "shelter/team/teams.controller.ts::findByShelter":
-    "leitura transversal de equipes (escopo no serviço)",
-  "shelter/team/teams.controller.ts::findOne":
-    "leitura transversal de equipes (escopo no serviço)",
 };
 
 const controllerFiles = (dir: string): string[] =>

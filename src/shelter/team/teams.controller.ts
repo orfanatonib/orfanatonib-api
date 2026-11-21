@@ -27,6 +27,7 @@ import { toShelterAccessContext } from "src/shelter/shelter/utils/shelter-access
 import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
+import { SHELTER_DIRECTORY_FLAGS } from "src/core/feature-flags/shared-read-flags";
 
 @Controller("teams")
 @UseGuards(JwtAuthGuard)
@@ -58,6 +59,8 @@ export class TeamsController {
     return result;
   }
 
+  @FeatureFlag(SHELTER_DIRECTORY_FLAGS)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(AdminOrLeaderRoleGuard)
   async findAll(@Req() req: AuthenticatedRequest): Promise<TeamResponseDto[]> {
@@ -65,6 +68,8 @@ export class TeamsController {
     return this.getTeamsService.findAllAs(toShelterAccessContext(req));
   }
 
+  @FeatureFlag(SHELTER_DIRECTORY_FLAGS)
+  @UseGuards(FeatureFlagGuard)
   @Get("my-teams")
   async findMyTeams(@Req() req: Request): Promise<TeamResponseDto[]> {
     const userId = await this.authContext.getUserId(req);
@@ -79,6 +84,8 @@ export class TeamsController {
     return this.getTeamsService.findByUserContext(userId, role);
   }
 
+  @FeatureFlag(SHELTER_DIRECTORY_FLAGS)
+  @UseGuards(FeatureFlagGuard)
   @Get("by-shelter/:shelterId")
   @UseGuards(AdminOrLeaderRoleGuard)
   async findByShelter(
@@ -92,6 +99,8 @@ export class TeamsController {
     );
   }
 
+  @FeatureFlag(SHELTER_DIRECTORY_FLAGS)
+  @UseGuards(FeatureFlagGuard)
   @Get(":id")
   @UseGuards(AdminOrLeaderRoleGuard)
   async findOne(

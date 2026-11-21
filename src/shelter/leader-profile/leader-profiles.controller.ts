@@ -26,6 +26,7 @@ import { ShelterWithLeaderStatusDto } from "src/shelter/shelter/dto/shelter.resp
 import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
+import { SHELTER_DIRECTORY_FLAGS } from "src/core/feature-flags/shared-read-flags";
 
 @Controller("leader-profiles")
 @UseGuards(JwtAuthGuard)
@@ -47,11 +48,15 @@ export class LeaderProfilesController {
     return this.getLeaderProfilesService.findPage(req, query);
   }
 
+  @FeatureFlag(SHELTER_DIRECTORY_FLAGS)
+  @UseGuards(FeatureFlagGuard)
   @Get("simple")
   listSimple(@Req() req: Request): Promise<LeaderSimpleListDto[]> {
     return this.getLeaderProfilesService.list(req);
   }
 
+  @FeatureFlag(SHELTER_DIRECTORY_FLAGS)
+  @UseGuards(FeatureFlagGuard)
   @Get("my-shelters")
   findMyShelters(@Req() req: Request): Promise<ShelterWithLeaderStatusDto[]> {
     return this.getLeaderProfilesService.findMyShelters(req);

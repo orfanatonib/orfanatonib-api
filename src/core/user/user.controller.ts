@@ -28,6 +28,7 @@ import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.deco
 import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
 import { SafeUser, toSafeUser } from "./mappers/safe-user.mapper";
+import { SHELTER_DIRECTORY_FLAGS } from "src/core/feature-flags/shared-read-flags";
 
 @Controller("users")
 @UseGuards(JwtAuthGuard)
@@ -68,6 +69,8 @@ export class UserController {
     return this.getUsersService.findAllSimple();
   }
 
+  @FeatureFlag(SHELTER_DIRECTORY_FLAGS)
+  @UseGuards(FeatureFlagGuard)
   @Get("simple-for-select")
   @UseGuards(AdminOrLeaderRoleGuard)
   findAllSimpleForSelect() {
