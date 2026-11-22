@@ -39,6 +39,20 @@ export class VisitMaterialsPageRepository {
     return this.dataSource.transaction(work);
   }
 
+  /**
+   * Trava a página até o fim da transação: edições simultâneas da mesma página se enfileiram, e a
+   * segunda enxerga a mídia que a primeira acabou de gravar (sem isso as duas trocam o mesmo arquivo e
+   * um objeto novo vira órfão no bucket). Devolve `false` se a página não existe mais.
+   */
+  async lockPage(manager: EntityManager, id: string): Promise<boolean> {
+    const locked = await manager
+      .createQueryBuilder(VisitMaterialsPageEntity, PAGE_ALIAS)
+      .setLock("pessimistic_write")
+      .where(`${PAGE_ALIAS}.id = :id`, { id })
+      .getOne();
+    return locked !== null;
+  }
+
   private baseQueryBuilder(): SelectQueryBuilder<VisitMaterialsPageEntity> {
     return this.repository
       .createQueryBuilder(PAGE_ALIAS)

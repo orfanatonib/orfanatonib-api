@@ -27,7 +27,6 @@ const LEGACY_IMPORTERS: ReadonlySet<string> = new Set([
   "content/page/visit-material-page/services/append-visit-material-sections.service.ts",
   "content/page/visit-material-page/services/create-visit-material-page.service.ts",
   "content/page/visit-material-page/services/delete-visit-material-page.service.ts",
-  "content/page/visit-material-page/services/visit-material-media.service.ts",
   "content/page/visit-material-page/services/visit-material-sections.service.ts",
   "content/studio/export/studio-export.service.ts",
   "content/studio/services/generate-package-cover.service.ts",

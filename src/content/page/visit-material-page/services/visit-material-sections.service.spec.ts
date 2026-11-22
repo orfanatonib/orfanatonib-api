@@ -46,14 +46,13 @@ describe("VisitMaterialSectionsService", () => {
     toPolymorphicItems: jest.fn(),
     findGroupedByPage: jest.fn(),
     findAllByPage: jest.fn(),
-    removeMissing: jest.fn(),
-    add: jest.fn(),
-    upsert: jest.fn(),
+    reconcile: jest.fn(),
   };
   const processor = {
     findManyMediaItemsByTargets: jest.fn(),
     processMediaItemsPolymorphic: jest.fn(),
     deleteMediaItems: jest.fn(),
+    removeMediaItemsKeepingFiles: jest.fn(),
   };
   const s3 = { upload: jest.fn(), delete: jest.fn() };
   let service: VisitMaterialSectionsService;
@@ -166,28 +165,48 @@ describe("VisitMaterialSectionsService", () => {
         {},
       );
 
-      await service.sync("page-id", prepared, {});
+      processor.removeMediaItemsKeepingFiles.mockResolvedValue([
+        "https://bucket.test/old.pdf",
+      ]);
+      const unit = {
+        manager,
+        batch: {} as never,
+        obsoleteUrls: [] as string[],
+      };
 
-      // CHILD saiu: mídias e linha removidas
-      expect(processor.deleteMediaItems).toHaveBeenCalledTimes(1);
+      await service.sync("page-id", prepared, {}, unit);
+
+      // CHILD saiu: as linhas de mídia e a seção saem na transação; o arquivo só sai do bucket após o commit
+      expect(processor.removeMediaItemsKeepingFiles).toHaveBeenCalledTimes(1);
+      expect(processor.deleteMediaItems).not.toHaveBeenCalled();
+      expect(unit.obsoleteUrls).toEqual(["https://bucket.test/old.pdf"]);
       expect(repository.remove).toHaveBeenCalledWith(
         expect.objectContaining({ id: "s-child" }),
+        manager,
       );
-      // BABY continuou: atualizada e mídia nova gravada no alvo da seção
+      // BABY continuou: atualizada na transação e a mídia reconciliada no alvo da seção
       expect(repository.save).toHaveBeenCalledWith(
         expect.objectContaining({ id: "s-baby", description: "novo texto" }),
+        manager,
       );
-      expect(mediaService.add).toHaveBeenCalledWith(
-        expect.anything(),
+      expect(mediaService.reconcile).toHaveBeenCalledWith(
+        unit,
         "s-baby",
-        MediaType.DOCUMENT,
+        expect.objectContaining({ documents: [expect.anything()] }),
         {},
         MediaTargetType.VisitMaterialsSection,
       );
-      // ADULT é nova
+      // ADULT é nova: criada na transação e a mídia dela também passa pelo reconcile
       expect(repository.create).toHaveBeenCalledWith(
         expect.objectContaining({ category: VisitMaterialCategory.ADULT }),
-        undefined,
+        manager,
+      );
+      expect(mediaService.reconcile).toHaveBeenCalledWith(
+        unit,
+        "new-id",
+        expect.anything(),
+        {},
+        MediaTargetType.VisitMaterialsSection,
       );
     });
   });

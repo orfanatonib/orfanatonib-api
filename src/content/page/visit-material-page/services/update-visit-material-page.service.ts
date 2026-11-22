@@ -9,17 +9,13 @@ import {
   RouteEntity,
   RouteType,
 } from "src/infrastructure/route/route-page.entity";
-import { MediaItemDto } from "src/shared/dto/media-item-dto";
-import {
-  MediaItemEntity,
-  MediaType,
-} from "src/shared/media/media-item/media-item.entity";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { VisitMaterialsPageRepository } from "../repositories/visit-material-page.repository";
 import { UpdateVisitMaterialsPageDto } from "../dto/update-visit-material-page.dto";
 import { VisitMaterialsPageResponseDTO } from "../dto/visit-material-page-response.dto";
 import { toVisitMaterialsPageResponseDto } from "../mappers/visit-material-page.mapper";
 import { toMediaBuckets } from "../utils/visit-material-payload.util";
-import { UploadedFilesDict } from "../types";
+import { UploadedFilesDict, VisitMaterialWriteUnit } from "../types";
 import { GetVisitMaterialPageService } from "./get-visit-material-page.service";
 import { VisitMaterialMediaService } from "./visit-material-media.service";
 import { VisitMaterialSectionsService } from "./visit-material-sections.service";
@@ -40,6 +36,7 @@ export class UpdateVisitMaterialPageService {
     private readonly mediaService: VisitMaterialMediaService,
     private readonly sectionsService: VisitMaterialSectionsService,
     private readonly routeService: RouteService,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   async execute(
@@ -61,26 +58,50 @@ export class UpdateVisitMaterialPageService {
       ? this.sectionsService.prepare(dto.sections, files)
       : null;
 
+    // Ordem segura para o bucket e para o banco: arquivos novos sobem → tudo é gravado numa transação só →
+    // só depois do commit saem os arquivos antigos. Se algo falha, o banco volta e os novos são descartados.
+    const batch = this.mediaStorage.newBatch();
+    const obsoleteUrls: string[] = [];
+
     try {
-      await this.syncMedia(page.id, dto, files);
-      if (preparedSections) {
-        await this.sectionsService.sync(page.id, preparedSections, files);
-      }
-
-      const updatedRoute = await this.upsertRoute(route, dto, page.id);
-
       const updatedPage = await this.repository.runInTransaction(
         async (manager) => {
+          const unit: VisitMaterialWriteUnit = { manager, batch, obsoleteUrls };
+
+          // Enfileira edições simultâneas da mesma página (ver `lockPage`).
+          if (!(await this.repository.lockPage(manager, id))) {
+            throw new ResourceNotFoundException(
+              VISIT_MATERIAL_MESSAGES.PAGE_NOT_FOUND,
+              { id },
+            );
+          }
+
           page.title = dto.pageTitle;
           page.subtitle = dto.pageSubtitle;
           page.description = dto.pageDescription;
           page.currentWeek = dto.currentWeek;
           if (dto.testament !== undefined) page.testament = dto.testament;
-          page.route = updatedRoute;
+          // A página é gravada primeiro: um valor que o banco recusa (ex.: título longo) falha antes de
+          // qualquer mídia ou rota mudar.
+          await this.repository.save(page, manager);
 
+          await this.syncMedia(unit, page.id, dto, files);
+          if (preparedSections) {
+            await this.sectionsService.sync(
+              page.id,
+              preparedSections,
+              files,
+              unit,
+            );
+          }
+
+          page.route = await this.upsertRoute(route, dto, page.id);
           return this.repository.save(page, manager);
         },
       );
+
+      batch.commit();
+      await this.mediaStorage.deleteAfterCommit(obsoleteUrls);
 
       this.logger.log(`Visit material page updated: ${id}`);
       return toVisitMaterialsPageResponseDto(
@@ -89,6 +110,7 @@ export class UpdateVisitMaterialPageService {
         await this.sectionsService.loadForPage(updatedPage.id),
       );
     } catch (error) {
+      await batch.discard();
       // Preserva o código específico de qualquer exceção HTTP já classificada,
       // venha do módulo ou de um colaborador compartilhado.
       if (error instanceof HttpException) throw error;
@@ -97,42 +119,19 @@ export class UpdateVisitMaterialPageService {
     }
   }
 
-  /**
-   * Reconciles the four media buckets against what is stored: whatever the
-   * payload dropped is deleted, items with an id are updated and the rest are
-   * created. One pass per bucket, one routine for all of them.
-   */
-  private async syncMedia(
+  /** The four media buckets of the page, reconciled inside the edit's transaction. */
+  private syncMedia(
+    unit: VisitMaterialWriteUnit,
     pageId: string,
     dto: UpdateVisitMaterialsPageDto,
     files: UploadedFilesDict,
   ): Promise<void> {
-    const stored = await this.mediaService.findGroupedByPage(pageId);
-    const buckets = VisitMaterialMediaService.toEntries(toMediaBuckets(dto));
-
-    for (const [mediaType, incoming] of buckets) {
-      await this.mediaService.removeMissing(
-        stored.get(mediaType) ?? [],
-        incoming,
-      );
-    }
-
-    for (const [mediaType, incoming] of buckets) {
-      for (const item of incoming) {
-        await this.persistMediaItem(item, pageId, mediaType, files);
-      }
-    }
-  }
-
-  private persistMediaItem(
-    item: MediaItemDto,
-    pageId: string,
-    mediaType: MediaType,
-    files: UploadedFilesDict,
-  ): Promise<MediaItemEntity> {
-    return item.id
-      ? this.mediaService.upsert(item, pageId, mediaType, files)
-      : this.mediaService.add(item, pageId, mediaType, files);
+    return this.mediaService.reconcile(
+      unit,
+      pageId,
+      toMediaBuckets(dto),
+      files,
+    );
   }
 
   private async findRouteOrFail(pageId: string): Promise<RouteEntity> {

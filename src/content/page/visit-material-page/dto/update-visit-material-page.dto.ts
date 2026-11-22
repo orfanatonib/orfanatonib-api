@@ -1,3 +1,4 @@
+import { StrictBoolean } from "src/common/decorators/strict-boolean.decorator";
 import {
   IsBoolean,
   IsEnum,
@@ -46,6 +47,8 @@ export class UpdateVisitMaterialsPageDto extends VisitMaterialMediaInputDto {
   })
   pageDescription: string;
 
+  // Mantém o valor cru: com a conversão implícita, "talvez" viraria `true` antes do `@IsBoolean`.
+  @StrictBoolean()
   @IsBoolean({
     message: 'O campo "currentWeek" da página deve ser uma boolean.',
   })

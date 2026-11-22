@@ -3,13 +3,12 @@ import {
   ResourceNotFoundException,
   RuleException,
 } from "src/common/exceptions";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import {
   MediaItemEntity,
   MediaType,
-  PlatformType,
   UploadType,
 } from "src/shared/media/media-item/media-item.entity";
 import { VisitMaterialMediaService } from "./visit-material-media.service";
@@ -27,9 +26,17 @@ describe("VisitMaterialMediaService", () => {
     buildBaseMediaItem: jest.fn(),
     saveMediaItem: jest.fn(),
     upsertMediaItem: jest.fn(),
-    deleteMediaItems: jest.fn(),
+    removeMediaItemsKeepingFiles: jest.fn(),
   };
-  const s3 = { upload: jest.fn(), delete: jest.fn() };
+  const batch = {
+    objects: [] as Array<{ key: string; url: string }>,
+  };
+  const mediaStorage = { uploadAll: jest.fn() };
+  const unit = {
+    manager: {} as never,
+    batch: batch as never,
+    obsoleteUrls: [] as string[],
+  };
 
   let service: VisitMaterialMediaService;
 
@@ -40,7 +47,7 @@ describe("VisitMaterialMediaService", () => {
       providers: [
         VisitMaterialMediaService,
         { provide: MediaItemProcessor, useValue: mediaItemProcessor },
-        { provide: AwsS3Service, useValue: s3 },
+        { provide: MediaStorageService, useValue: mediaStorage },
       ],
     }).compile();
 
@@ -58,7 +65,21 @@ describe("VisitMaterialMediaService", () => {
       (_id: string | undefined, media: MediaItemEntity) => media,
     );
     mediaItemProcessor.findMediaItemById.mockResolvedValue(null);
-    s3.upload.mockResolvedValue("https://bucket.test/uploaded.pdf");
+    mediaItemProcessor.removeMediaItemsKeepingFiles.mockImplementation(
+      (items: MediaItemEntity[]) =>
+        Promise.resolve(
+          items.filter((i) => i.isLocalFile && i.url).map((i) => i.url),
+        ),
+    );
+    batch.objects = [];
+    unit.obsoleteUrls = [];
+    mediaStorage.uploadAll.mockImplementation(() => {
+      batch.objects.push({
+        key: "local/VisitMaterialsPage/page-id/novo.pdf",
+        url: "https://bucket.test/novo.pdf",
+      });
+      return Promise.resolve(batch);
+    });
   });
 
   describe("findGroupedByPage", () => {
@@ -184,409 +205,232 @@ describe("VisitMaterialMediaService", () => {
     });
   });
 
-  describe("removeMissing", () => {
-    it("deletes only the stored items the payload dropped", async () => {
-      const kept = buildMediaEntity({ id: "kept" });
-      const dropped = buildMediaEntity({ id: "dropped" });
+  describe("reconcile (edição transacional)", () => {
+    const buckets = (
+      over: Partial<Record<string, MediaItemEntity[] | unknown[]>> = {},
+    ) => ({
+      videos: [],
+      documents: [],
+      images: [],
+      audios: [],
+      ...over,
+    });
+    const givenStored = (items: MediaItemEntity[]) =>
+      mediaItemProcessor.findMediaItemsByTarget.mockResolvedValue(items);
 
-      await service.removeMissing(
-        [kept, dropped],
-        [buildLinkMediaDto({ id: "kept" })],
+    it("drops the rows the payload no longer sends and defers their files to after the commit", async () => {
+      const keep = buildMediaEntity({ id: "keep", mediaType: MediaType.VIDEO });
+      const gone = buildMediaEntity({
+        id: "gone",
+        mediaType: MediaType.DOCUMENT,
+        isLocalFile: true,
+        url: "https://bucket.test/gone.pdf",
+      });
+      givenStored([keep, gone]);
+      mediaItemProcessor.findMediaItemById.mockResolvedValue(keep);
+
+      await service.reconcile(
+        unit,
+        "page-id",
+        buckets({ videos: [buildLinkMediaDto({ id: "keep" })] }) as never,
+        {},
       );
 
-      expect(mediaItemProcessor.deleteMediaItems).toHaveBeenCalledWith(
-        [dropped],
-        expect.any(Function),
-      );
+      expect(
+        mediaItemProcessor.removeMediaItemsKeepingFiles,
+      ).toHaveBeenCalledWith([gone], unit.manager);
+      expect(unit.obsoleteUrls).toEqual(["https://bucket.test/gone.pdf"]);
     });
 
-    it("does not call the processor when nothing was dropped", async () => {
-      const kept = buildMediaEntity({ id: "kept" });
-
-      await service.removeMissing([kept], [buildLinkMediaDto({ id: "kept" })]);
-
-      expect(mediaItemProcessor.deleteMediaItems).not.toHaveBeenCalled();
-    });
-
-    it("deletes everything when the payload sends an empty bucket", async () => {
-      const stored = [
-        buildMediaEntity({ id: "a" }),
-        buildMediaEntity({ id: "b" }),
-      ];
-
-      await service.removeMissing(stored, []);
-
-      expect(mediaItemProcessor.deleteMediaItems).toHaveBeenCalledWith(
-        stored,
-        expect.any(Function),
-      );
-    });
-  });
-
-  describe("add", () => {
-    it.each([
-      [MediaType.VIDEO],
-      [MediaType.DOCUMENT],
-      [MediaType.IMAGE],
-      [MediaType.AUDIO],
-    ])("uploads and persists a %s the same way", async (mediaType) => {
+    it("stages a new upload in the batch and saves the row through the transaction manager", async () => {
+      givenStored([]);
       const file = buildMulterFile();
 
-      const media = await service.add(
-        buildUploadMediaDto(),
+      await service.reconcile(
+        unit,
         "page-id",
-        mediaType,
+        buckets({ documents: [buildUploadMediaDto()] }) as never,
         { "file-0": file },
       );
 
-      expect(s3.upload).toHaveBeenCalledWith(file);
-      expect(media).toMatchObject({
-        mediaType,
-        url: "https://bucket.test/uploaded.pdf",
-        // Stored in our bucket, so it is local whatever the payload claimed.
-        isLocalFile: true,
-        originalName: "material.pdf",
-        size: 2048,
-        platformType: undefined,
-        targetId: "page-id",
-        targetType: MediaTargetType.VisitMaterialsPage,
-      });
-    });
-
-    it("treats an item flagged as local as an upload even without the upload type", async () => {
-      await service.add(
-        buildLinkMediaDto({ isLocalFile: true, fieldKey: "file-0" }),
-        "page-id",
-        MediaType.VIDEO,
-        { "file-0": buildMulterFile() },
+      expect(mediaStorage.uploadAll).toHaveBeenCalledWith(
+        [
+          expect.objectContaining({
+            file,
+            mediaType: MediaType.DOCUMENT,
+            entity: MediaTargetType.VisitMaterialsPage,
+            ownerId: "page-id",
+          }),
+        ],
+        batch,
       );
-
-      expect(s3.upload).toHaveBeenCalled();
-    });
-
-    it("keeps a link untouched and marks it as not local", async () => {
-      const media = await service.add(
-        buildLinkMediaDto({ url: "  https://youtube.test/v  " }),
-        "page-id",
-        MediaType.VIDEO,
-        {},
-      );
-
-      expect(s3.upload).not.toHaveBeenCalled();
-      expect(media).toMatchObject({
-        url: "https://youtube.test/v",
-        isLocalFile: false,
-        platformType: PlatformType.YOUTUBE,
-      });
-    });
-
-    it("keeps the bucket authoritative over a mediaType sent by the client", async () => {
-      const media = await service.add(
-        buildLinkMediaDto({ mediaType: MediaType.IMAGE }),
-        "page-id",
-        MediaType.VIDEO,
-        {},
-      );
-
-      expect(media.mediaType).toBe(MediaType.VIDEO);
-    });
-
-    it("rejects an upload whose file did not arrive", async () => {
-      await expect(
-        service.add(buildUploadMediaDto(), "page-id", MediaType.DOCUMENT, {}),
-      ).rejects.toBeInstanceOf(RuleException);
-
-      expect(mediaItemProcessor.saveMediaItem).not.toHaveBeenCalled();
-    });
-
-    it("rejects an upload without a fieldKey", async () => {
-      await expect(
-        service.add(
-          buildUploadMediaDto({ fieldKey: undefined }),
-          "page-id",
-          MediaType.DOCUMENT,
-          {},
-        ),
-      ).rejects.toBeInstanceOf(RuleException);
-    });
-  });
-
-  describe("upsert", () => {
-    it("replaces the previous file when a new one is uploaded", async () => {
-      mediaItemProcessor.findMediaItemById.mockResolvedValue(
-        buildMediaEntity({
-          id: "media-id",
-          mediaType: MediaType.DOCUMENT,
-          isLocalFile: true,
-          url: "https://bucket.test/old.pdf",
-        }),
-      );
-
-      await service.upsert(
-        buildUploadMediaDto({ id: "media-id" }),
-        "page-id",
-        MediaType.DOCUMENT,
-        { "file-0": buildMulterFile() },
-      );
-
-      expect(s3.delete).toHaveBeenCalledWith("https://bucket.test/old.pdf");
       expect(mediaItemProcessor.upsertMediaItem).toHaveBeenCalledWith(
-        "media-id",
-        expect.objectContaining({ url: "https://bucket.test/uploaded.pdf" }),
+        undefined,
+        expect.objectContaining({
+          url: "https://bucket.test/novo.pdf",
+          storageKey: "local/VisitMaterialsPage/page-id/novo.pdf",
+          isLocalFile: true,
+          originalName: "material.pdf",
+          platformType: undefined,
+        }),
+        unit.manager,
       );
+      expect(unit.obsoleteUrls).toEqual([]);
     });
 
-    it("does not delete anything when the stored item was already a link", async () => {
-      mediaItemProcessor.findMediaItemById.mockResolvedValue(
-        buildMediaEntity({
-          id: "media-id",
-          mediaType: MediaType.DOCUMENT,
-          isLocalFile: false,
-        }),
-      );
+    it("replacing a stored file keeps the old one in the bucket until the commit", async () => {
+      const stored = buildMediaEntity({
+        id: "m1",
+        mediaType: MediaType.DOCUMENT,
+        uploadType: UploadType.UPLOAD,
+        isLocalFile: true,
+        url: "https://bucket.test/antigo.pdf",
+      });
+      givenStored([stored]);
+      mediaItemProcessor.findMediaItemById.mockResolvedValue(stored);
 
-      await service.upsert(
-        buildUploadMediaDto({ id: "media-id" }),
+      await service.reconcile(
+        unit,
         "page-id",
-        MediaType.DOCUMENT,
+        buckets({ documents: [buildUploadMediaDto({ id: "m1" })] }) as never,
         { "file-0": buildMulterFile() },
       );
 
-      expect(s3.delete).not.toHaveBeenCalled();
+      expect(unit.obsoleteUrls).toEqual(["https://bucket.test/antigo.pdf"]);
+      expect(mediaItemProcessor.upsertMediaItem).toHaveBeenCalledWith(
+        "m1",
+        expect.objectContaining({ url: "https://bucket.test/novo.pdf" }),
+        unit.manager,
+      );
     });
 
-    it("cleans up the old file when the item switches to a link", async () => {
-      mediaItemProcessor.findMediaItemById.mockResolvedValue(
-        buildMediaEntity({
-          id: "media-id",
-          isLocalFile: true,
-          url: "https://bucket.test/old.pdf",
-        }),
-      );
+    it("keeps a stored upload untouched when no replacement file is sent", async () => {
+      const stored = buildMediaEntity({
+        id: "m1",
+        mediaType: MediaType.DOCUMENT,
+        uploadType: UploadType.UPLOAD,
+        isLocalFile: true,
+        url: "https://bucket.test/antigo.pdf",
+        originalName: "antigo.pdf",
+        size: 10,
+      });
+      givenStored([stored]);
+      mediaItemProcessor.findMediaItemById.mockResolvedValue(stored);
 
-      const media = await service.upsert(
-        buildLinkMediaDto({ id: "media-id" }),
+      await service.reconcile(
+        unit,
         "page-id",
-        MediaType.VIDEO,
+        buckets({
+          documents: [buildUploadMediaDto({ id: "m1", fieldKey: undefined })],
+        }) as never,
         {},
       );
 
-      expect(s3.delete).toHaveBeenCalledWith("https://bucket.test/old.pdf");
-      expect(media.isLocalFile).toBe(false);
-    });
-
-    it("still updates the item when deleting the old file fails", async () => {
-      mediaItemProcessor.findMediaItemById.mockResolvedValue(
-        buildMediaEntity({
-          id: "media-id",
-          isLocalFile: true,
-          url: "https://bucket.test/old.pdf",
-        }),
+      expect(mediaStorage.uploadAll).not.toHaveBeenCalled();
+      expect(unit.obsoleteUrls).toEqual([]);
+      expect(mediaItemProcessor.upsertMediaItem).toHaveBeenCalledWith(
+        "m1",
+        expect.objectContaining({ url: "https://bucket.test/antigo.pdf" }),
+        unit.manager,
       );
-      s3.delete.mockRejectedValueOnce(new Error("S3 unavailable"));
-
-      await expect(
-        service.upsert(
-          buildLinkMediaDto({ id: "media-id" }),
-          "page-id",
-          MediaType.VIDEO,
-          {},
-        ),
-      ).resolves.toMatchObject({ isLocalFile: false });
-
-      expect(mediaItemProcessor.upsertMediaItem).toHaveBeenCalled();
     });
 
-    it("rejects an update without a stored media id", async () => {
+    it("switching an upload to a link defers the old file too", async () => {
+      const stored = buildMediaEntity({
+        id: "m1",
+        mediaType: MediaType.DOCUMENT,
+        isLocalFile: true,
+        url: "https://bucket.test/antigo.pdf",
+      });
+      givenStored([stored]);
+      mediaItemProcessor.findMediaItemById.mockResolvedValue(stored);
+
+      await service.reconcile(
+        unit,
+        "page-id",
+        buckets({
+          documents: [
+            buildLinkMediaDto({ id: "m1", mediaType: MediaType.DOCUMENT }),
+          ],
+        }) as never,
+        {},
+      );
+
+      expect(unit.obsoleteUrls).toEqual(["https://bucket.test/antigo.pdf"]);
+    });
+
+    it("rejects an upload whose file did not arrive, before any write", async () => {
+      givenStored([]);
+
       await expect(
-        service.upsert(
-          buildLinkMediaDto({ id: undefined }),
+        service.reconcile(
+          unit,
           "page-id",
-          MediaType.VIDEO,
+          buckets({ documents: [buildUploadMediaDto()] }) as never,
           {},
         ),
-      ).rejects.toBeInstanceOf(ResourceNotFoundException);
-      expect(mediaItemProcessor.findMediaItemById).not.toHaveBeenCalled();
+      ).rejects.toBeInstanceOf(RuleException);
+
+      expect(mediaStorage.uploadAll).not.toHaveBeenCalled();
       expect(mediaItemProcessor.upsertMediaItem).not.toHaveBeenCalled();
     });
 
-    it("keeps a stored upload when no replacement file is sent", async () => {
-      mediaItemProcessor.findMediaItemById.mockResolvedValue(
-        buildMediaEntity({
-          id: "media-id",
-          mediaType: MediaType.DOCUMENT,
-          uploadType: UploadType.UPLOAD,
-          isLocalFile: true,
-          url: "https://bucket.test/stored.pdf",
-          originalName: "stored.pdf",
-          size: 123,
-        }),
-      );
+    it("rejects an upload without a fieldKey and a link without url", async () => {
+      givenStored([]);
 
-      const media = await service.upsert(
-        buildUploadMediaDto({
-          id: "media-id",
-          fieldKey: undefined,
-        }),
-        "page-id",
-        MediaType.DOCUMENT,
-        {},
-      );
-
-      expect(s3.upload).not.toHaveBeenCalled();
-      expect(s3.delete).not.toHaveBeenCalled();
-      expect(media).toMatchObject({
-        uploadType: UploadType.UPLOAD,
-        url: "https://bucket.test/stored.pdf",
-        originalName: "stored.pdf",
-        size: 123,
-        isLocalFile: true,
-      });
+      await expect(
+        service.reconcile(
+          unit,
+          "page-id",
+          buckets({
+            documents: [buildUploadMediaDto({ fieldKey: undefined })],
+          }) as never,
+          {},
+        ),
+      ).rejects.toBeInstanceOf(RuleException);
+      await expect(
+        service.reconcile(
+          unit,
+          "page-id",
+          buckets({ videos: [buildLinkMediaDto({ url: "  " })] }) as never,
+          {},
+        ),
+      ).rejects.toBeInstanceOf(RuleException);
     });
 
     it("rejects a media id owned by another page", async () => {
+      givenStored([]);
       mediaItemProcessor.findMediaItemById.mockResolvedValue(
-        buildMediaEntity({ id: "media-id", targetId: "another-page" }),
+        buildMediaEntity({ id: "m1", targetId: "outra-pagina" }),
       );
 
       await expect(
-        service.upsert(
-          buildLinkMediaDto({ id: "media-id" }),
+        service.reconcile(
+          unit,
           "page-id",
-          MediaType.VIDEO,
+          buckets({ videos: [buildLinkMediaDto({ id: "m1" })] }) as never,
           {},
         ),
       ).rejects.toBeInstanceOf(ResourceNotFoundException);
-
-      expect(mediaItemProcessor.upsertMediaItem).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("link fallbacks", () => {
-    it("keeps optional values already built when the payload omits them", async () => {
-      const input = buildLinkMediaDto({
-        title: undefined,
-        description: undefined,
-        uploadType: undefined as unknown as UploadType,
-        platformType: undefined,
-        url: "https://youtube.test/watch",
-        originalName: undefined,
-        size: undefined,
-      });
-      // The processor already copied whatever the payload carried; the overlay
-      // must not blank those fields out.
-      mediaItemProcessor.buildBaseMediaItem.mockReturnValue(
-        Object.assign(new MediaItemEntity(), {
-          title: "Título base",
-          description: "Descrição base",
-          uploadType: UploadType.LINK,
-          platformType: PlatformType.YOUTUBE,
-          url: "https://youtube.test/watch",
-          originalName: "base.mp4",
-          size: 10,
-        }),
-      );
-
-      const media = await service.add(input, "page-id", MediaType.VIDEO, {});
-
-      expect(media).toMatchObject({
-        title: "Título base",
-        description: "Descrição base",
-        uploadType: UploadType.LINK,
-        platformType: PlatformType.YOUTUBE,
-        url: "https://youtube.test/watch",
-        originalName: "base.mp4",
-        size: 10,
-        isLocalFile: false,
-      });
     });
 
-    it("overrides the built values when the payload carries them", async () => {
-      mediaItemProcessor.buildBaseMediaItem.mockReturnValue(
-        Object.assign(new MediaItemEntity(), { title: "Título base" }),
-      );
+    it("keeps the bucket authoritative over a mediaType sent by the client", async () => {
+      givenStored([]);
 
-      const media = await service.add(
-        buildLinkMediaDto({
-          title: "Título do payload",
-          description: "Descrição do payload",
-          originalName: "payload.mp4",
-          size: 99,
-        }),
+      await service.reconcile(
+        unit,
         "page-id",
-        MediaType.VIDEO,
+        buckets({
+          videos: [buildLinkMediaDto({ mediaType: MediaType.DOCUMENT })],
+        }) as never,
         {},
       );
 
-      expect(media).toMatchObject({
-        title: "Título do payload",
-        description: "Descrição do payload",
-        originalName: "payload.mp4",
-        size: 99,
-      });
-    });
-
-    it("names the item in the error even when it has no title", async () => {
-      await expect(
-        service.add(
-          buildUploadMediaDto({ title: undefined, fieldKey: undefined }),
-          "page-id",
-          MediaType.DOCUMENT,
-          {},
-        ),
-      ).rejects.toBeInstanceOf(RuleException);
-
-      expect(() =>
-        service.toPolymorphicItems(
-          {
-            videos: [],
-            documents: [
-              buildUploadMediaDto({ title: undefined, fieldKey: undefined }),
-            ],
-            images: [],
-            audios: [],
-          },
-          {},
-        ),
-      ).toThrow(RuleException);
-    });
-
-    it("does not clean up when the stored item has no url", async () => {
-      mediaItemProcessor.findMediaItemById.mockResolvedValue(
-        buildMediaEntity({ id: "media-id", isLocalFile: true, url: "" }),
+      expect(mediaItemProcessor.upsertMediaItem).toHaveBeenCalledWith(
+        undefined,
+        expect.objectContaining({ mediaType: MediaType.VIDEO }),
+        unit.manager,
       );
-
-      await service.upsert(
-        buildLinkMediaDto({ id: "media-id" }),
-        "page-id",
-        MediaType.VIDEO,
-        {},
-      );
-
-      expect(s3.delete).not.toHaveBeenCalled();
-    });
-
-    it("does not clean up when the item stays local", async () => {
-      mediaItemProcessor.findMediaItemById.mockResolvedValue(
-        buildMediaEntity({
-          id: "media-id",
-          isLocalFile: true,
-          url: "https://bucket.test/a",
-        }),
-      );
-
-      await service.upsert(
-        buildLinkMediaDto({
-          id: "media-id",
-          isLocalFile: true,
-          fieldKey: undefined,
-        }),
-        "page-id",
-        MediaType.VIDEO,
-        {},
-      );
-
-      expect(s3.delete).not.toHaveBeenCalled();
     });
   });
 

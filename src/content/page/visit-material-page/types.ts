@@ -1,4 +1,6 @@
+import type { EntityManager } from "typeorm";
 import { MediaItemDto } from "src/shared/dto/media-item-dto";
+import type { UploadBatch } from "src/shared/media/storage/upload-batch";
 import { VisitMaterialSectionEntity } from "./entities/visit-material-section.entity";
 import {
   MediaItemEntity,
@@ -33,4 +35,15 @@ export interface VisitMaterialRouteInput {
 export interface VisitMaterialSectionWithMedia {
   section: VisitMaterialSectionEntity;
   media: MediaItemEntity[];
+}
+
+/**
+ * Uma edição inteira da página: o que ela grava vai na mesma transação (`manager`), os arquivos novos
+ * entram no `batch` (descartável se algo falhar) e os arquivos antigos só saem do bucket DEPOIS do
+ * commit (`obsoleteUrls`). Se qualquer passo falha, o banco volta e o bucket fica como estava.
+ */
+export interface VisitMaterialWriteUnit {
+  readonly manager: EntityManager;
+  readonly batch: UploadBatch;
+  readonly obsoleteUrls: string[];
 }

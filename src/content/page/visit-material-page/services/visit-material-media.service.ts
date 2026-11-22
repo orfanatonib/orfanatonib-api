@@ -1,10 +1,10 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import {
   ResourceNotFoundException,
   RuleException,
 } from "src/common/exceptions";
 import { MediaItemDto } from "src/shared/dto/media-item-dto";
-import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import {
@@ -20,6 +20,7 @@ import {
   StoredMediaByType,
   UploadedFilesDict,
   VisitMaterialMediaBuckets,
+  VisitMaterialWriteUnit,
 } from "../types";
 
 const TARGET_TYPE = MediaTargetType.VisitMaterialsPage;
@@ -30,11 +31,9 @@ const TARGET_TYPE = MediaTargetType.VisitMaterialsPage;
  */
 @Injectable()
 export class VisitMaterialMediaService {
-  private readonly logger = new Logger(VisitMaterialMediaService.name);
-
   constructor(
     private readonly mediaItemProcessor: MediaItemProcessor,
-    private readonly s3: AwsS3Service,
+    private readonly mediaStorage: MediaStorageService,
   ) {}
 
   /** Buckets in the order the page persists and returns them. */
@@ -116,73 +115,84 @@ export class VisitMaterialMediaService {
     return items;
   }
 
-  /** Deletes the stored items the incoming payload no longer references. */
-  async removeMissing(
-    stored: MediaItemEntity[],
-    incoming: MediaItemDto[],
+  /**
+   * Reconciles one owner's media (a page or a section) with the payload, inside the caller's write unit:
+   * items the payload dropped are removed, items with an id are updated and the rest are created.
+   * Nothing touches the bucket destructively here — replaced and removed files go to
+   * `unit.obsoleteUrls` and only leave after the commit.
+   */
+  async reconcile(
+    unit: VisitMaterialWriteUnit,
+    ownerId: string,
+    buckets: VisitMaterialMediaBuckets,
+    files: UploadedFilesDict,
+    targetType: MediaTargetType = TARGET_TYPE,
   ): Promise<void> {
-    const incomingIds = new Set(
-      incoming.map((item) => item.id).filter((id): id is string => Boolean(id)),
-    );
-    const toRemove = stored.filter((item) => !incomingIds.has(item.id));
+    const stored = await this.findGroupedByPage(ownerId, targetType);
+    const entries = VisitMaterialMediaService.toEntries(buckets);
 
-    if (toRemove.length > 0) {
-      await this.mediaItemProcessor.deleteMediaItems(toRemove, (url) =>
-        this.s3.delete(url),
+    for (const [mediaType, incoming] of entries) {
+      const incomingIds = new Set(
+        incoming.map((item) => item.id).filter((id): id is string => !!id),
+      );
+      const dropped = (stored.get(mediaType) ?? []).filter(
+        (item) => !incomingIds.has(item.id),
+      );
+      unit.obsoleteUrls.push(
+        ...(await this.mediaItemProcessor.removeMediaItemsKeepingFiles(
+          dropped,
+          unit.manager,
+        )),
       );
     }
-  }
 
-  /** Persists a brand new media item. */
-  async add(
-    input: MediaItemDto,
-    pageId: string,
-    mediaType: MediaType,
-    files: UploadedFilesDict,
-    targetType: MediaTargetType = TARGET_TYPE,
-  ): Promise<MediaItemEntity> {
-    const media = this.buildBase(input, pageId, mediaType, targetType);
-
-    if (this.isUpload(input)) {
-      await this.applyUpload(media, input, files);
-    } else {
-      this.assertLinkUrl(input);
-      this.applyLink(media, input);
+    for (const [mediaType, incoming] of entries) {
+      for (const input of incoming) {
+        await this.persist(unit, input, ownerId, mediaType, targetType, files);
+      }
     }
-
-    return this.mediaItemProcessor.saveMediaItem(media);
   }
 
-  /** Updates an existing media item, cleaning up the file it replaces. */
-  async upsert(
+  /** Creates the item (no id) or updates the stored one (id), staging uploads in the unit's batch. */
+  private async persist(
+    unit: VisitMaterialWriteUnit,
     input: MediaItemDto,
-    pageId: string,
+    ownerId: string,
     mediaType: MediaType,
+    targetType: MediaTargetType,
     files: UploadedFilesDict,
-    targetType: MediaTargetType = TARGET_TYPE,
   ): Promise<MediaItemEntity> {
-    const stored = await this.findOwnedStoredItem(
-      input,
-      pageId,
-      mediaType,
-      targetType,
-    );
-    const media = this.buildBase(input, pageId, mediaType, targetType);
+    const stored = input.id
+      ? await this.findOwnedStoredItem(input, ownerId, mediaType, targetType)
+      : null;
+    const media = this.buildBase(input, ownerId, mediaType, targetType);
 
     if (this.isUpload(input)) {
-      if (!input.fieldKey && stored.isLocalFile) {
+      if (stored && !input.fieldKey && stored.isLocalFile) {
         this.keepStoredUpload(media, stored);
       } else {
-        await this.applyUpload(media, input, files);
-        await this.discardStoredFile(stored);
+        await this.stageUpload(unit, media, input, files, ownerId, targetType);
+        this.markObsolete(unit, stored);
       }
     } else {
       this.assertLinkUrl(input);
       this.applyLink(media, input);
-      await this.discardStoredFile(stored);
+      this.markObsolete(unit, stored);
     }
 
-    return this.mediaItemProcessor.upsertMediaItem(stored.id, media);
+    return this.mediaItemProcessor.upsertMediaItem(
+      stored?.id,
+      media,
+      unit.manager,
+    );
+  }
+
+  /** The replaced file leaves the bucket only after the commit. */
+  private markObsolete(
+    unit: VisitMaterialWriteUnit,
+    stored: MediaItemEntity | null,
+  ): void {
+    if (stored?.isLocalFile && stored.url) unit.obsoleteUrls.push(stored.url);
   }
 
   /**
@@ -206,10 +216,14 @@ export class VisitMaterialMediaService {
     );
   }
 
-  private async applyUpload(
+  /** Validates the upload and sends it to the unit's batch (discarded if the edit fails). */
+  private async stageUpload(
+    unit: VisitMaterialWriteUnit,
     media: MediaItemEntity,
     input: MediaItemDto,
     files: UploadedFilesDict,
+    ownerId: string,
+    targetType: MediaTargetType,
   ): Promise<void> {
     if (!input.fieldKey) {
       throw new RuleException(
@@ -224,8 +238,15 @@ export class VisitMaterialMediaService {
       );
     }
 
+    await this.mediaStorage.uploadAll(
+      [{ file, mediaType: media.mediaType, entity: targetType, ownerId }],
+      unit.batch,
+    );
+    const uploaded = unit.batch.objects[unit.batch.objects.length - 1];
+
     media.platformType = undefined;
-    media.url = await this.s3.upload(file);
+    media.url = uploaded.url;
+    media.storageKey = uploaded.key;
     // The file now lives in our bucket, so it is local regardless of what the
     // payload claimed — otherwise the cleanup on delete would skip it.
     media.isLocalFile = true;
@@ -287,22 +308,5 @@ export class VisitMaterialMediaService {
     media.isLocalFile = true;
     media.originalName = stored.originalName;
     media.size = stored.size;
-  }
-
-  /**
-   * When an item switches from an uploaded file to an external link, the old
-   * object is best-effort deleted: failing to clean it up must not abort the
-   * update the user asked for.
-   */
-  private async discardStoredFile(stored: MediaItemEntity): Promise<void> {
-    if (!stored.isLocalFile || !stored.url) return;
-
-    try {
-      await this.s3.delete(stored.url);
-    } catch {
-      this.logger.warn(
-        "Could not delete the previous file when switching to a link",
-      );
-    }
   }
 }

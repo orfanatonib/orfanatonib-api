@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
+import { EntityManager } from "typeorm";
 import {
   MediaItemEntity,
   MediaType,
@@ -82,20 +83,24 @@ export class MediaItemProcessor {
     return this.mediaRepo.findById(id);
   }
 
-  async saveMediaItem(media: MediaItemEntity): Promise<MediaItemEntity> {
-    return this.mediaRepo.save(media);
+  async saveMediaItem(
+    media: MediaItemEntity,
+    manager?: EntityManager,
+  ): Promise<MediaItemEntity> {
+    return this.mediaRepo.save(media, manager);
   }
 
   async upsertMediaItem(
     id: string | undefined,
     media: MediaItemEntity,
+    manager?: EntityManager,
   ): Promise<MediaItemEntity> {
     if (id) {
-      await this.mediaRepo.saveById(id, media);
+      await this.mediaRepo.saveById(id, media, manager);
       media.id = id;
       return media;
     } else {
-      return this.saveMediaItem(media);
+      return this.saveMediaItem(media, manager);
     }
   }
 
@@ -119,9 +124,10 @@ export class MediaItemProcessor {
    */
   async removeMediaItemsKeepingFiles(
     items: MediaItemEntity[],
+    manager?: EntityManager,
   ): Promise<string[]> {
     if (items.length === 0) return [];
-    await this.mediaRepo.removeMany(items);
+    await this.mediaRepo.removeMany(items, manager);
     return items.filter((i) => i.isLocalFile && i.url).map((i) => i.url);
   }
 

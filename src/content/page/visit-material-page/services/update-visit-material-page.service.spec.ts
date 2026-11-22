@@ -7,7 +7,7 @@ import {
 } from "src/common/exceptions";
 import { RouteService } from "src/infrastructure/route/services/route.service";
 import { RouteType } from "src/infrastructure/route/route-page.entity";
-import { MediaType } from "src/shared/media/media-item/media-item.entity";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { UpdateVisitMaterialPageService } from "./update-visit-material-page.service";
 import { GetVisitMaterialPageService } from "./get-visit-material-page.service";
 import { VisitMaterialMediaService } from "./visit-material-media.service";
@@ -25,14 +25,20 @@ import {
 
 describe("UpdateVisitMaterialPageService", () => {
   const manager = {} as EntityManager;
-  const repository = { save: jest.fn(), runInTransaction: jest.fn() };
+  const repository = {
+    save: jest.fn(),
+    runInTransaction: jest.fn(),
+    lockPage: jest.fn(),
+  };
   const getService = { findEntityOrFail: jest.fn() };
   const mediaService = {
-    findGroupedByPage: jest.fn(),
     findAllByPage: jest.fn(),
-    removeMissing: jest.fn(),
-    add: jest.fn(),
-    upsert: jest.fn(),
+    reconcile: jest.fn(),
+  };
+  const batch = { commit: jest.fn(), discard: jest.fn(), objects: [] };
+  const mediaStorage = {
+    newBatch: jest.fn(),
+    deleteAfterCommit: jest.fn(),
   };
   const routeService = {
     findRouteByEntityId: jest.fn(),
@@ -50,14 +56,6 @@ describe("UpdateVisitMaterialPageService", () => {
 
   let service: UpdateVisitMaterialPageService;
 
-  const emptyGroups = () =>
-    new Map([
-      [MediaType.VIDEO, []],
-      [MediaType.DOCUMENT, []],
-      [MediaType.IMAGE, []],
-      [MediaType.AUDIO, []],
-    ]);
-
   beforeEach(async () => {
     jest.clearAllMocks();
 
@@ -69,6 +67,7 @@ describe("UpdateVisitMaterialPageService", () => {
         { provide: GetVisitMaterialPageService, useValue: getService },
         { provide: VisitMaterialMediaService, useValue: mediaService },
         { provide: RouteService, useValue: routeService },
+        { provide: MediaStorageService, useValue: mediaStorage },
       ],
     }).compile();
 
@@ -81,7 +80,11 @@ describe("UpdateVisitMaterialPageService", () => {
       Promise.resolve(page),
     );
     getService.findEntityOrFail.mockResolvedValue(buildPageEntity());
-    mediaService.findGroupedByPage.mockResolvedValue(emptyGroups());
+    repository.lockPage.mockResolvedValue(true);
+    mediaStorage.newBatch.mockReturnValue(batch);
+    mediaStorage.deleteAfterCommit.mockResolvedValue(undefined);
+    batch.discard.mockResolvedValue(undefined);
+    mediaService.reconcile.mockResolvedValue(undefined);
     mediaService.findAllByPage.mockResolvedValue([]);
     routeService.findRouteByEntityId.mockResolvedValue(buildRouteEntity());
     routeService.upsertRoute.mockResolvedValue(buildRouteEntity());
@@ -124,20 +127,7 @@ describe("UpdateVisitMaterialPageService", () => {
     expect(page.testament).toBe(TestamentType.NEW_TESTAMENT);
   });
 
-  it("reconciles the four buckets against what is stored", async () => {
-    const storedVideo = buildMediaEntity({
-      id: "v-old",
-      mediaType: MediaType.VIDEO,
-    });
-    mediaService.findGroupedByPage.mockResolvedValue(
-      new Map([
-        [MediaType.VIDEO, [storedVideo]],
-        [MediaType.DOCUMENT, []],
-        [MediaType.IMAGE, []],
-        [MediaType.AUDIO, []],
-      ]),
-    );
-
+  it("reconciles the four buckets inside the edit's write unit", async () => {
     const incomingVideo = buildLinkMediaDto({ id: "v-old" });
     const newAudio = buildLinkMediaDto({ id: undefined });
 
@@ -147,30 +137,111 @@ describe("UpdateVisitMaterialPageService", () => {
       {},
     );
 
-    expect(mediaService.removeMissing).toHaveBeenCalledTimes(4);
-    expect(mediaService.removeMissing).toHaveBeenCalledWith(
-      [storedVideo],
-      [incomingVideo],
-    );
-    // Item com id é atualizado; sem id é criado.
-    expect(mediaService.upsert).toHaveBeenCalledWith(
-      incomingVideo,
+    expect(mediaService.reconcile).toHaveBeenCalledTimes(1);
+    expect(mediaService.reconcile).toHaveBeenCalledWith(
+      expect.objectContaining({ manager, batch }),
       "page-id",
-      MediaType.VIDEO,
-      {},
-    );
-    expect(mediaService.add).toHaveBeenCalledWith(
-      newAudio,
-      "page-id",
-      MediaType.AUDIO,
+      expect.objectContaining({
+        videos: [incomingVideo],
+        audios: [newAudio],
+        documents: [],
+        images: [],
+      }),
       {},
     );
   });
 
-  it("reads the stored media only once for the four buckets", async () => {
+  it("locks the page first, so simultaneous edits of the same page queue up", async () => {
+    const order: string[] = [];
+    repository.lockPage.mockImplementation(() => {
+      order.push("lock");
+      return Promise.resolve(true);
+    });
+    repository.save.mockImplementation((page: unknown) => {
+      order.push("save");
+      return Promise.resolve(page);
+    });
+
     await service.execute("page-id", buildUpdateDto(), {});
 
-    expect(mediaService.findGroupedByPage).toHaveBeenCalledTimes(1);
+    expect(order.slice(0, 2)).toEqual(["lock", "save"]);
+  });
+
+  it("raises a 404 when the page vanished before the lock, writing nothing", async () => {
+    repository.lockPage.mockResolvedValue(false);
+
+    await expect(
+      service.execute("page-id", buildUpdateDto(), {}),
+    ).rejects.toBeInstanceOf(ResourceNotFoundException);
+
+    expect(repository.save).not.toHaveBeenCalled();
+    expect(mediaService.reconcile).not.toHaveBeenCalled();
+    expect(batch.discard).toHaveBeenCalledTimes(1);
+  });
+
+  it("saves the page first, so a value the database refuses fails before any media or route changes", async () => {
+    repository.save.mockRejectedValue(new Error("Data too long for column"));
+
+    await expect(
+      service.execute("page-id", buildUpdateDto(), {}),
+    ).rejects.toBeInstanceOf(ProcessException);
+
+    expect(mediaService.reconcile).not.toHaveBeenCalled();
+    expect(routeService.upsertRoute).not.toHaveBeenCalled();
+    expect(batch.discard).toHaveBeenCalledTimes(1);
+    expect(mediaStorage.deleteAfterCommit).not.toHaveBeenCalled();
+  });
+
+  it("discards the staged uploads and keeps the old files when a later step fails", async () => {
+    mediaService.reconcile.mockRejectedValue(new Error("falha na mídia"));
+
+    await expect(
+      service.execute("page-id", buildUpdateDto(), {}),
+    ).rejects.toBeInstanceOf(ProcessException);
+
+    expect(batch.discard).toHaveBeenCalledTimes(1);
+    expect(batch.commit).not.toHaveBeenCalled();
+    expect(mediaStorage.deleteAfterCommit).not.toHaveBeenCalled();
+  });
+
+  it("commits the batch and only then removes the files the edit made obsolete", async () => {
+    mediaService.reconcile.mockImplementation(
+      (unit: { obsoleteUrls: string[] }) => {
+        unit.obsoleteUrls.push("https://bucket.test/antigo.pdf");
+        return Promise.resolve();
+      },
+    );
+    const order: string[] = [];
+    batch.commit.mockImplementation(() => order.push("commit"));
+    mediaStorage.deleteAfterCommit.mockImplementation(() => {
+      order.push("delete");
+      return Promise.resolve();
+    });
+
+    await service.execute("page-id", buildUpdateDto(), {});
+
+    expect(order).toEqual(["commit", "delete"]);
+    expect(mediaStorage.deleteAfterCommit).toHaveBeenCalledWith([
+      "https://bucket.test/antigo.pdf",
+    ]);
+    expect(batch.discard).not.toHaveBeenCalled();
+  });
+
+  it("syncs the sections in the same write unit when the payload carries them", async () => {
+    sectionsService.prepare.mockReturnValue([{ input: {}, mediaInputs: [] }]);
+
+    await service.execute(
+      "page-id",
+      buildUpdateDto({ sections: [{ category: "BABY" }] as never }),
+      {},
+    );
+
+    expect(sectionsService.sync).toHaveBeenCalledWith(
+      "page-id",
+      expect.anything(),
+      {},
+      expect.objectContaining({ manager, batch }),
+    );
   });
 
   it("mirrors the page fields onto its route, preserving visibility", async () => {
@@ -233,17 +304,8 @@ describe("UpdateVisitMaterialPageService", () => {
     ).rejects.toBeInstanceOf(ProcessException);
   });
 
-  it("treats an absent bucket as empty when reconciling", async () => {
-    // O mapa de armazenados pode não trazer um tipo; a rotina não pode quebrar.
-    mediaService.findGroupedByPage.mockResolvedValue(new Map());
-
-    await service.execute("page-id", buildUpdateDto(), {});
-
-    expect(mediaService.removeMissing).toHaveBeenCalledWith([], []);
-  });
-
   it("rethrows an application error untouched instead of masking it", async () => {
-    mediaService.upsert.mockRejectedValue(
+    mediaService.reconcile.mockRejectedValue(
       new ResourceNotFoundException("Mídia não encontrada."),
     );
 

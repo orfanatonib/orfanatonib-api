@@ -6,10 +6,7 @@ import { MediaItemDto } from "src/shared/dto/media-item-dto";
 import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
-import {
-  MediaItemEntity,
-  MediaType,
-} from "src/shared/media/media-item/media-item.entity";
+import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
 
 import { VisitMaterialSectionInputDto } from "../dto/visit-material-section.dto";
 import { VisitMaterialSectionEntity } from "../entities/visit-material-section.entity";
@@ -18,7 +15,11 @@ import {
   VisitMaterialCategory,
 } from "../enums/visit-material-category.enum";
 import { VisitMaterialSectionRepository } from "../repositories/visit-material-section.repository";
-import { UploadedFilesDict, VisitMaterialSectionWithMedia } from "../types";
+import {
+  UploadedFilesDict,
+  VisitMaterialSectionWithMedia,
+  VisitMaterialWriteUnit,
+} from "../types";
 import { toMediaBuckets } from "../utils/visit-material-payload.util";
 import { VisitMaterialMediaService } from "./visit-material-media.service";
 import { VISIT_MATERIAL_MESSAGES } from "../constants";
@@ -118,24 +119,36 @@ export class VisitMaterialSectionsService {
     return created;
   }
 
-  /** Reconcilia as seções da página com o payload: cria, atualiza (por categoria) e remove as que saíram. */
+  /**
+   * Reconcilia as seções da página com o payload dentro da edição (`unit`): cria, atualiza (por categoria) e
+   * remove as que saíram. Tudo na transação da edição; arquivos novos no `batch`, antigos só saem após o commit.
+   */
   async sync(
     pageId: string,
     prepared: readonly PreparedSection[],
     files: UploadedFilesDict,
+    unit: VisitMaterialWriteUnit,
   ): Promise<void> {
-    const stored = await this.repository.findByPageId(pageId);
+    const stored = await this.repository.findByPageId(pageId, unit.manager);
     const incoming = new Set(prepared.map((item) => item.input.category));
 
     for (const section of stored) {
-      if (!incoming.has(section.category)) await this.removeOne(section);
+      if (!incoming.has(section.category)) await this.removeOne(section, unit);
     }
     for (const item of prepared) {
       const existing = stored.find(
         (section) => section.category === item.input.category,
       );
-      if (existing) await this.updateOne(existing, item, files);
-      else await this.createOne(pageId, item, files);
+      const section = existing
+        ? await this.updateOne(existing, item, unit)
+        : await this.insertOne(pageId, item, unit);
+      await this.mediaService.reconcile(
+        unit,
+        section.id,
+        toMediaBuckets(item.input),
+        files,
+        SECTION_TARGET,
+      );
     }
   }
 
@@ -175,59 +188,53 @@ export class VisitMaterialSectionsService {
     return { section, media };
   }
 
+  private async insertOne(
+    pageId: string,
+    { input }: PreparedSection,
+    unit: VisitMaterialWriteUnit,
+  ): Promise<VisitMaterialSectionEntity> {
+    return this.repository.save(
+      this.repository.create(
+        {
+          pageId,
+          category: input.category,
+          title: clean(input.title),
+          description: clean(input.description),
+          position: positionOf(input.category),
+        },
+        unit.manager,
+      ),
+      unit.manager,
+    );
+  }
+
   private async updateOne(
     section: VisitMaterialSectionEntity,
     { input }: PreparedSection,
-    files: UploadedFilesDict,
-  ): Promise<void> {
+    unit: VisitMaterialWriteUnit,
+  ): Promise<VisitMaterialSectionEntity> {
     section.title = clean(input.title);
     section.description = clean(input.description);
     section.position = positionOf(section.category);
-    await this.repository.save(section);
+    return this.repository.save(section, unit.manager);
+  }
 
-    const stored = await this.mediaService.findGroupedByPage(
+  /** A seção sai com as linhas de mídia; os arquivos dela só saem do bucket após o commit. */
+  private async removeOne(
+    section: VisitMaterialSectionEntity,
+    unit: VisitMaterialWriteUnit,
+  ): Promise<void> {
+    const media = await this.mediaService.findAllByPage(
       section.id,
       SECTION_TARGET,
     );
-    const buckets = VisitMaterialMediaService.toEntries(toMediaBuckets(input));
-    for (const [mediaType, incoming] of buckets) {
-      await this.mediaService.removeMissing(
-        stored.get(mediaType) ?? [],
-        incoming,
-      );
-    }
-    for (const [mediaType, incoming] of buckets) {
-      for (const media of incoming)
-        await this.persist(media, section.id, mediaType, files);
-    }
-  }
-
-  private persist(
-    media: MediaItemDto,
-    sectionId: string,
-    mediaType: MediaType,
-    files: UploadedFilesDict,
-  ): Promise<MediaItemEntity> {
-    return media.id
-      ? this.mediaService.upsert(
-          media,
-          sectionId,
-          mediaType,
-          files,
-          SECTION_TARGET,
-        )
-      : this.mediaService.add(
-          media,
-          sectionId,
-          mediaType,
-          files,
-          SECTION_TARGET,
-        );
-  }
-
-  private async removeOne(section: VisitMaterialSectionEntity): Promise<void> {
-    await this.removeMedia(section);
-    await this.repository.remove(section);
+    unit.obsoleteUrls.push(
+      ...(await this.mediaItemProcessor.removeMediaItemsKeepingFiles(
+        media,
+        unit.manager,
+      )),
+    );
+    await this.repository.remove(section, unit.manager);
   }
 
   private async removeMedia(

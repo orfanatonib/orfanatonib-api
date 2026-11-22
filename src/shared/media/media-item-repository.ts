@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { In, Repository } from "typeorm";
+import { EntityManager, In, Repository } from "typeorm";
 import { MediaItemEntity } from "./media-item/media-item.entity";
 
 @Injectable()
@@ -37,16 +37,26 @@ export class MediaItemRepository {
     return this.mediaRepo.findOneBy({ id });
   }
 
-  async save(media: MediaItemEntity): Promise<MediaItemEntity> {
-    return this.mediaRepo.save(media);
+  /** Dentro de uma transação, o repositório do `manager`; fora dela, o padrão. */
+  private repoFor(manager?: EntityManager): Repository<MediaItemEntity> {
+    return manager ? manager.getRepository(MediaItemEntity) : this.mediaRepo;
+  }
+
+  async save(
+    media: MediaItemEntity,
+    manager?: EntityManager,
+  ): Promise<MediaItemEntity> {
+    return this.repoFor(manager).save(media);
   }
 
   async saveById(
     id: string,
     data: Partial<MediaItemEntity>,
+    manager?: EntityManager,
   ): Promise<MediaItemEntity> {
-    await this.mediaRepo.upsert({ ...data, id }, ["id"]);
-    const updated = await this.mediaRepo.findOneBy({ id });
+    const repo = this.repoFor(manager);
+    await repo.upsert({ ...data, id }, ["id"]);
+    const updated = await repo.findOneBy({ id });
     return updated!;
   }
 
@@ -54,8 +64,11 @@ export class MediaItemRepository {
     await this.mediaRepo.update(id, partial);
   }
 
-  async removeMany(items: MediaItemEntity[]): Promise<void> {
-    await this.mediaRepo.remove(items);
+  async removeMany(
+    items: MediaItemEntity[],
+    manager?: EntityManager,
+  ): Promise<void> {
+    await this.repoFor(manager).remove(items);
   }
 
   async removeOne(item: MediaItemEntity): Promise<void> {

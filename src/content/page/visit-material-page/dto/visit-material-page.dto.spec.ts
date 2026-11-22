@@ -125,18 +125,32 @@ describe("UpdateVisitMaterialsPageDto", () => {
     ).toContain("id");
   });
 
-  it("coerces currentWeek the same way the global ValidationPipe does", () => {
-    // `enableImplicitConversion` turns the value into a boolean before
-    // validation, so the flag is never rejected for its type — the contract is
-    // documented here so the behaviour is not mistaken for a missing check.
-    const dto = transform(UpdateVisitMaterialsPageDto, {
-      ...validUpdate,
-      currentWeek: "false",
-    });
+  it.each([true, false])(
+    "accepts the real boolean %p as currentWeek",
+    (value) => {
+      const dto = transform(UpdateVisitMaterialsPageDto, {
+        ...validUpdate,
+        currentWeek: value,
+      });
 
-    expect(validateSync(dto)).toHaveLength(0);
-    expect(typeof dto.currentWeek).toBe("boolean");
-  });
+      expect(validateSync(dto)).toHaveLength(0);
+      expect(dto.currentWeek).toBe(value);
+    },
+  );
+
+  it.each(["false", "talvez", 1])(
+    "rejects %p as currentWeek instead of letting the implicit conversion turn it into true",
+    (value) => {
+      const dto = transform(UpdateVisitMaterialsPageDto, {
+        ...validUpdate,
+        currentWeek: value,
+      });
+
+      expect(validateSync(dto).map((error) => error.property)).toContain(
+        "currentWeek",
+      );
+    },
+  );
 
   it("shares the media buckets with the create payload", () => {
     const dto = transform(UpdateVisitMaterialsPageDto, {

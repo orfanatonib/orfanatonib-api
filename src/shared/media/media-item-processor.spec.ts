@@ -156,7 +156,7 @@ describe("MediaItemProcessor.removeMediaItemsKeepingFiles", () => {
     expect(await proc.removeMediaItemsKeepingFiles([local, link])).toEqual([
       "u/a",
     ]);
-    expect(repo.removeMany).toHaveBeenCalledWith([local, link]);
+    expect(repo.removeMany).toHaveBeenCalledWith([local, link], undefined);
     expect(await proc.removeMediaItemsKeepingFiles([])).toEqual([]);
   });
 });

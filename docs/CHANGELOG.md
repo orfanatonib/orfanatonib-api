@@ -4,6 +4,14 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - MATERIAIS DE VISITA (plano 35, cenários E2E)
+
+- **FIX (dados e S3)**: `PATCH /visit-material-pages/:id` sincronizava a mídia item a item, **fora de transação** e antes de salvar a página: uma falha tardia (ex.: título que o banco recusa) deixava a mídia nova gravada e o objeto no bucket. Agora a edição é uma operação só (`VisitMaterialWriteUnit`): a página é salva primeiro, mídia e seções entram na mesma transação, os arquivos novos sobem para um lote descartável e os antigos só saem do bucket **depois do commit** (`deleteAfterCommit`). Falhou ⇒ o banco volta e os novos são descartados.
+- **FIX**: duas edições simultâneas da mesma página deixavam um objeto órfão no bucket; a transação agora trava a página (`lockPage`) e enfileira as edições.
+- **FIX**: `currentWeek: "talvez"` (ou `"false"`) era aceito como `true` pela conversão implícita do pipe global; agora `400` (`StrictBoolean`).
+- **CHANGE (interno)**: `MediaItemRepository`/`MediaItemProcessor` aceitam `EntityManager` opcional (`save`, `saveById`, `removeMany`, `removeMediaItemsKeepingFiles`); `VisitMaterialMediaService` perdeu o caminho legado (`add`/`upsert`/`removeMissing`, `AwsS3Service`) e ganhou `reconcile`. Saiu da lista de legado do teste de arquitetura de S3.
+- **TEST**: E2E de `/visit-material-pages` com 85 testes (matriz `visit-material` 79/79, incluindo `s3.01-12`); specs do `reconcile`, do `update` (lock, commit antes de apagar, descarte do lote) e do DTO.
+
 ## [Unreleased] - 2026-11-22 - AGENDA DOS ABRIGOS (plano 21, cenários E2E)
 
 - **FIX**: `POST/PUT /shelter-schedules` aceitavam qualquer texto em `visitDate`/`meetingDate` (`"ontem"` era gravado e a agenda ficava sem evento, em silêncio). Agora data inválida é `400` (`@IsDateString`; texto vazio continua valendo como "sem data", que é o que a tela manda para limpar).
