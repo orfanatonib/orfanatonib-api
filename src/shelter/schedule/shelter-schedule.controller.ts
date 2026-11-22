@@ -6,6 +6,7 @@ import {
   Delete,
   Body,
   Param,
+  ParseUUIDPipe,
   HttpCode,
   Logger,
   UseGuards,
@@ -77,7 +78,7 @@ export class ShelterScheduleController {
   @Put(":id")
   async update(
     @Req() req: AuthenticatedRequest,
-    @Param("id") id: string,
+    @Param("id", new ParseUUIDPipe()) id: string,
     @Body(ValidationPipe) dto: UpdateShelterScheduleDto,
   ): Promise<ShelterScheduleResponseDto> {
     this.logger.log(`Updating shelter schedule: ${id}`);
@@ -97,7 +98,7 @@ export class ShelterScheduleController {
   @HttpCode(204)
   async remove(
     @Req() req: AuthenticatedRequest,
-    @Param("id") id: string,
+    @Param("id", new ParseUUIDPipe()) id: string,
   ): Promise<void> {
     this.logger.log(`Deleting shelter schedule: ${id}`);
     await this.deleteService.executeAs(toShelterAccessContext(req), id);

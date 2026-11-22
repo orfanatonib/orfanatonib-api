@@ -4,6 +4,13 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - AGENDA DOS ABRIGOS (plano 21, cenários E2E)
+
+- **FIX**: `POST/PUT /shelter-schedules` aceitavam qualquer texto em `visitDate`/`meetingDate` (`"ontem"` era gravado e a agenda ficava sem evento, em silêncio). Agora data inválida é `400` (`@IsDateString`; texto vazio continua valendo como "sem data", que é o que a tela manda para limpar).
+- **FIX**: `PUT` aceitava `lessonContent` vazio ou `null` (coluna NOT NULL, virava `500`) e `meetingRoom` acima de 255 caracteres (`500`). Agora `400`. `lessonContent` vazio no `POST` também é `400` (`@IsString`).
+- **CHANGE**: `PUT`/`DELETE /shelter-schedules/:id` com id que não é UUID respondem `400` (antes `404`); `ParseUUIDPipe` como nos outros módulos.
+- **TEST**: E2E de `/shelter-schedules` com 35 testes (matriz `shelter-schedule` 34/34): escopo do líder com dados próprios, eventos provados por `SELECT`, conflito de número de visita, falha sem efeito parcial; spec dos DTOs.
+
 ## [Unreleased] - 2026-11-22 - ACOLHIDOS (plano 17, cenários E2E)
 
 - **FIX (dado órfão)**: `POST /sheltered` por líder ou membro **sem abrigo** gravava o acolhido e respondia `404` (o registro ficava fora do escopo de quem o criou e invisível). Agora `400` sem gravar; só o admin cria acolhido sem abrigo. O mesmo vale para `PUT` com `shelterId: null` por quem tem escopo (`400`).
