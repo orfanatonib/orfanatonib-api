@@ -4,6 +4,11 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - DOCUMENTOS (plano 27, cenários E2E)
+
+- **FIX (falha silenciosa)**: `PATCH /documents/:id` com o `id` da mídia e um **arquivo novo** sobre um upload existente respondia 200 e **ignorava o arquivo** (o ramo só tratava link→upload). Agora o arquivo novo é gravado na mesma linha e o antigo só sai do bucket depois do commit. Sem o `id` da mídia o fluxo de troca completa segue como antes (e passa a se beneficiar do conserto do `cleanAndReplaceMediaItems`, plano 29).
+- **TEST**: E2E de `/documents` com 56 testes (matriz `document` 60/60, incluindo `s3.01-12`); novo `update-document-media-by-id.spec.ts` (4 casos).
+
 ## [Unreleased] - 2026-11-22 - MEDITAÇÕES (plano 29, cenários E2E)
 
 - **FIX (perda de material)**: `cleanAndReplaceMediaItems` (compartilhado com `documents`) atualizava a linha de mídia **por id** com o arquivo novo e, em seguida, apagava a **mesma linha** como se fosse "antiga". Trocar o PDF de uma meditação com o `id` da mídia terminava com **zero linhas de mídia** e o arquivo novo órfão no bucket. Agora a linha mantida por id fica, só o arquivo que ela deixa para trás sai (depois do commit, via `deleteFn`), e linhas antigas que não chegaram no pedido (arquivo ou link) saem.

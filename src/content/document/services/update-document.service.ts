@@ -148,16 +148,18 @@ export class UpdateDocumentService {
           staleUrls.push(mediaToUpdate.url);
         }
 
-        if (wasLink && isNowUpload) {
-          if (!file) {
-            throw new BadRequestException(
-              "Upload file is required when changing to upload.",
-            );
-          }
+        if (isNowUpload && file) {
+          // Arquivo novo enviado com o id da mídia: troca o arquivo na MESMA linha. O antigo (se havia) só sai
+          // do bucket depois do commit; antes esse arquivo era ignorado em silêncio (200 sem trocar nada).
           const newUrl = await uploadTracked(file);
+          if (wasUpload && mediaToUpdate.url) staleUrls.push(mediaToUpdate.url);
           dto.media.url = newUrl;
           dto.media.originalName = file.originalname;
           dto.media.size = file.size;
+        } else if (wasLink && isNowUpload) {
+          throw new BadRequestException(
+            "Upload file is required when changing to upload.",
+          );
         }
 
         mediaToUpdate.title = dto.media.title ?? mediaToUpdate.title;
