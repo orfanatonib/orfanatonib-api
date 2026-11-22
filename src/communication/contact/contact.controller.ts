@@ -8,6 +8,7 @@ import {
   Logger,
   Delete,
   UseGuards,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { CreateContactService } from "./services/create-contact.service";
 import { GetContactService } from "./services/get-contact.service";
@@ -81,7 +82,7 @@ export class ContactController {
   @UseGuards(FeatureFlagGuard)
   @Patch(":id/read")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async setRead(@Param("id") id: string): Promise<ContactResponseDto> {
+  async setRead(@Param("id", ParseUUIDPipe) id: string): Promise<ContactResponseDto> {
     this.logger.log(`Marking contact as read: ${id}`);
     const result = await this.updateContactService.setReadOnContact(id);
     this.logger.log(`Contact marked as read successfully: ${id}`);
@@ -92,7 +93,7 @@ export class ContactController {
   @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async delete(@Param("id") id: string): Promise<void> {
+  async delete(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     this.logger.log(`Deleting contact: ${id}`);
     await this.deleteContactService.execute(id);
     this.logger.log(`Contact deleted successfully: ${id}`);

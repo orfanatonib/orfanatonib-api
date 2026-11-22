@@ -4,6 +4,11 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - CONTATO (plano 38, cenários E2E)
+
+- **FIX**: `:id` malformado em `PATCH /contact/:id/read` e `DELETE /contact/:id` agora responde `400` (`ParseUUIDPipe`), como nas demais rotas.
+- **TEST**: matriz `contact` 37/37 com 15 cenários novos em `e2e/live/contacts` (dados próprios, prova por SELECT): formulário público (sem sessão) com recibo só de `id` e `createdAt`, validação completa (inclusive `read`/`id` vindos do cliente), texto aparado, duplicidade permitida, caixa/selo/lido/apagar só do admin (visitante 401, membro e líder 403), `contact_form` desligada ⇒ 403 `FEATURE_DISABLED` sem gravar, e aviso aos admins no outbox só como `skipped` (editar o estado e apagar não avisam ninguém).
+
 ## [Unreleased] - 2026-11-22 - RELATÓRIOS DE VISITA (plano 24, cenários E2E)
 
 - **FIX (500)**: contagem acima de 2 147 483 647 (`caretakersDecisions: 3000000000`) passava no DTO e estourava a coluna `int` com erro 500; contagem fracionada (`2.5`) passava e era arredondada. Agora `400`: `@IsInt()` + teto de 100 000 (`visit-report/constants.ts`); observação limitada a 10 000 caracteres.
