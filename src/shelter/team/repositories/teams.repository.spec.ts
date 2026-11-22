@@ -200,4 +200,70 @@ describe("TeamsRepository — regras de escrita", () => {
       await expect(repository.remove("team-1")).rejects.toBe(failure);
     });
   });
+  describe("replaceLeaderTeams", () => {
+    const manager = txManager as typeof txManager & {
+      getRepository: jest.Mock;
+    };
+    const txTeams = {
+      findOne: jest.fn(),
+      save: jest.fn((team: TeamEntity) =>
+        Promise.resolve(Object.assign(team, { id: "team-novo" })),
+      ),
+      create: jest.fn((value: Partial<TeamEntity>) => value as TeamEntity),
+    };
+
+    beforeEach(() => {
+      manager.getRepository.mockReturnValue(txTeams);
+      txTeams.findOne.mockResolvedValue(null);
+    });
+
+    it("refuses an unknown shelter before touching any link", async () => {
+      manager.query.mockResolvedValueOnce([]);
+
+      await expect(
+        repository.replaceLeaderTeams("leader-1", [
+          { shelterId: "fantasma", teams: [1] },
+        ]),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      expect(manager.query).toHaveBeenCalledTimes(1);
+      expect(txTeams.save).not.toHaveBeenCalled();
+    });
+
+    it("creates a missing team once even when the number is repeated, then drops the other links", async () => {
+      manager.query.mockResolvedValueOnce([{ id: "shelter-1" }]);
+
+      await repository.replaceLeaderTeams("leader-1", [
+        { shelterId: "shelter-1", teams: [3, 3] },
+        { shelterId: "shelter-1", teams: [3] },
+      ]);
+
+      expect(txTeams.save).toHaveBeenCalledTimes(1);
+      expect(manager.query).toHaveBeenCalledWith(
+        expect.stringContaining("NOT IN (?)"),
+        ["leader-1", "team-novo"],
+      );
+      expect(manager.query).toHaveBeenCalledWith(
+        expect.stringContaining("INSERT IGNORE INTO leader_teams"),
+        ["leader-1", "team-novo"],
+      );
+    });
+
+    it("reuses an existing team and an empty request just releases the leader", async () => {
+      manager.query.mockResolvedValueOnce([{ id: "shelter-1" }]);
+      txTeams.findOne.mockResolvedValue(team({ id: "team-9", numberTeam: 2 }));
+
+      await repository.replaceLeaderTeams("leader-1", [
+        { shelterId: "shelter-1", teams: [2] },
+      ]);
+      expect(txTeams.save).not.toHaveBeenCalled();
+
+      manager.query.mockClear();
+      await repository.replaceLeaderTeams("leader-1", []);
+      expect(manager.query).toHaveBeenCalledWith(
+        expect.stringContaining("DELETE FROM leader_teams WHERE leader_id = ?"),
+        ["leader-1"],
+      );
+    });
+  });
 });

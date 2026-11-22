@@ -9,9 +9,7 @@ import { LeaderProfilesRepository } from "../repositories/leader-profiles.reposi
 import { LeaderResponseDto } from "../dto/leader-profile.response.dto";
 import { AuthContextService } from "src/core/auth/services/auth-context.service";
 import { GetTeamsService } from "src/shelter/team/services/get-teams.service";
-import { CreateTeamService } from "src/shelter/team/services/create-team.service";
 import { UpdateTeamService } from "src/shelter/team/services/update-team.service";
-import { DeleteTeamService } from "src/shelter/team/services/delete-team.service";
 import {
   ManageLeaderTeamDto,
   ManageLeaderTeamsDto,
@@ -28,12 +26,8 @@ export class UpdateLeaderProfileService {
     private readonly getLeaderProfilesService: GetLeaderProfilesService,
     @Inject(forwardRef(() => GetTeamsService))
     private readonly getTeamsService: GetTeamsService,
-    @Inject(forwardRef(() => CreateTeamService))
-    private readonly createTeamService: CreateTeamService,
     @Inject(forwardRef(() => UpdateTeamService))
     private readonly updateTeamService: UpdateTeamService,
-    @Inject(forwardRef(() => DeleteTeamService))
-    private readonly deleteTeamService: DeleteTeamService,
   ) {}
 
   private async getCtx(req: Request): Promise<AccessCtx> {
@@ -77,8 +71,8 @@ export class UpdateLeaderProfileService {
   }
 
   /**
-   * Move líder exclusivamente para múltiplas equipes de múltiplos abrigos
-   * Primeiro desvincula de todas as equipes, depois vincula às especificadas no payload
+   * Move líder exclusivamente para múltiplas equipes de múltiplos abrigos: ele fica só nas
+   * equipes do payload (criadas se não existirem), tudo ou nada.
    */
   async manageTeams(
     leaderId: string,
@@ -91,31 +85,8 @@ export class UpdateLeaderProfileService {
     const target =
       await this.repo.findOneWithSheltersAndMembersOrFail(leaderId);
     await this.assertLeaderScope(ctx, target, dto);
-    await this.deleteTeamService.removeLeaderFromAllTeams(leaderId);
-
-    for (const assignment of dto.assignments) {
-      const shelterTeams = await this.getTeamsService.findByShelter(
-        assignment.shelterId,
-      );
-
-      for (const teamNumber of assignment.teams) {
-        const targetTeam = shelterTeams.find(
-          (t) => t.numberTeam === teamNumber,
-        );
-
-        if (!targetTeam) {
-          await this.createTeamService.execute({
-            numberTeam: teamNumber,
-            shelterId: assignment.shelterId,
-            leaderProfileIds: [leaderId],
-          });
-        } else {
-          await this.updateTeamService.addLeadersToTeam(targetTeam.id, [
-            leaderId,
-          ]);
-        }
-      }
-    }
+    // Uma operação só: valida os abrigos e troca as equipes sem deixar o líder sem equipe se algo falhar.
+    await this.updateTeamService.replaceLeaderTeams(leaderId, dto.assignments);
 
     return this.getLeaderProfilesService.findOne(leaderId, req);
   }

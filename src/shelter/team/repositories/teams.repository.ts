@@ -216,6 +216,71 @@ export class TeamsRepository {
     return this.teamRepo.save(team);
   }
 
+  /**
+   * Troca, de uma vez, as equipes do líder: valida os abrigos, cria as equipes que ainda não existem,
+   * liga o líder às pedidas e solta das demais — numa única transação (falhou, nada muda).
+   * Abrigos e números repetidos no pedido contam uma vez só.
+   */
+  async replaceLeaderTeams(
+    leaderId: string,
+    assignments: ReadonlyArray<{ shelterId: string; teams: number[] }>,
+  ): Promise<void> {
+    const wanted = new Map<string, Set<number>>();
+    for (const assignment of assignments) {
+      const numbers = wanted.get(assignment.shelterId) ?? new Set<number>();
+      assignment.teams.forEach((number) => numbers.add(number));
+      wanted.set(assignment.shelterId, numbers);
+    }
+
+    await this.teamRepo.manager.transaction(async (manager) => {
+      const shelterIds = [...wanted.keys()];
+      if (shelterIds.length > 0) {
+        const marks = shelterIds.map(() => "?").join(",");
+        const found: unknown[] = await manager.query(
+          `SELECT id FROM shelters WHERE id IN (${marks})`,
+          shelterIds,
+        );
+        if (found.length !== shelterIds.length) {
+          throw new NotFoundException("Abrigo não encontrado.");
+        }
+      }
+
+      const teamRepo = manager.getRepository(TeamEntity);
+      const keepIds: string[] = [];
+      for (const [shelterId, numbers] of wanted) {
+        for (const numberTeam of numbers) {
+          const existing = await teamRepo.findOne({
+            where: { shelter: { id: shelterId }, numberTeam },
+          });
+          const team =
+            existing ??
+            (await teamRepo.save(
+              teamRepo.create({ numberTeam, shelter: { id: shelterId } }),
+            ));
+          keepIds.push(team.id);
+        }
+      }
+
+      if (keepIds.length > 0) {
+        const marks = keepIds.map(() => "?").join(",");
+        await manager.query(
+          `DELETE FROM leader_teams WHERE leader_id = ? AND team_id NOT IN (${marks})`,
+          [leaderId, ...keepIds],
+        );
+      } else {
+        await manager.query(`DELETE FROM leader_teams WHERE leader_id = ?`, [
+          leaderId,
+        ]);
+      }
+      for (const teamId of keepIds) {
+        await manager.query(
+          `INSERT IGNORE INTO leader_teams (leader_id, team_id) VALUES (?, ?)`,
+          [leaderId, teamId],
+        );
+      }
+    });
+  }
+
   async removeLeaderFromAllTeams(leaderId: string): Promise<void> {
     const teams = await this.teamRepo.find({
       where: {},

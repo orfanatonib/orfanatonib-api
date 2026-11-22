@@ -52,6 +52,8 @@ modules/leader-profiles/
 
 ## 🔌 Endpoints
 
+> **Contrato atual (2026-11-22):** hoje o módulo expõe `GET /leader-profiles` (paginado), `/simple`, `/my-shelters`, `/:id` e `PUT /leader-profiles/:leaderId`. O `PUT` recebe **um array** `[{ shelterId, teams: number[] }]` (cada número ≥ 1) e deixa o líder **somente** nas equipes pedidas, criando as que não existem. É **tudo ou nada**, numa transação: abrigo inexistente → `404` e nada muda (antes o líder ficava sem nenhuma equipe); abrigo e número repetidos no pedido contam uma vez; `[]` solta o líder de todas. Líder só mexe em líderes e abrigos que ele lidera (`403`); leitura fora do escopo é `404`. As seções abaixo descrevem a API antiga e ficam como histórico.
+
 ### 1. Criar Leader Profile para Usuário
 ```http
 POST /leader-profiles/create-for-user/:userId

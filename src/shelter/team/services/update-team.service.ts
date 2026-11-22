@@ -38,6 +38,14 @@ export class UpdateTeamService {
     return this.execute(id, dto);
   }
 
+  /** Troca as equipes do líder numa transação só (ver `TeamsRepository.replaceLeaderTeams`). */
+  replaceLeaderTeams(
+    leaderId: string,
+    assignments: ReadonlyArray<{ shelterId: string; teams: number[] }>,
+  ): Promise<void> {
+    return this.repository.replaceLeaderTeams(leaderId, assignments);
+  }
+
   async addLeadersToTeam(
     teamId: string,
     leaderProfileIds: string[],

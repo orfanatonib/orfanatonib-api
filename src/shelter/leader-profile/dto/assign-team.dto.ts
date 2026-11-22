@@ -30,6 +30,7 @@ export class ShelterTeamDto {
 
   @IsArray()
   @IsNumber({}, { each: true })
+  @Min(1, { each: true })
   @ArrayMinSize(1)
   @IsNotEmpty({ each: true })
   teams!: number[];

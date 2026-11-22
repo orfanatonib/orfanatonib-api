@@ -4,6 +4,12 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - PERFIS DE LÍDER (plano 15, cenários E2E)
+
+- **FIX (perda de dados)**: `PUT /leader-profiles/:leaderId` desvinculava o líder de todas as equipes e só depois aplicava o pedido, em passos soltos. Abrigo inexistente (400) deixava o líder **sem nenhuma equipe**; `teams: [3,3]` criava a equipe duas vezes (ou dava 409 pela nova regra de número único, já com o líder desvinculado). Agora é uma operação só, atômica, em `TeamsRepository.replaceLeaderTeams`: valida os abrigos (`404`), cria as equipes que faltam, liga o líder às pedidas, solta das demais e deduplica o pedido.
+- **CHANGE**: `teams` do `PUT` exige números ≥ 1 (`@Min(1, { each: true })`).
+- **TEST**: E2E de `/leader-profiles` com 41 testes (matriz `leader-profile` 41/41), com um segundo líder criado pela API para provar o escopo; spec do repositório cobre a troca atômica.
+
 ## [Unreleased] - 2026-11-22 - EQUIPES (plano 14, cenários E2E)
 
 - **FIX**: `DELETE /teams/:id` respondia `409` quando a equipe tinha líder (FK de `leader_teams`). O repositório agora solta líderes e membros e apaga a equipe numa transação.
