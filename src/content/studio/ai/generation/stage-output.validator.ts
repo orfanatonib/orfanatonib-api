@@ -14,6 +14,7 @@ import {
   LessonVisualFormat,
 } from "./visual-art.constants";
 import {
+  FIXATION_DANGLING_ENDINGS,
   FIXATION_PROFILES,
   fixationPieceSlot,
 } from "./verse-fixation.constants";
@@ -349,6 +350,14 @@ function checkFixationPieces(
     if (n > f.pieceWords)
       issues.push(
         `pieces[${i}]: ${n} palavras, acima de ${f.pieceWords}; divida em mais peças`,
+      );
+    const last = asText(piece.text).trim().split(/\s+/).pop() ?? "";
+    if (
+      i < pieces.length - 1 &&
+      FIXATION_DANGLING_ENDINGS.has(last.toLocaleLowerCase("pt-BR"))
+    )
+      issues.push(
+        `pieces[${i}] termina em "${last}", no meio da ideia: divida por unidades de sentido (essa palavra abre a peça seguinte)`,
       );
     if (f.figureOnPieces && !asText(piece.figure).trim())
       issues.push(

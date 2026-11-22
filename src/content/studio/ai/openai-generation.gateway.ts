@@ -12,6 +12,7 @@ import {
   AiProviderHealthResult,
   ImageGenerationRequest,
   ImageGenerationResult,
+  ImageReference,
   StructuredTextGenerationRequest,
   StructuredTextGenerationResult,
 } from "./types";
@@ -72,6 +73,28 @@ export class AiProviderRequestError extends Error {
     super(REDACTED_AI_ERROR_MESSAGE);
     this.name = "AiProviderRequestError";
   }
+}
+
+/** Corpo multipart da edição de imagem: os mesmos campos da geração, mais as imagens de referência. */
+function imageEditForm(
+  fields: { model: string; prompt: string; size: string; quality: string },
+  references: readonly ImageReference[],
+): FormData {
+  const form = new FormData();
+  form.append("model", fields.model);
+  form.append("prompt", fields.prompt);
+  form.append("size", fields.size);
+  form.append("quality", fields.quality);
+  form.append("output_format", "png");
+  form.append("n", "1");
+  references.forEach((reference, index) => {
+    form.append(
+      "image[]",
+      new Blob([Buffer.from(reference.bytes)], { type: reference.mediaType }),
+      `referencia-${index + 1}.png`,
+    );
+  });
+  return form;
 }
 
 @Injectable()
@@ -182,25 +205,39 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
       AiGenerationCapability.IMAGE_GENERATION,
     );
     const startedAt = Date.now();
-    const payload = await this.request<OpenAiImageBody>(
-      "/images/generations",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          model,
-          prompt: [
-            "Crie uma ilustração para material bíblico impresso. Personagens bíblicos são desenhados de forma estilizada (podem ter rosto); nunca retrate pessoas reais ou identificáveis. Não escreva texto na imagem, a menos que o pedido peça expressamente.",
-            ...request.instructions,
-            JSON.stringify(request.input),
-          ].join("\n\n"),
-          size: resolveImageSize(request.size),
-          quality: resolveImageQuality(request.quality),
-          output_format: "png",
-          n: 1,
-        }),
-      },
-      apiKey,
-    );
+    const prompt = [
+      "Crie uma ilustração para material bíblico impresso. Personagens bíblicos são desenhados de forma estilizada (podem ter rosto); nunca retrate pessoas reais ou identificáveis. Não escreva texto na imagem, a menos que o pedido peça expressamente.",
+      ...request.instructions,
+      JSON.stringify(request.input),
+    ].join("\n\n");
+    const size = resolveImageSize(request.size);
+    const quality = resolveImageQuality(request.quality);
+    const references = request.referenceImages ?? [];
+    // Com imagem de referência o pedido vai para a edição (multipart): o gerador parte do desenho recebido.
+    const payload = references.length
+      ? await this.request<OpenAiImageBody>(
+          "/images/edits",
+          {
+            method: "POST",
+            body: imageEditForm({ model, prompt, size, quality }, references),
+          },
+          apiKey,
+        )
+      : await this.request<OpenAiImageBody>(
+          "/images/generations",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              model,
+              prompt,
+              size,
+              quality,
+              output_format: "png",
+              n: 1,
+            }),
+          },
+          apiKey,
+        );
     const encoded = payload.data?.[0]?.b64_json;
     if (!encoded) throw new AiProviderRequestError(AiProviderErrorKind.SCHEMA);
     const bytes = new Uint8Array(Buffer.from(encoded, "base64"));
@@ -340,8 +377,11 @@ export class OpenAiGenerationGateway extends AiGenerationGateway {
     try {
       const response = await fetch(`https://api.openai.com/v1${path}`, {
         ...init,
+        // Multipart: o fetch define o Content-Type com o boundary.
         headers: {
-          "Content-Type": "application/json",
+          ...(init.body instanceof FormData
+            ? {}
+            : { "Content-Type": "application/json" }),
           Authorization: `Bearer ${apiKey}`,
         },
         signal: abortController.signal,

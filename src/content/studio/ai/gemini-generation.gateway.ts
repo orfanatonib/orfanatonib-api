@@ -167,6 +167,12 @@ export class GeminiGenerationGateway extends AiGenerationGateway {
                     JSON.stringify(request.input),
                   ].join("\n\n"),
                 },
+                ...(request.referenceImages ?? []).map((reference) => ({
+                  inlineData: {
+                    mimeType: reference.mediaType,
+                    data: Buffer.from(reference.bytes).toString("base64"),
+                  },
+                })),
               ],
             },
           ],

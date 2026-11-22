@@ -95,9 +95,27 @@ export const FIXATION_MOVEMENT_SAFETY =
 export const FIXATION_CALM_SAFETY =
   "Espaço pequeno e seguro, todos sentados ou em pé no lugar; nada cortante, pontudo, quente nem pesado; sem fogo, escada ou altura; sem venda nos olhos; sem alimento ou coisa para pôr na boca; sem empurrões, puxões nem contato brusco; ninguém corre.";
 
+/**
+ * Palavras que não podem fechar uma peça (artigo, preposição, conjunção, possessivo): o trecho ficaria
+ * cortado no meio da ideia ("Pois Deus enviou o seu" / "Filho ao mundo, não para").
+ */
+export const FIXATION_DANGLING_ENDINGS: ReadonlySet<string> = new Set(
+  "o a os as um uma uns umas de do da dos das em no na nos nas para por pelo pela pelos pelas com sem sob sobre entre até ao aos à às e ou mas que pois porque nem se seu sua seus suas meu minha meus minhas teu tua teus tuas nosso nossa nossos nossas vosso vossa vossos vossas".split(
+    " ",
+  ),
+);
+
+/** Jogos com movimento (crianças e adolescentes): a peça é conquistada com o corpo, não só na mesa. */
+export const FIXATION_MOVEMENT_REQUIRED =
+  "O jogo tem MOVIMENTO ou DESAFIO FÍSICO LEVE de verdade para conquistar cada peça (ir buscar, acertar um alvo, equilibrar, passar de mão em mão, revezar, procurar pelo espaço). Uma atividade feita só sentado em volta da mesa, apenas virando e ordenando peças, NÃO serve para este público: troque a ideia.";
+
 /** A peça é para imprimir e recortar: inteira na folha, sobre fundo branco. */
 export const FIXATION_PIECE_PRINT_RULE =
-  "PARA IMPRIMIR E RECORTAR: a peça aparece UMA única vez, inteira, centralizada e bem grande (ocupa cerca de 85% da folha A4 na horizontal), sobre FUNDO BRANCO PURO e liso, sem cenário, sem sombra projetada e sem mesa ou mãos segurando. Contorno externo bem definido, para recortar com tesoura. Nenhuma parte da peça encosta nas bordas da folha (margem de pelo menos 6%).";
+  "PARA IMPRIMIR E RECORTAR: a peça aparece UMA única vez, inteira, centralizada e bem grande (ocupa cerca de 85% da folha A4 na horizontal), sobre FUNDO BRANCO PURO e liso, sem cenário, sem sombra projetada e sem mesa ou mãos segurando. Vista de FRENTE, plana, sem perspectiva nem inclinação: a silhueta, as proporções e a posição de cada detalhe são idênticas em todas as peças do jogo. Contorno externo bem definido, para recortar com tesoura. Nenhuma parte da peça encosta nas bordas da folha (margem de pelo menos 6%).";
+
+/** Entra no prompt da peça só quando a imagem de referência foi de fato anexada. */
+export const FIXATION_PIECE_REFERENCE_RULE =
+  "IMAGEM DE REFERÊNCIA ANEXADA: é OUTRA peça deste mesmo jogo. Reproduza a peça EXATAMENTE igual: a mesma silhueta, o mesmo tamanho e posição na folha, as mesmas cores, bordas e detalhes nos mesmos lugares, a mesma fonte, cor e contorno das letras. Mude SOMENTE o texto escrito: apague o texto da referência e escreva no lugar apenas o texto pedido acima. Nenhuma palavra da referência pode continuar na peça.";
 
 /** O texto da peça é só o trecho. */
 export const FIXATION_PIECE_TEXT_RULE =

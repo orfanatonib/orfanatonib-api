@@ -9,6 +9,7 @@ import { buildStageRequest } from "./stage-prompt.builder";
 import {
   FIXATION_CALM_SAFETY,
   FIXATION_INSTRUCTIONS_SLOT,
+  FIXATION_MOVEMENT_REQUIRED,
   FIXATION_MOVEMENT_SAFETY,
   FIXATION_PIECE_PRINT_RULE,
   FIXATION_PROFILES,
@@ -51,6 +52,34 @@ describe("fixação divertida do versículo: documento, instruções e peças", 
         pieces(c).reverse();
       }),
     ).toThrow(/pieces\[0\]\.id deve ser peca-01/);
+  });
+
+  it("uma peça não termina no meio da ideia (artigo, preposição, conjunção ou possessivo)", () => {
+    expect(
+      run(ContentAudience.CHILD, (c) => {
+        pieces(c)[0].text = "Porque Deus tanto amou o";
+        pieces(c)[1].text = "mundo.";
+      }),
+    ).toThrow(/pieces\[0\] termina em "o", no meio da ideia/);
+    // A última peça fecha o versículo: não entra na regra.
+    expect(
+      validateStageOutput(
+        F,
+        ContentAudience.CHILD,
+        {
+          ...content(ContentAudience.CHILD),
+          verse: { text: "Confie nele e", reference: UPSTREAM.reference },
+          pieces: [
+            { id: "peca-01", text: "Confie nele", figure: "" },
+            { id: "peca-02", text: "e", figure: "" },
+          ],
+          steps: (content(ContentAudience.CHILD).steps as string[]).map(
+            (step, i) => (i === 0 ? "Todos dizem: Confie nele e." : step),
+          ),
+        },
+        { text: "Confie nele e", reference: UPSTREAM.reference },
+      ),
+    ).toBeDefined();
   });
 
   it("limita a quantidade de peças e as palavras por peça de cada público", () => {
@@ -125,6 +154,10 @@ describe("fixação divertida do versículo: documento, instruções e peças", 
         f.allowsMovement ? FIXATION_MOVEMENT_SAFETY : FIXATION_CALM_SAFETY,
       );
       expect(prompt).toContain(`no máximo ${f.pieceWords} palavras`);
+      expect(prompt).toContain("UNIDADES DE SENTIDO");
+      expect(prompt.includes(FIXATION_MOVEMENT_REQUIRED)).toBe(
+        f.allowsMovement,
+      );
     },
   );
 
@@ -162,12 +195,26 @@ describe("fixação divertida do versículo: documento, instruções e peças", 
         expect(text.includes("FIGURA DA PEÇA")).toBe(
           audience === ContentAudience.BABY,
         );
+        expect(text).not.toContain("DETALHE ILUSTRADO");
       });
       const reference = specs[specs.length - 1].instructions.join("\n");
       expect(reference).toContain(`"${UPSTREAM.reference}"`);
       expect(reference).toContain("SOMENTE a referência bíblica");
     },
   );
+
+  it("as peças copiam a forma da primeira; a primeira, refeita sozinha, copia a segunda", () => {
+    const specs = funSummaryImageSpecs(
+      F,
+      content(ContentAudience.CHILD),
+      ContentAudience.CHILD,
+    );
+    expect(specs.map((spec) => spec.referenceSlot)).toEqual([
+      undefined,
+      "peca-02",
+      ...specs.slice(2).map(() => "peca-01"),
+    ]);
+  });
 
   it("refazer: só as peças pedidas", () => {
     const c = content(ContentAudience.TEEN);

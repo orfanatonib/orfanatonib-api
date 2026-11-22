@@ -22,9 +22,17 @@ import {
   ContentVisualStyle,
 } from "../enums/content-visual.enums";
 import { AiProviderRequestError } from "../ai/openai-generation.gateway";
-import { isFixationPieceSlot } from "../ai/generation/verse-fixation.constants";
+import {
+  FIXATION_PIECE_REFERENCE_RULE,
+  isFixationPieceSlot,
+} from "../ai/generation/verse-fixation.constants";
 import { GENERATION_LEASE_MS } from "../ai/stage-generation.constants";
-import { cropToA4, padToA4 } from "../ai/utils/image-processing.util";
+import {
+  cropToA4,
+  padToA4,
+  toReferenceImage,
+} from "../ai/utils/image-processing.util";
+import type { ImageReference } from "../ai/types";
 import type { VisualConfig } from "../dto/visual-config.dto";
 import { ContentAudience } from "../enums/content-audience.enum";
 import { ContentStageType } from "../enums/content-stage-type.enum";
@@ -36,6 +44,8 @@ import type { ImageJobProgress, StartedGenerationJob } from "../types";
 const IMAGE_CONCURRENCY = 2;
 const IMAGE_ATTEMPTS = 2;
 const DEFAULT_IMAGE_QUALITY = "medium";
+/** Teto do arquivo lido do bucket para servir de referência (as imagens geradas têm até 10 MB). */
+const REFERENCE_MAX_BYTES = 12 * 1024 * 1024;
 
 interface ImageJobRequest {
   readonly versionId?: string;
@@ -161,11 +171,29 @@ export class ProcessStageImagesService {
       );
     await report();
 
-    const queue = [...specs];
-    const worker = async () => {
+    // Peças com referência: a peça-modelo deste lote sai primeiro, sem referência; as que a copiam vêm depois.
+    const batch = new Set(specs.map((spec) => spec.slot));
+    const isModel = (spec: ImageSpec) =>
+      !!spec.referenceSlot &&
+      batch.has(spec.referenceSlot) &&
+      spec.slot < spec.referenceSlot;
+    const waitsModel = (spec: ImageSpec) =>
+      !!spec.referenceSlot && batch.has(spec.referenceSlot) && !isModel(spec);
+    const runAll = async (group: ImageSpec[]) => {
+      const queue = [...group];
+      await Promise.all(
+        Array.from({ length: Math.min(IMAGE_CONCURRENCY, queue.length) }, () =>
+          worker(queue),
+        ),
+      );
+    };
+    const worker = async (queue: ImageSpec[]) => {
       for (let spec = queue.shift(); spec; spec = queue.shift()) {
         try {
-          await this.generateOne(job, context, config, spec);
+          const reference = isModel(spec)
+            ? null
+            : await this.loadReference(context.versionId, spec, where);
+          await this.generateOne(job, context, config, spec, reference);
           done += 1;
         } catch (error: unknown) {
           lastError = error;
@@ -187,9 +215,8 @@ export class ProcessStageImagesService {
         await report();
       }
     };
-    await Promise.all(
-      Array.from({ length: Math.min(IMAGE_CONCURRENCY, specs.length) }, worker),
-    );
+    await runAll(specs.filter((spec) => !waitsModel(spec)));
+    await runAll(specs.filter(waitsModel));
 
     const progress: ImageJobProgress = {
       phase: "IMAGES",
@@ -206,6 +233,40 @@ export class ProcessStageImagesService {
     return progress;
   }
 
+  /**
+   * A imagem que serve de modelo para esta (a primeira peça do jogo), reduzida. Sem modelo disponível, a peça
+   * é gerada só pelo texto do prompt, como antes: a referência melhora o resultado, mas nunca bloqueia.
+   */
+  private async loadReference(
+    versionId: string,
+    spec: ImageSpec,
+    where: string,
+  ): Promise<ImageReference | null> {
+    if (!spec.referenceSlot) return null;
+    try {
+      const asset = await this.assets.findGeneratedSlot(
+        versionId,
+        spec.referenceSlot,
+      );
+      if (!asset) return null;
+      const original = await this.s3.downloadOwned(
+        this.s3.buildUrl(asset.storageKey),
+        REFERENCE_MAX_BYTES,
+      );
+      return {
+        mediaType: "image/png",
+        bytes: await toReferenceImage(original),
+      };
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Referência indisponível ${where} item=${spec.slot} modelo=${spec.referenceSlot} causa=${
+          error instanceof Error ? error.name : "UNKNOWN"
+        }`,
+      );
+      return null;
+    }
+  }
+
   private async generateOne(
     job: StartedGenerationJob,
     context: {
@@ -215,14 +276,18 @@ export class ProcessStageImagesService {
     },
     config: VisualConfig,
     spec: ImageSpec,
+    reference: ImageReference | null,
   ): Promise<void> {
     let lastError: unknown = null;
     for (let attempt = 1; attempt <= IMAGE_ATTEMPTS; attempt += 1) {
       try {
         const result = await this.gateway.generateImage({
           correlationId: `${job.jobId}:${spec.slot}:${attempt}`,
-          instructions: spec.instructions,
+          instructions: reference
+            ? [...spec.instructions, FIXATION_PIECE_REFERENCE_RULE]
+            : spec.instructions,
           input: { item: spec.slot },
+          ...(reference ? { referenceImages: [reference] } : {}),
           size: spec.size ?? imageSizeFor(config.orientation),
           quality:
             this.config.get<string>("CONTENT_STUDIO_IMAGE_QUALITY") ??
@@ -261,7 +326,7 @@ export class ProcessStageImagesService {
         for (const old of replaced)
           await this.s3.deleteKey(old).catch(() => undefined);
         this.logger.log(
-          `Imagem pronta job=${job.jobId} item=${spec.slot} provedor=${result.provider} modelo=${result.model} duracaoMs=${result.durationMs} tentativa=${attempt}`,
+          `Imagem pronta job=${job.jobId} item=${spec.slot} provedor=${result.provider} modelo=${result.model} referencia=${reference ? spec.referenceSlot : "nenhuma"} duracaoMs=${result.durationMs} tentativa=${attempt}`,
         );
         return;
       } catch (error: unknown) {

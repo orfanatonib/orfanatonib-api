@@ -167,6 +167,28 @@ describe("OpenAiGenerationGateway", () => {
       (fetchSpy.mock.calls[1][1] as RequestInit).body as string,
     ) as { size: string; quality: string };
     expect(image).toMatchObject({ size: "1536x1024", quality: "low" });
+
+    // Com imagem de referência: edição em multipart, com os mesmos campos e a imagem anexada.
+    fetchSpy.mockReturnValueOnce(respond({ data: [{ b64_json: "iVBORw0=" }] }));
+    await gateway.generateImage({
+      correlationId: "c",
+      instructions: ["peça"],
+      input: {},
+      size: "1536x1024",
+      referenceImages: [
+        { mediaType: "image/png", bytes: new Uint8Array([1, 2, 3]) },
+      ],
+    });
+    const [url, init] = fetchSpy.mock.calls[2] as [string, RequestInit];
+    expect(url).toContain("/images/edits");
+    const form = init.body as FormData;
+    expect(form).toBeInstanceOf(FormData);
+    expect(form.get("size")).toBe("1536x1024");
+    expect(String(form.get("prompt"))).toContain("peça");
+    expect((form.get("image[]") as Blob).size).toBe(3);
+    expect(
+      (init.headers as Record<string, string>)["Content-Type"],
+    ).toBeUndefined();
     fetchSpy.mockRestore();
   });
 });

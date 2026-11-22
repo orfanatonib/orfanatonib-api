@@ -36,6 +36,7 @@ import {
   FIXATION_PIECE_TEXT_RULE,
   FIXATION_PROFILES,
   FIXATION_REFERENCE_SLOT,
+  fixationPieceSlot,
 } from "./verse-fixation.constants";
 
 type Json = Record<string, unknown>;
@@ -52,6 +53,8 @@ export interface ImageSpec {
   readonly title: string;
   readonly instructions: readonly string[];
   readonly size: "1024x1536" | "1536x1024";
+  /** Slot de outra imagem da mesma versão que serve de referência de forma (peças da fixação). */
+  readonly referenceSlot?: string;
 }
 
 /** O gerador desenha na proporção da orientação escolhida; depois é recortado para a folha A4. */
@@ -332,6 +335,7 @@ export function fixationImageSpecs(
   const referenceText =
     text(((content.referencePiece ?? {}) as Json).text) || reference;
 
+  const total = pieces.length + 1;
   const instructions: ImageSpec = {
     slot: FIXATION_INSTRUCTIONS_SLOT,
     title: name,
@@ -364,11 +368,20 @@ export function fixationImageSpecs(
         ? [`COMPOSIÇÃO PROPOSTA: ${text(content.imagePrompt)}`]
         : []),
       "É um único jogo. Sem personagens bíblicos e sem cenas da história. Nada violento, assustador ou perigoso: tudo mostra o jogo com segurança.",
-      "Em cada painel, o número fica só no círculo e a cena cabe inteira, sem cabeças nem mãos cortadas. Blocos organizados, com respiro e leitura fácil; nenhum texto encosta nas bordas (margem de pelo menos 5% em toda a volta).",
+      `Em cada painel, o número aparece UMA única vez, dentro do círculo: o título do passo é escrito sem número na frente. O quadro da dica traz SOMENTE o texto da dica informado acima, sem outra frase. O jogo tem exatamente ${total} peças: nenhuma cena nem o modelo mostra mais do que ${total}.`,
+      "Em cada painel a cena cabe inteira, sem cabeças nem mãos cortadas. Blocos organizados, com respiro e leitura fácil; nenhum texto encosta nas bordas (margem de pelo menos 5% em toda a volta).",
     ],
   };
 
-  const total = pieces.length + 1;
+  const anchor = fixationPieceSlot(0);
+  const referenceFor = (slot: string): string | undefined =>
+    slot !== anchor
+      ? anchor
+      : pieces.length > 1
+        ? fixationPieceSlot(1)
+        : referenceText
+          ? FIXATION_REFERENCE_SLOT
+          : undefined;
   const pieceSpec = (
     slot: string,
     written: string,
@@ -378,6 +391,8 @@ export function fixationImageSpecs(
     slot,
     title: written,
     size: "1536x1024",
+    // Todas copiam a forma da primeira peça; a primeira, quando refeita sozinha, copia a segunda.
+    ...(referenceFor(slot) ? { referenceSlot: referenceFor(slot) } : {}),
     instructions: [
       `PEÇA IMPRIMÍVEL DE UM JOGO DE FIXAÇÃO DO VERSÍCULO (uma de ${total} peças iguais na arte; só o texto muda). ${f.pieceStyle}`,
       `FORMA DA PEÇA (o mesmo objeto, as mesmas cores e os mesmos detalhes em todas as peças do jogo): ${theme}`,
@@ -396,11 +411,7 @@ export function fixationImageSpecs(
         ? [
             `FIGURA DA PEÇA (grande, fofa e simples, ocupa a maior parte do cartão, acima do texto): ${figure}. Nunca uma pessoa real nem Deus Pai.`,
           ]
-        : figure
-          ? [
-              `DETALHE ILUSTRADO PEQUENO (discreto, sem tocar nas letras): ${figure}.`,
-            ]
-          : []),
+        : []),
       "Sem pessoas, sem personagens bíblicos, sem cenário ao redor da peça.",
     ],
   });

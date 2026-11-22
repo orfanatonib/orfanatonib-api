@@ -23,12 +23,13 @@ import {
 } from "./visual-art.constants";
 import {
   FIXATION_CALM_SAFETY,
+  FIXATION_MOVEMENT_REQUIRED,
   FIXATION_MOVEMENT_SAFETY,
   FIXATION_PROFILES,
 } from "./verse-fixation.constants";
 
 /** Versão dos textos abaixo; vai no snapshot de cada geração (rastreia qual prompt gerou o quê). */
-export const STAGE_PROMPT_VERSION = "orfanato.studio.prompts/2.4.0";
+export const STAGE_PROMPT_VERSION = "orfanato.studio.prompts/2.5.0";
 
 /** Contrato de sistema enviado em toda geração (um único lugar). */
 export const ORFANATO_SYSTEM_PROMPT = {
@@ -308,7 +309,7 @@ function funPrompt(p: AudienceProfile, fixation: boolean): string {
     "",
     "DOCUMENTO CURTO, QUE CABE EM UMA PÁGINA A4",
     "- name (até 5 palavras), objective (uma frase), funMechanics (2 ou 3 itens de até 6 palavras), materials (até 6, com quantidade), preparation (até 2 frases).",
-    `- steps: de ${range(p.activitySteps)} comandos curtos${fixation ? ", terminando com a recitação coletiva" : ""}. stepTitles: um título curto (no máximo 5 palavras) para cada passo, na mesma ordem e quantidade; closingPhrase: uma frase curta (até 12 palavras) para o quadro final. Os dois vão escritos na imagem compilada.`,
+    `- steps: de ${range(p.activitySteps)} comandos curtos${fixation ? ", terminando com a recitação coletiva" : ""}. stepTitles: um título curto (no máximo 5 palavras) para cada passo, na mesma ordem e quantidade, com o vocabulário DESTE jogo (o objeto e a ação das peças), nunca títulos genéricos que serviriam a qualquer jogo; closingPhrase: uma frase curta (até 12 palavras) para o quadro final. Os dois vão escritos na imagem compilada.`,
     `- safetyRules: até 4 regras curtas, incluindo a duração (${p.gameMinutes.min} a ${p.gameMinutes.max} minutos, em durationMinutes) e como se vence ou se encerra.`,
     twoGames
       ? "- ageAdaptations: exatamente duas frases em cada brincadeira, como indicado acima."
@@ -347,6 +348,7 @@ function fixationPrompt(p: AudienceProfile): string {
     "O JOGO",
     `- ${f.dynamic}`,
     "- Regra central explicável em um minuto; todos participam quase o tempo todo; quem sai de uma rodada volta na seguinte ou vira juiz ou torcida; todos comemoram juntos no fim.",
+    ...(f.allowsMovement ? [`- ${FIXATION_MOVEMENT_REQUIRED}`] : []),
     "- O jogo só funciona COM as peças: em cada rodada alguém pega, acha, ganha, encaixa, pendura ou revela uma peça. Se as peças pudessem ser tiradas sem mudar o jogo, a ideia está errada: troque.",
     "- TEMA: o jogo, o nome e a forma das peças nascem do tema da lição aprovada ou das palavras do versículo (um versículo sobre o caminho vira placas de caminho; sobre o pastor, ovelhas; sobre vigiar, nuvens; sobre o presente de Deus, caixas de presente; sobre a ressurreição, túmulos com a pedra que abre). Nada de cartão genérico quando o tema oferece um objeto melhor.",
     "- Não repita os objetos e a ação da dinâmica da lição aprovada; pense em três ideias diferentes e escolha a mais divertida e original que cumpra as regras de segurança.",
@@ -355,12 +357,12 @@ function fixationPrompt(p: AudienceProfile): string {
     "- Use o único versículo principal aprovado na lição (approvedUpstream.LESSON.memoryVerse), com texto e referência exatos; copie-o em verse. Se for só uma PARTE (referência com letra, como Hebreus 9.22b), use apenas o trecho, sem completar o versículo e sem reticências.",
     "",
     "PEÇAS DO JOGO (pieces, referencePiece e pieceTheme)",
-    `- Divida o versículo em ${range(f.pieces)} peças, em unidades de sentido, na ordem. Cada peça tem no máximo ${f.pieceWords} palavras (poucas, para a letra ficar enorme). Os textos das peças (pieces[].text), lidos em ordem, reconstroem EXATAMENTE verse.text: sem lacunas, repetições, troca de ordem nem mudança de pontuação. Ids sequenciais peca-01, peca-02…`,
+    `- Divida o versículo em ${range(f.pieces)} peças, em UNIDADES DE SENTIDO, na ordem: corte onde a leitura respira (vírgula, dois-pontos, fim de uma ideia). Uma peça nunca termina em artigo, preposição, conjunção ou possessivo (o, a, de, para, por, e, que, mas, seu, sua…): essa palavra abre a peça seguinte (certo: Pois Deus enviou o seu Filho / ao mundo, / não para condenar o mundo, — errado: Pois Deus enviou o seu / Filho ao mundo, não para). Peças de tamanho parecido; evite uma peça final com uma ou duas palavras soltas. Cada peça tem no máximo ${f.pieceWords} palavras (poucas, para a letra ficar enorme). Os textos das peças (pieces[].text), lidos em ordem, reconstroem EXATAMENTE verse.text: sem lacunas, repetições, troca de ordem nem mudança de pontuação. Ids sequenciais peca-01, peca-02…`,
     "- referencePiece.text traz somente a referência completa, igual a verse.reference; ela é a última peça do jogo.",
-    "- pieceTheme: o OBJETO que dá forma a todas as peças, descrito em duas ou três frases concretas (forma, material, cores nomeadas, detalhes) e terminando com a LETRA: a cor exata das letras e do contorno delas (ex.: letras azul-marinho com contorno branco grosso) e o estilo (arredondada, em caixa alta ou não). Todas as peças são o mesmo objeto, com a mesma arte, a mesma cor e o mesmo estilo de letra; só o texto muda.",
+    "- pieceTheme: o OBJETO que dá forma a todas as peças, descrito em duas ou três frases concretas (UMA silhueta simples e fechada, vista de frente; material; cores nomeadas; cada detalhe com o LUGAR FIXO em que fica, por exemplo um coração no canto superior direito) e terminando com a LETRA: a cor exata das letras e do contorno delas (ex.: letras azul-marinho com contorno branco grosso) e o estilo (arredondada, em caixa alta ou não). Todas as peças são o mesmo objeto, com a mesma arte, a mesma cor e o mesmo estilo de letra; só o texto muda.",
     f.figureOnPieces
       ? "- figure (OBRIGATÓRIO em toda peça): a figura grande e simples que representa aquele trecho (um objeto, animal ou elemento da natureza ligado à palavra principal do trecho; nunca uma pessoa real nem Deus Pai). É ela que o bebê olha e toca; cada peça tem uma figura diferente."
-      : "- figure: um detalhe ilustrado pequeno ligado ao sentido do trecho, ou vazio; o texto é sempre o protagonista da peça.",
+      : '- figure: deixe vazio (""). Os detalhes da peça já estão em pieceTheme e são os mesmos em todas; o texto é o protagonista.',
     `- Estilo das peças deste público: ${f.pieceStyle}`,
     "",
     "COMO O VERSÍCULO FICA NA CABEÇA (o objetivo é FIXAR E APRENDER)",
@@ -384,7 +386,7 @@ function fixationPrompt(p: AudienceProfile): string {
     "",
     "INFOGRÁFICO DE INSTRUÇÕES (compilado-01)",
     `- visualSummary: em uma ou duas frases, a UMA folha de instruções do jogo: título, versículo com a referência em destaque, materiais, os passos numerados com pessoas usando as PEÇAS, o modelo das peças montadas na ordem e a dica para o líder.`,
-    `- imagePrompt: o prompt AUTOSSUFICIENTE dessa folha para o gerador de imagens, que não conhece o material: descreva a cena de cada passo (quem faz o quê com as peças, descritas como em pieceTheme) e a disposição dos blocos. Estilo deste público: ${f.infographicStyle}`,
+    `- imagePrompt: o prompt AUTOSSUFICIENTE dessa folha para o gerador de imagens, que não conhece o material: descreva a cena de cada passo (quem faz o quê com as peças) e a disposição dos blocos. Não redescreva cores nem detalhes das peças aqui: valem só os de pieceTheme. Estilo deste público: ${f.infographicStyle}`,
     "- Pessoas sempre genéricas do público, sem rosto identificável e sem personagens bíblicos.",
     "",
     "REGRAS",

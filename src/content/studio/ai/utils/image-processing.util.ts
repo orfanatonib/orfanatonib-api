@@ -51,6 +51,22 @@ export async function cropToA4(
   };
 }
 
+/** Lado maior da imagem enviada como referência: o bastante para copiar a forma, sem gastar entrada à toa. */
+const REFERENCE_MAX_SIDE = 1024;
+
+/** Reduz uma imagem já gerada para servir de referência de outra (PNG, sem ampliar). */
+export async function toReferenceImage(input: Uint8Array): Promise<Buffer> {
+  return sharp(Buffer.from(input))
+    .resize({
+      width: REFERENCE_MAX_SIDE,
+      height: REFERENCE_MAX_SIDE,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .png()
+    .toBuffer();
+}
+
 /**
  * Ajusta à A4 SEM cortar nada (infográfico compilado, em que título e quadro final ficam nas pontas): quando a
  * imagem é mais "magra" que a A4, estende as laterais repetindo a cor da borda; quando é mais "larga", estende

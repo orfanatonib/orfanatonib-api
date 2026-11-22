@@ -25,6 +25,13 @@ export interface ImageGenerationRequest {
   /** Tamanho e qualidade da imagem deste pedido (valores fora da lista usam o padrão). */
   readonly size?: string;
   readonly quality?: string;
+  /** Imagens de referência (ex.: a primeira peça do jogo, para as demais saírem com a mesma forma). */
+  readonly referenceImages?: readonly ImageReference[];
+}
+
+export interface ImageReference {
+  readonly mediaType: string;
+  readonly bytes: Uint8Array;
 }
 
 export interface ImageGenerationResult {

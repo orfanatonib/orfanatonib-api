@@ -107,6 +107,17 @@ export class ContentAssetRepository {
     });
   }
 
+  /** A imagem gerada de um item (slot) de uma versão, se existir. */
+  async findGeneratedSlot(
+    versionId: string,
+    slot: string,
+  ): Promise<ContentAssetEntity | null> {
+    return this.dataSource.getRepository(ContentAssetEntity).findOne({
+      where: { versionId, slot, kind: ContentAssetKind.GENERATED_IMAGE },
+      order: { createdAt: "DESC" },
+    });
+  }
+
   async findInPackage(
     packageId: string,
     assetId: string,

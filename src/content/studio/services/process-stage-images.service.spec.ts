@@ -186,3 +186,112 @@ describe("ProcessStageImagesService", () => {
     });
   });
 });
+
+describe("ProcessStageImagesService: peças da fixação com imagem de referência", () => {
+  const fixationSetup = (stored: string[] = []) => {
+    const base = setup();
+    base.generations.loadStageImageContext.mockResolvedValue({
+      packageId: "pkg-1",
+      stageId: "stage-1",
+      stageType: ContentStageType.VERSE_FIXATION,
+      audience: ContentAudience.CHILD,
+      versionId: "ver-1",
+      content: fakeStageContent(
+        ContentStageType.VERSE_FIXATION,
+        ContentAudience.CHILD,
+        "T",
+      ),
+    });
+    const saved = new Set(stored);
+    const assets = base.assets as unknown as Record<string, jest.Mock>;
+    assets.replaceSlot = jest.fn().mockImplementation((input) => {
+      saved.add(String(input.slot));
+      return Promise.resolve([]);
+    });
+    assets.findGeneratedSlot = jest
+      .fn()
+      .mockImplementation((_version: string, slot: string) =>
+        Promise.resolve(saved.has(slot) ? { storageKey: `k/${slot}` } : null),
+      );
+    const s3 = base.s3 as unknown as Record<string, jest.Mock>;
+    s3.buildUrl = jest.fn().mockImplementation((key: string) => `u/${key}`);
+    s3.downloadOwned = jest.fn().mockResolvedValue(PNG);
+    const calls = () =>
+      base.gateway.generateImage.mock.calls.map(([request]) => ({
+        slot: String(request.input.item),
+        referenced: Boolean(request.referenceImages?.length),
+        ruled: (request.instructions as string[]).some((line) =>
+          line.startsWith("IMAGEM DE REFERÊNCIA ANEXADA"),
+        ),
+      }));
+    return { ...base, s3, calls };
+  };
+  const run = (
+    service: ProcessStageImagesService,
+    slots: string[] | null = null,
+  ) =>
+    service.process({
+      jobId: "job-1",
+      stageId: "stage-1",
+      request: { versionId: "ver-1", slots },
+    } as never);
+
+  it("gera a primeira peça sem referência e as demais copiando a primeira", async () => {
+    const { service, calls, s3 } = fixationSetup();
+    await run(service);
+    const made = calls();
+    const of = (slot: string) => made.find((call) => call.slot === slot);
+    expect(of("compilado-01")).toMatchObject({ referenced: false });
+    expect(of("peca-01")).toMatchObject({ referenced: false, ruled: false });
+    const followers = made.filter(
+      (call) => !["compilado-01", "peca-01"].includes(call.slot),
+    );
+    expect(followers.length).toBeGreaterThanOrEqual(2);
+    expect(followers.every((call) => call.referenced && call.ruled)).toBe(true);
+    // A primeira peça fica pronta antes de qualquer peça que a copia.
+    expect(made.findIndex((call) => call.slot === "peca-01")).toBeLessThan(
+      made.findIndex((call) => call.slot === followers[0].slot),
+    );
+    expect(s3.downloadOwned).toHaveBeenCalledWith(
+      "u/k/peca-01",
+      expect.any(Number),
+    );
+  });
+
+  it("refazer uma peça usa a primeira já guardada; refazer a primeira usa a segunda", async () => {
+    const one = fixationSetup(["peca-01", "peca-02"]);
+    await run(one.service, ["peca-02"]);
+    expect(one.calls()).toEqual([
+      { slot: "peca-02", referenced: true, ruled: true },
+    ]);
+    expect(one.s3.downloadOwned).toHaveBeenCalledWith(
+      "u/k/peca-01",
+      expect.any(Number),
+    );
+
+    const first = fixationSetup(["peca-01", "peca-02"]);
+    await run(first.service, ["peca-01"]);
+    expect(first.calls()).toEqual([
+      { slot: "peca-01", referenced: true, ruled: true },
+    ]);
+    expect(first.s3.downloadOwned).toHaveBeenCalledWith(
+      "u/k/peca-02",
+      expect.any(Number),
+    );
+  });
+
+  it("sem a peça-modelo guardada (ou com falha ao ler), gera só pelo prompt", async () => {
+    const missing = fixationSetup();
+    await run(missing.service, ["peca-02"]);
+    expect(missing.calls()).toEqual([
+      { slot: "peca-02", referenced: false, ruled: false },
+    ]);
+
+    const broken = fixationSetup(["peca-01"]);
+    broken.s3.downloadOwned.mockRejectedValue(new Error("x"));
+    await run(broken.service, ["peca-02"]);
+    expect(broken.calls()).toEqual([
+      { slot: "peca-02", referenced: false, ruled: false },
+    ]);
+  });
+});
