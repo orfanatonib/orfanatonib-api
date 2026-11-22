@@ -1,32 +1,46 @@
-import { IsOptional, IsNumber, Min, IsString } from "class-validator";
+import {
+  IsOptional,
+  IsInt,
+  Min,
+  Max,
+  MaxLength,
+  IsString,
+} from "class-validator";
+import { VISIT_REPORT_LIMITS } from "../constants";
 
 export class UpdateVisitReportDto {
-  @IsNumber()
+  @IsInt()
   @IsOptional()
   @Min(0)
+  @Max(VISIT_REPORT_LIMITS.countMax)
   teamMembersPresent?: number;
 
-  @IsNumber()
+  @IsInt()
   @IsOptional()
   @Min(0)
+  @Max(VISIT_REPORT_LIMITS.countMax)
   shelteredHeardMessage?: number;
 
-  @IsNumber()
+  @IsInt()
   @IsOptional()
   @Min(0)
+  @Max(VISIT_REPORT_LIMITS.countMax)
   caretakersHeardMessage?: number;
 
-  @IsNumber()
+  @IsInt()
   @IsOptional()
   @Min(0)
+  @Max(VISIT_REPORT_LIMITS.countMax)
   shelteredDecisions?: number;
 
-  @IsNumber()
+  @IsInt()
   @IsOptional()
   @Min(0)
+  @Max(VISIT_REPORT_LIMITS.countMax)
   caretakersDecisions?: number;
 
   @IsString()
   @IsOptional()
+  @MaxLength(VISIT_REPORT_LIMITS.observationMax)
   observation?: string;
 }

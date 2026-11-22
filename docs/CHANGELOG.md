@@ -4,6 +4,13 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - RELATÓRIOS DE VISITA (plano 24, cenários E2E)
+
+- **FIX (500)**: contagem acima de 2 147 483 647 (`caretakersDecisions: 3000000000`) passava no DTO e estourava a coluna `int` com erro 500; contagem fracionada (`2.5`) passava e era arredondada. Agora `400`: `@IsInt()` + teto de 100 000 (`visit-report/constants.ts`); observação limitada a 10 000 caracteres.
+- **FIX (concorrência)**: dois `POST /visit-reports` simultâneos para a mesma agenda passavam pela checagem prévia e o segundo caía na unicidade do banco (`UQ_visit_report_schedule`) como erro 500; agora `409` (`isDuplicateEntry`, errno 1062).
+- **FIX**: `:id` malformado em `GET/PUT/DELETE /visit-reports/:id` agora responde `400` (`ParseUUIDPipe`).
+- **TEST**: matriz `visit-report` 43/43 com 19 cenários novos em `e2e/live/visit-reports` (dois abrigos criados pelo cenário; o líder semeado lidera o A): escopo do líder (404 fora da equipe, filtros nunca ampliam), um relatório por agenda, `PUT` parcial e sem trocar a agenda, `DELETE` mantém a agenda, `visit_reports` desligada e o outbox inalterado em criar/editar/apagar. Novos `visit-report-dto.spec.ts` e `duplicate-entry.util.spec.ts`.
+
 ## [Unreleased] - 2026-11-22 - BANNERS INFORMATIVOS (plano 28, cenários E2E)
 
 - **FIX (atomicidade)**: `DELETE /informatives/:id` apagava a rota e depois o banner em passos soltos; agora `InformativeRepository.removeWithRoute` faz os dois numa transação. `PATCH` gravava a rota fora da transação do banner; agora `RouteService.upsertRoute`/`RouteRepository.upsertRoute` aceitam um `manager` opcional e a rota entra na mesma transação.

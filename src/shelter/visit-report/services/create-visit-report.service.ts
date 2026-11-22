@@ -9,6 +9,7 @@ import { CreateVisitReportDto } from "../dto/create-visit-report.dto";
 import { VisitReportEntity } from "../entities/visit-report.entity";
 import { UserRole } from "src/core/auth/auth.types";
 import type { ShelterAccessContext } from "src/shelter/shelter/types";
+import { isDuplicateEntry } from "../utils/duplicate-entry.util";
 import { ShelterScheduleRepository } from "src/shelter/schedule/shelter-schedule.repository";
 
 @Injectable()
@@ -59,15 +60,26 @@ export class CreateVisitReportService {
       );
     }
 
-    const visitReport = await this.visitReportRepo.create({
-      teamMembersPresent: dto.teamMembersPresent,
-      shelteredHeardMessage: dto.shelteredHeardMessage,
-      caretakersHeardMessage: dto.caretakersHeardMessage,
-      shelteredDecisions: dto.shelteredDecisions,
-      caretakersDecisions: dto.caretakersDecisions,
-      observation: dto.observation,
-      schedule,
-    });
+    // Dois envios simultâneos passam pela checagem acima; a unicidade do banco (uma por agenda) decide quem fica.
+    let visitReport: VisitReportEntity;
+    try {
+      visitReport = await this.visitReportRepo.create({
+        teamMembersPresent: dto.teamMembersPresent,
+        shelteredHeardMessage: dto.shelteredHeardMessage,
+        caretakersHeardMessage: dto.caretakersHeardMessage,
+        shelteredDecisions: dto.shelteredDecisions,
+        caretakersDecisions: dto.caretakersDecisions,
+        observation: dto.observation,
+        schedule,
+      });
+    } catch (error) {
+      if (isDuplicateEntry(error)) {
+        throw new ConflictException(
+          `A visit report for schedule ${dto.scheduleId} already exists. Use update instead.`,
+        );
+      }
+      throw error;
+    }
 
     this.logger.log(`Visit report created with ID ${visitReport.id}`);
     return visitReport;

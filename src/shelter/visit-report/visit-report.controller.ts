@@ -11,6 +11,7 @@ import {
   UseGuards,
   ValidationPipe,
   Req,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { Request } from "express";
 import { CreateVisitReportDto } from "./dto/create-visit-report.dto";
@@ -70,7 +71,7 @@ export class VisitReportController {
   @Get(":id")
   async findOne(
     @Req() req: AuthenticatedRequest,
-    @Param("id") id: string,
+    @Param("id", ParseUUIDPipe) id: string,
   ): Promise<VisitReportResponseDto> {
     this.logger.log(`Finding visit report: ${id}`);
     const report = await this.listService.findOne(
@@ -85,7 +86,7 @@ export class VisitReportController {
   @Put(":id")
   async update(
     @Req() req: AuthenticatedRequest,
-    @Param("id") id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body(ValidationPipe) dto: UpdateVisitReportDto,
   ): Promise<VisitReportResponseDto> {
     this.logger.log(`Updating visit report: ${id}`);
@@ -104,7 +105,7 @@ export class VisitReportController {
   @HttpCode(204)
   async remove(
     @Req() req: AuthenticatedRequest,
-    @Param("id") id: string,
+    @Param("id", ParseUUIDPipe) id: string,
   ): Promise<void> {
     this.logger.log(`Deleting visit report: ${id}`);
     await this.deleteService.execute(id, toShelterAccessContext(req));
