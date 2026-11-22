@@ -22,10 +22,8 @@ import {
   ContentVisualStyle,
 } from "../enums/content-visual.enums";
 import { AiProviderRequestError } from "../ai/openai-generation.gateway";
-import {
-  FIXATION_PIECE_REFERENCE_RULE,
-  isFixationPieceSlot,
-} from "../ai/generation/verse-fixation.constants";
+import { isGamePieceSlot } from "../ai/generation/game-kit.constants";
+import { isFixationPieceSlot } from "../ai/generation/verse-fixation.constants";
 import { GENERATION_LEASE_MS } from "../ai/stage-generation.constants";
 import {
   cropToA4,
@@ -283,9 +281,10 @@ export class ProcessStageImagesService {
       try {
         const result = await this.gateway.generateImage({
           correlationId: `${job.jobId}:${spec.slot}:${attempt}`,
-          instructions: reference
-            ? [...spec.instructions, FIXATION_PIECE_REFERENCE_RULE]
-            : spec.instructions,
+          instructions:
+            reference && spec.referenceRule
+              ? [...spec.instructions, spec.referenceRule]
+              : spec.instructions,
           input: { item: spec.slot },
           ...(reference ? { referenceImages: [reference] } : {}),
           size: spec.size ?? imageSizeFor(config.orientation),
@@ -302,7 +301,9 @@ export class ProcessStageImagesService {
               : config.orientation;
         // Infográfico compilado e peças do jogo: nada pode ser cortado (ficam inteiros na folha); as demais, recorte A4.
         const processed =
-          isCompiledSlot(spec.slot) || isFixationPieceSlot(spec.slot)
+          isCompiledSlot(spec.slot) ||
+          isFixationPieceSlot(spec.slot) ||
+          isGamePieceSlot(spec.slot)
             ? await padToA4(
                 result.bytes,
                 orientation,

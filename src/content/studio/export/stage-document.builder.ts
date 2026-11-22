@@ -130,6 +130,22 @@ function piecesSection(c: Json): TiptapNode[] {
   ]);
 }
 
+/** Brincadeira: o kit imprimível do jogo (uma peça por linha: o que vai escrito e a figura). */
+function kitSection(c: Json): TiptapNode[] {
+  const pieces = (Array.isArray(c.pieces) ? (c.pieces as Json[]) : [])
+    .map((piece) =>
+      [asString(piece.text), asString(piece.figure)]
+        .filter(Boolean)
+        .join(" — "),
+    )
+    .filter(Boolean);
+  if (pieces.length === 0) return [];
+  return section("Peças do jogo (imprimir e recortar)", [
+    ...(asString(c.pieceTheme) ? [paragraph(asString(c.pieceTheme))] : []),
+    numbered(pieces),
+  ]);
+}
+
 function funBlocks(
   c: Json,
   fixation: boolean,
@@ -182,7 +198,7 @@ function funBlocks(
         ]
       : []),
     ...listSection("Materiais", c.materials),
-    ...(fixation ? piecesSection(c) : []),
+    ...(fixation ? piecesSection(c) : kitSection(c)),
     ...textSection("Preparação", c.preparation),
     ...section(
       "Como brincar",
@@ -211,7 +227,7 @@ function funBlocks(
           }),
         ]
       : []),
-    ...(fixation ? textSection("Dica para o líder", c.leaderTip) : []),
+    ...textSection("Dica para o líder", c.leaderTip),
     ...(fixation ? textSection("Como avaliar", c.evaluation) : []),
     ...textSection("Princípio bíblico", c.biblicalConnection),
   ];

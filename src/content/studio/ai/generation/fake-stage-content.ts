@@ -212,9 +212,20 @@ export function fakeStageContent(
           evaluation: "Cada equipe recita sem ajuda.",
           reviewerNotes: "",
         };
+      const kit = (prefix: string) => ({
+        pieceTheme:
+          "Cartas retangulares de cantos arredondados, com borda amarela e uma estrela no canto superior direito. Letras azul-marinho com contorno branco.",
+        pieces: ["Bola", "Sapo", "Sol"].map((figure, index) => ({
+          id: `peca-${String(index + 1).padStart(2, "0")}`,
+          text: `${prefix} ${index + 1}`,
+          figure: `${figure} grande e sorridente`,
+        })),
+        leaderTip: "Narre cada rodada como um locutor de festa.",
+      });
       return {
         centralMessage: central,
         ...plan(`Gincana ${p.label}`),
+        ...kit("Desafio"),
         spaceNeeded: "Uma mesa ou uma roda pequena",
         // Crianças: uma segunda brincadeira, para 9 a 11 anos.
         extraGames:
@@ -222,6 +233,7 @@ export function fakeStageContent(
             ? [
                 {
                   ...plan(`Gincana ${p.label} (9 a 11 anos)`),
+                  ...kit("Missão"),
                   spaceNeeded: "Uma mesa",
                 },
               ]

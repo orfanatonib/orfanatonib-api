@@ -155,7 +155,27 @@ const funProperties = { centralMessage, ...funCore };
 const gameCore = {
   ...funCore,
   spaceNeeded: str(
-    "Espaço que a brincadeira ocupa, curto (ex.: 'uma mesa', 'roda de 3 m × 3 m', 'um tapete de 2 m × 2 m'). Pequeno: nunca quadra, pátio ou percurso.",
+    "Espaço que a brincadeira ocupa, curto (ex.: 'uma mesa', 'roda de 3 m × 3 m', 'sala livre de 5 m × 5 m').",
+  ),
+  pieceTheme: str(
+    "A FORMA comum a todas as peças do kit desta brincadeira (ex.: cartas de baralho gigantes com borda de estrelas, alvos redondos, medalhas, placas de trânsito, faces de dado): duas ou três frases com a silhueta, as cores, os enfeites e o lugar fixo de cada um, terminando com a cor e o estilo das letras.",
+  ),
+  pieces: {
+    type: "array",
+    description:
+      "O kit imprimível da brincadeira: cada peça é um material que o jogo USA (carta de desafio, alvo, ficha, placa, face de dado). Todas com a mesma forma; a figura e o texto mudam.",
+    items: obj({
+      id: str("Identificador sequencial: peca-01, peca-02…"),
+      text: str(
+        "O que vai escrito na peça, bem curto (o desafio, a palavra, os pontos); pode ser vazio se a figura bastar.",
+      ),
+      figure: str(
+        "A figura grande e divertida desta peça (objeto, bicho, gesto desenhado em boneco simples, símbolo); diferente em cada peça. Nunca uma pessoa real.",
+      ),
+    }),
+  },
+  leaderTip: str(
+    "DICA PARA O LÍDER: uma ou duas frases curtas para quem conduz deixar a brincadeira ainda mais animada.",
   ),
 };
 const gameProperties = {

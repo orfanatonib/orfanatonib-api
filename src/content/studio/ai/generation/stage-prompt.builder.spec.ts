@@ -103,7 +103,7 @@ describe("buildStageRequest", () => {
     [ContentStageType.VERSE_FIXATION, "recitação coletiva", "evaluation"],
     [
       ContentStageType.STANDARD_GAME,
-      "PROIBIDO como mecânica principal",
+      "DIVERSÃO EM PRIMEIRO LUGAR",
       "compilado-01",
     ],
     [ContentStageType.LESSON_VISUALS, "visual-01", "sourceExcerpt"],
@@ -127,7 +127,7 @@ describe("buildStageRequest", () => {
         audience: ContentAudience.BABY,
       }),
     ).instructions.join("\n");
-    expect(baby).toContain("competição, tempo cronometrado, placar");
+    expect(baby).toContain("Sem competição, sem tempo, sem correria");
   });
 
   it("o esquema de saída é o da etapa e tem os campos internos antes das seções", () => {

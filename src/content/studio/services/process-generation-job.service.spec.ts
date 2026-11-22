@@ -6,6 +6,7 @@ import { AiProviderErrorKind } from "../ai/enums/ai-provider-error-kind.enum";
 import { AiProviderRequestError } from "../ai/openai-generation.gateway";
 import { FakeAiGenerationGateway } from "../ai/fake-ai-generation.gateway";
 import { ProcessGenerationJobService } from "./process-generation-job.service";
+import { STAGE_PROMPT_VERSION } from "../ai/generation/stage-prompts.constants";
 
 const started = (
   attempts = 1,
@@ -259,7 +260,7 @@ describe("ProcessGenerationJobService (provedor simulado)", () => {
       expect(saved.generationSnapshot).toMatchObject({
         audience,
         stageType: "LESSON",
-        promptVersion: "orfanato.studio.prompts/2.3.0",
+        promptVersion: STAGE_PROMPT_VERSION,
       });
       // notas internas ficam no snapshot, fora do conteúdo editável
       expect(saved.structuredContent).not.toHaveProperty("reviewerNotes");

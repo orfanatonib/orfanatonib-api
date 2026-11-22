@@ -13,6 +13,7 @@ import {
   CutoutCategory,
   LessonVisualFormat,
 } from "./visual-art.constants";
+import { GAME_KIT_PROFILES, gamePieceId } from "./game-kit.constants";
 import {
   FIXATION_DANGLING_ENDINGS,
   FIXATION_PROFILES,
@@ -288,6 +289,42 @@ function checkGameSpace(
   }
 }
 
+/** Brincadeira: o kit imprimível. Peças na quantidade do público, com figura, texto curto e todas diferentes. */
+function checkGamePieces(
+  audience: ContentAudience,
+  game: Record<string, unknown>,
+  issues: string[],
+): void {
+  const kit = GAME_KIT_PROFILES[audience];
+  const pieces = (Array.isArray(game.pieces) ? game.pieces : []) as Array<{
+    id?: unknown;
+    text?: unknown;
+    figure?: unknown;
+  }>;
+  inRange("pieces", pieces.length, kit.pieces.min, kit.pieces.max, issues);
+  pieces.forEach((piece, i) => {
+    if (piece.id !== gamePieceId(i))
+      issues.push(`pieces[${i}].id deve ser ${gamePieceId(i)}`);
+    if (!asText(piece.figure).trim())
+      issues.push(`pieces[${i}].figure vazio: toda peça do kit tem uma figura`);
+    const n = wordCount(asText(piece.text));
+    if (n > kit.pieceWords)
+      issues.push(
+        `pieces[${i}].text: ${n} palavras, acima de ${kit.pieceWords}; encurte (a figura é a protagonista)`,
+      );
+  });
+  const distinct = new Set(
+    pieces.map(
+      (piece) => `${plain(asText(piece.text))}|${plain(asText(piece.figure))}`,
+    ),
+  );
+  if (pieces.length > 1 && distinct.size < pieces.length)
+    issues.push("pieces: há peças repetidas; cada peça do kit é diferente");
+  if (wordCount(asText(game.pieceTheme)) < 4)
+    issues.push("pieceTheme vazio ou vago: descreva a forma das peças");
+  if (!asText(game.leaderTip).trim()) issues.push("leaderTip vazio");
+}
+
 /** Brincadeira: uma por categoria (duas para crianças: 3 a 8 e 9 a 11 anos), todas de espaço pequeno e seguras. */
 function checkGames(
   audience: ContentAudience,
@@ -311,8 +348,13 @@ function checkGames(
     const list = (key: string): unknown[] =>
       Array.isArray(game[key]) ? (game[key] as unknown[]) : [];
     checkFunDocument(p, game, list, found);
-    checkFunSafety(audience, game, found);
-    checkGameSpace(game, found);
+    const kit = GAME_KIT_PROFILES[audience];
+    checkFunSafety(audience, game, found, kit.allowsMovement);
+    // Crianças e adolescentes podem correr e fazer circuito; bebês e adultos ficam no espaço pequeno.
+    if (kit.allowsMovement) {
+      if (!asText(game.spaceNeeded).trim()) found.push("spaceNeeded vazio");
+    } else checkGameSpace(game, found);
+    checkGamePieces(audience, game, found);
     issues.push(
       ...found.map((issue) =>
         index === 0 ? issue : `extraGames[${index - 1}].${issue}`,
@@ -679,17 +721,21 @@ function presentedFields(
       strings("safetyRules");
       add("biblicalConnection", content.biblicalConnection);
       add("evaluation", content.evaluation);
-      if (stage === ContentStageType.VERSE_FIXATION) {
-        verse("verse");
-        add("pieceTheme", content.pieceTheme);
-        add("leaderTip", content.leaderTip);
-        each("pieces", ["figure"]);
-      }
+      if (stage === ContentStageType.VERSE_FIXATION) verse("verse");
+      add("pieceTheme", content.pieceTheme);
+      add("leaderTip", content.leaderTip);
+      each("pieces", ["text", "figure"]);
       // Brincadeiras extras (crianças de 9 a 11 anos): também são lidas pelo público.
       (Array.isArray(content.extraGames) ? content.extraGames : []).forEach(
         (game, index) => {
           const record = (game ?? {}) as Record<string, unknown>;
-          for (const key of ["name", "objective", "biblicalConnection"])
+          for (const key of [
+            "name",
+            "objective",
+            "biblicalConnection",
+            "pieceTheme",
+            "leaderTip",
+          ])
             add(`extraGames[${index}].${key}`, record[key]);
           for (const key of ["funMechanics", "steps", "safetyRules"])
             (Array.isArray(record[key]) ? record[key] : []).forEach(

@@ -22,14 +22,23 @@ import {
   VERSE_CARD_A4_RULE,
 } from "./visual-art.constants";
 import {
+  GAME_CALM_SAFETY,
+  GAME_FUN_FIRST,
+  GAME_KIT_PROFILES,
+  GAME_MOVEMENT_SAFETY,
+} from "./game-kit.constants";
+import {
   FIXATION_CALM_SAFETY,
   FIXATION_MOVEMENT_REQUIRED,
   FIXATION_MOVEMENT_SAFETY,
   FIXATION_PROFILES,
 } from "./verse-fixation.constants";
 
+const capitalizeFirst = (value: string): string =>
+  value.charAt(0).toUpperCase() + value.slice(1);
+
 /** Versão dos textos abaixo; vai no snapshot de cada geração (rastreia qual prompt gerou o quê). */
-export const STAGE_PROMPT_VERSION = "orfanato.studio.prompts/2.5.0";
+export const STAGE_PROMPT_VERSION = "orfanato.studio.prompts/2.6.0";
 
 /** Contrato de sistema enviado em toda geração (um único lugar). */
 export const ORFANATO_SYSTEM_PROMPT = {
@@ -249,90 +258,83 @@ function verseVisualsPrompt(
   ].join("\n");
 }
 
-function funPrompt(p: AudienceProfile, fixation: boolean): string {
-  const art = AUDIENCE_VISUAL_ART[p.audience];
-  const twoGames = !fixation && p.audience === ContentAudience.CHILD;
+/**
+ * Brincadeira divertida no modelo da fixação: o documento, UMA folha de instruções e o KIT imprimível do jogo
+ * (uma imagem por peça). Sem versículo: aqui a diversão vem em primeiro lugar. Crianças têm duas brincadeiras.
+ */
+function gamePrompt(p: AudienceProfile): string {
+  const kit = GAME_KIT_PROFILES[p.audience];
+  const f = FIXATION_PROFILES[p.audience];
+  const twoGames = p.audience === ContentAudience.CHILD;
   const [first, second] = CHILD_GAME_AGE_GROUPS;
-  const title = fixation
-    ? "FIXAÇÃO DIVERTIDA DO VERSÍCULO"
-    : "BRINCADEIRA DIVERTIDA";
   return [
-    `Produza somente a ${title} para ${p.label.toLowerCase()} (${p.ageRange}), para ${p.deliveredBy} conduzir na visita.${fixation ? " Esta etapa é diferente dos Visuais do Versículo já produzidos." : ""}`,
+    `Produza somente a BRINCADEIRA DIVERTIDA para ${p.label.toLowerCase()} (${p.ageRange}), para ${p.deliveredBy} conduzir na visita. A entrega tem três partes que formam UM jogo só: (1) o documento com o passo a passo; (2) UMA folha de instruções ilustrada; (3) o KIT IMPRIMÍVEL do jogo: as peças que o voluntário imprime, recorta e leva prontas.`,
     "",
-    "O QUE É",
-    `- ${fixation ? p.verseFixation : p.game}`,
-    ...(fixation
-      ? []
-      : [
-          "- Esta etapa NÃO é a fixação do versículo: não use o versículo como mecânica nem o repita em ritmo ou cartões (isso já existe na etapa de fixação). A brincadeira vale por si: é diversão pura, com uma pequena surpresa ou reviravolta e um toque de humor.",
-          "- Todo passo é AÇÃO divertida (nada de passo só de preparar, acomodar ou explicar); a preparação já está em preparation. A primeira ação já começa a brincadeira.",
-          ...(p.audience === ContentAudience.BABY
-            ? [
-                "- BEBÊS: use pelo menos três passos e um OBJETO SENSORIAL grande e seguro (por exemplo chocalho de tecido, espelho inquebrável, fita de cetim presa na mão do adulto, cesto de objetos macios e grandes, bola macia grande, livro de tecido, fantoche de dedo grande: são só exemplos, escolha um diferente a cada vez), alternando ao menos dois estímulos (tato, som ou visão) e fechando com um carinho. O cuidador conduz, o bebê reage; sem competição.",
-              ]
-            : []),
-          `- ESPAÇO PEQUENO (obrigatório): ${p.gameSpace}. Nada que peça corrida, percurso, pista, circuito, estafeta, quadra ou pátio; preencha spaceNeeded com o espaço usado, curto.`,
-          ...(twoGames
-            ? [
-                `- DUAS BRINCADEIRAS DIFERENTES em um só documento: a principal (campos de primeiro nível) é para ${first.label.toLowerCase()}; a segunda, em extraGames (uma única posição), é para ${second.label.toLowerCase()}. Nome, mecânica e materiais diferentes entre elas. Cada uma tem todos os campos (name, objective, funMechanics, materials, preparation, steps, stepTitles, closingPhrase, safetyRules, durationMinutes, spaceNeeded, ageAdaptations, biblicalConnection, imagePrompt, visualSummary). A de 9 a 11 anos tem mais desafio, estratégia e competição saudável, e não parece coisa de criança pequena.`,
-                `- ageAdaptations da primeira, nesta ordem: ${first.adaptations.younger}; ${first.adaptations.older}. Da segunda: ${second.adaptations.younger}; ${second.adaptations.older}.`,
-              ]
-            : ["- extraGames: lista vazia (só uma brincadeira)."]),
-        ]),
-    ...(fixation
-      ? [
-          "- Use o único versículo principal aprovado na lição (approvedUpstream.LESSON.memoryVerse), com texto e referência exatos; copie-o em verse. Se for só uma PARTE (referência com letra, como Hebreus 9.22b), use apenas o trecho, sem completar o versículo.",
-        ]
-      : []),
+    GAME_FUN_FIRST,
+    "",
+    "A BRINCADEIRA",
+    `- ${kit.dynamic}`,
+    "- Esta etapa NÃO é a fixação do versículo: não use o versículo como mecânica, não o recite nem o escreva nas peças. A brincadeira vale por si.",
+    "- Todo passo é AÇÃO divertida (nada de passo só de preparar, acomodar ou explicar; a preparação fica em preparation). A primeira ação já começa a brincadeira.",
     "- Regra central explicável em um minuto; todos participam quase o tempo todo; quem sai de uma rodada volta na seguinte ou vira juiz ou torcida; todos comemoram juntos no fim.",
-    "",
-    "DIVERSÃO (o que faz querer brincar de novo)",
-    "- Ritmo, movimento adequado à idade, surpresa, humor leve e uma pequena reviravolta; nomes e comandos animados. A brincadeira é protagonista: o versículo entra no jogo, não interrompe o jogo.",
-    ...(fixation
+    "- SURPRESA OBRIGATÓRIA: o jogo tem pelo menos uma reviravolta ou momento inesperado que faz o grupo rir ou gritar (peça coringa, rodada maluca, troca de papéis, desafio sorteado na hora), e ela aparece escrita em um passo.",
+    "- Nome com cara de jogo (engraçado, sonoro, até 5 palavras) e comandos animados, que dão vontade de gritar junto.",
+    ...(kit.allowsMovement
       ? [
-          "",
-          "COMO O VERSÍCULO FICA NA CABEÇA (o objetivo é FIXAR E APRENDER)",
-          "- Os passos seguem uma progressão de aprendizado, nesta ordem: (1) OUVIR E REPETIR juntos, em voz alta, com gesto ou ritmo, duas ou três vezes; (2) JOGAR COM AS PARTES: palavras ou trechos viram o material da brincadeira (montar na ordem, achar, completar, passar adiante); (3) RECORDAR DE MEMÓRIA: o apoio vai sumindo (palavras escondidas, cartaz virado) e o grupo completa sem olhar; (4) RECITAR JUNTOS o versículo inteiro com a referência, para fechar.",
-          "- O versículo aparece escrito por extenso, EXATAMENTE como em verse (texto e referência da NVI aprovada), em pelo menos um passo; os passos que usam trechos citam o trecho exato. Nunca troque palavras do versículo nem use outra versão.",
-          "- Repita o versículo em mais de um momento (no mínimo três vezes ao longo da brincadeira) e termine com ele dito por todos; quem ainda não lê aprende por fala, gesto e ajuda do grupo.",
+          "- MOVIMENTO DE VERDADE: o corpo inteiro entra no jogo (correr leve, pular, mirar, equilibrar, buscar, revezar, procurar pelo espaço). Uma atividade feita só sentado em volta da mesa NÃO serve para este público: troque a ideia.",
+          "- spaceNeeded: o espaço que o jogo usa, curto e realista (uma sala livre, um pátio pequeno, um corredor).",
+        ]
+      : [
+          `- ESPAÇO PEQUENO (obrigatório): ${p.gameSpace}. Nada que peça corrida, percurso, pista, circuito, estafeta, quadra ou pátio; preencha spaceNeeded com o espaço usado, curto.`,
+        ]),
+    ...(p.audience === ContentAudience.BABY
+      ? [
+          "- BEBÊS: pelo menos três passos, alternando ao menos dois estímulos (visão, som ou tato) e fechando com um carinho. A cuidadora conduz, o bebê reage; nada é exigido dele.",
         ]
       : []),
+    ...(twoGames
+      ? [
+          `- DUAS BRINCADEIRAS DIFERENTES em um só documento: a principal (campos de primeiro nível) é para ${first.label.toLowerCase()}; a segunda, em extraGames (uma única posição), é para ${second.label.toLowerCase()}. Nome, mecânica, materiais e KIT diferentes entre elas; cada uma tem todos os campos, inclusive pieceTheme, pieces e leaderTip. A de 9 a 11 anos tem mais desafio, estratégia e competição saudável, e não parece coisa de criança pequena.`,
+          `- ageAdaptations da primeira, nesta ordem: ${first.adaptations.younger}; ${first.adaptations.older}. Da segunda: ${second.adaptations.younger}; ${second.adaptations.older}.`,
+        ]
+      : ["- extraGames: lista vazia (só uma brincadeira)."]),
+    "",
+    "KIT IMPRIMÍVEL (pieces e pieceTheme)",
+    `- ${kit.kit}`,
+    `- De ${range(kit.pieces)} peças por brincadeira. O jogo só funciona COM as peças: em cada rodada alguém sorteia, vira, acerta, busca, ganha ou mostra uma peça. Se as peças pudessem ser tiradas sem mudar o jogo, a ideia está errada: troque.`,
+    `- Cada peça: id sequencial (peca-01, peca-02…); figure (OBRIGATÓRIA): a figura grande, simples e divertida daquela peça, diferente em cada uma (objeto, bicho, símbolo ou um boneco simples fazendo o gesto; nunca uma pessoa real nem personagem bíblico); text: o que vai escrito, com no máximo ${kit.pieceWords} palavras (o desafio, a palavra, os pontos), ou vazio se a figura bastar. Nada de frase longa: quem explica o desafio é o passo a passo.`,
+    "- pieceTheme: a FORMA comum a todas as peças, em duas ou três frases concretas (UMA silhueta simples e fechada, vista de frente; cores nomeadas; cada enfeite com o LUGAR FIXO em que fica) e terminando com a LETRA: a cor exata das letras e do contorno delas e o estilo. Todas as peças têm a mesma forma, as mesmas cores e a mesma letra; só a figura e o texto mudam. A forma nasce do nome ou do tema do jogo (cartas de baralho gigantes, alvos, medalhas, placas, estrelas, faces de dado), não um cartão genérico.",
+    `- Estilo das peças deste público: ${f.pieceStyle}`,
     "",
     "VARIEDADE (evite o óbvio e o repetido)",
-    "- A lição aprovada já usou os objetos dos materiais de apoio e do quebra-gelo (por exemplo pano, fio, almofada): prefira OUTRO objeto e OUTRA ação, para esta etapa não parecer cópia da lição. Pode ligar-se ao tema, mas o objeto e a ação devem ser novos.",
-    "- Não caia no primeiro objeto que vier à cabeça; pense em três ideias diferentes e escolha a mais divertida e original que cumpra as regras de segurança e de espaço.",
+    "- A lição aprovada já usou os objetos dos materiais de apoio e do quebra-gelo: use OUTRO objeto e OUTRA ação. Pense em três ideias diferentes e escolha a mais divertida e original que cumpra a segurança.",
+    "- LIGAÇÃO COM A LIÇÃO (leve e opcional): no nome, no tema das peças ou na frase final. Não force: a diversão e a segurança vêm primeiro.",
     "",
     "SEGURANÇA OBRIGATÓRIA (ninguém se machuca nem se constrange)",
-    "- Espaço livre de obstáculos e piso seguro; nada cortante, pontudo, quente nem pesado; sem fogo, escada ou altura; sem venda nos olhos; sem alimento ou coisa para pôr na boca (alergias); sem empurrões, puxões nem contato brusco; sem correria em piso escorregadio.",
-    "- Defina em safetyRules um sinal de parar (palavra ou apito) que todos conhecem, onde o adulto fica e o que ele observa; ninguém é eliminado nem exposto: quem sai de uma rodada volta na próxima ou vira juiz ou torcida; todos ganham aplauso ou prêmio simbólico.",
-    "- Materiais leves, baratos e seguros, adequados à idade; cada material citado em materials é usado em algum passo.",
+    `- ${kit.allowsMovement ? GAME_MOVEMENT_SAFETY : GAME_CALM_SAFETY}`,
+    ...(kit.allowsMovement ? [] : [`- ${capitalizeFirst(p.gameSafety)}.`]),
+    "- Defina em safetyRules um sinal de parar (palavra ou gesto) que todos conhecem, onde o adulto fica e o que ele observa; ninguém é eliminado nem exposto; todos ganham aplauso.",
+    '- Materiais leves, baratos e seguros, adequados à idade; cada material citado em materials é usado em algum passo. O kit impresso entra em materials (ex.: "6 cartas de desafio impressas e recortadas").',
+    "- A vitória nunca é sinal de maior fé ou favor de Deus.",
     "",
     "DOCUMENTO CURTO, QUE CABE EM UMA PÁGINA A4",
-    "- name (até 5 palavras), objective (uma frase), funMechanics (2 ou 3 itens de até 6 palavras), materials (até 6, com quantidade), preparation (até 2 frases).",
-    `- steps: de ${range(p.activitySteps)} comandos curtos${fixation ? ", terminando com a recitação coletiva" : ""}. stepTitles: um título curto (no máximo 5 palavras) para cada passo, na mesma ordem e quantidade, com o vocabulário DESTE jogo (o objeto e a ação das peças), nunca títulos genéricos que serviriam a qualquer jogo; closingPhrase: uma frase curta (até 12 palavras) para o quadro final. Os dois vão escritos na imagem compilada.`,
+    "- name, objective (uma frase), funMechanics (2 ou 3 itens de até 6 palavras), materials (até 6, com quantidade), preparation (até 2 frases: como imprimir, recortar e dispor o kit e montar o espaço).",
+    `- steps: de ${range(p.activitySteps)} comandos curtos e animados. stepTitles: um título curto (no máximo 5 palavras) para cada passo, na mesma ordem e quantidade, com o vocabulário DESTE jogo, nunca títulos genéricos; closingPhrase: uma frase curta e festiva (até 12 palavras) para a faixa final da folha.`,
     `- safetyRules: até 4 regras curtas, incluindo a duração (${p.gameMinutes.min} a ${p.gameMinutes.max} minutos, em durationMinutes) e como se vence ou se encerra.`,
     twoGames
       ? "- ageAdaptations: exatamente duas frases em cada brincadeira, como indicado acima."
       : `- ageAdaptations: exatamente duas frases, nesta ordem: ${p.adaptations.younger}; ${p.adaptations.older}.`,
-    ...(fixation ? ["- evaluation: uma frase, sem constrangimento."] : []),
-    `- biblicalConnection: até 2 frases ${fixation ? "sobre o sentido do versículo" : "para dizer depois de brincar"}.`,
+    "- biblicalConnection: até 2 frases para dizer depois de brincar. leaderTip: uma ou duas frases curtas para quem conduz deixar o jogo ainda mais animado (torcida, narração, suspense).",
     "",
     twoGames
-      ? "IMAGENS-RESUMO (compilado-01 para a brincadeira de 3 a 8 anos e compilado-02 para a de 9 a 11 anos)"
-      : "IMAGEM-RESUMO (compilado-01)",
-    `- visualSummary: em uma ou duas frases, a UMA imagem que compila toda a brincadeira: ${fixation ? "o versículo e a referência em destaque, " : ""}materiais, preparação, passo a passo em painéis na ordem de leitura e encerramento. Nada de cenas bíblicas nem uma imagem por passo.`,
-    `- imagePrompt: o prompt AUTOSSUFICIENTE dessa imagem para o gerador, que não conhece o material. Estilo deste público: ${art.funInfographicStyle}`,
-    `- Na arte, escreva em português correto o título (name)${fixation ? ", o versículo e a referência exatamente como aprovados" : ""}, as faixas MATERIAIS, PREPARAÇÃO e COMO BRINCAR, os passos numerados com títulos curtos e a frase de encerramento. Fora esses textos, não coloque legendas, balões, marcas nem logotipos.`,
-    "- Pessoas sempre genéricas do público, sem rosto identificável e sem personagens bíblicos; nunca um infográfico só de objetos.",
+      ? "FOLHAS DE INSTRUÇÕES (compilado-01 para a brincadeira de 3 a 8 anos e compilado-02 para a de 9 a 11 anos)"
+      : "FOLHA DE INSTRUÇÕES (compilado-01)",
+    "- visualSummary: em uma ou duas frases, a UMA folha de instruções do jogo: título, os passos numerados com pessoas usando as peças, materiais, as peças do kit e a dica para o líder.",
+    `- imagePrompt: o prompt AUTOSSUFICIENTE dessa folha para o gerador de imagens, que não conhece o material: descreva a cena de cada passo (quem faz o quê com as peças) e a disposição dos blocos. Não redescreva cores nem detalhes das peças aqui: valem só os de pieceTheme. Também não escreva aqui o texto da dica do líder nem da frase final: eles vêm de leaderTip e closingPhrase. Estilo deste público: ${f.infographicStyle}`,
+    "- Pessoas sempre genéricas do público, sem rosto identificável e sem personagens bíblicos.",
     "",
     "REGRAS",
-    `- PROIBIDO como mecânica principal: ${p.gameForbidden}.`,
-    `- Segurança: ${p.gameSafety}.`,
-    "- A vitória nunca é sinal de maior fé ou favor de Deus, e ninguém é exposto ou constrangido.",
-    fixation
-      ? "- A ligação com a lição é leve: nome, tema e princípio bíblico, não a mecânica."
-      : "- LIGAÇÃO COM A LIÇÃO (opcional e solta): se vier naturalmente, conecte a brincadeira ao tema, a um personagem, a um objeto ou ao princípio da lição (no nome, num material ou na frase final). Não force e não deixe isso limitar a brincadeira: a diversão e a segurança vêm primeiro; sem ligação óbvia, crie a melhor brincadeira e deixe a ligação só em biblicalConnection.",
-    "- Se houver previousVariants, crie outra do zero: nome, mecânica e materiais diferentes.",
+    "- Se houver previousVariants, crie outra brincadeira do zero: nome, mecânica, forma das peças e materiais diferentes.",
   ].join("\n");
 }
 
@@ -386,7 +388,7 @@ function fixationPrompt(p: AudienceProfile): string {
     "",
     "INFOGRÁFICO DE INSTRUÇÕES (compilado-01)",
     `- visualSummary: em uma ou duas frases, a UMA folha de instruções do jogo: título, versículo com a referência em destaque, materiais, os passos numerados com pessoas usando as PEÇAS, o modelo das peças montadas na ordem e a dica para o líder.`,
-    `- imagePrompt: o prompt AUTOSSUFICIENTE dessa folha para o gerador de imagens, que não conhece o material: descreva a cena de cada passo (quem faz o quê com as peças) e a disposição dos blocos. Não redescreva cores nem detalhes das peças aqui: valem só os de pieceTheme. Estilo deste público: ${f.infographicStyle}`,
+    `- imagePrompt: o prompt AUTOSSUFICIENTE dessa folha para o gerador de imagens, que não conhece o material: descreva a cena de cada passo (quem faz o quê com as peças) e a disposição dos blocos. Não redescreva cores nem detalhes das peças aqui: valem só os de pieceTheme. Também não escreva aqui o texto da dica do líder nem da frase final: eles vêm de leaderTip e closingPhrase. Estilo deste público: ${f.infographicStyle}`,
     "- Pessoas sempre genéricas do público, sem rosto identificável e sem personagens bíblicos.",
     "",
     "REGRAS",
@@ -412,6 +414,6 @@ export function stageBasePrompt(
     case ContentStageType.VERSE_FIXATION:
       return fixationPrompt(profile);
     case ContentStageType.STANDARD_GAME:
-      return funPrompt(profile, false);
+      return gamePrompt(profile);
   }
 }

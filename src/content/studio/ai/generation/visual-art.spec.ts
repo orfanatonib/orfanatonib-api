@@ -76,9 +76,7 @@ describe("direção de arte por público", () => {
     (stage) => {
       for (const a of AUDIENCES)
         expect(request(a, stage)).toContain(
-          stage === ContentStageType.VERSE_FIXATION
-            ? FIXATION_PROFILES[a].infographicStyle
-            : AUDIENCE_VISUAL_ART[a].funInfographicStyle,
+          FIXATION_PROFILES[a].infographicStyle,
         );
     },
   );

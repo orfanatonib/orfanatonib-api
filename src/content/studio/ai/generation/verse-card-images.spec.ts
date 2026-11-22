@@ -428,7 +428,7 @@ describe("cartões do versículo como imagens", () => {
         ContentAudience.CHILD,
       )[0].instructions.join("\n");
       expect(game).not.toContain("FAIXA DO VERSÍCULO");
-      expect(game).toContain("UMA ÚNICA BRINCADEIRA");
+      expect(game).toContain("FOLHA DE INSTRUÇÕES DE UMA BRINCADEIRA");
       const rules = Object.values(ContentAudience).map((a) =>
         AUDIENCE_FUN_IMAGE_RULES[a].join(" "),
       );
@@ -444,7 +444,7 @@ describe("cartões do versículo como imagens", () => {
       ).toContain("esforço físico mínimo");
     });
 
-    it("brincadeira das crianças: duas imagens (compilado-01 e compilado-02), cada uma com a idade da sua faixa e o espaço pequeno", () => {
+    it("brincadeira das crianças: duas folhas (compilado-01 e compilado-02), cada uma com a idade da sua faixa e o seu kit de peças", () => {
       const content = fun(
         ContentStageType.STANDARD_GAME,
         ContentAudience.CHILD,
@@ -456,17 +456,23 @@ describe("cartões do versículo como imagens", () => {
       );
       expect(specs.map((spec) => spec.slot)).toEqual([
         "compilado-01",
+        "peca-01",
+        "peca-02",
+        "peca-03",
         "compilado-02",
+        "jogo2-peca-01",
+        "jogo2-peca-02",
+        "jogo2-peca-03",
       ]);
-      const first = specs[0].instructions.join("\n");
-      const second = specs[1].instructions.join("\n");
+      const sheet = (slot: string) =>
+        specs.find((spec) => spec.slot === slot)?.instructions.join("\n") ?? "";
+      const first = sheet("compilado-01");
+      const second = sheet("compilado-02");
       expect(first).toContain("crianças de 3 a 8 anos");
       expect(second).toContain("crianças de 9 a 11 anos");
       expect(second).toContain("menos infantil");
-      expect(first).toContain("ESPAÇO PEQUENO");
-      expect(first).toContain(
-        "nunca um campo, quadra, pátio ou percurso grande",
-      );
+      // Crianças podem correr: a folha não prende a brincadeira a um espaço pequeno.
+      expect(first).not.toContain("ESPAÇO PEQUENO");
       const extra = (content.extraGames as Array<{ name: string }>)[0];
       expect(second).toContain(`título "${extra.name}"`);
       // refazer só a segunda
@@ -484,13 +490,18 @@ describe("cartões do versículo como imagens", () => {
       ContentAudience.BABY,
       ContentAudience.TEEN,
       ContentAudience.ADULT,
-    ])("%s: uma só imagem de brincadeira", (audience) => {
+    ])("%s: uma só brincadeira (a folha e o seu kit)", (audience) => {
       const specs = funSummaryImageSpecs(
         ContentStageType.STANDARD_GAME,
         fun(ContentStageType.STANDARD_GAME, audience),
         audience,
       );
-      expect(specs.map((spec) => spec.slot)).toEqual(["compilado-01"]);
+      expect(specs.map((spec) => spec.slot)).toEqual([
+        "compilado-01",
+        "peca-01",
+        "peca-02",
+        "peca-03",
+      ]);
     });
 
     it("slots planejados: duas imagens para a brincadeira das crianças (com a faixa no título) e uma para as demais", () => {
@@ -500,16 +511,22 @@ describe("cartões do versículo como imagens", () => {
       );
       expect(child.map((item) => item.slot)).toEqual([
         "compilado-01",
+        "peca-01",
+        "peca-02",
+        "peca-03",
         "compilado-02",
+        "jogo2-peca-01",
+        "jogo2-peca-02",
+        "jogo2-peca-03",
       ]);
       expect(child[0].title).toContain("3 a 8 anos");
-      expect(child[1].title).toContain("9 a 11 anos");
+      expect(child[4].title).toContain("9 a 11 anos");
       expect(
         plannedImageSlots(
           ContentStageType.STANDARD_GAME,
           fun(ContentStageType.STANDARD_GAME, ContentAudience.TEEN),
         ).map((item) => item.slot),
-      ).toEqual(["compilado-01"]);
+      ).toEqual(["compilado-01", "peca-01", "peca-02", "peca-03"]);
       expect(
         plannedImageSlots(
           ContentStageType.VERSE_FIXATION,
@@ -593,10 +610,7 @@ describe("cartões do versículo como imagens", () => {
       "%s: recusa passos e materiais com risco (venda, tesoura, fogo, empurrar)",
       (stage) => {
         for (const bad of [
-          // Venda nos olhos: liberada só na fixação de crianças e adolescentes.
-          ...(stage === ContentStageType.STANDARD_GAME
-            ? ["Vende os olhos de quem busca."]
-            : []),
+          // Venda nos olhos: liberada para crianças e adolescentes (com um colega guiando).
           "Corte com tesoura.",
           "Acendam uma vela.",
           "Empurre o colega.",
@@ -664,21 +678,34 @@ describe("cartões do versículo como imagens", () => {
       ).not.toThrow();
     });
 
-    describe("brincadeira: espaço pequeno e uma brincadeira por faixa etária", () => {
+    describe("brincadeira: espaço e uma brincadeira por faixa etária", () => {
       const G = ContentStageType.STANDARD_GAME;
 
-      it("recusa correr, percurso, pista, circuito, estafeta e quadra (espaço grande)", () => {
-        for (const bad of [
+      it("adultos: recusa correr, percurso, circuito e quadra; crianças e adolescentes podem (e a venda com guia também)", () => {
+        const moves = [
           "Corram até a parede.",
           "Montem um percurso no pátio.",
           "Façam um circuito pela quadra.",
           "Revezamento em fila.",
-        ])
+        ];
+        for (const bad of moves)
           expect(
-            run(G, ContentAudience.TEEN, (c) => {
+            run(G, ContentAudience.ADULT, (c) => {
               (c.steps as string[])[0] = bad;
             }),
           ).toThrow(/pede espaço grande/);
+        for (const audience of [ContentAudience.CHILD, ContentAudience.TEEN])
+          for (const ok of [...moves, "Um colega com venda é guiado."])
+            expect(
+              run(G, audience, (c) => {
+                (c.steps as string[])[0] = ok;
+              }),
+            ).not.toThrow();
+        expect(
+          run(G, ContentAudience.ADULT, (c) => {
+            (c.steps as string[])[0] = "Um colega com venda é guiado.";
+          }),
+        ).toThrow(/risco ou exposição/);
         expect(
           run(G, ContentAudience.TEEN, (c) => {
             c.spaceNeeded = "";
@@ -701,9 +728,9 @@ describe("cartões do versículo como imagens", () => {
         expect(
           run(G, ContentAudience.CHILD, (c) => {
             (c.extraGames as Array<{ steps: string[] }>)[0].steps[0] =
-              "Corram até a linha.";
+              "Acendam uma vela.";
           }),
-        ).toThrow(/extraGames\[0\]\.steps.*espaço grande/);
+        ).toThrow(/extraGames\[0\]\.steps.*risco ou exposição/);
       });
 
       it.each([

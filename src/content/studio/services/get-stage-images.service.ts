@@ -1,3 +1,4 @@
+import { gamePieceSlot } from "../ai/generation/game-kit.constants";
 import { Injectable } from "@nestjs/common";
 
 import {
@@ -49,24 +50,29 @@ export function plannedImageSlots(
           : []),
       ];
     }
-    // Brincadeira das crianças: uma imagem por faixa etária (3 a 8 e 9 a 11 anos).
+    // Brincadeira das crianças: duas brincadeiras (3 a 8 e 9 a 11 anos), cada uma com a folha e o seu kit de peças.
     const extra =
       stageType === ContentStageType.STANDARD_GAME
         ? list(content.extraGames)
         : [];
     const grouped = extra.length > 0;
-    return [content, ...extra].flatMap((game, index) =>
-      typeof game.name === "string" && game.name.trim()
-        ? [
-            {
-              slot: compiledSlot(index),
-              title: grouped
-                ? `${game.name} (${CHILD_GAME_AGE_GROUPS[index]?.range ?? ""})`
-                : game.name,
-            },
-          ]
-        : [],
-    );
+    return [content, ...extra].flatMap((game, index) => {
+      if (typeof game.name !== "string" || !game.name.trim()) return [];
+      const kit = list(game.pieces);
+      const name = grouped
+        ? `${game.name} (${CHILD_GAME_AGE_GROUPS[index]?.range ?? ""})`
+        : game.name;
+      return [
+        {
+          slot: compiledSlot(index),
+          title: kit.length > 0 ? `Instruções: ${name}` : name,
+        },
+        ...kit.map((piece, at) => ({
+          slot: gamePieceSlot(index, at),
+          title: asLabel(piece.text) || asLabel(piece.figure),
+        })),
+      ];
+    });
   }
   if (stageType === ContentStageType.VERSE_VISUALS) {
     const reference = (content.referenceCard ?? {}) as Record<string, unknown>;

@@ -210,3 +210,7 @@ A etapa `VERSE_FIXATION` gera o documento, uma folha de instruções (`compilado
 itens seguintes da categoria que já têm versão ficam `STALE`. Com algum item `IN_REVIEW` ou `APPROVED` na categoria,
 só o item devolvido pelo revisor pode ser gerado (409 para os demais). Fluxo em
 `docs/diagrams/flow/content-studio/content-studio-regeneration.puml`.
+
+## Brincadeira divertida com kit de peças (prompts 2.6.0)
+
+A etapa `STANDARD_GAME` segue o modelo da fixação: documento, folha de instruções em A4 paisagem (`compilado-NN`) e o kit imprimível, uma imagem por peça (`peca-NN`; `jogo2-peca-NN` na segunda brincadeira das crianças). As peças de um jogo são geradas a partir da primeira, usada como imagem de referência. Crianças e adolescentes podem ter movimento; bebês e adultos ficam em espaço pequeno. Regras em `ai/generation/game-kit.constants.ts`; fluxo em `docs/diagrams/flow/content-studio/content-studio-fun-images.puml`.

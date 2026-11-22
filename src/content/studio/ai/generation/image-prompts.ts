@@ -33,11 +33,19 @@ import {
 import {
   FIXATION_INSTRUCTIONS_SLOT,
   FIXATION_PIECE_PRINT_RULE,
+  FIXATION_PIECE_REFERENCE_RULE,
   FIXATION_PIECE_TEXT_RULE,
   FIXATION_PROFILES,
   FIXATION_REFERENCE_SLOT,
   fixationPieceSlot,
 } from "./verse-fixation.constants";
+
+import {
+  GAME_KIT_PROFILES,
+  GAME_PIECE_CONTENT_RULE,
+  GAME_PIECE_REFERENCE_RULE,
+  gamePieceSlot,
+} from "./game-kit.constants";
 
 type Json = Record<string, unknown>;
 const text = (value: unknown): string =>
@@ -53,8 +61,10 @@ export interface ImageSpec {
   readonly title: string;
   readonly instructions: readonly string[];
   readonly size: "1024x1536" | "1536x1024";
-  /** Slot de outra imagem da mesma versão que serve de referência de forma (peças da fixação). */
+  /** Slot de outra imagem da mesma versão que serve de referência de forma (peças da fixação e da brincadeira). */
   readonly referenceSlot?: string;
+  /** Instrução acrescentada ao prompt só quando a imagem de referência foi de fato anexada. */
+  readonly referenceRule?: string;
 }
 
 /** O gerador desenha na proporção da orientação escolhida; depois é recortado para a folha A4. */
@@ -229,6 +239,9 @@ export function funSummaryImageSpecs(
     ? (content.extraGames as Json[])
     : [];
   const games: Json[] = fixation ? [content] : [content, ...extra];
+  // Brincadeira no modelo novo: a folha de instruções e o kit imprimível de cada brincadeira.
+  if (!fixation && games.some((game) => list(game.pieces).length > 0))
+    return gameImageSpecs(games, audience, onlySlots);
   const groups =
     !fixation && audience === ContentAudience.CHILD && games.length > 1
       ? CHILD_GAME_AGE_GROUPS
@@ -365,7 +378,9 @@ export function fixationImageSpecs(
         ? [`PREPARAÇÃO DO ESPAÇO (para desenhar): ${text(content.preparation)}`]
         : []),
       ...(text(content.imagePrompt)
-        ? [`COMPOSIÇÃO PROPOSTA: ${text(content.imagePrompt)}`]
+        ? [
+            `COMPOSIÇÃO PROPOSTA (vale só para as cenas e a disposição; se ela citar textos diferentes dos listados em TEXTO NA IMAGEM, valem os de TEXTO NA IMAGEM): ${text(content.imagePrompt)}`,
+          ]
         : []),
       "É um único jogo. Sem personagens bíblicos e sem cenas da história. Nada violento, assustador ou perigoso: tudo mostra o jogo com segurança.",
       `Em cada painel, o número aparece UMA única vez, dentro do círculo: o título do passo é escrito sem número na frente. O quadro da dica traz SOMENTE o texto da dica informado acima, sem outra frase. O jogo tem exatamente ${total} peças: nenhuma cena nem o modelo mostra mais do que ${total}.`,
@@ -392,7 +407,12 @@ export function fixationImageSpecs(
     title: written,
     size: "1536x1024",
     // Todas copiam a forma da primeira peça; a primeira, quando refeita sozinha, copia a segunda.
-    ...(referenceFor(slot) ? { referenceSlot: referenceFor(slot) } : {}),
+    ...(referenceFor(slot)
+      ? {
+          referenceSlot: referenceFor(slot),
+          referenceRule: FIXATION_PIECE_REFERENCE_RULE,
+        }
+      : {}),
     instructions: [
       `PEÇA IMPRIMÍVEL DE UM JOGO DE FIXAÇÃO DO VERSÍCULO (uma de ${total} peças iguais na arte; só o texto muda). ${f.pieceStyle}`,
       `FORMA DA PEÇA (o mesmo objeto, as mesmas cores e os mesmos detalhes em todas as peças do jogo): ${theme}`,
@@ -425,6 +445,129 @@ export function fixationImageSpecs(
       ? [pieceSpec(FIXATION_REFERENCE_SLOT, referenceText, "", true)]
       : []),
   ];
+  return specs.filter(
+    (spec) => spec.slot && (!onlySlots || onlySlots.includes(spec.slot)),
+  );
+}
+
+/**
+ * Brincadeira divertida no modelo da fixação: para cada brincadeira (as crianças têm duas), a folha de instruções
+ * em paisagem e o KIT imprimível, uma imagem por peça, todas com a mesma forma (a primeira serve de referência).
+ */
+export function gameImageSpecs(
+  games: readonly Json[],
+  audience: ContentAudience,
+  onlySlots?: readonly string[] | null,
+): ImageSpec[] {
+  const kit = GAME_KIT_PROFILES[audience];
+  const f = FIXATION_PROFILES[audience];
+  const strings = (value: unknown): string[] =>
+    Array.isArray(value) ? (value as unknown[]).map(text).filter(Boolean) : [];
+  const groups =
+    audience === ContentAudience.CHILD && games.length > 1
+      ? CHILD_GAME_AGE_GROUPS
+      : null;
+
+  const specs = games.flatMap((game, gameIndex): ImageSpec[] => {
+    const name = text(game.name);
+    const theme = text(game.pieceTheme);
+    const pieces = list(game.pieces);
+    const steps = strings(game.steps);
+    const titles = strings(game.stepTitles);
+    const materials = strings(game.materials);
+    const space = text(game.spaceNeeded);
+    const group = groups?.[gameIndex];
+    const total = pieces.length;
+    const label = (piece: Json): string =>
+      text(piece.text)
+        ? `"${text(piece.text)}" com ${text(piece.figure)}`
+        : text(piece.figure);
+
+    const sheet: ImageSpec = {
+      slot: compiledSlot(gameIndex),
+      title: name,
+      size: "1536x1024",
+      instructions: [
+        "FOLHA DE INSTRUÇÕES DE UMA BRINCADEIRA: infográfico HORIZONTAL (PAISAGEM, FOLHA A4 PARA IMPRIMIR), rico, organizado e MUITO alegre, com cara de cartaz de gincana e festa: é diversão pura, dá vontade de brincar só de olhar.",
+        f.infographicStyle,
+        ...AUDIENCE_FUN_IMAGE_RULES[audience],
+        ...(group
+          ? [
+              `PÚBLICO DESTA IMAGEM: ${group.look}. Todas as pessoas desenhadas têm essa idade, e só ela.`,
+            ]
+          : []),
+        `AS PEÇAS DO JOGO (aparecem nas mãos das pessoas e no quadro das peças, sempre com esta mesma forma): ${theme}`,
+        `BLOCOS OBRIGATÓRIOS: (1) no topo, o nome do jogo em letreiro grande, divertido e decorado com o tema; (2) um bloco "COMO BRINCAR" com EXATAMENTE ${steps.length} painéis numerados de 1 a ${steps.length}, na ordem de leitura, cada um com o título curto do passo e uma cena cheia de ação e risada das pessoas usando as peças; (3) um quadro "MATERIAIS" com um ícone para cada material; (4) uma faixa "PEÇAS DO JOGO" mostrando as ${total} peças em miniatura, lado a lado; (5) um quadro "DICA PARA O LÍDER" com a dica; (6) uma faixa final de destaque com a frase de encerramento.`,
+        `TEXTO NA IMAGEM (OBRIGATÓRIO, nenhuma placa em branco): título "${name}"; rótulos "COMO BRINCAR", "MATERIAIS", "PEÇAS DO JOGO" e "DICA PARA O LÍDER"; painéis ${steps
+          .map((_, i) => `${i + 1} "${titles[i] ?? ""}"`)
+          .join(
+            "; ",
+          )}; no quadro da dica: "${text(game.leaderTip)}"; na faixa final: "${text(game.closingPhrase)}". Escreva em português do Brasil com ortografia e acentuação corretas; não invente palavras nem escreva parágrafos; não escreva aspas nem ponto e vírgula (os deste prompt só delimitam os textos).`,
+        `PEÇAS DO JOGO (miniaturas, cada uma com a sua figura e o seu texto exato): ${pieces
+          .map((piece, i) => `${i + 1}) ${label(piece)}`)
+          .join("; ")}.`,
+        ...(materials.length
+          ? [`MATERIAIS (um ícone simples para cada): ${materials.join("; ")}.`]
+          : []),
+        ...(text(game.preparation)
+          ? [`PREPARAÇÃO DO ESPAÇO (para desenhar): ${text(game.preparation)}`]
+          : []),
+        ...(space
+          ? [
+              kit.allowsMovement
+                ? `ESPAÇO: a brincadeira acontece em ${space}, com chão livre e seguro.`
+                : `ESPAÇO PEQUENO: a brincadeira acontece em ${space}. Desenhe um ambiente pequeno e aconchegante (mesa, roda, tapete ou canto de sala), nunca um campo, quadra ou pátio.`,
+            ]
+          : []),
+        ...(text(game.imagePrompt)
+          ? [
+              `COMPOSIÇÃO PROPOSTA (vale só para as cenas e a disposição; se ela citar textos diferentes dos listados em TEXTO NA IMAGEM, valem os de TEXTO NA IMAGEM): ${text(game.imagePrompt)}`,
+            ]
+          : []),
+        "É uma única brincadeira. Sem versículo, sem personagens bíblicos e sem cenas da história. Nada violento, assustador ou perigoso: tudo mostra a brincadeira com segurança.",
+        `Em cada painel, o número aparece UMA única vez, dentro do círculo: o título do passo é escrito sem número na frente. O quadro da dica traz SOMENTE o texto da dica informado acima, sem outra frase. O jogo tem exatamente ${total} peças: nenhuma cena nem o quadro das peças mostra mais do que ${total}.`,
+        "Em cada painel a cena cabe inteira, sem cabeças nem mãos cortadas. Blocos organizados, com respiro e leitura fácil; nenhum texto encosta nas bordas (margem de pelo menos 5% em toda a volta).",
+      ],
+    };
+
+    const first = gamePieceSlot(gameIndex, 0);
+    const referenceFor = (slot: string): string | undefined =>
+      slot !== first
+        ? first
+        : total > 1
+          ? gamePieceSlot(gameIndex, 1)
+          : undefined;
+    const pieceSpecs = pieces.map((piece, i): ImageSpec => {
+      const slot = gamePieceSlot(gameIndex, i);
+      const written = text(piece.text);
+      const reference = referenceFor(slot);
+      return {
+        slot,
+        title: written || text(piece.figure),
+        size: "1536x1024",
+        ...(reference
+          ? {
+              referenceSlot: reference,
+              referenceRule: GAME_PIECE_REFERENCE_RULE,
+            }
+          : {}),
+        instructions: [
+          `PEÇA IMPRIMÍVEL DO KIT DE UMA BRINCADEIRA (uma de ${total} peças com a mesma forma; só a figura e o texto mudam). ${f.pieceStyle}`,
+          ...(group ? [`PÚBLICO: ${group.look}.`] : []),
+          `FORMA DA PEÇA (a mesma silhueta, as mesmas cores e os mesmos enfeites em todas as peças do kit): ${theme}`,
+          FIXATION_PIECE_PRINT_RULE,
+          `FIGURA DA PEÇA (grande, simples e divertida, no centro): ${text(piece.figure)}. Nunca uma pessoa real nem personagem bíblico.`,
+          written
+            ? `TEXTO A ESCREVER NA PEÇA — copie caractere por caractere, com todos os acentos, sem acrescentar, trocar nem repetir nenhuma palavra e SEM aspas (as aspas só delimitam o texto): "${written}"`
+            : "ESTA PEÇA NÃO TEM TEXTO: não escreva nenhuma letra, palavra nem número.",
+          GAME_PIECE_CONTENT_RULE,
+          "LETRAS IGUAIS EM TODAS AS PEÇAS: use exatamente a cor, o contorno e o estilo de letra descritos na forma da peça.",
+          "Sem cenário ao redor da peça.",
+        ],
+      };
+    });
+    return [sheet, ...pieceSpecs];
+  });
   return specs.filter(
     (spec) => spec.slot && (!onlySlots || onlySlots.includes(spec.slot)),
   );
