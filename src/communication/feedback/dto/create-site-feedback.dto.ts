@@ -1,35 +1,46 @@
 import {
   IsString,
   IsOptional,
-  IsNumber,
+  IsInt,
   IsEnum,
   IsEmail,
   IsNotEmpty,
   Max,
   MaxLength,
   Min,
+  Matches,
 } from "class-validator";
 import { FeedbackCategory } from "../entity/feedback-category.enum";
+import {
+  SITE_FEEDBACK_LIMITS,
+  SITE_FEEDBACK_NON_BLANK_PATTERN,
+} from "../constants";
 
 export class CreateSiteFeedbackDto {
   @IsString({ message: "name deve ser uma string" })
   @IsNotEmpty()
-  @MaxLength(100)
+  @Matches(SITE_FEEDBACK_NON_BLANK_PATTERN, {
+    message: "name não pode conter apenas espaços",
+  })
+  @MaxLength(SITE_FEEDBACK_LIMITS.nameMax)
   name: string;
 
   @IsOptional()
   @IsEmail({}, { message: "email inválido" })
-  @MaxLength(255)
+  @MaxLength(SITE_FEEDBACK_LIMITS.emailMax)
   email?: string;
 
-  @IsNumber({}, { message: "rating deve ser um number" })
-  @Min(1, { message: "rating deve ser de 1 a 5" })
-  @Max(5, { message: "rating deve ser de 1 a 5" })
+  @IsInt({ message: "rating deve ser um número inteiro" })
+  @Min(SITE_FEEDBACK_LIMITS.ratingMin, { message: "rating deve ser de 1 a 5" })
+  @Max(SITE_FEEDBACK_LIMITS.ratingMax, { message: "rating deve ser de 1 a 5" })
   rating: number;
 
   @IsString({ message: "comment deve ser uma string" })
   @IsNotEmpty()
-  @MaxLength(5000)
+  @Matches(SITE_FEEDBACK_NON_BLANK_PATTERN, {
+    message: "comment não pode conter apenas espaços",
+  })
+  @MaxLength(SITE_FEEDBACK_LIMITS.commentMax)
   comment: string;
 
   @IsEnum(FeedbackCategory, { message: "category inválida" })

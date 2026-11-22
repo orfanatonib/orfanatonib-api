@@ -4,6 +4,12 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - AVALIAÇÕES DO SITE (plano 39, cenários E2E)
+
+- **FIX**: `POST /site-feedbacks` aceitava `name` e `comment` só com espaços (201 com avaliação vazia) e nota fracionada (`4.5`, gravada arredondada). Agora `400` (`@Matches(/\S/)` e `@IsInt`); limites e padrão em `feedback/constants.ts`. Vale também para `PUT` (herda o DTO).
+- **FIX**: `:id` malformado em `GET/PUT/PATCH read/DELETE /site-feedbacks/:id` agora responde `400` (`ParseUUIDPipe`), como nas demais rotas.
+- **TEST**: matriz `site-feedback` 55/55 com 27 cenários novos em `e2e/live/feedback` (dados próprios, prova por SELECT): validação, escopo (quem envia não relê), duplicidade permitida, idempotência de `PUT`/`read`, selo de não lidos, flag `feedback_management` desligada e aviso aos admins no outbox só como `skipped` (as flags de e-mail ficam desligadas no E2E). Novo `site-feedback-dto.spec.ts`.
+
 ## [Unreleased] - 2026-11-22 - ANTECEDENTES CRIMINAIS (plano 26, cenários E2E)
 
 - **FIX (atomicidade)**: `POST`, `PUT` e `DELETE /antecedentes-criminais` gravavam cadastro e PDFs em passos soltos. Agora cada operação é uma transação (`AtendenteRepository.runInTransaction`, `create/update/remove(…, manager)`); os PDFs novos sobem num lote descartável e os antigos só saem do bucket depois do commit (`AtendentePdfService`, novo). O `PUT` já gravava o nome **antes** de recusar a remoção do único PDF (400 com o cadastro alterado): agora nada muda quando recusa.

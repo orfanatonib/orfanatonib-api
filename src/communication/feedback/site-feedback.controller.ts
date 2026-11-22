@@ -11,6 +11,7 @@ import {
   Logger,
   Patch,
   UseGuards,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { plainToInstance } from "class-transformer";
 import { CreateSiteFeedbackService } from "./services/create-site-feedback.service";
@@ -74,7 +75,9 @@ export class SiteFeedbackController {
   @UseGuards(FeatureFlagGuard)
   @Get(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async findOne(@Param("id") id: string): Promise<SiteFeedbackResponseDto> {
+  async findOne(
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<SiteFeedbackResponseDto> {
     const feedback = await this.getFeedbackService.findOne(id);
     return plainToInstance(SiteFeedbackResponseDto, feedback);
   }
@@ -84,7 +87,7 @@ export class SiteFeedbackController {
   @Put(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async update(
-    @Param("id") id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: UpdateSiteFeedbackDto,
   ): Promise<SiteFeedbackResponseDto> {
     this.logger.log(`Updating site feedback: ${id}`);
@@ -97,7 +100,7 @@ export class SiteFeedbackController {
   @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async remove(@Param("id") id: string): Promise<void> {
+  async remove(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     this.logger.log(`Deleting site feedback: ${id}`);
     await this.deleteFeedbackService.remove(id);
     this.logger.log(`Site feedback deleted successfully: ${id}`);
@@ -107,7 +110,9 @@ export class SiteFeedbackController {
   @UseGuards(FeatureFlagGuard)
   @Patch(":id/read")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async setRead(@Param("id") id: string): Promise<SiteFeedbackResponseDto> {
+  async setRead(
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<SiteFeedbackResponseDto> {
     this.logger.log(`Marking site feedback as read: ${id}`);
     const feedback = await this.updateFeedbackService.setReadOnFeedback(id);
     this.logger.log(`Site feedback marked as read successfully: ${id}`);
