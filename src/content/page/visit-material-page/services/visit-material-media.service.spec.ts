@@ -359,7 +359,7 @@ describe("VisitMaterialMediaService", () => {
       expect(unit.obsoleteUrls).toEqual(["https://bucket.test/antigo.pdf"]);
     });
 
-    it("rejects an upload whose file did not arrive, before any write", async () => {
+    it("[media-upload.legacy-update.visit-material#arquivo-invalido-nada-sobe] rejects an upload whose file did not arrive, before any write", async () => {
       givenStored([]);
 
       await expect(

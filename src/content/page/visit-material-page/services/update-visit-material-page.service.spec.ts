@@ -192,7 +192,7 @@ describe("UpdateVisitMaterialPageService", () => {
     expect(mediaStorage.deleteAfterCommit).not.toHaveBeenCalled();
   });
 
-  it("discards the staged uploads and keeps the old files when a later step fails", async () => {
+  it("[media-upload.legacy-update.visit-material#rollback-banco-falha] discards the staged uploads and keeps the old files when a later step fails", async () => {
     mediaService.reconcile.mockRejectedValue(new Error("falha na mídia"));
 
     await expect(
@@ -204,7 +204,7 @@ describe("UpdateVisitMaterialPageService", () => {
     expect(mediaStorage.deleteAfterCommit).not.toHaveBeenCalled();
   });
 
-  it("commits the batch and only then removes the files the edit made obsolete", async () => {
+  it("[media-upload.legacy-update.visit-material#feliz] commits the batch and only then removes the files the edit made obsolete", async () => {
     mediaService.reconcile.mockImplementation(
       (unit: { obsoleteUrls: string[] }) => {
         unit.obsoleteUrls.push("https://bucket.test/antigo.pdf");
