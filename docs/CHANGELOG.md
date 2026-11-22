@@ -4,6 +4,13 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - ABRIGOS (plano 13, cenários E2E)
+
+- **FIX (segurança/consistência)**: `POST /shelters` por **líder** gravava o abrigo e depois respondia `404` (o abrigo novo ficava fora do escopo dele). Agora só o admin cria (`assertCanCreateShelters`); líder recebe `403` e nada é gravado.
+- **FIX**: `POST /shelters` não era atômico: uma foto inválida (ou falha ao criar equipes/rota) deixava o abrigo, o endereço e as equipes gravados. A criação agora desfaz tudo o que já gravou (linhas primeiro, mídia depois) e devolve a falha original.
+- **FIX**: duas trocas simultâneas da foto do mesmo abrigo deixavam um objeto órfão no S3. `ShelterMediaService.upsertMainPhoto` serializa por abrigo (`KeyedQueue`, movido de `core/user/utils` para `common/utils`).
+- **TEST**: E2E de `/shelters` com 103 testes (matriz `shelter` 105/105, incluindo `shelter.s3.01-12`), com prova por SELECT e bucket sem órfão nem referência quebrada.
+
 ## [Unreleased] - 2026-11-21 - FLAGS EM TODOS OS ENDPOINTS
 
 - **ADD**: `SHELTER_DIRECTORY_FLAGS` (`anyOf`) nas leituras de apoio de `shelters` (5), `teams` (4), `leader-profiles` (`/simple`, `/my-shelters`), `member-profiles` (`/simple`) e `users/simple-for-select`, que eram abertas a qualquer usuário autenticado mesmo com os recursos desligados.

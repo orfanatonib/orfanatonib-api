@@ -11,6 +11,7 @@ import {
   buildAdminContext,
   buildAnonymousContext,
   buildCreateShelterDto,
+  buildLeaderContext,
   buildMemberContext,
   buildRouteEntity,
   buildShelterEntity,
@@ -24,10 +25,15 @@ describe("CreateSheltersService", () => {
     createShelter: jest.fn(),
     runInTransaction: jest.fn(),
     save: jest.fn(),
+    deleteById: jest.fn(),
   };
   const getService = { findEntityOrFail: jest.fn() };
   const teamsService = { createForShelter: jest.fn() };
-  const mediaService = { upsertMainPhoto: jest.fn(), attachAll: jest.fn() };
+  const mediaService = {
+    upsertMainPhoto: jest.fn(),
+    attachAll: jest.fn(),
+    removeAllForShelter: jest.fn(),
+  };
   const routeService = { createForShelter: jest.fn() };
 
   let service: CreateSheltersService;
@@ -57,6 +63,8 @@ describe("CreateSheltersService", () => {
       Promise.resolve(shelter),
     );
     getService.findEntityOrFail.mockResolvedValue(buildShelterEntity());
+    repository.deleteById.mockResolvedValue(undefined);
+    mediaService.removeAllForShelter.mockResolvedValue(0);
     teamsService.createForShelter.mockResolvedValue(undefined);
     mediaService.upsertMainPhoto.mockResolvedValue("https://bucket/foto.png");
     mediaService.attachAll.mockImplementation((shelters: unknown) => shelters);
@@ -153,4 +161,37 @@ describe("CreateSheltersService", () => {
       expect(repository.createShelter).not.toHaveBeenCalled();
     },
   );
+  it("denies a leader: only an admin creates a shelter, and nothing is written", async () => {
+    await expect(
+      service.execute(buildCreateShelterDto(), buildLeaderContext()),
+    ).rejects.toBeInstanceOf(AccessDeniedException);
+
+    expect(repository.createShelter).not.toHaveBeenCalled();
+  });
+
+  it("rolls the shelter back (rows, then media) when the photo is refused", async () => {
+    const failure = new Error("arquivo inválido");
+    mediaService.upsertMainPhoto.mockRejectedValue(failure);
+    const dto = buildCreateShelterDto({
+      mediaItem: { title: "Foto", fieldKey: "cover" },
+    });
+
+    await expect(service.execute(dto, buildAdminContext())).rejects.toBe(
+      failure,
+    );
+
+    expect(mediaService.removeAllForShelter).toHaveBeenCalledWith("shelter-id");
+    expect(repository.deleteById).toHaveBeenCalledWith("shelter-id");
+    expect(getService.findEntityOrFail).not.toHaveBeenCalled();
+  });
+
+  it("surfaces the original failure even when the rollback itself fails", async () => {
+    const failure = new Error("falha na equipe");
+    teamsService.createForShelter.mockRejectedValue(failure);
+    repository.deleteById.mockRejectedValue(new Error("banco fora"));
+
+    await expect(
+      service.execute(buildCreateShelterDto(), buildAdminContext()),
+    ).rejects.toBe(failure);
+  });
 });

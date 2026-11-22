@@ -53,7 +53,7 @@ passa esse contrato aos casos de uso, que ficam livres de HTTP.
 | Papel | Listagem administrativa (`GET /shelters`) | Escrita | Lista simples |
 |-------|-------------------------------------------|---------|---------------|
 | `admin` | todos os abrigos | ✅ | todos |
-| `leader` | só os abrigos que lidera | ✅ (nos dele) | só os dele |
+| `leader` | só os abrigos que lidera | ✅ editar/remover só os dele; **criar ❌ `403`** (só o admin cria) | só os dele |
 | `member` | ❌ `403` | ❌ `403` | só os dele |
 | sem papel | ❌ `403` | ❌ `403` | nenhum |
 
@@ -119,7 +119,7 @@ campos que falharam.
 | `GET /shelters/list-teams` | — | pública |
 | `GET /shelters/:id` | JWT | |
 | `GET /shelters/:id/teams-quantity` | JWT | |
-| `POST /shelters` | JWT | multipart |
+| `POST /shelters` | JWT | multipart; **só admin**. É atômico: se equipes, foto ou rota falham, abrigo, endereço, equipes e mídia são desfeitos |
 | `PUT /shelters/:id` | JWT | substituição completa: `teamsQuantity` é obrigatório |
 | `PATCH /shelters/:id/media` | JWT | troca só a foto principal |
 | `DELETE /shelters/:id` | JWT | limpa mídia e rota antes de remover |

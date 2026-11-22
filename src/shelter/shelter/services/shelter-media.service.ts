@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { RuleException } from "src/common/exceptions";
+import { KeyedQueue } from "src/common/utils/keyed-queue";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import {
@@ -27,6 +28,8 @@ const SHELTER_STORAGE_ENTITY = "Shelter";
 
 @Injectable()
 export class ShelterMediaService {
+  private readonly photoQueue = new KeyedQueue();
+
   constructor(
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly mediaStorage: MediaStorageService,
@@ -119,7 +122,21 @@ export class ShelterMediaService {
    * → só então apaga o antigo. Se algo falha antes do commit, o novo é
    * descartado e o antigo segue referenciado (sem órfão nem referência quebrada).
    */
-  async upsertMainPhoto(
+  /**
+   * Trocas simultâneas da foto do MESMO abrigo rodam uma de cada vez: sem isso as duas leem a foto
+   * antiga, as duas enviam um objeto novo e só uma fica referenciada (a outra vira órfã no bucket).
+   */
+  upsertMainPhoto(
+    shelterId: string,
+    input: ShelterMediaInput,
+    files: UploadedFilesDict,
+  ): Promise<string> {
+    return this.photoQueue.run(shelterId, () =>
+      this.replaceMainPhoto(shelterId, input, files),
+    );
+  }
+
+  private async replaceMainPhoto(
     shelterId: string,
     input: ShelterMediaInput,
     files: UploadedFilesDict,

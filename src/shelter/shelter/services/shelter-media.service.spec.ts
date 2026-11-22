@@ -451,4 +451,38 @@ describe("ShelterMediaService", () => {
       SHELTER_MEDIA_TARGET,
     );
   });
+  describe("upsertMainPhoto — trocas simultâneas", () => {
+    it("serializes two swaps of the same shelter and lets other shelters run in parallel", async () => {
+      const order: string[] = [];
+      let releaseFirst: () => void = () => undefined;
+      const firstGate = new Promise<void>((resolve) => {
+        releaseFirst = resolve;
+      });
+      mediaItemProcessor.findMediaItemByTarget.mockImplementation(
+        async (shelterId: string) => {
+          order.push(`start:${shelterId}`);
+          if (order.length === 1) await firstGate;
+          return null;
+        },
+      );
+      const link = {
+        url: "https://cdn.exemplo/a.png",
+        uploadType: UploadType.LINK,
+      };
+
+      const first = service.upsertMainPhoto("shelter-1", link, {});
+      const second = service.upsertMainPhoto("shelter-1", link, {});
+      const other = service.upsertMainPhoto("shelter-2", link, {});
+      await other;
+      expect(order).toEqual(["start:shelter-1", "start:shelter-2"]);
+
+      releaseFirst();
+      await Promise.all([first, second]);
+      expect(order).toEqual([
+        "start:shelter-1",
+        "start:shelter-2",
+        "start:shelter-1",
+      ]);
+    });
+  });
 });

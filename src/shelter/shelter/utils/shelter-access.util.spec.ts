@@ -1,6 +1,7 @@
 import { AuthenticatedRequest, UserRole } from "src/core/auth/auth.types";
 import { AccessDeniedException } from "src/common/exceptions";
 import {
+  assertCanCreateShelters,
   assertCanManageShelters,
   isUnscopedActor,
   toShelterAccessContext,
@@ -76,5 +77,19 @@ describe("assertCanManageShelters", () => {
     ["actor without role", buildAnonymousContext()],
   ])("denies a %s", (_role, actor) => {
     expect(() => assertCanManageShelters(actor)).toThrow(AccessDeniedException);
+  });
+});
+
+describe("assertCanCreateShelters", () => {
+  it("lets an admin through", () => {
+    expect(() => assertCanCreateShelters(buildAdminContext())).not.toThrow();
+  });
+
+  it.each([
+    ["leader", buildLeaderContext()],
+    ["member", buildMemberContext()],
+    ["actor without role", buildAnonymousContext()],
+  ])("denies a %s: only the admin creates a shelter", (_role, actor) => {
+    expect(() => assertCanCreateShelters(actor)).toThrow(AccessDeniedException);
   });
 });

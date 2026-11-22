@@ -38,3 +38,13 @@ export const assertCanManageShelters = (actor: ShelterAccessContext): void => {
     throw new AccessDeniedException(SHELTER_MESSAGES.ACCESS_DENIED);
   }
 };
+
+/**
+ * Criar abrigo é só do admin: o líder administra os abrigos que lidera, e um abrigo que
+ * ainda não existe não pode estar no escopo dele.
+ */
+export const assertCanCreateShelters = (actor: ShelterAccessContext): void => {
+  if (actor.role !== UserRole.ADMIN) {
+    throw new AccessDeniedException(SHELTER_MESSAGES.ACCESS_DENIED);
+  }
+};

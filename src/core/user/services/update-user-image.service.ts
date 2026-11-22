@@ -8,7 +8,7 @@ import {
 import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import { GetUsersService } from "./get-user.service";
 import { UserErrorMessages, UserLogs } from "../constants/user.constants";
-import { KeyedQueue } from "../utils/keyed-queue";
+import { KeyedQueue } from "src/common/utils/keyed-queue";
 
 const USER_MEDIA_TARGET = "UserEntity";
 const USER_MEDIA_ENTITY = "User";
