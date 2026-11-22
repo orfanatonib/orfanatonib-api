@@ -1,3 +1,4 @@
+import type { EntityManager } from "typeorm";
 import {
   Injectable,
   Logger,
@@ -21,6 +22,13 @@ import {
 import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
 import type { UploadBatch } from "src/shared/media/storage/upload-batch";
 
+/** O que a edição inteira compartilha: a transação, o lote de uploads descartável e os arquivos a apagar depois do commit. */
+interface ImageWriteUnit {
+  manager: EntityManager;
+  batch: UploadBatch;
+  obsoleteUrls: string[];
+}
+
 @Injectable()
 export class UpdateIntegrationService {
   private readonly logger = new Logger(UpdateIntegrationService.name);
@@ -41,6 +49,10 @@ export class UpdateIntegrationService {
       throw new NotFoundException(`Integration with ID ${id} not found`);
     }
 
+    // Ordem segura: o cadastro e as fotos se gravam na MESMA transação; os arquivos novos sobem antes (descartáveis se
+    // algo falhar) e os antigos só saem do bucket depois do commit. Falhou ⇒ nada muda e o bucket fica como estava.
+    const batch = this.mediaStorage.newBatch();
+    const obsoleteUrls: string[] = [];
     try {
       const updateData: Partial<typeof integration> = {};
       if (dto.name !== undefined) updateData.name = dto.name;
@@ -54,11 +66,22 @@ export class UpdateIntegrationService {
       if (dto.integrationYear !== undefined)
         updateData.integrationYear = dto.integrationYear;
 
-      const updated = await this.repository.update(id, updateData);
-
-      if (dto.images || (files && files.length > 0)) {
-        await this.processImages(id, dto.images, files);
-      }
+      const updated = await this.repository.runInTransaction(
+        async (manager) => {
+          const row = await this.repository.update(id, updateData, manager);
+          if (dto.images || (files && files.length > 0)) {
+            await this.syncImages(
+              id,
+              { manager, batch, obsoleteUrls },
+              dto.images,
+              files,
+            );
+          }
+          return row;
+        },
+      );
+      batch.commit();
+      await this.mediaStorage.deleteAfterCommit(obsoleteUrls);
 
       const mediaItems = await this.mediaProcessor.findMediaItemsByTarget(
         id,
@@ -67,6 +90,8 @@ export class UpdateIntegrationService {
 
       return IntegrationResponseDto.fromEntity(updated!, mediaItems);
     } catch (error) {
+      // Falhou: os arquivos novos saem do bucket e os antigos seguem referenciados.
+      await batch.discard();
       if (
         error instanceof NotFoundException ||
         error instanceof BadRequestException
@@ -77,37 +102,9 @@ export class UpdateIntegrationService {
     }
   }
 
-  /**
-   * Ordem segura: sobe os novos → grava as linhas → só no fim apaga os objetos
-   * antigos. Falha no meio descarta os novos e mantém os antigos referenciados.
-   */
-  private async processImages(
-    integrationId: string,
-    imagesInput?: MediaItemDto[],
-    files?: Express.Multer.File[],
-  ): Promise<void> {
-    const batch = this.mediaStorage.newBatch();
-    const obsoleteUrls: string[] = [];
-    try {
-      await this.syncImages(
-        integrationId,
-        batch,
-        obsoleteUrls,
-        imagesInput,
-        files,
-      );
-    } catch (error) {
-      await batch.discard();
-      throw error;
-    }
-    batch.commit();
-    await this.mediaStorage.deleteAfterCommit(obsoleteUrls);
-  }
-
   private async syncImages(
     integrationId: string,
-    batch: UploadBatch,
-    obsoleteUrls: string[],
+    unit: ImageWriteUnit,
     imagesInput?: MediaItemDto[],
     files?: Express.Multer.File[],
   ): Promise<void> {
@@ -137,8 +134,7 @@ export class UpdateIntegrationService {
         imageInput,
         existingImages,
         filesDict,
-        batch,
-        obsoleteUrls,
+        unit,
       );
       processedIds.push(result.id);
     }
@@ -148,7 +144,7 @@ export class UpdateIntegrationService {
         imageInput,
         integrationId,
         filesDict,
-        batch,
+        unit,
       );
       processedIds.push(result.id);
     }
@@ -159,7 +155,7 @@ export class UpdateIntegrationService {
     );
 
     for (const imageToDelete of imagesToDelete) {
-      await this.deleteImage(imageToDelete, obsoleteUrls);
+      await this.deleteImage(imageToDelete, unit);
     }
   }
 
@@ -167,8 +163,7 @@ export class UpdateIntegrationService {
     imageInput: MediaItemDto,
     existingImages: MediaItemEntity[],
     filesDict: Record<string, Express.Multer.File>,
-    batch: UploadBatch,
-    obsoleteUrls: string[],
+    unit: ImageWriteUnit,
   ): Promise<MediaItemEntity> {
     const existingImage = existingImages.find(
       (img) => img.id === imageInput.id,
@@ -193,10 +188,10 @@ export class UpdateIntegrationService {
       const uploaded = await this.uploadImage(
         file,
         existingImage.targetId,
-        batch,
+        unit.batch,
       );
       if (existingImage.isLocalFile && existingImage.url) {
-        obsoleteUrls.push(existingImage.url);
+        unit.obsoleteUrls.push(existingImage.url);
       }
 
       updatedData.url = uploaded.url;
@@ -208,17 +203,18 @@ export class UpdateIntegrationService {
       updatedData.mediaType = MediaType.IMAGE;
     }
 
-    return await this.mediaProcessor.upsertMediaItem(existingImage.id, {
-      ...existingImage,
-      ...updatedData,
-    });
+    return await this.mediaProcessor.upsertMediaItem(
+      existingImage.id,
+      { ...existingImage, ...updatedData },
+      unit.manager,
+    );
   }
 
   private async createNewImage(
     imageInput: MediaItemDto,
     integrationId: string,
     filesDict: Record<string, Express.Multer.File>,
-    batch: UploadBatch,
+    unit: ImageWriteUnit,
   ): Promise<MediaItemEntity> {
     const fieldKey = imageInput.fieldKey;
 
@@ -231,7 +227,7 @@ export class UpdateIntegrationService {
       throw new BadRequestException(`File not found for fieldKey: ${fieldKey}`);
     }
 
-    const uploaded = await this.uploadImage(file, integrationId, batch);
+    const uploaded = await this.uploadImage(file, integrationId, unit.batch);
 
     const media = this.mediaProcessor.buildBaseMediaItem(
       {
@@ -250,16 +246,20 @@ export class UpdateIntegrationService {
     media.size = file.size;
     media.isLocalFile = true;
 
-    return await this.mediaProcessor.saveMediaItem(media);
+    return await this.mediaProcessor.saveMediaItem(media, unit.manager);
   }
 
-  /** Remove a linha agora; o objeto só sai do bucket depois (obsoleteUrls). */
+  /** Remove a linha na transação; o objeto só sai do bucket depois do commit. */
   private async deleteImage(
     image: MediaItemEntity,
-    obsoleteUrls: string[],
+    unit: ImageWriteUnit,
   ): Promise<void> {
-    if (image.isLocalFile && image.url) obsoleteUrls.push(image.url);
-    await this.mediaProcessor.removeMediaItem(image);
+    unit.obsoleteUrls.push(
+      ...(await this.mediaProcessor.removeMediaItemsKeepingFiles(
+        [image],
+        unit.manager,
+      )),
+    );
   }
 
   private async uploadImage(

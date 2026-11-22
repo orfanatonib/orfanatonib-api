@@ -27,6 +27,8 @@ const row = (id: string, url: string, local = true) =>
     targetId: "i1",
   });
 
+const txManager = { tx: true };
+
 function setup() {
   const processor = new MediaItemProcessor({} as never);
   let seq = 0;
@@ -67,6 +69,10 @@ function setup() {
     findById: jest.fn(async () => ({ id: "i1", name: "N" })),
     update: jest.fn(async () => ({ id: "i1", name: "N" })),
     remove: jest.fn(async () => undefined),
+    // O cadastro e as fotos dele se gravam na mesma transação.
+    runInTransaction: jest.fn(
+      async (work: (manager: object) => Promise<unknown>) => work(txManager),
+    ),
   };
   return {
     batch,
@@ -184,8 +190,9 @@ describe("integração × S3 (sem órfão, sem referência quebrada)", () => {
       expect(storage.deleteAfterCommit).not.toHaveBeenCalled();
     });
 
-    it("imagem que saiu da lista: linha removida agora, objeto depois", async () => {
-      const { update, findMany, removeOne, storage } = setup();
+    it("imagem que saiu da lista: linha removida na transação, objeto depois do commit", async () => {
+      const { update, findMany, removeRows, storage } = setup();
+      removeRows.mockResolvedValue(["http://s/b/b.png"]);
       findMany.mockResolvedValue([
         row("m1", "http://s/b/a.png"),
         row("m2", "http://s/b/b.png"),
@@ -193,10 +200,33 @@ describe("integração × S3 (sem órfão, sem referência quebrada)", () => {
       await update.execute("i1", {
         images: [{ id: "m1", title: "keep" }],
       } as never);
-      expect(removeOne).toHaveBeenCalledTimes(1);
+      expect(removeRows).toHaveBeenCalledWith(
+        [expect.objectContaining({ id: "m2" })],
+        txManager,
+      );
       expect(storage.deleteAfterCommit).toHaveBeenCalledWith([
         "http://s/b/b.png",
       ]);
+    });
+
+    it("o cadastro e as fotos se gravam na MESMA transação: se a foto falha, o cadastro não foi atualizado fora dela", async () => {
+      const { update, findMany, upsert, repo } = setup();
+      findMany.mockResolvedValue([row("m1", "http://s/b/old.png")]);
+      upsert.mockRejectedValue(new Error("db"));
+
+      await expect(
+        update.execute("i1", { name: "Novo", images } as never, [
+          file("n.png", "f1"),
+        ]),
+      ).rejects.toBeInstanceOf(InternalServerErrorException);
+
+      expect(repo.runInTransaction).toHaveBeenCalledTimes(1);
+      expect(repo.update).toHaveBeenCalledWith(
+        "i1",
+        { name: "Novo" },
+        txManager,
+      );
+      expect(upsert).toHaveBeenCalledWith("m1", expect.anything(), txManager);
     });
 
     it("imagem nova sem arquivo: 400 e nada enviado; integração inexistente: 404", async () => {

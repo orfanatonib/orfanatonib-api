@@ -4,6 +4,11 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - INTEGRAÇÃO (plano 25, cenários E2E)
+
+- **FIX (atomicidade)**: `PUT /integrations/:id` atualizava o cadastro e **depois** as fotos, sem transação: uma foto recusada pelo banco devolvia erro, mas nome e telefone já estavam gravados. Agora cadastro e fotos se gravam na mesma transação (`IntegrationRepository.runInTransaction`, `update(…, manager)`); arquivos novos sobem num lote descartável e os antigos só saem do bucket depois do commit; foto removida da lista sai na transação (`removeMediaItemsKeepingFiles`). O `UPDATE` da primeira instrução já trava a linha, então edições simultâneas se enfileiram.
+- **TEST**: E2E de `/integrations` com 56 testes (matriz `integration` 61/61, incluindo `s3.01-12` com o adaptador compartilhado); novo Jest prova o mesmo `manager` no cadastro e nas fotos.
+
 ## [Unreleased] - 2026-11-22 - FREQUÊNCIA (plano 22, cenários E2E)
 
 - **CHANGE**: `GET /attendance/team/:teamId/schedules` com equipe inexistente respondia `200` com lista vazia (para o admin); agora `404`, como `team/:teamId/members` e `leader/stats/team/:teamId`.
