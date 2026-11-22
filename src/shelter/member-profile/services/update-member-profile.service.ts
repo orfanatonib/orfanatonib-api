@@ -9,7 +9,6 @@ import { MemberProfilesRepository } from "../repositories/member-profiles.reposi
 import { MemberResponseDto } from "../dto/member-profile.response.dto";
 import { AuthContextService } from "src/core/auth/services/auth-context.service";
 import { GetTeamsService } from "src/shelter/team/services/get-teams.service";
-import { CreateTeamService } from "src/shelter/team/services/create-team.service";
 import { UpdateTeamService } from "src/shelter/team/services/update-team.service";
 import { ManageMemberTeamDto } from "../dto/assign-team.dto";
 import { NotificationService } from "src/communication/notification/services/notification.service";
@@ -25,8 +24,6 @@ export class UpdateMemberProfileService {
     private readonly getMemberProfilesService: GetMemberProfilesService,
     @Inject(forwardRef(() => GetTeamsService))
     private readonly getTeamsService: GetTeamsService,
-    @Inject(forwardRef(() => CreateTeamService))
-    private readonly createTeamService: CreateTeamService,
     @Inject(forwardRef(() => UpdateTeamService))
     private readonly updateTeamService: UpdateTeamService,
     private readonly notificationService: NotificationService,
@@ -75,10 +72,8 @@ export class UpdateMemberProfileService {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
 
-    const member = await this.repo.findOneWithShelterAndLeaderOrFail(
-      memberId,
-      ctx,
-    );
+    // Fora do escopo (ou inexistente) é 404, antes de qualquer alteração.
+    await this.repo.findOneWithShelterAndLeaderOrFail(memberId, ctx);
 
     // Líder só aloca membro em abrigo que ele mesmo lidera.
     if (ctx.role !== "admin") {
@@ -90,41 +85,16 @@ export class UpdateMemberProfileService {
       }
     }
 
-    const teams = await this.getTeamsService.findByShelter(dto.shelterId);
-    let targetTeam = teams.find((t) => t.numberTeam === dto.numberTeam);
-
-    if (!targetTeam) {
-      const newTeam = await this.createTeamService.execute({
-        numberTeam: dto.numberTeam,
-        shelterId: dto.shelterId,
-        memberProfileIds: [memberId],
-      });
-      targetTeam = newTeam;
-    } else {
-      if (member.team && member.team.id !== targetTeam.id) {
-        const currentTeam = await this.getTeamsService.findOne(member.team.id);
-        if (currentTeam) {
-          const currentMemberIds = currentTeam.members
-            .map((t) => t.id)
-            .filter((id) => id !== memberId);
-          await this.updateTeamService.execute(currentTeam.id, {
-            memberProfileIds: currentMemberIds,
-          });
-        }
-      }
-
-      if (!member.team || member.team.id !== targetTeam.id) {
-        const currentMemberIds = targetTeam.members
-          .map((t) => t.id)
-          .filter((id) => id !== memberId);
-        await this.updateTeamService.execute(targetTeam.id, {
-          memberProfileIds: [...currentMemberIds, memberId],
-        });
-      }
-    }
+    // Uma operação só: tira da equipe antiga e põe na nova sem deixar o membro sem equipe se algo falhar.
+    const { changed } = await this.updateTeamService.assignMemberToTeam(
+      memberId,
+      dto.shelterId,
+      dto.numberTeam,
+    );
 
     const updated = await this.getMemberProfilesService.findOne(memberId, req);
-    await this.notifyTeamAssignment(updated);
+    // Só avisa quando a equipe mudou de fato (repetir o pedido não reenvia o e-mail).
+    if (changed) await this.notifyTeamAssignment(updated);
     return updated;
   }
 }

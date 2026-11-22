@@ -281,6 +281,53 @@ export class TeamsRepository {
     });
   }
 
+  /**
+   * Põe o membro na equipe `numberTeam` do abrigo (criando a equipe se ainda não existir), numa
+   * transação só: abrigo ou membro inexistente → `404` sem gravar nada. Idempotente: se o membro já
+   * está nessa equipe devolve `changed: false`.
+   */
+  async assignMemberToTeam(
+    memberId: string,
+    shelterId: string,
+    numberTeam: number,
+  ): Promise<{ teamId: string; changed: boolean }> {
+    return this.teamRepo.manager.transaction(async (manager) => {
+      const members: Array<{ team_id: string | null }> = await manager.query(
+        `SELECT team_id FROM member_profiles WHERE id = ?`,
+        [memberId],
+      );
+      if (members.length === 0) {
+        throw new NotFoundException("Membro não encontrado.");
+      }
+      const shelters: unknown[] = await manager.query(
+        `SELECT id FROM shelters WHERE id = ?`,
+        [shelterId],
+      );
+      if (shelters.length === 0) {
+        throw new NotFoundException("Abrigo não encontrado.");
+      }
+
+      const teamRepo = manager.getRepository(TeamEntity);
+      const existing = await teamRepo.findOne({
+        where: { shelter: { id: shelterId }, numberTeam },
+      });
+      const team =
+        existing ??
+        (await teamRepo.save(
+          teamRepo.create({ numberTeam, shelter: { id: shelterId } }),
+        ));
+
+      const changed = members[0].team_id !== team.id;
+      if (changed) {
+        await manager.query(
+          `UPDATE member_profiles SET team_id = ? WHERE id = ?`,
+          [team.id, memberId],
+        );
+      }
+      return { teamId: team.id, changed };
+    });
+  }
+
   async removeLeaderFromAllTeams(leaderId: string): Promise<void> {
     const teams = await this.teamRepo.find({
       where: {},

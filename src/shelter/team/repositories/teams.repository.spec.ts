@@ -266,4 +266,79 @@ describe("TeamsRepository — regras de escrita", () => {
       );
     });
   });
+  describe("assignMemberToTeam", () => {
+    const manager = txManager as typeof txManager & {
+      getRepository: jest.Mock;
+    };
+    const txTeams = {
+      findOne: jest.fn(),
+      save: jest.fn((value: TeamEntity) =>
+        Promise.resolve(Object.assign(value, { id: "team-novo" })),
+      ),
+      create: jest.fn((value: Partial<TeamEntity>) => value as TeamEntity),
+    };
+
+    beforeEach(() => {
+      manager.getRepository.mockReturnValue(txTeams);
+      txTeams.findOne.mockResolvedValue(null);
+    });
+
+    it("refuses an unknown member without touching anything", async () => {
+      manager.query.mockResolvedValueOnce([]);
+
+      await expect(
+        repository.assignMemberToTeam("fantasma", SHELTER_ID, 2),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      expect(manager.query).toHaveBeenCalledTimes(1);
+      expect(txTeams.save).not.toHaveBeenCalled();
+    });
+
+    it("refuses an unknown shelter before creating any team or moving the member", async () => {
+      manager.query
+        .mockResolvedValueOnce([{ team_id: "team-antiga" }])
+        .mockResolvedValueOnce([]);
+
+      await expect(
+        repository.assignMemberToTeam("member-1", "fantasma", 2),
+      ).rejects.toBeInstanceOf(NotFoundException);
+
+      expect(txTeams.save).not.toHaveBeenCalled();
+      expect(manager.query).toHaveBeenCalledTimes(2);
+    });
+
+    it("creates the missing team and moves the member in one go", async () => {
+      manager.query
+        .mockResolvedValueOnce([{ team_id: "team-antiga" }])
+        .mockResolvedValueOnce([{ id: SHELTER_ID }]);
+
+      const result = await repository.assignMemberToTeam(
+        "member-1",
+        SHELTER_ID,
+        2,
+      );
+
+      expect(result).toEqual({ teamId: "team-novo", changed: true });
+      expect(manager.query).toHaveBeenLastCalledWith(
+        expect.stringContaining("UPDATE member_profiles SET team_id = ?"),
+        ["team-novo", "member-1"],
+      );
+    });
+
+    it("is idempotent when the member is already in the team", async () => {
+      manager.query
+        .mockResolvedValueOnce([{ team_id: "team-9" }])
+        .mockResolvedValueOnce([{ id: SHELTER_ID }]);
+      txTeams.findOne.mockResolvedValue(team({ id: "team-9", numberTeam: 2 }));
+
+      const result = await repository.assignMemberToTeam(
+        "member-1",
+        SHELTER_ID,
+        2,
+      );
+
+      expect(result).toEqual({ teamId: "team-9", changed: false });
+      expect(manager.query).toHaveBeenCalledTimes(2);
+    });
+  });
 });

@@ -46,6 +46,15 @@ export class UpdateTeamService {
     return this.repository.replaceLeaderTeams(leaderId, assignments);
   }
 
+  /** Move o membro para a equipe do abrigo numa transação só (ver `TeamsRepository.assignMemberToTeam`). */
+  assignMemberToTeam(
+    memberId: string,
+    shelterId: string,
+    numberTeam: number,
+  ): Promise<{ teamId: string; changed: boolean }> {
+    return this.repository.assignMemberToTeam(memberId, shelterId, numberTeam);
+  }
+
   async addLeadersToTeam(
     teamId: string,
     leaderProfileIds: string[],
