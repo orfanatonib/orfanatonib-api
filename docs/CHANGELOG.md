@@ -4,6 +4,13 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - BANNERS INFORMATIVOS (plano 28, cenários E2E)
+
+- **FIX (atomicidade)**: `DELETE /informatives/:id` apagava a rota e depois o banner em passos soltos; agora `InformativeRepository.removeWithRoute` faz os dois numa transação. `PATCH` gravava a rota fora da transação do banner; agora `RouteService.upsertRoute`/`RouteRepository.upsertRoute` aceitam um `manager` opcional e a rota entra na mesma transação.
+- **FIX (rota)**: todo `PATCH` mudava o `type` da rota de `other` para `page`; agora o tipo e a ligação com a entidade ficam como nasceram. Reenviar o MESMO título regenerava o caminho (`…_1` virava `…_2`, quebrando o link publicado); agora o título só vai para a rota quando mudou.
+- **FIX (validação)**: `public: "talvez"` virava `true` (banner publicado por engano) — agora `400` (`StrictBoolean`); título/descrição só com espaços eram aceitos e título acima de 255 só falhava no banco (`400` com a mensagem do SQL); agora `@Matches(/\S/)` e `@MaxLength(255)`; `:id` malformado agora responde `400` (`ParseUUIDPipe`).
+- **TEST**: matriz `informative` 45/45 com 21 cenários novos em `e2e/live/informatives` (rota nasce, muda e some com o banner; caminhos únicos; leitura só autenticada; flag `informative_banners` desligada). Novo `informative-dto.spec.ts`.
+
 ## [Unreleased] - 2026-11-22 - COMENTÁRIOS (plano 37, cenários E2E)
 
 - **FIX (publicação errada)**: `PUT /comments/:id` com `published: "talvez"` (ou `"false"`) virava `true` pela conversão implícita do pipe global e o comentário ia para a vitrine pública `/comments/published`. Agora `400` (`StrictBoolean`).

@@ -4,7 +4,6 @@ import {
 } from "@nestjs/common";
 import { DataSource } from "typeorm";
 import { InformativeRepository } from "../informative.repository";
-import { RouteRepository } from "src/infrastructure/route/route-page.repository";
 import { RouteService } from "src/infrastructure/route/services/route.service";
 import { DeleteInformativeService } from "./delete-informative.service";
 import { GetInformativeService } from "./get-informative.service";
@@ -17,6 +16,7 @@ describe("Informative delete/get/update services", () => {
     findOneById: jest.Mock;
     findAllSorted: jest.Mock;
     remove: jest.Mock;
+    removeWithRoute: jest.Mock;
   };
   let routeRepo: { delete: jest.Mock };
 
@@ -26,30 +26,21 @@ describe("Informative delete/get/update services", () => {
       findOneById: jest.fn(),
       findAllSorted: jest.fn(),
       remove: jest.fn(),
+      removeWithRoute: jest.fn(),
     };
     routeRepo = { delete: jest.fn() };
   });
 
   describe("DeleteInformativeService", () => {
     const build = () =>
-      new DeleteInformativeService(
-        repo as unknown as InformativeRepository,
-        routeRepo as unknown as RouteRepository,
-      );
+      new DeleteInformativeService(repo as unknown as InformativeRepository);
 
-    it("remove a rota e o banner", async () => {
+    it("remove banner e rota numa operação só do repositório (transação)", async () => {
       const entity = { id: "i1", route: { id: "r1" } };
       repo.findOneWithRelations.mockResolvedValue(entity);
       await build().execute("i1");
-      expect(routeRepo.delete).toHaveBeenCalledWith("r1");
-      expect(repo.remove).toHaveBeenCalledWith(entity);
-    });
-
-    it("banner sem rota não tenta apagar rota", async () => {
-      repo.findOneWithRelations.mockResolvedValue({ id: "i1" });
-      await build().execute("i1");
+      expect(repo.removeWithRoute).toHaveBeenCalledWith(entity);
       expect(routeRepo.delete).not.toHaveBeenCalled();
-      expect(repo.remove).toHaveBeenCalled();
     });
 
     it("404 quando não existe", async () => {
@@ -61,7 +52,7 @@ describe("Informative delete/get/update services", () => {
 
     it("falha de persistência vira 500 padronizado", async () => {
       repo.findOneWithRelations.mockResolvedValue({ id: "i1" });
-      repo.remove.mockRejectedValue(new Error("db"));
+      repo.removeWithRoute.mockRejectedValue(new Error("db"));
       await expect(build().execute("i1")).rejects.toBeInstanceOf(
         InternalServerErrorException,
       );
@@ -135,8 +126,16 @@ describe("Informative delete/get/update services", () => {
       const result = await service.execute("i1", dto);
       expect(upsertRoute).toHaveBeenCalledWith(
         "r1",
-        expect.objectContaining({ entityId: "i1", title: "T", public: true }),
+        expect.objectContaining({
+          path: "informativo_",
+          title: "T",
+          public: true,
+        }),
+        expect.anything(),
       );
+      const sent = upsertRoute.mock.calls[0] as unknown[];
+      expect(sent[1]).not.toHaveProperty("type");
+      expect(sent[1]).not.toHaveProperty("entityId");
       expect(result.route).toEqual({ id: "r1", path: "informativo_t" });
     });
   });

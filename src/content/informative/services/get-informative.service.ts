@@ -25,7 +25,10 @@ export class GetInformativeService {
       const list = await this.informativeRepo.findAllSorted(query);
       return list.map((entity) => InformativeResponseDto.fromEntity(entity));
     } catch (error) {
-      this.logger.error("Error fetching banners", error.stack);
+      this.logger.error(
+        "Error fetching banners",
+        error instanceof Error ? error.stack : String(error),
+      );
       throw new InternalServerErrorException(
         "Erro ao buscar banners informativos",
       );

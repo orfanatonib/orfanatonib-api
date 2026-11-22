@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ILike, Repository } from "typeorm";
 import { InformativeEntity } from "./entities/informative.entity";
+import { RouteEntity } from "src/infrastructure/route/route-page.entity";
 import { QueryInformativeDto } from "./dto/query-informative.dto";
 
 @Injectable()
@@ -66,5 +67,14 @@ export class InformativeRepository {
 
   async remove(entity: InformativeEntity): Promise<InformativeEntity> {
     return this.repo.remove(entity);
+  }
+
+  /** Banner e rota saem juntos: se um dos dois falhar, nenhum sai. O banner guarda a chave da rota, então sai primeiro. */
+  async removeWithRoute(entity: InformativeEntity): Promise<void> {
+    const routeId = entity.route?.id;
+    await this.repo.manager.transaction(async (manager) => {
+      await manager.remove(InformativeEntity, entity);
+      if (routeId) await manager.delete(RouteEntity, routeId);
+    });
   }
 }

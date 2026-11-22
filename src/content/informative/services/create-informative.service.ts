@@ -3,6 +3,7 @@ import { DataSource, QueryRunner } from "typeorm";
 import { RouteService } from "src/infrastructure/route/services/route.service";
 import { RouteType } from "src/infrastructure/route/route-page.entity";
 import { CreateInformativeDto } from "../dto/create-informative.dto";
+import { INFORMATIVE_ROUTE_PREFIX } from "../constants";
 import { InformativeRepository } from "../informative.repository";
 import { InformativeEntity } from "../entities/informative.entity";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
@@ -33,9 +34,13 @@ export class CreateInformativeService {
       return informative;
     } catch (err) {
       await runner.rollbackTransaction();
-      this.logger.error("Transaction rolled back", err.stack);
+      const reason = err instanceof Error ? err.message : String(err);
+      this.logger.error(
+        "Transaction rolled back",
+        err instanceof Error ? err.stack : reason,
+      );
       throw new BadRequestException(
-        `Error creating informative banner: ${err.message}`,
+        `Error creating informative banner: ${reason}`,
       );
     } finally {
       await runner.release();
@@ -62,7 +67,7 @@ export class CreateInformativeService {
   ): Promise<void> {
     const path = await this.routeService.generateAvailablePath(
       dto.title,
-      "informativo_",
+      INFORMATIVE_ROUTE_PREFIX,
     );
 
     const route = await this.routeService.createRouteWithManager(

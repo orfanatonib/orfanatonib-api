@@ -10,9 +10,9 @@ afterEach(() => jest.restoreAllMocks());
 function setup(failAt: "persist" | "route" | null = null) {
   const repository = {
     create: jest.fn((x: object) => ({ ...x })),
-    save: jest.fn(async (x: object) => {
+    save: jest.fn((x: object) => {
       if (failAt === "persist") throw new Error("banco");
-      return { id: "i1", ...x };
+      return Promise.resolve({ id: "i1", ...x });
     }),
   };
   const manager = {

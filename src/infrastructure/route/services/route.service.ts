@@ -219,9 +219,11 @@ export class RouteService {
     return await manager.save(route);
   }
 
+  /** Com `manager`, a gravação da rota entra na transação de quem chamou. */
   async upsertRoute(
     routeId: string,
     updateData: Partial<RouteEntity>,
+    manager?: EntityManager,
   ): Promise<RouteEntity> {
     const existingRoute = await this.routeRepo.findById(routeId);
 
@@ -303,6 +305,6 @@ export class RouteService {
       }
     }
 
-    return this.routeRepo.upsertRoute(routeId, updateData);
+    return this.routeRepo.upsertRoute(routeId, updateData, manager);
   }
 }

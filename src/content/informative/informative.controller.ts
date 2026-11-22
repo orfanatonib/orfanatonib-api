@@ -10,6 +10,7 @@ import {
   Logger,
   UseGuards,
   Query,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { CreateInformativeDto } from "./dto/create-informative.dto";
 import { UpdateInformativeDto } from "./dto/update-informative.dto";
@@ -54,7 +55,9 @@ export class InformativeController {
   @UseGuards(FeatureFlagGuard)
   @Get(":id")
   @UseGuards(JwtAuthGuard)
-  async findOne(@Param("id") id: string): Promise<InformativeResponseDto> {
+  async findOne(
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<InformativeResponseDto> {
     const found = await this.getService.findOne(id);
 
     if (!found) {
@@ -69,7 +72,7 @@ export class InformativeController {
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Patch(":id")
   async update(
-    @Param("id") id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: UpdateInformativeDto,
   ): Promise<InformativeResponseDto> {
     this.logger.log(`Updating informative banner: ${id}`);
@@ -82,7 +85,7 @@ export class InformativeController {
   @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Delete(":id")
-  async delete(@Param("id") id: string): Promise<void> {
+  async delete(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     this.logger.log(`Deleting informative banner: ${id}`);
     await this.deleteService.execute(id);
     this.logger.log(`Informative banner deleted successfully: ${id}`);

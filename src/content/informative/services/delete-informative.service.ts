@@ -6,7 +6,6 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 import { InformativeRepository } from "../informative.repository";
-import { RouteRepository } from "src/infrastructure/route/route-page.repository";
 
 @Injectable()
 export class DeleteInformativeService {
@@ -15,9 +14,6 @@ export class DeleteInformativeService {
   constructor(
     @Inject(InformativeRepository)
     private readonly informativeRepo: InformativeRepository,
-
-    @Inject(RouteRepository)
-    private readonly routeRepo: RouteRepository,
   ) {}
 
   async execute(id: string): Promise<void> {
@@ -29,13 +25,12 @@ export class DeleteInformativeService {
     }
 
     try {
-      if (informative.route) {
-        await this.routeRepo.delete(informative.route.id);
-      }
-
-      await this.informativeRepo.remove(informative);
+      await this.informativeRepo.removeWithRoute(informative);
     } catch (error) {
-      this.logger.error(`Error removing banner ID=${id}`, error.stack);
+      this.logger.error(
+        `Error removing banner ID=${id}`,
+        error instanceof Error ? error.stack : String(error),
+      );
       throw new InternalServerErrorException("Erro ao remover banner.");
     }
   }

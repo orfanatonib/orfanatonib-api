@@ -45,35 +45,36 @@ describe("GetInformativeService", () => {
 
 describe("DeleteInformativeService", () => {
   const setup = () => {
-    const repo = { findOneWithRelations: jest.fn(), remove: jest.fn() };
+    const repo = {
+      findOneWithRelations: jest.fn(),
+      removeWithRoute: jest.fn(),
+    };
     const routes = { delete: jest.fn() };
     return {
       repo,
       routes,
-      svc: new DeleteInformativeService(repo as never, routes as never),
+      svc: new DeleteInformativeService(repo as never),
     };
   };
 
   it("apaga a rota e o banner", async () => {
-    const { repo, routes, svc } = setup();
+    const { repo, svc } = setup();
     repo.findOneWithRelations.mockResolvedValue(entity());
     await svc.execute("i1");
-    expect(routes.delete).toHaveBeenCalledWith("r1");
-    expect(repo.remove).toHaveBeenCalledTimes(1);
+    expect(repo.removeWithRoute).toHaveBeenCalledTimes(1);
   });
 
   it("inexistente: 404 sem apagar nada", async () => {
-    const { repo, routes, svc } = setup();
+    const { repo, svc } = setup();
     repo.findOneWithRelations.mockResolvedValue(null);
     await expect(svc.execute("x")).rejects.toBeInstanceOf(NotFoundException);
-    expect(routes.delete).not.toHaveBeenCalled();
-    expect(repo.remove).not.toHaveBeenCalled();
+    expect(repo.removeWithRoute).not.toHaveBeenCalled();
   });
 
   it("falha do banco: 500 genérico", async () => {
     const { repo, svc } = setup();
     repo.findOneWithRelations.mockResolvedValue(entity());
-    repo.remove.mockRejectedValue(new Error("db"));
+    repo.removeWithRoute.mockRejectedValue(new Error("db"));
     await expect(svc.execute("i1")).rejects.toBeInstanceOf(
       InternalServerErrorException,
     );
