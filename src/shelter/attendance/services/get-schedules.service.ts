@@ -15,7 +15,8 @@ import {
   TeamScheduleDto,
   TeamWithSchedulesDto,
 } from "../dto/attendance-response.dto";
-import { teamLabel } from "../constants";
+import { ATTENDANCE_MESSAGES, teamLabel } from "../constants";
+import { ResourceNotFoundException } from "src/common/exceptions";
 import {
   memberUsersOf,
   toAttendanceRecordDto,
@@ -43,7 +44,10 @@ export class GetSchedulesService {
     this.scopeService.assertBelongs(scope, teamId);
 
     const team = await this.repository.findTeamWithMembers(teamId);
-    if (!team) return [];
+    // Equipe que não existe é 404, como em `team/:id/members` (antes devolvia lista vazia para o admin).
+    if (!team) {
+      throw new ResourceNotFoundException(ATTENDANCE_MESSAGES.TEAM_NOT_FOUND);
+    }
 
     const schedules = await this.repository.findSchedulesForTeams(
       [teamId],

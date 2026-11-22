@@ -4,6 +4,11 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - FREQUÊNCIA (plano 22, cenários E2E)
+
+- **CHANGE**: `GET /attendance/team/:teamId/schedules` com equipe inexistente respondia `200` com lista vazia (para o admin); agora `404`, como `team/:teamId/members` e `leader/stats/team/:teamId`.
+- **TEST**: E2E de `/attendance` com 28 cenários novos (matriz `attendance` 80/80): líder semeado + dois membros criados pela API em abrigos diferentes, agendas criadas pela API, lançamento provado por SELECT em `attendance_records`, lote do líder tudo-ou-nada (um membro de fora da equipe não grava nenhum), relançar corrige em vez de duplicar, escopo de pendências/registros/agendas.
+
 ## [Unreleased] - 2026-11-22 - EVENTOS (plano 20, cenários E2E)
 
 - **FIX (atomicidade)**: `PATCH /events/:id` atualizava o evento e **depois** a mídia, sem transação: uma imagem recusada pelo banco devolvia erro, mas título, local e audiência já estavam gravados. Agora evento e mídia se gravam na mesma transação (`EventRepository.runInTransaction`, `update(…, manager)`), o arquivo novo sobe num lote descartável e o antigo só sai do bucket depois do commit.

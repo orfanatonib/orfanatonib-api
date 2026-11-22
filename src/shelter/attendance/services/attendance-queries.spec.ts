@@ -184,13 +184,13 @@ describe("GetSchedulesService", () => {
     expect(visit.totalMembers).toBe(1);
   });
 
-  it("devolve vazio quando a equipe não existe", async () => {
+  it("reporta 404 quando a equipe não existe (não uma lista vazia)", async () => {
     repository.findTeamWithMembers.mockResolvedValue(null);
     const service = await build(GetSchedulesService);
 
     await expect(
       service.listTeamSchedules(buildActor(), "team-id"),
-    ).resolves.toEqual([]);
+    ).rejects.toBeInstanceOf(ResourceNotFoundException);
   });
 
   it("monta a árvore abrigo → equipe → encontro", async () => {
