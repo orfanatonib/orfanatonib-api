@@ -4,9 +4,11 @@ import {
   NotFoundException,
   InternalServerErrorException,
 } from "@nestjs/common";
+import type { EntityManager } from "typeorm";
 import { EventRepository } from "../event.repository";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
+import type { UploadBatch } from "src/shared/media/storage/upload-batch";
 import {
   MediaItemEntity,
   MediaType,
@@ -41,10 +43,26 @@ export class UpdateEventService {
 
     const { media, ...eventData } = dto;
 
-    await this.eventRepo.update(id, eventData);
-
-    if (file || (media && media.url)) {
-      await this.updateEventMedia(id, media, file);
+    // Ordem segura: o evento e a mídia se gravam na MESMA transação; o arquivo novo sobe antes (descartável se algo
+    // falhar) e o antigo só sai do bucket depois do commit. Falhou ⇒ o evento não muda e o bucket fica como estava.
+    const batch = this.mediaStorage.newBatch();
+    const obsoleteUrls: string[] = [];
+    try {
+      await this.eventRepo.runInTransaction(async (manager) => {
+        await this.eventRepo.update(id, eventData, manager);
+        const unit = { manager, batch, obsoleteUrls };
+        if (file || (media && media.url)) {
+          await this.updateEventMedia(id, media, file, unit);
+        } else if (media && media.url === null) {
+          // O formulário manda `media.url = null` para "remover a imagem".
+          await this.removeEventMedia(id, unit);
+        }
+      });
+      batch.commit();
+      await this.mediaStorage.deleteAfterCommit(obsoleteUrls);
+    } catch (error) {
+      await batch.discard();
+      throw error;
     }
 
     const updated = await this.eventRepo.findById(id);
@@ -61,6 +79,23 @@ export class UpdateEventService {
     return updated;
   }
 
+  /** Remove a imagem do evento: a linha sai na transação e o arquivo só depois do commit. */
+  private async removeEventMedia(
+    eventId: string,
+    unit: { manager: EntityManager; obsoleteUrls: string[] },
+  ): Promise<void> {
+    const existing = await this.mediaItemProcessor.findMediaItemsByTarget(
+      eventId,
+      EVENT_MEDIA_TARGET,
+    );
+    unit.obsoleteUrls.push(
+      ...(await this.mediaItemProcessor.removeMediaItemsKeepingFiles(
+        existing,
+        unit.manager,
+      )),
+    );
+  }
+
   /**
    * Ordem segura: envia o novo → grava a linha → só então apaga o arquivo
    * antigo. Falha antes disso descarta o novo e mantém o antigo referenciado.
@@ -68,9 +103,14 @@ export class UpdateEventService {
   private async updateEventMedia(
     eventId: string,
     mediaInput: EventMediaInput | undefined,
-    file?: Express.Multer.File,
+    file: Express.Multer.File | undefined,
+    unit: {
+      manager: EntityManager;
+      batch: UploadBatch;
+      obsoleteUrls: string[];
+    },
   ): Promise<void> {
-    const batch = this.mediaStorage.newBatch();
+    const { batch } = unit;
     try {
       const existing = await this.mediaItemProcessor.findMediaItemByTarget(
         eventId,
@@ -124,17 +164,19 @@ export class UpdateEventService {
       if (!media) return;
 
       if (existing) {
-        await this.mediaItemProcessor.upsertMediaItem(existing.id, media);
+        await this.mediaItemProcessor.upsertMediaItem(
+          existing.id,
+          media,
+          unit.manager,
+        );
       } else {
-        await this.mediaItemProcessor.saveMediaItem(media);
+        await this.mediaItemProcessor.saveMediaItem(media, unit.manager);
       }
-      batch.commit();
 
       if (existing?.isLocalFile && existing.url) {
-        await this.mediaStorage.deleteAfterCommit([existing.url]);
+        unit.obsoleteUrls.push(existing.url);
       }
     } catch (error) {
-      await batch.discard();
       this.logger.error(
         "Error updating event media",
         error instanceof Error ? error.stack : undefined,

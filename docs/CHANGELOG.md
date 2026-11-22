@@ -4,6 +4,13 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - EVENTOS (plano 20, cenários E2E)
+
+- **FIX (atomicidade)**: `PATCH /events/:id` atualizava o evento e **depois** a mídia, sem transação: uma imagem recusada pelo banco devolvia erro, mas título, local e audiência já estavam gravados. Agora evento e mídia se gravam na mesma transação (`EventRepository.runInTransaction`, `update(…, manager)`), o arquivo novo sobe num lote descartável e o antigo só sai do bucket depois do commit.
+- **FIX**: o botão "remover imagem" do formulário manda `media.url = null` e a API ignorava (200 sem remover). Agora a linha de mídia sai na transação e o arquivo, depois do commit.
+- **FIX**: `date` de evento aceitava qualquer texto (`"ontem"`) e o evento sumia silenciosamente de `/events/upcoming`. Agora `400` (`@IsDateString`; o front manda ISO com hora).
+- **TEST**: E2E de `/events` com 65 testes (matriz `event` 67/67, incluindo `s3.01-12`, escopo por audiência e e-mail `skipped`); novos Jest (transação, remoção de imagem, DTOs).
+
 ## [Unreleased] - 2026-11-22 - DOCUMENTOS (plano 27, cenários E2E)
 
 - **FIX (falha silenciosa)**: `PATCH /documents/:id` com o `id` da mídia e um **arquivo novo** sobre um upload existente respondia 200 e **ignorava o arquivo** (o ramo só tratava link→upload). Agora o arquivo novo é gravado na mesma linha e o antigo só sai do bucket depois do commit. Sem o `id` da mídia o fluxo de troca completa segue como antes (e passa a se beneficiar do conserto do `cleanAndReplaceMediaItems`, plano 29).

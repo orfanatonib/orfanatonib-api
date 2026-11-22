@@ -23,6 +23,8 @@ const oldLocal = Object.assign(new MediaItemEntity(), {
   isLocalFile: true,
 });
 
+const txManager = { tx: true };
+
 function setup() {
   const processor = new MediaItemProcessor({} as never);
   const saveMedia = jest
@@ -61,6 +63,10 @@ function setup() {
     findById: jest.fn(async () => ({ id: "e1" })),
     update: jest.fn(async () => undefined),
     remove: jest.fn(async () => undefined),
+    // O evento e a mídia dele se gravam na mesma transação.
+    runInTransaction: jest.fn(
+      async (work: (manager: object) => Promise<unknown>) => work(txManager),
+    ),
   };
   const notify = {
     notifyEventCreated: jest.fn(async () => undefined),
@@ -167,6 +173,40 @@ describe("eventos × S3 (sem órfão, sem referência quebrada)", () => {
       );
       expect(batch.discard).toHaveBeenCalledTimes(1);
       expect(storage.deleteAfterCommit).not.toHaveBeenCalled();
+    });
+
+    it("o evento e a mídia se gravam na MESMA transação: se a mídia falha, o evento não foi atualizado fora dela", async () => {
+      const { update, findByTarget, upsert, repo } = setup();
+      findByTarget.mockResolvedValue(oldLocal);
+      upsert.mockRejectedValue(new Error("db"));
+
+      await expect(
+        update.update("e1", { title: "Novo" }, png),
+      ).rejects.toBeInstanceOf(InternalServerErrorException);
+
+      expect(repo.runInTransaction).toHaveBeenCalledTimes(1);
+      // O update do evento e o da mídia receberam o MESMO manager da transação (que então volta inteira).
+      expect(repo.update).toHaveBeenCalledWith(
+        "e1",
+        { title: "Novo" },
+        txManager,
+      );
+      expect(upsert).toHaveBeenCalledWith("m1", expect.anything(), txManager);
+    });
+
+    it("`media.url = null` (remover a imagem): a linha sai na transação e o arquivo só depois do commit", async () => {
+      const { update, findMany, removeKeeping, storage, repo } = setup();
+      findMany.mockResolvedValue([oldLocal]);
+      removeKeeping.mockResolvedValue([oldLocal.url]);
+
+      await update.update("e1", {
+        media: { url: null, isLocalFile: false },
+      });
+
+      expect(removeKeeping).toHaveBeenCalledWith([oldLocal], txManager);
+      expect(storage.uploadAll).not.toHaveBeenCalled();
+      expect(repo.runInTransaction).toHaveBeenCalledTimes(1);
+      expect(storage.deleteAfterCommit).toHaveBeenCalledWith([oldLocal.url]);
     });
 
     it("trocar arquivo por link apaga o antigo depois de gravar", async () => {

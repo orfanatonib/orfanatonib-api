@@ -1,6 +1,6 @@
 import type { EventMediaInput } from "./event-media-input";
 import { EventAudience } from "../entities/event.entity";
-import { IsEnum, IsOptional } from "class-validator";
+import { IsDateString, IsEnum, IsOptional } from "class-validator";
 
 export class UpdateEventDto {
   @IsOptional()
@@ -13,6 +13,7 @@ export class UpdateEventDto {
   description?: string;
 
   @IsOptional()
+  @IsDateString()
   date?: string;
 
   @IsOptional()

@@ -2,6 +2,7 @@
 export interface EventMediaInput {
   title?: string;
   description?: string;
-  url?: string;
+  /** `null` = o formulário pediu para remover a imagem do evento. */
+  url?: string | null;
   isLocalFile?: boolean;
 }

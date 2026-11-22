@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { DeepPartial, Repository } from "typeorm";
+import { DataSource, DeepPartial, EntityManager, Repository } from "typeorm";
 import type { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import { EventEntity } from "./entities/event.entity";
 import { QueryEventDto } from "./dto/query-event.dto";
@@ -10,7 +10,15 @@ export class EventRepository {
   constructor(
     @InjectRepository(EventEntity)
     private readonly repo: Repository<EventEntity>,
+    private readonly dataSource: DataSource,
   ) {}
+
+  /** Roda `work` numa transação: o evento e a mídia dele se gravam juntos ou não se gravam. */
+  runInTransaction<TResult>(
+    work: (manager: EntityManager) => Promise<TResult>,
+  ): Promise<TResult> {
+    return this.dataSource.transaction(work);
+  }
 
   async findAll(
     audiences?: string[],
@@ -59,8 +67,10 @@ export class EventRepository {
   async update(
     id: string,
     dto: QueryDeepPartialEntity<EventEntity>,
+    manager?: EntityManager,
   ): Promise<void> {
-    await this.repo.update(id, dto);
+    const repo = manager ? manager.getRepository(EventEntity) : this.repo;
+    await repo.update(id, dto);
   }
 
   async remove(id: string): Promise<void> {
