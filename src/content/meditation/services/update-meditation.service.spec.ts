@@ -56,7 +56,19 @@ function fakeMediaRepo(initial: { id: string; url: string }[]) {
   };
 }
 
-function setup(opts: { failTransaction?: boolean; saveFails?: boolean } = {}) {
+interface LockBuilder {
+  setLock: () => LockBuilder;
+  where: () => LockBuilder;
+  getOne: () => Promise<object | null>;
+}
+
+function setup(
+  opts: {
+    failTransaction?: boolean;
+    saveFails?: boolean;
+    vanished?: boolean;
+  } = {},
+) {
   const events: string[] = [];
   const existing = {
     id: "med1",
@@ -85,6 +97,15 @@ function setup(opts: { failTransaction?: boolean; saveFails?: boolean } = {}) {
     save: jest.fn(async (_e: unknown, v: object) => v),
     remove: jest.fn(),
     create: jest.fn((_e: unknown, v: object) => v),
+    // Trava a meditação no começo da transação (edições simultâneas se enfileiram).
+    createQueryBuilder: jest.fn((): LockBuilder => {
+      const builder: LockBuilder = {
+        setLock: () => builder,
+        where: () => builder,
+        getOne: () => Promise.resolve(opts.vanished ? null : existing),
+      };
+      return builder;
+    }),
   };
   const dataSource = {
     transaction: jest.fn(
@@ -185,5 +206,15 @@ describe("UpdateMeditationService (caminho legado de upload)", () => {
       ConflictException,
     );
     for (const x of [a, b, c, d]) expect(x.s3.upload).not.toHaveBeenCalled();
+  });
+  it("trava a meditação no início da transação e responde 404, sem gravar nada, se ela sumiu antes do lock", async () => {
+    const { svc, s3, mediaStorage } = setup({ vanished: true });
+
+    await expect(
+      svc.update("med1", { topic: "Novo" } as never, undefined),
+    ).rejects.toThrow("Meditation not found");
+
+    expect(s3.upload).not.toHaveBeenCalled();
+    expect(mediaStorage.deleteAfterCommit).toHaveBeenCalledWith([]);
   });
 });

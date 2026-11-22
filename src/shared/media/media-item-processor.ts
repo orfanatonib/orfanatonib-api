@@ -232,9 +232,20 @@ export class MediaItemProcessor {
         .filter(Boolean),
     );
 
-    const toRemove = oldItems.filter(
-      (item) => item.isLocalFile && !validUploadUrls.has(item.url),
+    // Linhas reaproveitadas por id (o item chegou com o `id` de uma linha já gravada) são ATUALIZADAS no
+    // lugar: não podem sair junto com as "antigas", senão a mídia some e o arquivo novo vira órfão.
+    const keptIds = new Set(
+      validIncoming
+        .map((item) => item.id)
+        .filter((id): id is string => Boolean(id)),
     );
+    const toRemove = oldItems.filter(
+      (item) =>
+        !keptIds.has(item.id) &&
+        !(item.isLocalFile && validUploadUrls.has(item.url)),
+    );
+    // Arquivo que uma linha mantida por id deixa para trás (trocou o arquivo ou virou link).
+    const replacedUrls: string[] = [];
 
     const results: MediaItemEntity[] = [];
     const uploadedUrls: string[] = [];
@@ -269,7 +280,19 @@ export class MediaItemProcessor {
           media.isLocalFile = false;
         }
 
-        results.push(await this.upsertMediaItem(item.id, media));
+        const saved = await this.upsertMediaItem(item.id, media);
+        results.push(saved);
+
+        const previousRow = item.id
+          ? oldItems.find((old) => old.id === item.id)
+          : undefined;
+        if (
+          previousRow?.isLocalFile &&
+          previousRow.url &&
+          previousRow.url !== saved.url
+        ) {
+          replacedUrls.push(previousRow.url);
+        }
       }
     } catch (error) {
       for (const url of uploadedUrls) {
@@ -284,6 +307,9 @@ export class MediaItemProcessor {
 
     if (toRemove.length) {
       await this.deleteMediaItems(toRemove, deleteFn);
+    }
+    for (const url of replacedUrls) {
+      await deleteFn(url);
     }
 
     return results;

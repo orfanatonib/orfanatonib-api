@@ -4,6 +4,13 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - MEDITAÇÕES (plano 29, cenários E2E)
+
+- **FIX (perda de material)**: `cleanAndReplaceMediaItems` (compartilhado com `documents`) atualizava a linha de mídia **por id** com o arquivo novo e, em seguida, apagava a **mesma linha** como se fosse "antiga". Trocar o PDF de uma meditação com o `id` da mídia terminava com **zero linhas de mídia** e o arquivo novo órfão no bucket. Agora a linha mantida por id fica, só o arquivo que ela deixa para trás sai (depois do commit, via `deleteFn`), e linhas antigas que não chegaram no pedido (arquivo ou link) saem.
+- **FIX**: duas trocas simultâneas do PDF da mesma meditação deixavam órfão; a transação de `PATCH /meditations/:id` agora trava a meditação (`pessimistic_write`).
+- **TEST**: E2E de `/meditations` com 61 testes (matriz `meditation` 67/67, incluindo `s3.01-12`); novos Jest do processador (linha reaproveitada por id, falha ao gravar) e do lock.
+- **NOTA (decisão de produto)**: `GET /meditations/this-week` considera "esta semana" só de segunda a sexta; no sábado e domingo responde "Meditação não encontrada" mesmo havendo a meditação da semana que acabou de passar.
+
 ## [Unreleased] - 2026-11-22 - MATERIAIS DE VISITA (plano 35, cenários E2E)
 
 - **FIX (dados e S3)**: `PATCH /visit-material-pages/:id` sincronizava a mídia item a item, **fora de transação** e antes de salvar a página: uma falha tardia (ex.: título que o banco recusa) deixava a mídia nova gravada e o objeto no bucket. Agora a edição é uma operação só (`VisitMaterialWriteUnit`): a página é salva primeiro, mídia e seções entram na mesma transação, os arquivos novos sobem para um lote descartável e os antigos só saem do bucket **depois do commit** (`deleteAfterCommit`). Falhou ⇒ o banco volta e os novos são descartados.

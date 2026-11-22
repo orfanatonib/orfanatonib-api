@@ -142,6 +142,122 @@ describe("MediaItemProcessor.cleanAndReplaceMediaItems", () => {
   });
 });
 
+describe("MediaItemProcessor.cleanAndReplaceMediaItems — linha reaproveitada por id", () => {
+  const row = (over: Partial<MediaItemEntity>) =>
+    Object.assign(new MediaItemEntity(), over);
+  const replacement = (id: string) => ({
+    id,
+    title: "n",
+    description: "d",
+    mediaType: MediaType.DOCUMENT,
+    uploadType: UploadType.UPLOAD,
+    fileField: "f",
+  });
+
+  it("trocar o arquivo de uma linha existente atualiza a MESMA linha: ela não é apagada junto com a antiga e só o arquivo velho sai", async () => {
+    const { proc, repo } = setup();
+    const stored = row({ id: "m1", url: "u/old", isLocalFile: true });
+    jest.spyOn(proc, "upsertMediaItem").mockImplementation(async (_id, m) => m);
+    const del = jest.fn(async () => undefined);
+
+    const out = await proc.cleanAndReplaceMediaItems(
+      [replacement("m1")],
+      "t1",
+      "Meditation",
+      { f: file("n.pdf") },
+      [stored],
+      del,
+      async () => "u/new",
+    );
+
+    expect(out[0].url).toBe("u/new");
+    expect(repo.removeMany).not.toHaveBeenCalled();
+    expect(del).toHaveBeenCalledTimes(1);
+    expect(del).toHaveBeenCalledWith("u/old");
+  });
+
+  it("virar link também deixa só o arquivo velho sair, sem apagar a linha", async () => {
+    const { proc, repo } = setup();
+    const stored = row({ id: "m1", url: "u/old", isLocalFile: true });
+    jest.spyOn(proc, "upsertMediaItem").mockImplementation(async (_id, m) => m);
+    const del = jest.fn(async () => undefined);
+
+    await proc.cleanAndReplaceMediaItems(
+      [
+        {
+          id: "m1",
+          title: "l",
+          description: "d",
+          mediaType: MediaType.DOCUMENT,
+          uploadType: UploadType.LINK,
+          url: "https://novo",
+        },
+      ],
+      "t1",
+      "Meditation",
+      {},
+      [stored],
+      del,
+      jest.fn(),
+    );
+
+    expect(repo.removeMany).not.toHaveBeenCalled();
+    expect(del).toHaveBeenCalledWith("u/old");
+  });
+
+  it("linha antiga que não chegou no pedido (link ou arquivo) sai; a mantida por id fica", async () => {
+    const { proc, repo } = setup();
+    const kept = row({ id: "m1", url: "https://a", isLocalFile: false });
+    const gone = row({ id: "m2", url: "https://b", isLocalFile: false });
+    jest.spyOn(proc, "upsertMediaItem").mockImplementation(async (_id, m) => m);
+    const del = jest.fn(async () => undefined);
+
+    await proc.cleanAndReplaceMediaItems(
+      [
+        {
+          id: "m1",
+          title: "l",
+          description: "d",
+          mediaType: MediaType.DOCUMENT,
+          uploadType: UploadType.LINK,
+          url: "https://a",
+        },
+      ],
+      "t1",
+      "Meditation",
+      {},
+      [kept, gone],
+      del,
+      jest.fn(),
+    );
+
+    expect(repo.removeMany).toHaveBeenCalledWith([gone]);
+    expect(del).not.toHaveBeenCalled();
+  });
+
+  it("se gravar falha, o arquivo velho não é apagado (a linha segue apontando para ele)", async () => {
+    const { proc } = setup();
+    const stored = row({ id: "m1", url: "u/old", isLocalFile: true });
+    jest.spyOn(proc, "upsertMediaItem").mockRejectedValue(new Error("db"));
+    const del = jest.fn(async () => undefined);
+
+    await expect(
+      proc.cleanAndReplaceMediaItems(
+        [replacement("m1")],
+        "t1",
+        "Meditation",
+        { f: file("n.pdf") },
+        [stored],
+        del,
+        async () => "u/new",
+      ),
+    ).rejects.toThrow("db");
+
+    expect(del).toHaveBeenCalledTimes(1);
+    expect(del).toHaveBeenCalledWith("u/new");
+  });
+});
+
 describe("MediaItemProcessor.removeMediaItemsKeepingFiles", () => {
   it("remove só as linhas e devolve as URLs dos arquivos locais (objeto só sai depois)", async () => {
     const { proc, repo } = setup();

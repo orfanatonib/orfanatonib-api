@@ -103,6 +103,15 @@ export class UpdateMeditationService {
     staleUrls: string[],
   ): Promise<MeditationEntity> {
     return await this.dataSource.transaction(async (manager) => {
+      // Trava a meditação até o fim da transação: edições simultâneas se enfileiram e a segunda enxerga a mídia
+      // que a primeira gravou (sem isso as duas trocam o mesmo arquivo e um objeto novo vira órfão no bucket).
+      const locked = await manager
+        .createQueryBuilder(MeditationEntity, "meditation")
+        .setLock("pessimistic_write")
+        .where("meditation.id = :id", { id: existing.id })
+        .getOne();
+      if (!locked) throw new NotFoundException("Meditation not found");
+
       const updatedMeditation = manager.merge(MeditationEntity, existing, {
         ...dto,
         startDate,
