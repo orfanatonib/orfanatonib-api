@@ -4,6 +4,13 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - ANTECEDENTES CRIMINAIS (plano 26, cenários E2E)
+
+- **FIX (atomicidade)**: `POST`, `PUT` e `DELETE /antecedentes-criminais` gravavam cadastro e PDFs em passos soltos. Agora cada operação é uma transação (`AtendenteRepository.runInTransaction`, `create/update/remove(…, manager)`); os PDFs novos sobem num lote descartável e os antigos só saem do bucket depois do commit (`AtendentePdfService`, novo). O `PUT` já gravava o nome **antes** de recusar a remoção do único PDF (400 com o cadastro alterado): agora nada muda quando recusa.
+- **FIX (concorrência)**: o `PUT` lê o cadastro com `pessimistic_write`; trocas simultâneas do PDF se enfileiram e não deixam objeto órfão.
+- **FIX (duplicidade)**: `PUT` religando o cadastro a uma pessoa que já tem antecedente respondia 200 e criava o segundo; agora `400` (reenviar o próprio vínculo continua valendo).
+- **TEST**: matriz `background-checks` 55/55: 17 cenários de contrato/atomicidade e 8 `s3.NN` novos em `e2e/live/atendentes`; o objeto é privado (`/private/…`, URL assinada ≤ 15 min). A negação anônima do objeto depende da política do bucket, que o LocalStack não aplica.
+
 ## [Unreleased] - 2026-11-22 - EQUIPES e MEMBROS (decisões pendentes)
 
 - **DB**: índice único `UQ_teams_shelter_number` (`shelter_id`, `numberTeam`) em `teams`, gerado por `migration:generate` (`TeamsUniqueNumberPerShelter`). Protege contra duas criações simultâneas do mesmo número; a checagem de 409 no código continua. O banco local não tinha duplicados.

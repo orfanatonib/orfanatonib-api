@@ -52,7 +52,7 @@ function setup() {
     svc: new GetAtendenteService(
       repo as never,
       media as never,
-      { withReadableUrl: async (m: unknown) => m } as never,
+      { withReadableUrl: (m: unknown) => Promise.resolve(m) } as never,
     ),
   };
 }

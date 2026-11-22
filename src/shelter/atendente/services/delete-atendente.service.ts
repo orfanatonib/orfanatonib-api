@@ -43,10 +43,17 @@ export class DeleteAtendenteService {
         ),
       ]);
       const allMedia = [...estadualItems, ...federalItems, ...legacyItems];
-      // Cadastro e linhas primeiro; PDFs (dado sensível) saem do bucket depois, com fila de limpeza se falhar.
-      await this.atendenteRepo.remove(id);
-      const fileUrls =
-        await this.mediaProcessor.removeMediaItemsKeepingFiles(allMedia);
+      // Cadastro e linhas saem na MESMA transação; PDFs (dado sensível) saem do bucket depois do commit, com fila de
+      // limpeza se a remoção falhar.
+      const fileUrls = await this.atendenteRepo.runInTransaction(
+        async (manager) => {
+          await this.atendenteRepo.remove(id, manager);
+          return this.mediaProcessor.removeMediaItemsKeepingFiles(
+            allMedia,
+            manager,
+          );
+        },
+      );
       await this.mediaStorage.deleteAfterCommit(fileUrls);
       this.logger.log(
         `Deleted ${allMedia.length} media item(s) for antecedente criminal ${id}`,

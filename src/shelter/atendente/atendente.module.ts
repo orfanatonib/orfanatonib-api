@@ -10,6 +10,7 @@ import { AtendenteRepository } from "./atendente.repository";
 import { CreateAtendenteService } from "./services/create-atendente.service";
 import { UpdateAtendenteService } from "./services/update-atendente.service";
 import { DeleteAtendenteService } from "./services/delete-atendente.service";
+import { AtendentePdfService } from "./services/atendente-pdf.service";
 import { GetAtendenteService } from "./services/get-atendente.service";
 
 @Module({
@@ -24,6 +25,7 @@ import { GetAtendenteService } from "./services/get-atendente.service";
     CreateAtendenteService,
     UpdateAtendenteService,
     DeleteAtendenteService,
+    AtendentePdfService,
     GetAtendenteService,
   ],
   exports: [AtendenteRepository, GetAtendenteService],

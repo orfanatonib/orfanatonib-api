@@ -1,6 +1,13 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository, Like, FindOptionsWhere, In } from "typeorm";
+import {
+  DataSource,
+  EntityManager,
+  Repository,
+  Like,
+  FindOptionsWhere,
+  In,
+} from "typeorm";
 import { IntegrationEntity } from "src/shelter/integration/entities/integration.entity";
 import { UserEntity } from "src/core/user/entities/user.entity";
 import { AtendenteEntity } from "./entities/atendente.entity";
@@ -16,11 +23,37 @@ export class AtendenteRepository {
     private readonly integrationRepo: Repository<IntegrationEntity>,
     @InjectRepository(UserEntity)
     private readonly userRepo: Repository<UserEntity>,
+    private readonly dataSource: DataSource,
   ) {}
 
-  async create(data: Partial<AtendenteEntity>): Promise<AtendenteEntity> {
-    const entity = this.repo.create(data);
-    return this.repo.save(entity);
+  /** Roda `work` numa transação: o cadastro e os PDFs dele se gravam juntos ou não se gravam. */
+  runInTransaction<TResult>(
+    work: (manager: EntityManager) => Promise<TResult>,
+  ): Promise<TResult> {
+    return this.dataSource.transaction(work);
+  }
+
+  private repoOf(manager?: EntityManager): Repository<AtendenteEntity> {
+    return manager ? manager.getRepository(AtendenteEntity) : this.repo;
+  }
+
+  async create(
+    data: Partial<AtendenteEntity>,
+    manager?: EntityManager,
+  ): Promise<AtendenteEntity> {
+    const repo = this.repoOf(manager);
+    return repo.save(repo.create(data));
+  }
+
+  /** Lê o cadastro travando a linha: edições simultâneas do mesmo antecedente se enfileiram. */
+  async lockById(
+    id: string,
+    manager: EntityManager,
+  ): Promise<AtendenteEntity | null> {
+    return manager.getRepository(AtendenteEntity).findOne({
+      where: { id },
+      lock: { mode: "pessimistic_write" },
+    });
   }
 
   async findById(id: string): Promise<AtendenteEntity | null> {
@@ -71,13 +104,15 @@ export class AtendenteRepository {
   async update(
     id: string,
     data: Partial<AtendenteEntity>,
+    manager?: EntityManager,
   ): Promise<AtendenteEntity | null> {
-    await this.repo.update(id, data);
-    return this.findById(id);
+    const repo = this.repoOf(manager);
+    if (Object.keys(data).length > 0) await repo.update(id, data);
+    return repo.findOne({ where: { id } });
   }
 
-  async remove(id: string): Promise<void> {
-    await this.repo.delete(id);
+  async remove(id: string, manager?: EntityManager): Promise<void> {
+    await this.repoOf(manager).delete(id);
   }
 
   async findIntegrationById(id: string): Promise<IntegrationEntity | null> {

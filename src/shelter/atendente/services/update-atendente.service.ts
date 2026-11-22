@@ -6,12 +6,9 @@ import {
   InternalServerErrorException,
 } from "@nestjs/common";
 import { PrivateMediaUrlService } from "src/shared/media/storage/private-media-url.service";
-import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
+import { AtendentePdfService } from "./atendente-pdf.service";
+import { AtendenteEntity } from "../entities/atendente.entity";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
-import {
-  MediaType,
-  UploadType,
-} from "src/shared/media/media-item/media-item.entity";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { AtendenteRepository } from "../atendente.repository";
 import { UpdateAtendenteDto } from "../dto/update-atendente.dto";
@@ -26,7 +23,7 @@ export class UpdateAtendenteService {
   constructor(
     private readonly atendenteRepo: AtendenteRepository,
     private readonly mediaProcessor: MediaItemProcessor,
-    private readonly mediaStorage: MediaStorageService,
+    private readonly pdfs: AtendentePdfService,
     private readonly privateUrls: PrivateMediaUrlService,
   ) {}
 
@@ -35,74 +32,98 @@ export class UpdateAtendenteService {
     dto: UpdateAtendenteDto,
     files?: AtendenteFiles,
   ): Promise<AtendenteResponseDto> {
-    const atendente = await this.atendenteRepo.findById(id);
-    if (!atendente) {
-      throw new NotFoundException(
-        `Antecedente criminal with id ${id} not found.`,
-      );
+    // Tudo numa transação com a linha travada (edições simultâneas se enfileiram): cadastro, remoções e trocas de PDF
+    // valem juntos ou não valem. Os arquivos novos sobem antes, num lote descartável; os antigos só saem do bucket
+    // depois do commit.
+    const batch = this.pdfs.newBatch();
+    const obsoleteUrls: string[] = [];
+    let updated: AtendenteEntity;
+    try {
+      updated = await this.atendenteRepo.runInTransaction(async (manager) => {
+        const atendente = await this.atendenteRepo.lockById(id, manager);
+        if (!atendente) {
+          throw new NotFoundException(
+            `Antecedente criminal with id ${id} not found.`,
+          );
+        }
+        await this.validateAttendable(dto.attendableType, dto.attendableId);
+        await this.assertAttendableFree(id, dto);
+
+        const [hadEstadual, hadFederal] = await Promise.all([
+          this.mediaProcessor.findMediaItemByTarget(
+            id,
+            MediaTargetType.AtendenteEstadual,
+          ),
+          this.mediaProcessor.findMediaItemByTarget(
+            id,
+            MediaTargetType.AtendenteFederal,
+          ),
+        ]);
+        const estadualRemains =
+          (!!hadEstadual && !dto.removePdfEstadual) || !!files?.estadual;
+        const federalRemains =
+          (!!hadFederal && !dto.removePdfFederal) || !!files?.federal;
+        if (!estadualRemains && !federalRemains) {
+          throw new BadRequestException(
+            "É obrigatório manter pelo menos um PDF (Estadual ou Federal). Remova apenas um para trocar por outro.",
+          );
+        }
+
+        const updateData: Partial<AtendenteEntity> = {};
+        if (dto.name !== undefined) updateData.name = dto.name;
+        if (dto.attendableType !== undefined)
+          updateData.attendableType = dto.attendableType;
+        if (dto.attendableId !== undefined)
+          updateData.attendableId = dto.attendableId;
+        const row = await this.atendenteRepo.update(id, updateData, manager);
+        if (!row) {
+          throw new InternalServerErrorException(
+            "Failed to update antecedente criminal.",
+          );
+        }
+
+        const unit = { manager, batch, obsoleteUrls };
+        const slots = [
+          {
+            target: MediaTargetType.AtendenteEstadual,
+            had: hadEstadual,
+            remove: dto.removePdfEstadual,
+            file: files?.estadual,
+            meta: dto.pdfEstadual,
+          },
+          {
+            target: MediaTargetType.AtendenteFederal,
+            had: hadFederal,
+            remove: dto.removePdfFederal,
+            file: files?.federal,
+            meta: dto.pdfFederal,
+          },
+        ];
+        for (const slot of slots) {
+          if (slot.file) {
+            await this.pdfs.store(
+              id,
+              slot.target,
+              {
+                file: slot.file,
+                title: slot.meta?.title,
+                description: slot.meta?.description,
+              },
+              unit,
+              slot.had,
+            );
+          } else if (slot.remove && slot.had) {
+            await this.pdfs.discard([slot.had], unit);
+          }
+        }
+        return row;
+      });
+    } catch (error) {
+      // Falhou: os arquivos novos saem do bucket e os antigos seguem referenciados.
+      await batch.discard();
+      throw error;
     }
-
-    await this.validateAttendable(dto.attendableType, dto.attendableId);
-
-    const updateData: Partial<typeof atendente> = {};
-    if (dto.name !== undefined) updateData.name = dto.name;
-    if (dto.attendableType !== undefined)
-      updateData.attendableType = dto.attendableType;
-    if (dto.attendableId !== undefined)
-      updateData.attendableId = dto.attendableId;
-
-    const updated = await this.atendenteRepo.update(id, updateData);
-    if (!updated)
-      throw new InternalServerErrorException(
-        "Failed to update antecedente criminal.",
-      );
-
-    const [hadEstadual, hadFederal] = await Promise.all([
-      this.mediaProcessor.findMediaItemByTarget(
-        id,
-        MediaTargetType.AtendenteEstadual,
-      ),
-      this.mediaProcessor.findMediaItemByTarget(
-        id,
-        MediaTargetType.AtendenteFederal,
-      ),
-    ]);
-
-    const estadualRemains =
-      (!!hadEstadual && !dto.removePdfEstadual) || !!files?.estadual;
-    const federalRemains =
-      (!!hadFederal && !dto.removePdfFederal) || !!files?.federal;
-    if (!estadualRemains && !federalRemains) {
-      throw new BadRequestException(
-        "É obrigatório manter pelo menos um PDF (Estadual ou Federal). Remova apenas um para trocar por outro.",
-      );
-    }
-
-    if (dto.removePdfEstadual && hadEstadual) {
-      await this.removePdf(id, MediaTargetType.AtendenteEstadual, hadEstadual);
-    }
-    if (dto.removePdfFederal && hadFederal) {
-      await this.removePdf(id, MediaTargetType.AtendenteFederal, hadFederal);
-    }
-
-    if (files?.estadual) {
-      await this.replacePdf(
-        id,
-        MediaTargetType.AtendenteEstadual,
-        files.estadual,
-        dto.pdfEstadual?.title,
-        dto.pdfEstadual?.description,
-      );
-    }
-    if (files?.federal) {
-      await this.replacePdf(
-        id,
-        MediaTargetType.AtendenteFederal,
-        files.federal,
-        dto.pdfFederal?.title,
-        dto.pdfFederal?.description,
-      );
-    }
+    await this.pdfs.finish({ batch, obsoleteUrls });
 
     const [pdfEstadual, pdfFederal] = await Promise.all([
       this.mediaProcessor.findMediaItemByTarget(
@@ -126,74 +147,19 @@ export class UpdateAtendenteService {
     );
   }
 
-  private async removePdf(
-    atendenteId: string,
-    targetType: MediaTargetType,
-    existing: Awaited<ReturnType<MediaItemProcessor["findMediaItemByTarget"]>>,
+  /** Um antecedente por pessoa: religar este cadastro a quem já tem outro é recusado. */
+  private async assertAttendableFree(
+    id: string,
+    dto: UpdateAtendenteDto,
   ): Promise<void> {
-    if (!existing) return;
-    const urls = await this.mediaProcessor.removeMediaItemsKeepingFiles([
-      existing,
-    ]);
-    await this.mediaStorage.deleteAfterCommit(urls);
-  }
-  private async replacePdf(
-    atendenteId: string,
-    targetType: MediaTargetType,
-    file: Express.Multer.File,
-    title?: string,
-    description?: string,
-  ): Promise<void> {
-    const existing = await this.mediaProcessor.findMediaItemByTarget(
-      atendenteId,
-      targetType,
+    if (!dto.attendableType || !dto.attendableId) return;
+    const existing = await this.atendenteRepo.findByAttendable(
+      dto.attendableType,
+      dto.attendableId,
     );
-
-    // novo → banco → só então apaga o antigo; falha descarta o novo e mantém o antigo.
-    const batch = this.mediaStorage.newBatch();
-    try {
-      await this.mediaStorage.uploadAll(
-        [
-          {
-            file,
-            mediaType: MediaType.DOCUMENT,
-            entity: targetType,
-            ownerId: atendenteId,
-            private: true,
-          },
-        ],
-        batch,
-      );
-      const uploaded = batch.objects[batch.objects.length - 1];
-      const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
-        {
-          title: title || file.originalname,
-          description: description || "",
-          mediaType: MediaType.DOCUMENT,
-          uploadType: UploadType.UPLOAD,
-          url: uploaded.url,
-          isLocalFile: true,
-          originalName: file.originalname,
-          size: file.size,
-        },
-        atendenteId,
-        targetType,
-      );
-      mediaEntity.storageKey = uploaded.key;
-      await this.mediaProcessor.saveMediaItem(mediaEntity);
-    } catch (error) {
-      await batch.discard();
-      throw error;
-    }
-    batch.commit();
-
-    if (existing) {
-      const urls = await this.mediaProcessor.removeMediaItemsKeepingFiles([
-        existing,
-      ]);
-      await this.mediaStorage.deleteAfterCommit(urls);
-      this.logger.log(
-        `Replaced PDF for antecedente ${atendenteId} (${targetType}); old object queued for removal`,
+    if (existing && existing.id !== id) {
+      throw new BadRequestException(
+        "Já existe um antecedente criminal para este vínculo. Edite o existente para adicionar ou trocar PDFs.",
       );
     }
   }

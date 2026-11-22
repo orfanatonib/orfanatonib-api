@@ -4,15 +4,10 @@ import {
   BadRequestException,
   NotFoundException,
 } from "@nestjs/common";
-import type { UploadBatch } from "src/shared/media/storage/upload-batch";
 import { PrivateMediaUrlService } from "src/shared/media/storage/private-media-url.service";
-import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
+import { AtendentePdfService } from "./atendente-pdf.service";
+import { AtendenteEntity } from "../entities/atendente.entity";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
-import {
-  MediaItemEntity,
-  MediaType,
-  UploadType,
-} from "src/shared/media/media-item/media-item.entity";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { AtendenteRepository } from "../atendente.repository";
 import { CreateAtendenteDto } from "../dto/create-atendente.dto";
@@ -31,7 +26,7 @@ export class CreateAtendenteService {
   constructor(
     private readonly atendenteRepo: AtendenteRepository,
     private readonly mediaProcessor: MediaItemProcessor,
-    private readonly mediaStorage: MediaStorageService,
+    private readonly pdfs: AtendentePdfService,
     private readonly privateUrls: PrivateMediaUrlService,
   ) {}
 
@@ -67,44 +62,49 @@ export class CreateAtendenteService {
       );
     }
 
-    const atendente = await this.atendenteRepo.create({
-      name: dto.name,
-      attendableType: dto.attendableType ?? null,
-      attendableId: dto.attendableId ?? null,
-    });
-
-    // Criação que falha em qualquer PDF não deixa nada: objetos enviados, linhas e o cadastro.
-    const batch = this.mediaStorage.newBatch();
-    const savedRows: MediaItemEntity[] = [];
+    // Cadastro e PDFs se gravam na MESMA transação; os arquivos sobem antes, num lote descartável. Falhou em qualquer
+    // PDF ⇒ nada fica: nem linha, nem cadastro, nem objeto no bucket.
+    const batch = this.pdfs.newBatch();
+    let atendente: AtendenteEntity;
     try {
-      if (hasEstadual) {
-        savedRows.push(
-          await this.uploadAndSavePdf(
-            files.estadual!,
-            atendente.id,
+      atendente = await this.atendenteRepo.runInTransaction(async (manager) => {
+        const unit = { manager, batch, obsoleteUrls: [] };
+        const created = await this.atendenteRepo.create(
+          {
+            name: dto.name,
+            attendableType: dto.attendableType ?? null,
+            attendableId: dto.attendableId ?? null,
+          },
+          manager,
+        );
+        if (hasEstadual) {
+          await this.pdfs.store(
+            created.id,
             MediaTargetType.AtendenteEstadual,
-            batch,
-            dto.pdfEstadual?.title,
-            dto.pdfEstadual?.description,
-          ),
-        );
-      }
-      if (hasFederal) {
-        savedRows.push(
-          await this.uploadAndSavePdf(
-            files.federal!,
-            atendente.id,
+            {
+              file: files.estadual!,
+              title: dto.pdfEstadual?.title,
+              description: dto.pdfEstadual?.description,
+            },
+            unit,
+          );
+        }
+        if (hasFederal) {
+          await this.pdfs.store(
+            created.id,
             MediaTargetType.AtendenteFederal,
-            batch,
-            dto.pdfFederal?.title,
-            dto.pdfFederal?.description,
-          ),
-        );
-      }
+            {
+              file: files.federal!,
+              title: dto.pdfFederal?.title,
+              description: dto.pdfFederal?.description,
+            },
+            unit,
+          );
+        }
+        return created;
+      });
     } catch (error) {
       await batch.discard();
-      await this.mediaProcessor.removeMediaItemsKeepingFiles(savedRows);
-      await this.atendenteRepo.remove(atendente.id);
       throw error;
     }
     batch.commit();
@@ -129,46 +129,6 @@ export class CreateAtendenteService {
       await this.privateUrls.withReadableUrl(pdfFederal),
       displayName,
     );
-  }
-
-  private async uploadAndSavePdf(
-    file: Express.Multer.File,
-    atendenteId: string,
-    targetType: MediaTargetType,
-    batch: UploadBatch,
-    title?: string,
-    description?: string,
-  ): Promise<MediaItemEntity> {
-    await this.mediaStorage.uploadAll(
-      [
-        {
-          file,
-          mediaType: MediaType.DOCUMENT,
-          entity: targetType,
-          ownerId: atendenteId,
-          // Antecedente criminal é dado sensível: objeto privado, lido só por URL assinada.
-          private: true,
-        },
-      ],
-      batch,
-    );
-    const uploaded = batch.objects[batch.objects.length - 1];
-    const mediaEntity = this.mediaProcessor.buildBaseMediaItem(
-      {
-        title: title || file.originalname,
-        description: description || "",
-        mediaType: MediaType.DOCUMENT,
-        uploadType: UploadType.UPLOAD,
-        url: uploaded.url,
-        isLocalFile: true,
-        originalName: file.originalname,
-        size: file.size,
-      },
-      atendenteId,
-      targetType,
-    );
-    mediaEntity.storageKey = uploaded.key;
-    return this.mediaProcessor.saveMediaItem(mediaEntity);
   }
 
   private async validateAttendable(

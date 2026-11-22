@@ -6,6 +6,7 @@ import {
 
 import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { AtendentePdfService } from "./atendente-pdf.service";
 import { CreateAtendenteService } from "./create-atendente.service";
 import { DeleteAtendenteService } from "./delete-atendente.service";
 import { UpdateAtendenteService } from "./update-atendente.service";
@@ -54,6 +55,15 @@ function setup() {
     deleteAfterCommit: jest.fn(async () => undefined),
   };
   const repo = {
+    runInTransaction: jest.fn(async (work: (manager: object) => unknown) =>
+      work({}),
+    ),
+    lockById: jest.fn(async () => ({
+      id: "a1",
+      name: "N",
+      attendableType: null,
+      attendableId: null,
+    })),
     create: jest.fn(async () => ({
       id: "a1",
       name: "N",
@@ -75,6 +85,7 @@ function setup() {
     })),
     remove: jest.fn(async () => undefined),
   };
+  const pdfs = new AtendentePdfService(processor, storage as never);
   const readableUrls = { withReadableUrl: async <T>(media: T) => media };
   return {
     batch,
@@ -87,13 +98,13 @@ function setup() {
     create: new CreateAtendenteService(
       repo as never,
       processor,
-      storage as never,
+      pdfs,
       readableUrls as never,
     ),
     update: new UpdateAtendenteService(
       repo as never,
       processor,
-      storage as never,
+      pdfs,
       readableUrls as never,
     ),
     remove: new DeleteAtendenteService(
@@ -114,8 +125,17 @@ describe("antecedentes (PDF sensível) × S3", () => {
       expect(repo.create).not.toHaveBeenCalled();
     });
 
-    it("2º PDF falha: descarta os uploads, remove a linha do 1º E o cadastro", async () => {
-      const { create, save, batch, removeRows, repo } = setup();
+    it("2º PDF falha: a transação cai (cadastro e 1º PDF) e os uploads são descartados", async () => {
+      const { create, save, batch, repo, storage } = setup();
+      let rolledBack = false;
+      repo.runInTransaction.mockImplementation(async (work) => {
+        try {
+          return await work({});
+        } catch (error) {
+          rolledBack = true;
+          throw error;
+        }
+      });
       save
         .mockImplementationOnce(async (m) => Object.assign(m, { id: "m1" }))
         .mockRejectedValueOnce(new Error("db"));
@@ -125,11 +145,10 @@ describe("antecedentes (PDF sensível) × S3", () => {
           federal: pdf("f.pdf"),
         }),
       ).rejects.toThrow("db");
+      expect(rolledBack).toBe(true);
       expect(batch.discard).toHaveBeenCalledTimes(1);
-      expect(removeRows).toHaveBeenCalledWith([
-        expect.objectContaining({ id: "m1" }),
-      ]);
-      expect(repo.remove).toHaveBeenCalledWith("a1");
+      expect(batch.commit).not.toHaveBeenCalled();
+      expect(storage.uploadAll).toHaveBeenCalledTimes(2);
     });
 
     it("feliz: grava com storageKey e confirma o lote", async () => {
@@ -174,6 +193,32 @@ describe("antecedentes (PDF sensível) × S3", () => {
       });
       await update.execute("a1", {} as never, { estadual: pdf("n.pdf") });
       expect(order).toEqual(["save", "rows", "object"]);
+    });
+
+    it("remover o único PDF é recusado ANTES de mudar o cadastro (nome fica como estava)", async () => {
+      const { update, findOne, repo, removeRows } = setup();
+      findOne.mockImplementation(async (_id, target) =>
+        target === "AtendenteEstadual"
+          ? row("old", "http://s/b/old.pdf")
+          : null,
+      );
+      await expect(
+        update.execute(
+          "a1",
+          { name: "Outro", removePdfEstadual: true } as never,
+          {},
+        ),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(repo.update).not.toHaveBeenCalled();
+      expect(removeRows).not.toHaveBeenCalled();
+    });
+
+    it("o cadastro é lido com a linha travada, dentro da transação", async () => {
+      const { update, repo } = setup();
+      await update
+        .execute("a1", { name: "Novo" } as never, {})
+        .catch(() => undefined);
+      expect(repo.lockById).toHaveBeenCalledWith("a1", expect.anything());
     });
 
     it("falha ao gravar: descarta o novo e mantém o antigo intocado", async () => {
