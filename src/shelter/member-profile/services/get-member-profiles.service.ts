@@ -17,6 +17,7 @@ import {
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MemberProfileEntity } from "../entities/member-profile.entity/member-profile.entity";
 import { UserEntity } from "src/core/user/entities/user.entity";
+import { GetTeamsService } from "src/shelter/team/services/get-teams.service";
 
 type AccessCtx = { role?: string; userId?: string | null };
 
@@ -26,6 +27,7 @@ export class GetMemberProfilesService {
     private readonly repo: MemberProfilesRepository,
     private readonly authCtx: AuthContextService,
     private readonly mediaItemProcessor: MediaItemProcessor,
+    private readonly getTeamsService: GetTeamsService,
   ) {}
 
   private async getCtx(req: Request): Promise<AccessCtx> {
@@ -38,6 +40,17 @@ export class GetMemberProfilesService {
 
   private assertAllowed(ctx: AccessCtx): void {
     if (!ctx.role || ctx.role === "member") {
+      throw new ForbiddenException("Acesso negado");
+    }
+  }
+
+  /** A lista traz membros ainda sem equipe (sem abrigo): só quem aloca (admin ou líder com abrigo) a enxerga. */
+  private async assertLeaderLeadsShelter(ctx: AccessCtx): Promise<void> {
+    if (ctx.role !== "leader") return;
+    const led = ctx.userId
+      ? await this.getTeamsService.findLedShelterIds(ctx.userId)
+      : new Set<string>();
+    if (led.size === 0) {
       throw new ForbiddenException("Acesso negado");
     }
   }
@@ -67,6 +80,7 @@ export class GetMemberProfilesService {
   async list(req: Request): Promise<MemberSimpleListDto[]> {
     const ctx = await this.getCtx(req);
     this.assertAllowed(ctx);
+    await this.assertLeaderLeadsShelter(ctx);
 
     const items = await this.repo.listEntities(ctx);
     await this.populateUserImages(items);

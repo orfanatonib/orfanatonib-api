@@ -6,12 +6,14 @@ import {
   OneToMany,
   JoinColumn,
   ManyToMany,
+  Index,
 } from "typeorm";
 import { ShelterEntity } from "src/shelter/shelter/entities/shelter.entity/shelter.entity";
 import { LeaderProfileEntity } from "src/shelter/leader-profile/entities/leader-profile.entity/leader-profile.entity";
 import { MemberProfileEntity } from "src/shelter/member-profile/entities/member-profile.entity/member-profile.entity";
 
 @Entity("teams")
+@Index("UQ_teams_shelter_number", ["shelter", "numberTeam"], { unique: true })
 export class TeamEntity extends BaseEntity {
   @Column({ type: "int" })
   numberTeam: number;

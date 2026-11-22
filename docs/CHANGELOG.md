@@ -4,6 +4,12 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - EQUIPES e MEMBROS (decisões pendentes)
+
+- **DB**: índice único `UQ_teams_shelter_number` (`shelter_id`, `numberTeam`) em `teams`, gerado por `migration:generate` (`TeamsUniqueNumberPerShelter`). Protege contra duas criações simultâneas do mesmo número; a checagem de 409 no código continua. O banco local não tinha duplicados.
+- **SEGURANÇA**: `GET /member-profiles/simple` (membros ainda sem equipe, portanto sem abrigo) passa a responder `403` para líder que não lidera nenhum abrigo. Admin e líder com abrigo seguem vendo a lista, porque é com ela que alocam o membro; membro comum já era negado.
+- **DECISÃO**: a meditação da semana (`GET /meditations/this-week`) continua valendo só de segunda a sexta.
+
 ## [Unreleased] - 2026-11-22 - PAGELAS (plano 19, cenários E2E)
 
 - **FIX**: `present: "talvez"` (ou `"false"`) em `POST /pagelas` e `PATCH /pagelas/:id` era aceito como `true` pela conversão implícita do pipe global (a presença da criança era gravada errada em silêncio). Agora `400` (`StrictBoolean`).

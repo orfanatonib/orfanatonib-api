@@ -2,7 +2,11 @@ import { ForbiddenException } from "@nestjs/common";
 
 import { GetMemberProfilesService } from "./get-member-profiles.service";
 
-function setup(role?: string, userId: string | null = "u1") {
+function setup(
+  role?: string,
+  userId: string | null = "u1",
+  led: string[] = ["s1"],
+) {
   const repo = {
     findPageWithFilters: jest
       .fn()
@@ -24,6 +28,7 @@ function setup(role?: string, userId: string | null = "u1") {
       repo as never,
       auth as never,
       media as never,
+      { findLedShelterIds: jest.fn().mockResolvedValue(new Set(led)) } as never,
     ),
   };
 }
@@ -71,5 +76,12 @@ describe("GetMemberProfilesService: quem pode ler perfis de membro", () => {
     });
     await expect(svc.list(req)).resolves.toEqual([]);
     expect(repo.findPageWithFilters).toHaveBeenCalledTimes(1);
+  });
+
+  it("líder que não lidera nenhum abrigo não vê a lista de membros sem equipe", async () => {
+    const { svc, repo } = setup("leader", "lider-2", []);
+
+    await expect(svc.list(req)).rejects.toBeInstanceOf(ForbiddenException);
+    expect(repo.listEntities).not.toHaveBeenCalled();
   });
 });
