@@ -10,6 +10,7 @@ import {
   ValidationPipe,
   Logger,
   UseGuards,
+  ParseUUIDPipe,
 } from "@nestjs/common";
 import { plainToInstance } from "class-transformer";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
@@ -79,7 +80,9 @@ export class CommentController {
   @UseGuards(FeatureFlagGuard)
   @Get(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async findOne(@Param("id") id: string): Promise<CommentResponseDto> {
+  async findOne(
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<CommentResponseDto> {
     const comment = await this.getCommentService.findOne(id);
     return plainToInstance(CommentResponseDto, comment);
   }
@@ -89,7 +92,7 @@ export class CommentController {
   @Put(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   async update(
-    @Param("id") id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: UpdateCommentDto,
   ): Promise<CommentResponseDto> {
     this.logger.log(`Updating comment: ${id}`);
@@ -102,7 +105,7 @@ export class CommentController {
   @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async remove(@Param("id") id: string): Promise<void> {
+  async remove(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     this.logger.log(`Deleting comment: ${id}`);
     await this.deleteCommentService.execute(id);
     this.logger.log(`Comment deleted successfully: ${id}`);

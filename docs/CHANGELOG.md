@@ -4,6 +4,13 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - COMENTÁRIOS (plano 37, cenários E2E)
+
+- **FIX (publicação errada)**: `PUT /comments/:id` com `published: "talvez"` (ou `"false"`) virava `true` pela conversão implícita do pipe global e o comentário ia para a vitrine pública `/comments/published`. Agora `400` (`StrictBoolean`).
+- **FIX**: `name`, `comment`, `shelter` e `neighborhood` só com espaços eram aceitos no `POST` e no `PUT` (comentário vazio na vitrine). Agora `400` (`@Matches(/\S/)`; limites e padrão em `comment/constants.ts`).
+- **FIX**: `:id` malformado em `GET/PUT/DELETE /comments/:id` agora responde `400` (`ParseUUIDPipe`).
+- **TEST**: matriz `comment` 51/51 com 25 cenários novos em `e2e/live/comments`: comentário nasce não publicado, validação completa, quem envia não modera, duplicidade permitida, vitrine pública só com o publicado (e some ao despublicar ou apagar), selo de pendentes, `comment_moderation` desligada e aviso aos admins no outbox só como `skipped`. Novo `comment-dto.spec.ts`.
+
 ## [Unreleased] - 2026-11-22 - AVALIAÇÕES DO SITE (plano 39, cenários E2E)
 
 - **FIX**: `POST /site-feedbacks` aceitava `name` e `comment` só com espaços (201 com avaliação vazia) e nota fracionada (`4.5`, gravada arredondada). Agora `400` (`@Matches(/\S/)` e `@IsInt`); limites e padrão em `feedback/constants.ts`. Vale também para `PUT` (herda o DTO).
