@@ -7,6 +7,9 @@ import { ShelteredEntity } from "../entities/sheltered.entity";
 import { toShelteredResponseDto } from "../mappers/sheltered.mapper";
 import { toDateOnly } from "../utils/sheltered-date.util";
 import { buildShelterReference } from "../utils/sheltered-relation.util";
+import { RuleException } from "src/common/exceptions";
+import { SHELTERED_MESSAGES } from "../constants";
+import { mustKeepShelter } from "../utils/sheltered-access.util";
 import { ShelteredAccessContext } from "../types";
 import { GetShelteredService } from "./get-sheltered.service";
 import { ShelteredShelterAccessService } from "./sheltered-shelter-access.service";
@@ -84,6 +87,9 @@ export class UpdateShelteredService {
     if (dto.shelterId === undefined) return;
 
     if (dto.shelterId === null) {
+      if (mustKeepShelter(actor)) {
+        throw new RuleException(SHELTERED_MESSAGES.SHELTER_REQUIRED);
+      }
       entity.shelter = null;
       return;
     }

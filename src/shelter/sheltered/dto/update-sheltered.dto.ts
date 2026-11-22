@@ -10,6 +10,7 @@ import {
   ValidateNested,
 } from "class-validator";
 import { Type } from "class-transformer";
+import { StrictBoolean } from "src/common/decorators/strict-boolean.decorator";
 import { UpdateShelteredAddressDto } from "./sheltered-address.dto";
 import { ShelteredGender } from "../enums/sheltered-gender.enum";
 import {
@@ -26,12 +27,13 @@ import {
  * explicit `null` on `shelterId`/`address` detaches the relation.
  */
 export class UpdateShelteredDto {
-  @IsOptional()
+  // Colunas NOT NULL: omitir é "não mexer", mas `null` é erro (antes passava e virava 500 no banco).
+  @ValidateIf((_dto: UpdateShelteredDto, value: unknown) => value !== undefined)
   @IsString()
   @Length(SHELTERED_NAME_MIN_LENGTH, SHELTERED_NAME_MAX_LENGTH)
   name?: string;
 
-  @IsOptional()
+  @ValidateIf((_dto: UpdateShelteredDto, value: unknown) => value !== undefined)
   @IsEnum(ShelteredGender)
   gender?: ShelteredGender;
 
@@ -55,7 +57,8 @@ export class UpdateShelteredDto {
   @IsDateString()
   joinedAt?: string;
 
-  @IsOptional()
+  @ValidateIf((_dto: UpdateShelteredDto, value: unknown) => value !== undefined)
+  @StrictBoolean()
   @IsBoolean()
   active?: boolean;
 

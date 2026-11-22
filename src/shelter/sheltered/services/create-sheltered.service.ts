@@ -6,6 +6,9 @@ import { ShelteredResponseDto } from "../dto/sheltered-response.dto";
 import { toShelteredResponseDto } from "../mappers/sheltered.mapper";
 import { toDateOnly } from "../utils/sheltered-date.util";
 import { buildShelterReference } from "../utils/sheltered-relation.util";
+import { RuleException } from "src/common/exceptions";
+import { SHELTERED_MESSAGES } from "../constants";
+import { mustKeepShelter } from "../utils/sheltered-access.util";
 import { ShelteredAccessContext } from "../types";
 import { GetShelteredService } from "./get-sheltered.service";
 import { ShelteredShelterAccessService } from "./sheltered-shelter-access.service";
@@ -27,6 +30,8 @@ export class CreateShelteredService {
   ): Promise<ShelteredResponseDto> {
     if (dto.shelterId) {
       await this.shelterAccessService.assertReachable(dto.shelterId, actor);
+    } else if (mustKeepShelter(actor)) {
+      throw new RuleException(SHELTERED_MESSAGES.SHELTER_REQUIRED);
     }
 
     const sheltered = this.shelteredRepository.create({

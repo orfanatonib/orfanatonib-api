@@ -11,6 +11,32 @@ const transform = (payload: Record<string, unknown>): UpdateShelteredDto =>
 const failingProperties = (payload: Record<string, unknown>): string[] =>
   validateSync(transform(payload)).map((error) => error.property);
 
+describe("UpdateShelteredDto — active", () => {
+  it.each(["talvez", "false", 5, null])(
+    "rejects %p instead of coercing it to true (implicit conversion must not decide)",
+    (value) => {
+      expect(failingProperties({ active: value })).toContain("active");
+    },
+  );
+
+  it.each([true, false])("accepts the real boolean %p", (value) => {
+    expect(failingProperties({ active: value })).toEqual([]);
+  });
+});
+
+describe("UpdateShelteredDto — colunas NOT NULL", () => {
+  it.each(["name", "gender", "active"])(
+    "an explicit null on %s is a validation error, not a 500 from the database",
+    (field) => {
+      expect(failingProperties({ [field]: null })).toContain(field);
+    },
+  );
+
+  it("omitting them is still fine (partial update)", () => {
+    expect(failingProperties({})).toEqual([]);
+  });
+});
+
 describe("UpdateShelteredDto", () => {
   it("accepts an empty payload, since every field is optional", () => {
     expect(validateSync(transform({}))).toHaveLength(0);

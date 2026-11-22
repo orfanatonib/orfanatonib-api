@@ -98,6 +98,8 @@ A resposta usa o envelope paginado compartilhado
 }
 ```
 
+> **Regras de escopo na escrita (2026-11-22):** admin pode criar acolhido sem abrigo; **líder e membro precisam informar um abrigo que alcançam** (`400` sem abrigo, `404` abrigo alheio) e **não podem soltar** o acolhido do abrigo (`PUT` com `shelterId: null` ⇒ `400`) — sem isso o registro era gravado e sumia da visão de quem o criou (a resposta dava `404`). `PUT` com `name`, `gender` ou `active` `null`, ou `active` que não é booleano (`"talvez"`), é `400` (antes virava `true`/`500`).
+
 ### `GET /sheltered/simple` — query
 
 | Parâmetro | Tipo | Default |

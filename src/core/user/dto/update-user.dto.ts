@@ -6,7 +6,7 @@ import {
   MinLength,
   IsBoolean,
 } from "class-validator";
-import { StrictBoolean } from "./strict-boolean.decorator";
+import { StrictBoolean } from "src/common/decorators/strict-boolean.decorator";
 import { UserRole } from "src/core/auth/auth.types";
 
 export class UpdateUserDto {

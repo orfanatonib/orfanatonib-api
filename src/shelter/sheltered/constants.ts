@@ -41,6 +41,8 @@ export const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 export const SHELTERED_MESSAGES = {
   NOT_FOUND: "Acolhido não encontrado ou fora do seu acesso.",
   SHELTER_NOT_FOUND: "Abrigo não encontrado ou fora do seu acesso.",
+  SHELTER_REQUIRED:
+    "Informe o abrigo do acolhido: sem abrigo ele ficaria fora do seu acesso.",
   INVALID_BIRTH_DATE: "Data de nascimento inválida. Use o formato AAAA-MM-DD.",
   INVALID_JOINED_AT:
     "Data de entrada no abrigo inválida. Use o formato AAAA-MM-DD.",

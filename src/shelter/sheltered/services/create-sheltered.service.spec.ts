@@ -1,6 +1,9 @@
 import { Test } from "@nestjs/testing";
 import { AddressesService } from "src/shelter/address/services/addresses.service";
-import { ResourceNotFoundException } from "src/common/exceptions";
+import {
+  ResourceNotFoundException,
+  RuleException,
+} from "src/common/exceptions";
 import { ShelteredEntity } from "../entities/sheltered.entity";
 import { ShelteredRepository } from "../repositories/sheltered.repository";
 import { CreateShelteredService } from "./create-sheltered.service";
@@ -11,6 +14,7 @@ import {
   buildAddressEntity,
   buildAdminContext,
   buildCreateShelteredDto,
+  buildLeaderContext,
   buildShelteredEntity,
 } from "../sheltered.fixtures";
 
@@ -126,5 +130,25 @@ describe("CreateShelteredService", () => {
     ).rejects.toBeInstanceOf(ResourceNotFoundException);
 
     expect(repository.save).not.toHaveBeenCalled();
+  });
+  it("refuses a scoped actor creating an acolhido without a shelter: it would be saved and vanish from their view", async () => {
+    await expect(
+      service.execute(
+        buildCreateShelteredDto({ shelterId: undefined }),
+        buildLeaderContext(),
+      ),
+    ).rejects.toBeInstanceOf(RuleException);
+
+    expect(repository.save).not.toHaveBeenCalled();
+  });
+
+  it("still lets an admin create an acolhido without a shelter", async () => {
+    await service.execute(
+      buildCreateShelteredDto({ shelterId: undefined }),
+      buildAdminContext(),
+    );
+
+    expect(repository.save).toHaveBeenCalledTimes(1);
+    expect(shelterAccessService.assertReachable).not.toHaveBeenCalled();
   });
 });

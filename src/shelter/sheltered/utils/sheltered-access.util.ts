@@ -32,3 +32,10 @@ export const toShelteredAccessContext = (
  */
 export const isUnscopedActor = (actor: ShelteredAccessContext): boolean =>
   actor.role === null || actor.role === UserRole.ADMIN || actor.userId === null;
+
+/**
+ * Acolhido sem abrigo só o admin enxerga. Quem tem escopo (líder, membro) precisa manter o acolhido
+ * num abrigo ao qual alcança: sem isso o registro é gravado e some da visão de quem o criou.
+ */
+export const mustKeepShelter = (actor: ShelteredAccessContext): boolean =>
+  !isUnscopedActor(actor);

@@ -197,6 +197,7 @@ export class ShelteredRepository {
     if (searchString) {
       queryBuilder.andWhere(
         `(
+          LOWER(${SHELTERED_ALIAS}.name) LIKE LOWER(:searchString) OR
           LOWER(COALESCE(${SHELTER_ALIAS}.name, '')) LIKE LOWER(:searchString) OR
           LOWER(COALESCE(${SHELTERED_ALIAS}.guardianName, '')) LIKE LOWER(:searchString) OR
           COALESCE(${SHELTERED_ALIAS}.guardianPhone, '') LIKE :searchString

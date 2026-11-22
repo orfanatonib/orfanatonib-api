@@ -4,6 +4,13 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - ACOLHIDOS (plano 17, cenários E2E)
+
+- **FIX (dado órfão)**: `POST /sheltered` por líder ou membro **sem abrigo** gravava o acolhido e respondia `404` (o registro ficava fora do escopo de quem o criou e invisível). Agora `400` sem gravar; só o admin cria acolhido sem abrigo. O mesmo vale para `PUT` com `shelterId: null` por quem tem escopo (`400`).
+- **FIX**: `GET /sheltered/simple` não buscava pelo **nome do acolhido** (`searchString` só olhava abrigo, responsável e telefone), então o seletor não achava a criança pelo nome.
+- **FIX**: `PUT /sheltered/:id` e `PATCH /sheltered/:id/status` aceitavam `active: "talvez"` como `true` (conversão implícita do pipe global); `null` em `name`/`gender`/`active` passava na validação e virava `500` no banco. Agora `400`. `StrictBoolean` foi movido de `core/user/dto` para `common/decorators`.
+- **TEST**: E2E de `/sheltered` com 63 testes (matriz `sheltered` 63/63), com líder semeado, membro criado pela API e dois abrigos criados pelo cenário; novos specs de DTO e de serviço.
+
 ## [Unreleased] - 2026-11-22 - PERFIS DE MEMBRO (plano 16, cenários E2E)
 
 - **FIX**: `PUT /member-profiles/:memberId` movia o membro em passos soltos (tirar da equipe antiga, depois pôr na nova; ou criar a equipe nova, que ignorava o membro). Agora é uma transação só, `TeamsRepository.assignMemberToTeam`: abrigo/membro inexistente → `404` sem gravar, equipe criada com o membro dentro, idempotente.

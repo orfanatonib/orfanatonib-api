@@ -1,6 +1,9 @@
 import { Test } from "@nestjs/testing";
 import { AddressesService } from "src/shelter/address/services/addresses.service";
-import { ResourceNotFoundException } from "src/common/exceptions";
+import {
+  ResourceNotFoundException,
+  RuleException,
+} from "src/common/exceptions";
 import { ShelteredRepository } from "../repositories/sheltered.repository";
 import { UpdateShelteredService } from "./update-sheltered.service";
 import { GetShelteredService } from "./get-sheltered.service";
@@ -9,6 +12,7 @@ import { ShelteredGender } from "../enums/sheltered-gender.enum";
 import {
   buildAddressEntity,
   buildAdminContext,
+  buildLeaderContext,
   buildShelteredEntity,
 } from "../sheltered.fixtures";
 
@@ -84,6 +88,22 @@ describe("UpdateShelteredService", () => {
 
     expect(entity.shelter).toBeNull();
     expect(shelterAccessService.assertReachable).not.toHaveBeenCalled();
+  });
+
+  it("refuses a scoped actor detaching the shelter: the acolhido would leave their view", async () => {
+    const entity = givenEntity();
+    const before = entity.shelter;
+
+    await expect(
+      service.execute(
+        "sheltered-id",
+        { shelterId: null },
+        buildLeaderContext(),
+      ),
+    ).rejects.toBeInstanceOf(RuleException);
+
+    expect(entity.shelter).toBe(before);
+    expect(repository.save).not.toHaveBeenCalled();
   });
 
   it("authorizes and links a new shelter", async () => {

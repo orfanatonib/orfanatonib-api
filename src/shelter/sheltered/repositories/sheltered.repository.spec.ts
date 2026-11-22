@@ -293,6 +293,17 @@ describe("ShelteredRepository", () => {
       });
     });
 
+    it("searches the acolhido name too, so the selector finds a child by name", async () => {
+      await repository.findAllSimple(
+        simpleFilters({ searchString: "Maria" }),
+        buildAdminContext(),
+      );
+
+      const clause = clauseMatching("searchString");
+      expect(clause?.[0]).toContain("LOWER(sheltered.name) LIKE");
+      expect(clause?.[1]).toEqual({ searchString: "%Maria%" });
+    });
+
     it("lists active records first and paginates", async () => {
       await repository.findAllSimple(
         simpleFilters({ page: 2, limit: 5 }),
