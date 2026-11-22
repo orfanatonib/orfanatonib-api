@@ -1,3 +1,4 @@
+import { FIXATION_PROFILES } from "./verse-fixation.constants";
 import { VERSE_CARD_LOOK_VARIANTS } from "./verse-card-looks.constants";
 import { ContentAudience } from "../../enums/content-audience.enum";
 import { ContentStageType } from "../../enums/content-stage-type.enum";
@@ -75,7 +76,9 @@ describe("direção de arte por público", () => {
     (stage) => {
       for (const a of AUDIENCES)
         expect(request(a, stage)).toContain(
-          AUDIENCE_VISUAL_ART[a].funInfographicStyle,
+          stage === ContentStageType.VERSE_FIXATION
+            ? FIXATION_PROFILES[a].infographicStyle
+            : AUDIENCE_VISUAL_ART[a].funInfographicStyle,
         );
     },
   );

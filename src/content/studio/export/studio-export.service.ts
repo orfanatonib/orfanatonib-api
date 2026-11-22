@@ -427,11 +427,15 @@ export class StudioExportService {
     return {
       pages: {
         images,
-        // Cartões do versículo são sempre paisagem; os visuais da lição seguem a escolha do admin.
-        orientation:
-          fun || (!verse && content.visualConfig?.orientation === "PORTRAIT")
-            ? "PORTRAIT"
-            : "LANDSCAPE",
+        // Cartões do versículo são sempre paisagem; os visuais da lição seguem a escolha do admin; fixação e
+        // brincadeira seguem a própria folha (a fixação com peças é paisagem; a brincadeira, retrato).
+        orientation: (
+          fun
+            ? images[0].width <= images[0].height
+            : !verse && content.visualConfig?.orientation === "PORTRAIT"
+        )
+          ? "PORTRAIT"
+          : "LANDSCAPE",
       },
       fingerprint: createHash("sha256")
         .update(checksums.join(","))

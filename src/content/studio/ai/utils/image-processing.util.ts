@@ -59,6 +59,8 @@ export async function cropToA4(
 export async function padToA4(
   input: Uint8Array,
   orientation: ContentVisualOrientation,
+  /** Folha de fundo branco (peças e folha de instruções da fixação): a sobra é branca, sem repetir a borda. */
+  whiteFill = false,
 ): Promise<ProcessedImage> {
   const image = sharp(Buffer.from(input));
   const { width = 0, height = 0 } = await image.metadata();
@@ -75,7 +77,9 @@ export async function padToA4(
       right: targetWidth - width - horizontal,
       top: vertical,
       bottom: targetHeight - height - vertical,
-      extendWith: "copy",
+      ...(whiteFill
+        ? { background: { r: 255, g: 255, b: 255, alpha: 1 } }
+        : { extendWith: "copy" as const }),
     })
     .png()
     .toBuffer({ resolveWithObject: true });

@@ -201,3 +201,12 @@ Cada item guarda a sua linha do tempo em `content_review_decisions` (já vem em 
 - **Listagem:** cada item traz `publishedAudiences` (faixas já publicadas); as duas telas (Produção e Revisão) derivam dele e das etapas o seu status e botão.
 - **Front:** a publicação mora na tela de **Revisão** (`/adm/estudio/revisao/:id`): "Aprovar tudo" e "Publicar"; ao publicar vai para `/adm/paginas-materiais-visita`. A produção não aprova nem publica.
 - **Limites conhecidos:** a rota pública da página é a dinâmica `/<route.path>` (as páginas dinâmicas ficam na raiz); despublicar/atualizar a página a partir do Estúdio não existe (apagar a página em Materiais para Visita não devolve o material a `READY`).
+
+## Fixação do versículo com peças e nova geração de item concluído
+
+A etapa `VERSE_FIXATION` gera o documento, uma folha de instruções (`compilado-01`) e uma imagem por peça do jogo
+(`peca-01…`, `peca-referencia`), todas em A4 paisagem; os perfis por público ficam em
+`ai/generation/verse-fixation.constants.ts`. Um item `PRODUCER_APPROVED` pode ser gerado de novo: ao concluir, os
+itens seguintes da categoria que já têm versão ficam `STALE`. Com algum item `IN_REVIEW` ou `APPROVED` na categoria,
+só o item devolvido pelo revisor pode ser gerado (409 para os demais). Fluxo em
+`docs/diagrams/flow/content-studio/content-studio-regeneration.puml`.

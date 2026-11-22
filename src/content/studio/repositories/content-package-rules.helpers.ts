@@ -21,6 +21,29 @@ export const COMPLETED_STAGE_STATUSES: readonly ContentStageStatus[] = [
   ContentStageStatus.APPROVED,
 ] as const;
 
+/** Situações de um item que já foi para a revisão (aguardando o revisor ou aprovado por ele). */
+export const REVIEW_HELD_STAGE_STATUSES: readonly ContentStageStatus[] = [
+  ContentStageStatus.IN_REVIEW,
+  ContentStageStatus.APPROVED,
+] as const;
+
+/**
+ * Categoria que já foi para a revisão: nada dela pode ser gerado de novo, a não ser o item que o revisor devolveu
+ * (que deixa de estar "concluído pela produção").
+ */
+export function assertCategoryNotInReview(
+  stage: ContentStageEntity,
+  trackStages: readonly ContentStageEntity[],
+): void {
+  if (
+    stage.status === ContentStageStatus.PRODUCER_APPROVED &&
+    trackStages.some((item) => REVIEW_HELD_STAGE_STATUSES.includes(item.status))
+  )
+    throw new ResourceConflictException(
+      "A categoria está em revisão: só um item devolvido pelo revisor pode ser gerado de novo",
+    );
+}
+
 export function assertDependenciesReady(
   stage: ContentStageEntity,
   trackStages: readonly ContentStageEntity[],

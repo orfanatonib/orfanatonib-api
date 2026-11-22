@@ -129,7 +129,13 @@ export class ContentStageContentRepository {
       stage.status = ContentStageStatus.DRAFT;
       await stageRepo.save(stage);
 
-      await markDependentStagesStale(stageRepo, jobRepo, stage, trackStages);
+      await markDependentStagesStale(
+        stageRepo,
+        jobRepo,
+        stage,
+        trackStages,
+        Boolean(input.completedJobId),
+      );
       await movePackageToInProgress(packageRepo, contentPackage);
 
       return findPackageGraphOrFail(packageRepo, contentPackage.id);

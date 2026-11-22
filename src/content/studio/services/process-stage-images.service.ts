@@ -22,6 +22,7 @@ import {
   ContentVisualStyle,
 } from "../enums/content-visual.enums";
 import { AiProviderRequestError } from "../ai/openai-generation.gateway";
+import { isFixationPieceSlot } from "../ai/generation/verse-fixation.constants";
 import { GENERATION_LEASE_MS } from "../ai/stage-generation.constants";
 import { cropToA4, padToA4 } from "../ai/utils/image-processing.util";
 import type { VisualConfig } from "../dto/visual-config.dto";
@@ -227,10 +228,23 @@ export class ProcessStageImagesService {
             this.config.get<string>("CONTENT_STUDIO_IMAGE_QUALITY") ??
             DEFAULT_IMAGE_QUALITY,
         });
-        // Infográfico compilado: nada pode ser cortado (título e quadro final ficam nas pontas); as demais, recorte A4.
-        const processed = isCompiledSlot(spec.slot)
-          ? await padToA4(result.bytes, config.orientation)
-          : await cropToA4(result.bytes, config.orientation);
+        // A folha segue a proporção pedida ao gerador (a fixação é paisagem; a brincadeira, retrato).
+        const orientation =
+          spec.size === "1536x1024"
+            ? ContentVisualOrientation.LANDSCAPE
+            : spec.size === "1024x1536"
+              ? ContentVisualOrientation.PORTRAIT
+              : config.orientation;
+        // Infográfico compilado e peças do jogo: nada pode ser cortado (ficam inteiros na folha); as demais, recorte A4.
+        const processed =
+          isCompiledSlot(spec.slot) || isFixationPieceSlot(spec.slot)
+            ? await padToA4(
+                result.bytes,
+                orientation,
+                // Fixação com peças (paisagem): sobra branca; a borda repetida deixava faixas riscadas na folha.
+                orientation === ContentVisualOrientation.LANDSCAPE,
+              )
+            : await cropToA4(result.bytes, orientation);
         const key = `${this.s3.getEnvironment()}/content-studio/${context.packageId}/${context.stageId}/${context.versionId}/${spec.slot}-${randomUUID().slice(0, 8)}.png`;
         await this.s3.putObject(key, processed.bytes, processed.mediaType);
         const replaced = await this.assets.replaceSlot({

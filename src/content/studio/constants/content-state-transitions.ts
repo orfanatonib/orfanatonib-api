@@ -79,6 +79,8 @@ export const CONTENT_STAGE_TRANSITIONS: Readonly<
     ContentStageStatus.STALE,
   ],
   [ContentStageStatus.PRODUCER_APPROVED]: [
+    // Item concluído pela produção ainda pode ser gerado de novo (os itens seguintes ficam desatualizados).
+    ContentStageStatus.GENERATING,
     ContentStageStatus.IN_REVIEW,
     ContentStageStatus.DRAFT,
     ContentStageStatus.STALE,

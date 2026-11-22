@@ -189,8 +189,26 @@ export function fakeStageContent(
       if (fixation)
         return {
           centralMessage: central,
-          ...plan(`Corrida do versículo ${p.label}`),
+          ...plan(`Varal do versículo ${p.label}`),
           verse,
+          pieceTheme:
+            "Cartões retangulares de cantos arredondados, com borda azul e fundo de céu claro.",
+          pieces: verse.text
+            .split(/\s+/)
+            .filter(Boolean)
+            .reduce<string[][]>((groups, word) => {
+              const last = groups[groups.length - 1];
+              if (last && last.length < 3) last.push(word);
+              else groups.push([word]);
+              return groups;
+            }, [])
+            .map((words, index) => ({
+              id: `peca-${String(index + 1).padStart(2, "0")}`,
+              text: words.join(" "),
+              figure: "Coração grande e fofo",
+            })),
+          referencePiece: { text: verse.reference },
+          leaderTip: "Repita o versículo com o grupo a cada peça colocada.",
           evaluation: "Cada equipe recita sem ajuda.",
           reviewerNotes: "",
         };

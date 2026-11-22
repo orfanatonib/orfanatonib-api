@@ -21,9 +21,14 @@ import {
   LessonVisualFormat,
   VERSE_CARD_A4_RULE,
 } from "./visual-art.constants";
+import {
+  FIXATION_CALM_SAFETY,
+  FIXATION_MOVEMENT_SAFETY,
+  FIXATION_PROFILES,
+} from "./verse-fixation.constants";
 
 /** Versão dos textos abaixo; vai no snapshot de cada geração (rastreia qual prompt gerou o quê). */
-export const STAGE_PROMPT_VERSION = "orfanato.studio.prompts/2.3.0";
+export const STAGE_PROMPT_VERSION = "orfanato.studio.prompts/2.4.0";
 
 /** Contrato de sistema enviado em toda geração (um único lugar). */
 export const ORFANATO_SYSTEM_PROMPT = {
@@ -330,6 +335,63 @@ function funPrompt(p: AudienceProfile, fixation: boolean): string {
   ].join("\n");
 }
 
+/**
+ * Fixação divertida do versículo no modelo "Sugestão de Fixação do versículo": o documento, UM infográfico de
+ * instruções e as PEÇAS imprimíveis do jogo (uma imagem por trecho do versículo, mais a da referência).
+ */
+function fixationPrompt(p: AudienceProfile): string {
+  const f = FIXATION_PROFILES[p.audience];
+  return [
+    `Produza somente a FIXAÇÃO DIVERTIDA DO VERSÍCULO para ${p.label.toLowerCase()} (${p.ageRange}), para ${p.deliveredBy} conduzir na visita. A entrega tem três partes que formam UM jogo só: (1) o documento com o passo a passo; (2) UM infográfico de instruções; (3) as PEÇAS IMPRIMÍVEIS do jogo, cada uma com um trecho do versículo, que o voluntário imprime, recorta e leva pronto. Não é a etapa dos Visuais do Versículo (cartões para ler) nem a brincadeira livre: aqui as peças são o MATERIAL DO JOGO.`,
+    "",
+    "O JOGO",
+    `- ${f.dynamic}`,
+    "- Regra central explicável em um minuto; todos participam quase o tempo todo; quem sai de uma rodada volta na seguinte ou vira juiz ou torcida; todos comemoram juntos no fim.",
+    "- O jogo só funciona COM as peças: em cada rodada alguém pega, acha, ganha, encaixa, pendura ou revela uma peça. Se as peças pudessem ser tiradas sem mudar o jogo, a ideia está errada: troque.",
+    "- TEMA: o jogo, o nome e a forma das peças nascem do tema da lição aprovada ou das palavras do versículo (um versículo sobre o caminho vira placas de caminho; sobre o pastor, ovelhas; sobre vigiar, nuvens; sobre o presente de Deus, caixas de presente; sobre a ressurreição, túmulos com a pedra que abre). Nada de cartão genérico quando o tema oferece um objeto melhor.",
+    "- Não repita os objetos e a ação da dinâmica da lição aprovada; pense em três ideias diferentes e escolha a mais divertida e original que cumpra as regras de segurança.",
+    "",
+    "VERSÍCULO (FONTE FECHADA)",
+    "- Use o único versículo principal aprovado na lição (approvedUpstream.LESSON.memoryVerse), com texto e referência exatos; copie-o em verse. Se for só uma PARTE (referência com letra, como Hebreus 9.22b), use apenas o trecho, sem completar o versículo e sem reticências.",
+    "",
+    "PEÇAS DO JOGO (pieces, referencePiece e pieceTheme)",
+    `- Divida o versículo em ${range(f.pieces)} peças, em unidades de sentido, na ordem. Cada peça tem no máximo ${f.pieceWords} palavras (poucas, para a letra ficar enorme). Os textos das peças (pieces[].text), lidos em ordem, reconstroem EXATAMENTE verse.text: sem lacunas, repetições, troca de ordem nem mudança de pontuação. Ids sequenciais peca-01, peca-02…`,
+    "- referencePiece.text traz somente a referência completa, igual a verse.reference; ela é a última peça do jogo.",
+    "- pieceTheme: o OBJETO que dá forma a todas as peças, descrito em duas ou três frases concretas (forma, material, cores nomeadas, detalhes) e terminando com a LETRA: a cor exata das letras e do contorno delas (ex.: letras azul-marinho com contorno branco grosso) e o estilo (arredondada, em caixa alta ou não). Todas as peças são o mesmo objeto, com a mesma arte, a mesma cor e o mesmo estilo de letra; só o texto muda.",
+    f.figureOnPieces
+      ? "- figure (OBRIGATÓRIO em toda peça): a figura grande e simples que representa aquele trecho (um objeto, animal ou elemento da natureza ligado à palavra principal do trecho; nunca uma pessoa real nem Deus Pai). É ela que o bebê olha e toca; cada peça tem uma figura diferente."
+      : "- figure: um detalhe ilustrado pequeno ligado ao sentido do trecho, ou vazio; o texto é sempre o protagonista da peça.",
+    `- Estilo das peças deste público: ${f.pieceStyle}`,
+    "",
+    "COMO O VERSÍCULO FICA NA CABEÇA (o objetivo é FIXAR E APRENDER)",
+    f.figureOnPieces
+      ? "- A cuidadora repete o versículo muitas vezes, com melodia e gesto, mostrando os cartões na ordem; termina dizendo o versículo inteiro com a referência. Não exija nada do bebê."
+      : "- Os passos seguem esta progressão: (1) OUVIR E REPETIR juntos o versículo inteiro, uma ou duas vezes; (2) JOGAR COM AS PEÇAS até montar o versículo na ordem; (3) RECORDAR DE MEMÓRIA: peças são viradas ou retiradas e o grupo completa sem olhar; (4) RECITAR JUNTOS o versículo inteiro com a referência, para fechar.",
+    "- O versículo aparece escrito por extenso, EXATAMENTE como em verse (texto e referência), em pelo menos um passo. Nunca troque palavras do versículo nem use outra versão.",
+    "",
+    "SEGURANÇA OBRIGATÓRIA (ninguém se machuca nem se constrange)",
+    `- ${f.allowsMovement ? FIXATION_MOVEMENT_SAFETY : FIXATION_CALM_SAFETY}`,
+    "- Defina em safetyRules um sinal de parar (palavra ou apito) que todos conhecem, onde o adulto fica e o que ele observa; ninguém é eliminado nem exposto; todos ganham aplauso.",
+    '- Materiais leves, baratos e seguros, adequados à idade; cada material citado em materials é usado em algum passo. As peças impressas entram em materials (ex.: "Peças do versículo impressas e recortadas").',
+    "- A vitória nunca é sinal de maior fé ou favor de Deus.",
+    "",
+    "DOCUMENTO CURTO, QUE CABE EM UMA PÁGINA A4",
+    "- name (até 5 palavras, com cara de jogo e ligado ao tema), objective (uma frase), funMechanics (2 ou 3 itens de até 6 palavras), materials (até 6, com quantidade), preparation (até 2 frases: como imprimir, recortar e dispor as peças e montar o espaço).",
+    `- steps: de ${range(p.activitySteps)} comandos curtos, terminando com a recitação coletiva. stepTitles: um título curto (no máximo 5 palavras) para cada passo, na mesma ordem e quantidade; closingPhrase: uma frase curta (até 12 palavras) para o quadro final do infográfico.`,
+    `- safetyRules: até 4 regras curtas, incluindo a duração (${p.gameMinutes.min} a ${p.gameMinutes.max} minutos, em durationMinutes) e como se vence ou se encerra.`,
+    `- ageAdaptations: exatamente duas frases, nesta ordem: ${p.adaptations.younger}; ${p.adaptations.older}.`,
+    "- evaluation: uma frase, sem constrangimento. biblicalConnection: até 2 frases sobre o sentido do versículo. leaderTip: uma ou duas frases curtas para quem conduz reforçar o versículo durante o jogo.",
+    "",
+    "INFOGRÁFICO DE INSTRUÇÕES (compilado-01)",
+    `- visualSummary: em uma ou duas frases, a UMA folha de instruções do jogo: título, versículo com a referência em destaque, materiais, os passos numerados com pessoas usando as PEÇAS, o modelo das peças montadas na ordem e a dica para o líder.`,
+    `- imagePrompt: o prompt AUTOSSUFICIENTE dessa folha para o gerador de imagens, que não conhece o material: descreva a cena de cada passo (quem faz o quê com as peças, descritas como em pieceTheme) e a disposição dos blocos. Estilo deste público: ${f.infographicStyle}`,
+    "- Pessoas sempre genéricas do público, sem rosto identificável e sem personagens bíblicos.",
+    "",
+    "REGRAS",
+    "- Se houver previousVariants, crie outro jogo do zero: nome, mecânica, forma das peças e materiais diferentes.",
+  ].join("\n");
+}
+
 /** Prompt-base imutável de cada etapa; o administrador só acrescenta (campo opcional). */
 export function stageBasePrompt(
   stage: ContentStageType,
@@ -346,7 +408,7 @@ export function stageBasePrompt(
     case ContentStageType.VERSE_VISUALS:
       return verseVisualsPrompt(profile, verseLook);
     case ContentStageType.VERSE_FIXATION:
-      return funPrompt(profile, true);
+      return fixationPrompt(profile);
     case ContentStageType.STANDARD_GAME:
       return funPrompt(profile, false);
   }

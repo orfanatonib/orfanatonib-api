@@ -4,6 +4,7 @@ import {
   compiledSlot,
   VERSE_REFERENCE_SLOT,
 } from "../ai/generation/visual-art.constants";
+import { FIXATION_REFERENCE_SLOT } from "../ai/generation/verse-fixation.constants";
 import { ContentStageType } from "../enums/content-stage-type.enum";
 import { CHILD_GAME_AGE_GROUPS } from "../ai/generation/audience-profiles.constants";
 import { ResourceNotFoundException } from "src/common/exceptions";
@@ -29,6 +30,25 @@ export function plannedImageSlots(
     stageType === ContentStageType.STANDARD_GAME
   ) {
     if (typeof content.name !== "string" || !content.name.trim()) return [];
+    // Fixação no modelo novo: a folha de instruções e, depois, uma imagem por peça do jogo (a referência por último).
+    const pieces =
+      stageType === ContentStageType.VERSE_FIXATION ? list(content.pieces) : [];
+    if (pieces.length > 0) {
+      const reference = (content.referencePiece ?? {}) as Record<
+        string,
+        unknown
+      >;
+      return [
+        { slot: compiledSlot(0), title: `Instruções: ${content.name}` },
+        ...pieces.map((piece) => ({
+          slot: asLabel(piece.id),
+          title: asLabel(piece.text),
+        })),
+        ...(typeof reference.text === "string" && reference.text.trim()
+          ? [{ slot: FIXATION_REFERENCE_SLOT, title: reference.text }]
+          : []),
+      ];
+    }
     // Brincadeira das crianças: uma imagem por faixa etária (3 a 8 e 9 a 11 anos).
     const extra =
       stageType === ContentStageType.STANDARD_GAME

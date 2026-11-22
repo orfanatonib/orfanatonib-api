@@ -38,6 +38,7 @@ import {
   movePackageToInProgress,
 } from "./content-package-graph.helpers";
 import {
+  assertCategoryNotInReview,
   assertDependenciesReady,
   assertPackageCanProduce,
   assertTrackNotPublished,
@@ -111,6 +112,7 @@ export class ContentGenerationRepository {
       });
 
       assertDependenciesReady(stage, trackStages);
+      assertCategoryNotInReview(stage, trackStages);
       assertVisualConfig(stage.stageType, stage.track.audience, input);
 
       if (

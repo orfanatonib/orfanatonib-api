@@ -117,6 +117,19 @@ function funDocument(c: Json, fixation: boolean): TiptapNode[] {
   ];
 }
 
+/** Fixação: as peças imprimíveis do jogo (um trecho por peça, na ordem, e a referência por último). */
+function piecesSection(c: Json): TiptapNode[] {
+  const pieces = (Array.isArray(c.pieces) ? (c.pieces as Json[]) : [])
+    .map((piece) => asString(piece.text))
+    .filter(Boolean);
+  if (pieces.length === 0) return [];
+  const reference = asString(asObject(c.referencePiece).text);
+  return section("Peças do versículo (imprimir e recortar)", [
+    ...(asString(c.pieceTheme) ? [paragraph(asString(c.pieceTheme))] : []),
+    numbered([...pieces, ...(reference ? [reference] : [])]),
+  ]);
+}
+
 function funBlocks(
   c: Json,
   fixation: boolean,
@@ -169,6 +182,7 @@ function funBlocks(
         ]
       : []),
     ...listSection("Materiais", c.materials),
+    ...(fixation ? piecesSection(c) : []),
     ...textSection("Preparação", c.preparation),
     ...section(
       "Como brincar",
@@ -197,6 +211,7 @@ function funBlocks(
           }),
         ]
       : []),
+    ...(fixation ? textSection("Dica para o líder", c.leaderTip) : []),
     ...(fixation ? textSection("Como avaliar", c.evaluation) : []),
     ...textSection("Princípio bíblico", c.biblicalConnection),
   ];

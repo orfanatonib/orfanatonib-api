@@ -13,6 +13,10 @@ import {
   CutoutCategory,
   LessonVisualFormat,
 } from "./visual-art.constants";
+import {
+  FIXATION_PROFILES,
+  fixationPieceSlot,
+} from "./verse-fixation.constants";
 
 export class StageOutputError extends Error {
   constructor(readonly issues: readonly string[]) {
@@ -205,6 +209,9 @@ function checkFunDocument(
 /** Palavras que indicam risco ou exposição em passos e materiais (sem acento, minúsculas). */
 const UNSAFE_FUN_PATTERN =
   /(?<![a-z])(vend[ae]s?|vendad[oa]s?|vendar|faca|facas|tesoura|tesouras|estilete|fogo|vela|velas|fosforo|isqueiro|escada|escadas|empurr\w*|castigo|punic\u0327?ao|prenda)(?![a-z])/;
+/** Venda nos olhos: liberada só na fixação de crianças e adolescentes (com um colega guiando). */
+const BLINDFOLD_PATTERN =
+  /(?<![a-z])(vend[ae]s?|vendad[oa]s?|vendar)(?![a-z])/g;
 /** O que o bebê nunca pode ter (objeto pequeno, correria, competição, som alto). */
 const UNSAFE_BABY_PATTERN =
   /(?<![a-z])(bexig\w*|bal[aã]o|baloes|bolinha de gude|moeda|moedas|pilha|pilhas|corr(er|a|am|ia)|correria|placar|cronometr\w*|competi\w*|apito)(?![a-z])/;
@@ -223,6 +230,7 @@ function checkFunSafety(
   audience: ContentAudience,
   content: Record<string, unknown>,
   issues: string[],
+  allowBlindfold = false,
 ): void {
   const parts: Array<[string, unknown]> = [
     ["steps", content.steps],
@@ -234,7 +242,8 @@ function checkFunSafety(
     const text = plain(
       Array.isArray(value) ? value.map(asText).join(" ; ") : asText(value),
     );
-    const generic = UNSAFE_FUN_PATTERN.exec(text)?.[1];
+    const unsafe = allowBlindfold ? text.replace(BLINDFOLD_PATTERN, " ") : text;
+    const generic = UNSAFE_FUN_PATTERN.exec(unsafe)?.[1];
     if (generic)
       issues.push(
         `${field}: "${generic}" é risco ou exposição; troque por algo seguro`,
@@ -316,6 +325,48 @@ function checkGames(
     issues.push(
       "as brincadeiras de cada faixa etária devem ser diferentes (nome e mecânica)",
     );
+}
+
+/**
+ * Fixação: as peças imprimíveis do jogo. Uma por trecho, na ordem, reconstruindo exatamente o versículo; a peça da
+ * referência à parte; e o objeto que dá forma a todas (pieceTheme).
+ */
+function checkFixationPieces(
+  audience: ContentAudience,
+  content: Record<string, unknown>,
+  issues: string[],
+): void {
+  const f = FIXATION_PROFILES[audience];
+  const pieces = (
+    Array.isArray(content.pieces) ? content.pieces : []
+  ) as Array<{ id?: unknown; text?: unknown; figure?: unknown }>;
+  inRange("pieces", pieces.length, f.pieces.min, f.pieces.max, issues);
+  pieces.forEach((piece, i) => {
+    if (piece.id !== fixationPieceSlot(i))
+      issues.push(`pieces[${i}].id deve ser ${fixationPieceSlot(i)}`);
+    const n = wordCount(asText(piece.text));
+    if (n === 0) issues.push(`pieces[${i}].text vazio`);
+    if (n > f.pieceWords)
+      issues.push(
+        `pieces[${i}]: ${n} palavras, acima de ${f.pieceWords}; divida em mais peças`,
+      );
+    if (f.figureOnPieces && !asText(piece.figure).trim())
+      issues.push(
+        `pieces[${i}].figure vazio: para bebês toda peça tem uma figura`,
+      );
+  });
+  const joined = pieces.map((piece) => asText(piece.text)).join(" ");
+  if (normalizeVerse(joined) !== normalizeVerse(verseTextOf(content.verse)))
+    issues.push("as peças, em ordem, não reconstroem o versículo");
+  const reference = asText(
+    (content.referencePiece as { text?: unknown } | undefined)?.text,
+  ).trim();
+  const verse = content.verse as { reference?: unknown } | undefined;
+  if (!reference || reference !== asText(verse?.reference).trim())
+    issues.push("referencePiece.text deve ser somente a referência completa");
+  if (wordCount(asText(content.pieceTheme)) < 4)
+    issues.push("pieceTheme vazio ou vago: descreva o objeto das peças");
+  if (!asText(content.leaderTip).trim()) issues.push("leaderTip vazio");
 }
 
 /** Fixação: o versículo aprovado precisa aparecer escrito nos passos (é o que se fixa e se aprende). */
@@ -557,7 +608,13 @@ function audienceRules(
   if (stage === ContentStageType.VERSE_FIXATION) {
     checkVerseMatches(content.verse, upstream, issues);
     checkFunDocument(p, content, list, issues);
-    checkFunSafety(audience, content, issues);
+    checkFunSafety(
+      audience,
+      content,
+      issues,
+      FIXATION_PROFILES[audience].allowsMovement,
+    );
+    checkFixationPieces(audience, content, issues);
     checkVerseInSteps(content, issues);
     if (!asText(content.evaluation).trim()) issues.push("evaluation vazio");
   }
@@ -613,7 +670,12 @@ function presentedFields(
       strings("safetyRules");
       add("biblicalConnection", content.biblicalConnection);
       add("evaluation", content.evaluation);
-      if (stage === ContentStageType.VERSE_FIXATION) verse("verse");
+      if (stage === ContentStageType.VERSE_FIXATION) {
+        verse("verse");
+        add("pieceTheme", content.pieceTheme);
+        add("leaderTip", content.leaderTip);
+        each("pieces", ["figure"]);
+      }
       // Brincadeiras extras (crianças de 9 a 11 anos): também são lidas pelo público.
       (Array.isArray(content.extraGames) ? content.extraGames : []).forEach(
         (game, index) => {

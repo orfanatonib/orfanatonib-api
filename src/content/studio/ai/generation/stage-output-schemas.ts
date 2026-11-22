@@ -271,6 +271,29 @@ export const STAGE_OUTPUT_SCHEMAS: Readonly<Record<ContentStageType, Schema>> =
     [ContentStageType.VERSE_FIXATION]: obj({
       ...funProperties,
       verse: memoryVerse,
+      pieceTheme: str(
+        "O OBJETO que dá forma a todas as peças do jogo, tirado do tema da lição ou do versículo (ex.: placas de madeira de caminho, nuvens, presentes, túmulos de pedra com a pedra que abre, ovelhas, peças de quebra-cabeça): descreva em duas ou três frases a forma, as cores, o material e os detalhes, de modo que um ilustrador desenhe todas as peças iguais.",
+      ),
+      pieces: {
+        type: "array",
+        description:
+          "As peças imprimíveis do jogo, uma por trecho do versículo, na ordem; os textos, lidos em ordem, reconstroem exatamente verse.text.",
+        items: obj({
+          id: str("Identificador sequencial: peca-01, peca-02…"),
+          text: str(
+            "Trecho exato do versículo nesta peça, sem alterar nenhuma palavra nem a pontuação.",
+          ),
+          figure: str(
+            "Figura simples ligada ao sentido deste trecho (um objeto, animal ou elemento da natureza; nunca uma pessoa real). Obrigatória para bebês; nas demais categorias, um detalhe pequeno ou vazio.",
+          ),
+        }),
+      },
+      referencePiece: obj({
+        text: str("Somente a referência completa, igual a verse.reference."),
+      }),
+      leaderTip: str(
+        "DICA PARA O LÍDER: uma ou duas frases curtas que ajudam quem conduz a reforçar o versículo durante o jogo.",
+      ),
       evaluation: str("Como avaliar em uma frase, sem constrangimento."),
       reviewerNotes,
     }),

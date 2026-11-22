@@ -388,9 +388,10 @@ describe("cartões do versículo como imagens", () => {
       fakeStageContent(stage, audience, "T");
 
     it.each(Object.values(ContentAudience))(
-      "%s: um infográfico vertical com título, versículo exato, MATERIAIS, PREPARAÇÃO, passos numerados e quadro final",
+      "%s: (fixação antiga, sem peças) um infográfico vertical com título, versículo exato, MATERIAIS, PREPARAÇÃO, passos numerados e quadro final",
       (audience) => {
         const content = fun(ContentStageType.VERSE_FIXATION, audience);
+        delete content.pieces;
         const [spec] = funSummaryImageSpecs(
           ContentStageType.VERSE_FIXATION,
           content,
@@ -514,7 +515,7 @@ describe("cartões do versículo como imagens", () => {
           ContentStageType.VERSE_FIXATION,
           fun(ContentStageType.VERSE_FIXATION, ContentAudience.CHILD),
         ).map((item) => item.slot),
-      ).toEqual(["compilado-01"]);
+      ).toEqual(["compilado-01", "peca-01", "peca-02", "peca-referencia"]);
     });
 
     it("refazer: só a imagem compilada, e só se for pedida", () => {
@@ -592,7 +593,10 @@ describe("cartões do versículo como imagens", () => {
       "%s: recusa passos e materiais com risco (venda, tesoura, fogo, empurrar)",
       (stage) => {
         for (const bad of [
-          "Vende os olhos de quem busca.",
+          // Venda nos olhos: liberada só na fixação de crianças e adolescentes.
+          ...(stage === ContentStageType.STANDARD_GAME
+            ? ["Vende os olhos de quem busca."]
+            : []),
           "Corte com tesoura.",
           "Acendam uma vela.",
           "Empurre o colega.",

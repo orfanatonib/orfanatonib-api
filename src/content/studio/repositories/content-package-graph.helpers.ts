@@ -11,6 +11,7 @@ import { ContentPackageStatus } from "../enums/content-package-status.enum";
 import { ContentStageStatus } from "../enums/content-stage-status.enum";
 import { ContentStageType } from "../enums/content-stage-type.enum";
 import { ACTIVE_CONTENT_GENERATION_JOB_STATUSES } from "../types";
+import { REVIEW_HELD_STAGE_STATUSES } from "./content-package-rules.helpers";
 import { workingPackageStatus } from "../utils/content-publication-tracks.util";
 import {
   canTransitionContentPackage,
@@ -78,11 +79,17 @@ export async function nextStageVersionNumber(
   return Number(result?.max ?? 0) + 1;
 }
 
+/**
+ * Marca como desatualizados os itens que vêm depois do item alterado. Edição manual: só os que dependem dele
+ * (direta ou indiretamente). Geração nova (`allLaterStages`): TODOS os itens seguintes da categoria, pela ordem —
+ * gerar de novo o item 2 devolve o 3, o 4 e o 5 para a produção; gerar o 4 devolve só o 5.
+ */
 export async function markDependentStagesStale(
   stageRepo: Repository<ContentStageEntity>,
   jobRepo: Repository<ContentGenerationJobEntity>,
   sourceStage: ContentStageEntity,
   trackStages: readonly ContentStageEntity[],
+  allLaterStages = false,
 ): Promise<void> {
   const invalidatedTypes = new Set<ContentStageType>([sourceStage.stageType]);
   const pending = [...trackStages].sort(
@@ -91,7 +98,13 @@ export async function markDependentStagesStale(
 
   for (const dependent of pending) {
     if (dependent.id === sourceStage.id) continue;
-    if (!dependent.dependencies.some((type) => invalidatedTypes.has(type)))
+    if (
+      allLaterStages
+        ? dependent.position <= sourceStage.position ||
+          // Item que já está com a revisão não volta para a produção por causa de outro item gerado de novo.
+          REVIEW_HELD_STAGE_STATUSES.includes(dependent.status)
+        : !dependent.dependencies.some((type) => invalidatedTypes.has(type))
+    )
       continue;
 
     invalidatedTypes.add(dependent.stageType);
