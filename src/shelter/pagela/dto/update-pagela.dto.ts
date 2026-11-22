@@ -9,6 +9,7 @@ import {
   Min,
 } from "class-validator";
 import { Type } from "class-transformer";
+import { StrictBoolean } from "src/common/decorators/strict-boolean.decorator";
 
 export class UpdatePagelaDto {
   @IsOptional()
@@ -33,6 +34,7 @@ export class UpdatePagelaDto {
   year?: number;
 
   @IsOptional()
+  @StrictBoolean()
   @IsBoolean()
   present?: boolean;
 

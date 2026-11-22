@@ -4,6 +4,11 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - PAGELAS (plano 19, cenários E2E)
+
+- **FIX**: `present: "talvez"` (ou `"false"`) em `POST /pagelas` e `PATCH /pagelas/:id` era aceito como `true` pela conversão implícita do pipe global (a presença da criança era gravada errada em silêncio). Agora `400` (`StrictBoolean`).
+- **TEST**: E2E de `/pagelas` com 23 cenários novos (matriz `pagela` 58/58): dois abrigos criados pelo cenário (o líder semeado lidera o A), um acolhido em cada, escopo por abrigo, unicidade (acolhido, ano, visita) com 409, e provas de que pagela não envia e-mail; novo spec de DTO.
+
 ## [Unreleased] - 2026-11-22 - INTEGRAÇÃO (plano 25, cenários E2E)
 
 - **FIX (atomicidade)**: `PUT /integrations/:id` atualizava o cadastro e **depois** as fotos, sem transação: uma foto recusada pelo banco devolvia erro, mas nome e telefone já estavam gravados. Agora cadastro e fotos se gravam na mesma transação (`IntegrationRepository.runInTransaction`, `update(…, manager)`); arquivos novos sobem num lote descartável e os antigos só saem do bucket depois do commit; foto removida da lista sai na transação (`removeMediaItemsKeepingFiles`). O `UPDATE` da primeira instrução já trava a linha, então edições simultâneas se enfileiram.
