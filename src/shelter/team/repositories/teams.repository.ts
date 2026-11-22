@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { In, Repository } from "typeorm";
 import { InjectRepository } from "@nestjs/typeorm";
 import { TeamEntity } from "../entities/team.entity";
@@ -16,11 +20,56 @@ export class TeamsRepository {
     private readonly leaderProfileRepo: Repository<LeaderProfileEntity>,
   ) {}
 
+  /** Um abrigo não tem duas equipes com o mesmo número (o banco não tem índice único). */
+  private async assertNumberAvailable(
+    shelterId: string,
+    numberTeam: number,
+    ignoreTeamId?: string,
+  ): Promise<void> {
+    const existing = await this.findTeamByShelterAndNumber(
+      shelterId,
+      numberTeam,
+    );
+    if (existing && existing.id !== ignoreTeamId) {
+      throw new ConflictException(
+        `O abrigo já tem a equipe ${numberTeam}. Escolha outro número.`,
+      );
+    }
+  }
+
+  /** Ids de líder inexistentes são erro (antes eram descartados em silêncio). */
+  private async resolveLeaders(ids: string[]): Promise<LeaderProfileEntity[]> {
+    const unique = [...new Set(ids)];
+    if (unique.length === 0) return [];
+    const found = await this.leaderProfileRepo.findBy({ id: In(unique) });
+    if (found.length !== unique.length) {
+      throw new NotFoundException("Líder não encontrado.");
+    }
+    return found;
+  }
+
+  private async resolveMembers(ids: string[]): Promise<MemberProfileEntity[]> {
+    const unique = [...new Set(ids)];
+    if (unique.length === 0) return [];
+    const found = await this.teamRepo.manager
+      .getRepository(MemberProfileEntity)
+      .findBy({ id: In(unique) });
+    if (found.length !== unique.length) {
+      throw new NotFoundException("Membro não encontrado.");
+    }
+    return found;
+  }
+
   async create(dto: CreateTeamDto): Promise<TeamEntity> {
+    await this.assertNumberAvailable(dto.shelterId, dto.numberTeam);
+    const leaders = await this.resolveLeaders(dto.leaderProfileIds ?? []);
+    const members = await this.resolveMembers(dto.memberProfileIds ?? []);
     const team = this.teamRepo.create({
       numberTeam: dto.numberTeam,
       description: dto.description,
       shelter: { id: dto.shelterId },
+      leaders,
+      members,
     });
     return this.teamRepo.save(team);
   }
@@ -194,28 +243,35 @@ export class TeamsRepository {
       throw new NotFoundException(`Team with ID ${id} not found`);
     }
 
+    if (dto.numberTeam !== undefined && dto.numberTeam !== team.numberTeam) {
+      await this.assertNumberAvailable(team.shelter.id, dto.numberTeam, id);
+    }
     if (dto.numberTeam !== undefined) team.numberTeam = dto.numberTeam;
     if (dto.description !== undefined) team.description = dto.description;
 
     if (dto.leaderProfileIds !== undefined) {
-      const leaders = await this.leaderProfileRepo.findByIds(
-        dto.leaderProfileIds,
-      );
-      team.leaders = leaders;
+      team.leaders = await this.resolveLeaders(dto.leaderProfileIds);
     }
 
     if (dto.memberProfileIds !== undefined) {
-      const memberProfileRepo =
-        this.teamRepo.manager.getRepository(MemberProfileEntity);
-      team.members = await memberProfileRepo.findBy({
-        id: In(dto.memberProfileIds),
-      });
+      team.members = await this.resolveMembers(dto.memberProfileIds);
     }
 
     return this.teamRepo.save(team);
   }
 
+  /**
+   * Remove a equipe soltando antes os vínculos que a prendem: os líderes saem de `leader_teams` e
+   * os membros ficam sem equipe (o perfil de ninguém é apagado). Tudo na mesma transação.
+   */
   async remove(id: string): Promise<void> {
-    await this.teamRepo.delete(id);
+    await this.teamRepo.manager.transaction(async (manager) => {
+      await manager.query(`DELETE FROM leader_teams WHERE team_id = ?`, [id]);
+      await manager.query(
+        `UPDATE member_profiles SET team_id = NULL WHERE team_id = ?`,
+        [id],
+      );
+      await manager.getRepository(TeamEntity).delete(id);
+    });
   }
 }

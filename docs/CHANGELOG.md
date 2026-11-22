@@ -4,6 +4,13 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-22 - EQUIPES (plano 14, cenários E2E)
+
+- **FIX**: `DELETE /teams/:id` respondia `409` quando a equipe tinha líder (FK de `leader_teams`). O repositório agora solta líderes e membros e apaga a equipe numa transação.
+- **FIX**: `POST /teams` aceitava número de equipe repetido no mesmo abrigo (sem índice único) e ignorava `leaderProfileIds`/`memberProfileIds`. Agora repetir o número dá `409` (também no `PUT`) e os ids do corpo são gravados.
+- **FIX**: `PUT /teams/:id` com `leaderProfileIds`/`memberProfileIds` inexistentes os descartava em silêncio e esvaziava a equipe. Agora dá `404` e nada é gravado.
+- **TEST**: `teams.repository.spec.ts` (12 casos) e E2E de `/teams` com 157 testes somados aos de abrigos (matriz `team` 63/63).
+
 ## [Unreleased] - 2026-11-22 - ABRIGOS (plano 13, cenários E2E)
 
 - **FIX (segurança/consistência)**: `POST /shelters` por **líder** gravava o abrigo e depois respondia `404` (o abrigo novo ficava fora do escopo dele). Agora só o admin cria (`assertCanCreateShelters`); líder recebe `403` e nada é gravado.
