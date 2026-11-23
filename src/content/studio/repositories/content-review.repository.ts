@@ -26,6 +26,7 @@ import {
   canTransitionContentPackage,
   canTransitionContentStage,
 } from "../utils/content-state-transition.util";
+import { returnStageToReview } from "./content-stage-return.helpers";
 import {
   findPackageGraphOrFail,
   findStageContextOrFail,
@@ -335,6 +336,7 @@ export class ContentReviewRepository {
   async resolveReviewComment(
     packageId: string,
     commentId: string,
+    message: string,
     reviewerId: string,
   ): Promise<ContentPackageEntity> {
     return this.dataSource.transaction(async (manager) => {
@@ -354,9 +356,25 @@ export class ContentReviewRepository {
         throw new ResourceConflictException("O comentário já foi resolvido");
       }
       comment.status = ContentReviewCommentStatus.RESOLVED;
+      comment.resolutionMessage = message;
       comment.resolvedById = reviewerId;
       comment.resolvedAt = new Date();
       await commentRepo.save(comment);
+
+      // Resolver devolve para a revisão: com a última observação do item resolvida, ele volta a "em revisão".
+      const stage = await manager.getRepository(ContentStageEntity).findOne({
+        where: { id: comment.stageId },
+        relations: { currentVersion: true },
+      });
+      if (stage?.status === ContentStageStatus.CHANGES_REQUESTED) {
+        await returnStageToReview(
+          manager,
+          stage,
+          packageId,
+          reviewerId,
+          comment.id,
+        );
+      }
       return findPackageGraphOrFail(packageRepo, packageId);
     });
   }

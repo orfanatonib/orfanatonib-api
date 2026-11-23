@@ -115,6 +115,7 @@ export interface FailGenerationJobInput {
 export interface CompleteContentStageProductionInput {
   readonly packageId: string;
   readonly stageId: string;
+  readonly actorId?: string;
 }
 
 export interface RequestContentStageChangesInput {

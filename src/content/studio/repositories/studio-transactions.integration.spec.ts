@@ -353,7 +353,8 @@ const SCENARIOS: WriteScenario[] = [
       )) as Array<{ id: string }>;
       return {
         packageId: pkg.id,
-        run: () => review.resolveReviewComment(pkg.id, comment.id, USER_ID),
+        run: () =>
+          review.resolveReviewComment(pkg.id, comment.id, "Ajustado", USER_ID),
       };
     },
   },

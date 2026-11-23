@@ -45,6 +45,8 @@ export class ContentReviewCommentResponseDto {
   message: string;
   status: ContentReviewCommentStatus;
   authorId: string;
+  resolutionMessage: string | null;
+  resolvedAt: Date | null;
   createdAt: Date;
 
   static fromEntity(
@@ -57,6 +59,8 @@ export class ContentReviewCommentResponseDto {
       message: entity.message,
       status: entity.status,
       authorId: entity.authorId,
+      resolutionMessage: entity.resolutionMessage ?? null,
+      resolvedAt: entity.resolvedAt ?? null,
       createdAt: entity.createdAt,
     };
   }

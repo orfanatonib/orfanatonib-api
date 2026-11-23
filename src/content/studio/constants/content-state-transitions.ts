@@ -102,9 +102,11 @@ export const CONTENT_STAGE_TRANSITIONS: Readonly<
     ContentStageStatus.GENERATING,
     ContentStageStatus.DRAFT,
   ],
+  // Resolver a última observação aberta devolve o item direto para a revisão (sem passar pela produção de novo).
   [ContentStageStatus.CHANGES_REQUESTED]: [
     ContentStageStatus.GENERATING,
     ContentStageStatus.DRAFT,
+    ContentStageStatus.IN_REVIEW,
   ],
   [ContentStageStatus.NOT_REQUIRED]: [],
 };

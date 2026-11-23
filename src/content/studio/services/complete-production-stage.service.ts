@@ -10,7 +10,12 @@ export class CompleteProductionStageService {
   async execute(
     packageId: string,
     stageId: string,
+    actorId?: string,
   ): Promise<ContentPackageEntity> {
-    return this.packages.completeProductionStage({ packageId, stageId });
+    return this.packages.completeProductionStage({
+      packageId,
+      stageId,
+      actorId,
+    });
   }
 }

@@ -8,6 +8,9 @@ import {
 
 import { ContentGenerationJobEntity } from "../entities/content-generation-job.entity";
 import { ContentPackageEntity } from "../entities/content-package.entity";
+import { ContentReviewCommentEntity } from "../entities/content-review-comment.entity";
+import { ContentReviewCommentStatus } from "../enums/content-review-comment-status.enum";
+import { returnStageToReview } from "./content-stage-return.helpers";
 import { ContentStageEntity } from "../entities/content-stage.entity";
 import { ContentVersionEntity } from "../entities/content-version.entity";
 import { ContentGenerationJobStatus } from "../enums/content-generation-job-status.enum";
@@ -173,8 +176,41 @@ export class ContentStageContentRepository {
         );
       }
 
+      // Item que o revisor devolveu e que foi refeito: ao concluir, volta sozinho para a revisão, sem recado.
+      const returnedComments = await manager
+        .getRepository(ContentReviewCommentEntity)
+        .find({
+          where: {
+            stageId: stage.id,
+            status: ContentReviewCommentStatus.OPEN,
+          },
+        });
       stage.status = ContentStageStatus.PRODUCER_APPROVED;
       await stageRepo.save(stage);
+      if (returnedComments.length > 0) {
+        const now = new Date();
+        const actorId = input.actorId ?? "system";
+        for (const comment of returnedComments) {
+          comment.status = ContentReviewCommentStatus.RESOLVED;
+          comment.resolvedById = actorId;
+          comment.resolvedAt = now;
+        }
+        await manager
+          .getRepository(ContentReviewCommentEntity)
+          .save(returnedComments);
+        const withVersion = await stageRepo.findOneOrFail({
+          where: { id: stage.id },
+          relations: { currentVersion: true },
+        });
+        await returnStageToReview(
+          manager,
+          withVersion,
+          contentPackage.id,
+          actorId,
+          returnedComments[0].id,
+        );
+        return findPackageGraphOrFail(packageRepo, contentPackage.id);
+      }
 
       const packageGraph = await findPackageGraphOrFail(
         packageRepo,

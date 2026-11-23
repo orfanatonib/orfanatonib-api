@@ -34,6 +34,10 @@ export class ContentReviewCommentEntity extends BaseEntity {
   @Column({ type: "varchar", length: 36 })
   authorId: string;
 
+  /** O que a produção respondeu ao resolver ("Resolver e devolver"); vazio quando o item foi refeito e concluído. */
+  @Column({ type: "text", nullable: true })
+  resolutionMessage: string | null;
+
   @Column({ type: "varchar", length: 36, nullable: true })
   resolvedById: string | null;
 

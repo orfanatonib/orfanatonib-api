@@ -36,6 +36,7 @@ import { CreateContentPackageDto } from "./dto/create-content-package.dto";
 import { QueryContentPackagesDto } from "./dto/query-content-packages.dto";
 import { QueryContentStudioDashboardDto } from "./dto/query-content-studio-dashboard.dto";
 import { RequestStageChangesDto } from "./dto/request-stage-changes.dto";
+import { ResolveReviewCommentDto } from "./dto/resolve-review-comment.dto";
 import { RequestStageGenerationDto } from "./dto/request-stage-generation.dto";
 import { SaveStageContentDto } from "./dto/save-stage-content.dto";
 import { ApproveReviewStageService } from "./services/approve-review-stage.service";
@@ -297,10 +298,12 @@ export class ContentStudioController {
   async completeStageProduction(
     @Param("packageId", new ParseUUIDPipe()) packageId: string,
     @Param("stageId", new ParseUUIDPipe()) stageId: string,
+    @Req() request: AuthenticatedRequest,
   ): Promise<ContentPackageResponseDto> {
     const contentPackage = await this.completeProductionStage.execute(
       packageId,
       stageId,
+      this.authenticatedUserId(request),
     );
     return ContentPackageResponseDto.fromEntity(contentPackage);
   }
@@ -375,11 +378,13 @@ export class ContentStudioController {
   async resolveComment(
     @Param("packageId", new ParseUUIDPipe()) packageId: string,
     @Param("commentId", new ParseUUIDPipe()) commentId: string,
+    @Body() dto: ResolveReviewCommentDto,
     @Req() request: AuthenticatedRequest,
   ): Promise<ContentPackageResponseDto> {
     const contentPackage = await this.resolveReviewComment.execute(
       packageId,
       commentId,
+      dto.message,
       this.authenticatedUserId(request),
     );
     return ContentPackageResponseDto.fromEntity(contentPackage);

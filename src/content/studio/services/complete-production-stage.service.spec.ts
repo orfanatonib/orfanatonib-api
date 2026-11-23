@@ -35,12 +35,13 @@ describe("CompleteProductionStageService", () => {
 
     repository.completeProductionStage.mockResolvedValue(expectedPkg);
 
-    const result = await service.execute("pkg-1", "stage-1");
+    const result = await service.execute("pkg-1", "stage-1", "u1");
 
     expect(result).toBe(expectedPkg);
     expect(repository.completeProductionStage).toHaveBeenCalledWith({
       packageId: "pkg-1",
       stageId: "stage-1",
+      actorId: "u1",
     });
   });
 });

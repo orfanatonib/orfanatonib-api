@@ -252,6 +252,7 @@ describe("ContentStudioController", () => {
     const res = await controller.completeStageProduction(
       "c3f8f118-20ab-48d6-96a2-9476b70125a4",
       "550e8400-e29b-41d4-a716-446655440000",
+      mockReq("producer-1"),
     );
 
     expect(res.id).toBe(pkg.id);
@@ -334,6 +335,7 @@ describe("ContentStudioController", () => {
     const res = await controller.resolveComment(
       "c3f8f118-20ab-48d6-96a2-9476b70125a4",
       "550e8400-e29b-41d4-a716-446655440002",
+      { message: "Ajustei o que pediu" },
       mockReq("reviewer-1"),
     );
 
@@ -341,6 +343,7 @@ describe("ContentStudioController", () => {
     expect(mockResolveReviewComment.execute).toHaveBeenCalledWith(
       pkg.id,
       "550e8400-e29b-41d4-a716-446655440002",
+      "Ajustei o que pediu",
       "reviewer-1",
     );
   });

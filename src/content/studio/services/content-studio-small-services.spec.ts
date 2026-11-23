@@ -31,13 +31,41 @@ describe("ResolveReviewCommentService", () => {
     const packages = {
       resolveReviewComment: jest.fn().mockResolvedValue({ id: "p1" }),
     };
-    const svc = new ResolveReviewCommentService(packages as never);
-    await expect(svc.execute("p1", "c1", "u1")).resolves.toEqual({ id: "p1" });
+    const exports = { pregenerateStagePdfs: jest.fn() };
+    const svc = new ResolveReviewCommentService(
+      packages as never,
+      exports as never,
+    );
+    await expect(svc.execute("p1", "c1", "msg", "u1")).resolves.toEqual({
+      id: "p1",
+    });
+    expect(exports.pregenerateStagePdfs).not.toHaveBeenCalled();
     expect(packages.resolveReviewComment).toHaveBeenCalledWith(
       "p1",
       "c1",
+      "msg",
       "u1",
     );
+  });
+
+  it("prepara o PDF do item que voltou para a revisão", async () => {
+    const packages = {
+      resolveReviewComment: jest.fn().mockResolvedValue({
+        tracks: [
+          {
+            stages: [
+              { id: "s1", status: "IN_REVIEW", reviewComments: [{ id: "c1" }] },
+            ],
+          },
+        ],
+      }),
+    };
+    const exports = { pregenerateStagePdfs: jest.fn() };
+    await new ResolveReviewCommentService(
+      packages as never,
+      exports as never,
+    ).execute("p1", "c1", "msg", "u1");
+    expect(exports.pregenerateStagePdfs).toHaveBeenCalledWith("p1", ["s1"]);
   });
 
   it("propaga o erro do repositório", async () => {
@@ -47,7 +75,10 @@ describe("ResolveReviewCommentService", () => {
         .mockRejectedValue(new Error("comentário inexistente")),
     };
     await expect(
-      new ResolveReviewCommentService(packages as never).execute("p", "c", "u"),
+      new ResolveReviewCommentService(
+        packages as never,
+        { pregenerateStagePdfs: jest.fn() } as never,
+      ).execute("p", "c", "msg", "u"),
     ).rejects.toThrow("inexistente");
   });
 });
