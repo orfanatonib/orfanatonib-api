@@ -8,6 +8,15 @@ import {
 } from "typeorm";
 import { VisitMaterialsPageEntity } from "../entities/visit-material-page.entity";
 import { QueryVisitMaterialsPageDto } from "../dto/query-visit-material-pages.dto";
+import { VisitMaterialSortBy } from "../enums/visit-material-sort-by.enum";
+import { SortOrder } from "src/shared/enums/sort-order.enum";
+import {
+  createdRange,
+  escapeLike,
+  isPaginated,
+  normalizeSearch,
+  pageWindow,
+} from "src/shared/list-query/list-query.util";
 
 const PAGE_ALIAS = "page";
 const ROUTE_ALIAS = "route";
@@ -59,9 +68,17 @@ export class VisitMaterialsPageRepository {
       .leftJoinAndSelect(`${PAGE_ALIAS}.route`, ROUTE_ALIAS);
   }
 
+  /** Mesma consulta sem o total, para quem só quer a lista. */
   async findAll(
     query: QueryVisitMaterialsPageDto = {},
   ): Promise<VisitMaterialsPageEntity[]> {
+    return (await this.findFiltered(query)).items;
+  }
+
+  /** Filtros, ordenação e (com `page`) recorte da página, tudo no banco. A rota é 1:1, sem duplicar linhas. */
+  async findFiltered(
+    query: QueryVisitMaterialsPageDto = {},
+  ): Promise<{ items: VisitMaterialsPageEntity[]; total: number }> {
     const queryBuilder = this.baseQueryBuilder();
 
     if (query.testament) {
@@ -80,19 +97,54 @@ export class VisitMaterialsPageRepository {
       );
     }
 
-    const searchString = query.searchString?.trim();
+    if (query.public !== undefined) {
+      queryBuilder.andWhere(`${ROUTE_ALIAS}.public = :isPublic`, {
+        isPublic: query.public,
+      });
+    }
+
+    if (query.currentWeek !== undefined) {
+      queryBuilder.andWhere(`${PAGE_ALIAS}.currentWeek = :currentWeek`, {
+        currentWeek: query.currentWeek,
+      });
+    }
+
+    const searchString = normalizeSearch(query.search ?? query.searchString);
     if (searchString) {
       queryBuilder.andWhere(
         `(
-          LOWER(${PAGE_ALIAS}.title) LIKE LOWER(:searchString) OR
-          LOWER(${PAGE_ALIAS}.subtitle) LIKE LOWER(:searchString) OR
-          LOWER(${PAGE_ALIAS}.description) LIKE LOWER(:searchString)
+          ${PAGE_ALIAS}.title LIKE :searchString ESCAPE '\\\\' OR
+          ${PAGE_ALIAS}.subtitle LIKE :searchString ESCAPE '\\\\' OR
+          ${PAGE_ALIAS}.description LIKE :searchString ESCAPE '\\\\'
         )`,
-        { searchString: `%${searchString}%` },
+        { searchString: `%${escapeLike(searchString)}%` },
       );
     }
 
-    return queryBuilder.orderBy(`${PAGE_ALIAS}.createdAt`, "DESC").getMany();
+    const { from, to } = createdRange(query);
+    if (from) {
+      queryBuilder.andWhere(`${PAGE_ALIAS}.createdAt >= :createdFrom`, {
+        createdFrom: from,
+      });
+    }
+    if (to) {
+      queryBuilder.andWhere(`${PAGE_ALIAS}.createdAt <= :createdTo`, {
+        createdTo: to,
+      });
+    }
+
+    const column = query.sortBy ?? VisitMaterialSortBy.CREATED_AT;
+    queryBuilder
+      .orderBy(`${PAGE_ALIAS}.${column}`, query.order ?? SortOrder.DESC)
+      .addOrderBy(`${PAGE_ALIAS}.id`, "ASC");
+
+    if (isPaginated(query)) {
+      const { skip, take } = pageWindow(query);
+      queryBuilder.skip(skip).take(take);
+    }
+
+    const [items, total] = await queryBuilder.getManyAndCount();
+    return { items, total };
   }
 
   async findById(

@@ -9,6 +9,13 @@ import { MeditationRepository } from "../meditation.repository";
 import { WeekMeditationResponseDto } from "../dto/meditation-response.dto";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { QueryMeditationDto } from "../dto/query-meditation.dto";
+import { MeditationEntity } from "../entities/meditation.entity";
+import { MeditationSortBy } from "../enums/meditation-sort-by.enum";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import {
+  isPaginated,
+  toPaginated,
+} from "src/shared/list-query/list-query.util";
 
 @Injectable()
 export class GetMeditationService {
@@ -21,8 +28,26 @@ export class GetMeditationService {
 
   async findAll(
     query?: QueryMeditationDto,
+  ): Promise<
+    | WeekMeditationResponseDto[]
+    | PaginatedResponseDto<WeekMeditationResponseDto>
+  > {
+    const { items, total } = await this.meditationRepo.findFiltered(query);
+    const data = await this.toResponses(items);
+    if (query && isPaginated(query)) {
+      return toPaginated(
+        data,
+        query,
+        total,
+        query.sortBy ?? MeditationSortBy.START_DATE,
+      );
+    }
+    return data;
+  }
+
+  private async toResponses(
+    meditations: MeditationEntity[],
   ): Promise<WeekMeditationResponseDto[]> {
-    const meditations = await this.meditationRepo.findAllWithRelations(query);
     if (!meditations.length) {
       return [];
     }

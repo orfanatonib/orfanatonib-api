@@ -8,6 +8,12 @@ import {
 import { InformativeRepository } from "../informative.repository";
 import { InformativeResponseDto } from "../dto/informative-response.dto";
 import { QueryInformativeDto } from "../dto/query-informative.dto";
+import { InformativeSortBy } from "../enums/informative-sort-by.enum";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import {
+  isPaginated,
+  toPaginated,
+} from "src/shared/list-query/list-query.util";
 
 @Injectable()
 export class GetInformativeService {
@@ -20,10 +26,23 @@ export class GetInformativeService {
 
   async findAll(
     query?: QueryInformativeDto,
-  ): Promise<InformativeResponseDto[]> {
+  ): Promise<
+    InformativeResponseDto[] | PaginatedResponseDto<InformativeResponseDto>
+  > {
     try {
-      const list = await this.informativeRepo.findAllSorted(query);
-      return list.map((entity) => InformativeResponseDto.fromEntity(entity));
+      const { items, total } = await this.informativeRepo.findFiltered(query);
+      const data = items.map((entity) =>
+        InformativeResponseDto.fromEntity(entity),
+      );
+      if (query && isPaginated(query)) {
+        return toPaginated(
+          data,
+          query,
+          total,
+          query.sortBy ?? InformativeSortBy.CREATED_AT,
+        );
+      }
+      return data;
     } catch (error) {
       this.logger.error(
         "Error fetching banners",

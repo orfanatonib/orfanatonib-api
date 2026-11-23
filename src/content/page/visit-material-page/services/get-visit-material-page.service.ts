@@ -3,6 +3,12 @@ import { ResourceNotFoundException } from "src/common/exceptions";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import {
+  isPaginated,
+  toPaginated,
+} from "src/shared/list-query/list-query.util";
+import { VisitMaterialSortBy } from "../enums/visit-material-sort-by.enum";
 import { VisitMaterialsPageRepository } from "../repositories/visit-material-page.repository";
 import { QueryVisitMaterialsPageDto } from "../dto/query-visit-material-pages.dto";
 import { VisitMaterialsPageResponseDTO } from "../dto/visit-material-page-response.dto";
@@ -19,11 +25,33 @@ export class GetVisitMaterialPageService {
     private readonly sections: VisitMaterialSectionsService,
   ) {}
 
+  /** Sem `page` a lista é um array (consumidores internos); com `page`, o envelope paginado. */
+  findAll(
+    query?: QueryVisitMaterialsPageDto & { page?: undefined },
+  ): Promise<VisitMaterialsPageResponseDTO[]>;
+  findAll(
+    query: QueryVisitMaterialsPageDto,
+  ): Promise<
+    | VisitMaterialsPageResponseDTO[]
+    | PaginatedResponseDto<VisitMaterialsPageResponseDTO>
+  >;
   async findAll(
     query: QueryVisitMaterialsPageDto = {},
-  ): Promise<VisitMaterialsPageResponseDTO[]> {
-    const pages = await this.repository.findAll(query);
-    if (pages.length === 0) return [];
+  ): Promise<
+    | VisitMaterialsPageResponseDTO[]
+    | PaginatedResponseDto<VisitMaterialsPageResponseDTO>
+  > {
+    const { items: pages, total } = await this.repository.findFiltered(query);
+    const respond = (data: VisitMaterialsPageResponseDTO[]) =>
+      isPaginated(query)
+        ? toPaginated(
+            data,
+            query,
+            total,
+            query.sortBy ?? VisitMaterialSortBy.CREATED_AT,
+          )
+        : data;
+    if (pages.length === 0) return respond([]);
 
     const allMedia = await this.mediaItemProcessor.findManyMediaItemsByTargets(
       pages.map((page) => page.id),
@@ -41,11 +69,13 @@ export class GetVisitMaterialPageService {
       pages.map((page) => page.id),
     );
 
-    return pages.map((page) =>
-      toVisitMaterialsPageResponseDto(
-        page,
-        mediaByPage.get(page.id) ?? [],
-        sectionsByPage.get(page.id) ?? [],
+    return respond(
+      pages.map((page) =>
+        toVisitMaterialsPageResponseDto(
+          page,
+          mediaByPage.get(page.id) ?? [],
+          sectionsByPage.get(page.id) ?? [],
+        ),
       ),
     );
   }

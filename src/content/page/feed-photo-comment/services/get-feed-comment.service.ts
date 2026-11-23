@@ -72,6 +72,12 @@ export class GetFeedCommentService {
         query.limit,
         query.status,
         query.search,
+        {
+          createdFrom: query.createdFrom,
+          createdTo: query.createdTo,
+          sortBy: query.sortBy,
+          order: query.order,
+        },
       ),
       this.repository.countByStatus(),
     ]);

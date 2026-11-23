@@ -11,7 +11,7 @@ const feedback = () => ({ id: "f1", comment: "bom", rating: 5, read: false });
 
 function repoWith(found: object | null = feedback()) {
   return {
-    findAll: jest.fn().mockResolvedValue([found]),
+    findFiltered: jest.fn().mockResolvedValue({ items: [found], total: 1 }),
     findOneBy: jest.fn().mockResolvedValue(found),
     findById: jest.fn().mockResolvedValue(found),
     countUnread: jest.fn().mockResolvedValue(3),
@@ -21,11 +21,13 @@ function repoWith(found: object | null = feedback()) {
 }
 
 describe("GetSiteFeedbackService", () => {
-  it("lista tudo pelo repositório", async () => {
+  it("lista pelo repositório repassando os filtros e devolvendo o total", async () => {
     const repo = repoWith();
+    const query = { read: false, rating: 4 } as never;
     await expect(
-      new GetSiteFeedbackService(repo as never).findAll(),
-    ).resolves.toHaveLength(1);
+      new GetSiteFeedbackService(repo as never).findFiltered(query),
+    ).resolves.toEqual({ items: [feedback()], total: 1 });
+    expect(repo.findFiltered).toHaveBeenCalledWith(query);
   });
 
   it("pendingCount devolve quantos feedbacks ainda não foram lidos", async () => {

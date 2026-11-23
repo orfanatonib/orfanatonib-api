@@ -3,8 +3,9 @@ import {
   PROFILE_SORT_COLUMNS,
   ProfileSortKey,
 } from "../constants/profile-sort.constants";
+import { escapeLike } from "src/shared/list-query/list-query.util";
 
-export type SqlParam = string | number;
+export type SqlParam = string | number | Date;
 export type SortDirection = "ASC" | "DESC";
 
 const SORT_KEYS: readonly string[] = Object.values(ProfileSortKey);
@@ -27,5 +28,8 @@ export const resolveProfileSort = (
   direction: order === "DESC" ? "DESC" : "ASC",
 });
 
-/** Termo de busca parcial para `LIKE` (o valor vai como parâmetro, nunca no texto do SQL). */
-export const likeParam = (term: string): string => `%${term}%`;
+/** Cláusula que acompanha todo `LIKE ?`: a barra invertida escapa `%` e `_` digitados pelo usuário. */
+export const LIKE_ESCAPE = "ESCAPE '\\\\'";
+
+/** Termo de busca parcial para `LIKE` (o valor vai como parâmetro, nunca no texto do SQL); `%`, `_` e `\` viram literais. */
+export const likeParam = (term: string): string => `%${escapeLike(term)}%`;

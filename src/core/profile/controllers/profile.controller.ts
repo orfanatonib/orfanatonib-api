@@ -65,7 +65,11 @@ export class ProfileController {
 
   // Admin e líder listam (o serviço escopa): o líder não tem `user_management`.
   @FeatureFlag({
-    anyOf: [FeatureFlagKeys.USER_MANAGEMENT, FeatureFlagKeys.LEADER_MANAGEMENT],
+    anyOf: [
+      FeatureFlagKeys.USER_MANAGEMENT,
+      FeatureFlagKeys.PROFILE_MANAGEMENT,
+      FeatureFlagKeys.LEADER_MANAGEMENT,
+    ],
   })
   @UseGuards(FeatureFlagGuard)
   @Get()

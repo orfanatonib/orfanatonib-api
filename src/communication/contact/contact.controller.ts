@@ -9,6 +9,7 @@ import {
   Delete,
   UseGuards,
   ParseUUIDPipe,
+  Query,
 } from "@nestjs/common";
 import { CreateContactService } from "./services/create-contact.service";
 import { GetContactService } from "./services/get-contact.service";
@@ -19,6 +20,13 @@ import {
   ContactResponseDto,
 } from "./dto/contact-response.dto";
 import { CreateContactDto } from "./dto/create-contact.dto";
+import { QueryContactDto } from "./dto/query-contact.dto";
+import { ContactSortBy } from "./enums/contact-sort-by.enum";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import {
+  isPaginated,
+  toPaginated,
+} from "src/shared/list-query/list-query.util";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 import { randomUUID } from "crypto";
@@ -64,9 +72,20 @@ export class ContactController {
   @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async getAll(): Promise<ContactResponseDto[]> {
-    const contacts = await this.getContactService.getAllContacts();
-    return contacts.map((contact) => ContactResponseDto.fromEntity(contact));
+  async getAll(
+    @Query() query: QueryContactDto,
+  ): Promise<ContactResponseDto[] | PaginatedResponseDto<ContactResponseDto>> {
+    const { items, total } = await this.getContactService.findFiltered(query);
+    const data = items.map((contact) => ContactResponseDto.fromEntity(contact));
+    // Sem `page` continua o array de sempre; com `page`, `{ data, meta }` paginado no banco.
+    return isPaginated(query)
+      ? toPaginated(
+          data,
+          query,
+          total,
+          query.sortBy ?? ContactSortBy.CREATED_AT,
+        )
+      : data;
   }
 
   /** Selo do painel do admin: quantas mensagens ainda não foram lidas. */
@@ -82,7 +101,9 @@ export class ContactController {
   @UseGuards(FeatureFlagGuard)
   @Patch(":id/read")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async setRead(@Param("id", ParseUUIDPipe) id: string): Promise<ContactResponseDto> {
+  async setRead(
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<ContactResponseDto> {
     this.logger.log(`Marking contact as read: ${id}`);
     const result = await this.updateContactService.setReadOnContact(id);
     this.logger.log(`Contact marked as read successfully: ${id}`);

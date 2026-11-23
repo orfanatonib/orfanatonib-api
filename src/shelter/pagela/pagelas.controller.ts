@@ -19,7 +19,10 @@ import { DeletePagelaService } from "./services/delete-pagela.service";
 import { CreatePagelaDto } from "./dto/create-pagela.dto";
 import { UpdatePagelaDto } from "./dto/update-pagela.dto";
 import { PagelaFiltersDto } from "./dto/pagela-filters.dto";
-import { PaginationQueryDto, PaginatedResponse } from "./dto/paginated.dto";
+import {
+  PagelaPaginatedQueryDto,
+  PaginatedResponse,
+} from "./dto/paginated.dto";
 import { PagelaResponseDto } from "./dto/pagela-response.dto";
 import type { AuthenticatedRequest } from "src/core/auth/auth.types";
 import { toShelterAccessContext } from "src/shelter/shelter/utils/shelter-access.util";
@@ -41,7 +44,7 @@ export class PagelasController {
   ) {}
 
   @FeatureFlag({
-    anyOf: [FeatureFlagKeys.PAGELAS, FeatureFlagKeys.SHELTERED_AREA],
+    anyOf: [FeatureFlagKeys.PAGELAS_MANAGEMENT, FeatureFlagKeys.SHELTERED_AREA],
   })
   @UseGuards(FeatureFlagGuard)
   @Post()
@@ -59,7 +62,7 @@ export class PagelasController {
   }
 
   @FeatureFlag({
-    anyOf: [FeatureFlagKeys.PAGELAS, FeatureFlagKeys.SHELTERED_AREA],
+    anyOf: [FeatureFlagKeys.PAGELAS_MANAGEMENT, FeatureFlagKeys.SHELTERED_AREA],
   })
   @UseGuards(FeatureFlagGuard)
   @Get()
@@ -74,13 +77,13 @@ export class PagelasController {
   }
 
   @FeatureFlag({
-    anyOf: [FeatureFlagKeys.PAGELAS, FeatureFlagKeys.SHELTERED_AREA],
+    anyOf: [FeatureFlagKeys.PAGELAS_MANAGEMENT, FeatureFlagKeys.SHELTERED_AREA],
   })
   @UseGuards(FeatureFlagGuard)
   @Get("paginated")
   async findAllPaginated(
     @Req() req: AuthenticatedRequest,
-    @Query() query: PagelaFiltersDto & PaginationQueryDto,
+    @Query() query: PagelaPaginatedQueryDto,
   ): Promise<PaginatedResponse<PagelaResponseDto>> {
     const { page = 1, limit = 20, ...filters } = query;
     return this.getPagelasService.findAllPaginatedAs(
@@ -92,7 +95,7 @@ export class PagelasController {
   }
 
   @FeatureFlag({
-    anyOf: [FeatureFlagKeys.PAGELAS, FeatureFlagKeys.SHELTERED_AREA],
+    anyOf: [FeatureFlagKeys.PAGELAS_MANAGEMENT, FeatureFlagKeys.SHELTERED_AREA],
   })
   @UseGuards(FeatureFlagGuard)
   @Get(":id")
@@ -104,7 +107,7 @@ export class PagelasController {
   }
 
   @FeatureFlag({
-    anyOf: [FeatureFlagKeys.PAGELAS, FeatureFlagKeys.SHELTERED_AREA],
+    anyOf: [FeatureFlagKeys.PAGELAS_MANAGEMENT, FeatureFlagKeys.SHELTERED_AREA],
   })
   @UseGuards(FeatureFlagGuard)
   @Patch(":id")
@@ -124,7 +127,7 @@ export class PagelasController {
   }
 
   @FeatureFlag({
-    anyOf: [FeatureFlagKeys.PAGELAS, FeatureFlagKeys.SHELTERED_AREA],
+    anyOf: [FeatureFlagKeys.PAGELAS_MANAGEMENT, FeatureFlagKeys.SHELTERED_AREA],
   })
   @UseGuards(FeatureFlagGuard)
   @Delete(":id")

@@ -730,7 +730,10 @@ export class LessonGenerationService
       );
       return true;
     });
-    if (recorded) await this.support.discardUploads(abandonedUploads);
+    if (recorded) {
+      this.support.notifyGeneration(lessonId, type, true);
+      await this.support.discardUploads(abandonedUploads);
+    }
     return recorded;
   }
 
@@ -1179,6 +1182,7 @@ export class LessonGenerationService
         | "UPSTREAM_CHANGED"
         | "NOT_OWNER";
       if (finalOutcome === "COMMITTED") {
+        this.support.notifyGeneration(id, type, false, userId);
         const kept = new Set(lessonContentAssetUrls(content));
         if (coverUrl) kept.add(coverUrl);
         // The replaced cover is only the lesson's: nothing else points to it.
@@ -1191,6 +1195,7 @@ export class LessonGenerationService
           ...replacedCover,
         ]);
       } else if (finalOutcome === "UPSTREAM_CHANGED") {
+        this.support.notifyGeneration(id, type, true, userId);
         await this.support.discardUploads(trackedUploads());
       } else {
         // The current owner decides the fate of what the request recorded.

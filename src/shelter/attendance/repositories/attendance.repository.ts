@@ -1,6 +1,17 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { In, Repository } from "typeorm";
+import { In, Repository, SelectQueryBuilder } from "typeorm";
+import { SortOrder } from "src/shared/enums/sort-order.enum";
+import {
+  escapeLike,
+  isPaginated,
+  normalizeSearch,
+  pageWindow,
+} from "src/shared/list-query/list-query.util";
+import {
+  ShelterTeamsQueryDto,
+  ShelterTeamsSortBy,
+} from "../dto/shelter-teams-query.dto";
 
 import { ShelterScheduleEntity } from "src/shelter/schedule/entities/shelter-schedule.entity";
 import { TeamEntity } from "src/shelter/team/entities/team.entity";
@@ -109,6 +120,94 @@ export class AttendanceRepository {
       relations: TEAM_WITH_MEMBERS,
       order: { numberTeam: "ASC" },
     });
+  }
+
+  /**
+   * Abrigos (com as equipes que casam) filtrados, ordenados e recortados no banco.
+   * `teamIds` é o escopo do ator (`undefined` = admin). Total = abrigos que casam.
+   */
+  async findShelterPage(
+    teamIds: readonly string[] | undefined,
+    query: ShelterTeamsQueryDto,
+  ): Promise<{ teams: TeamEntity[]; total: number }> {
+    const scoped = (qb: SelectQueryBuilder<TeamEntity>) =>
+      this.applyShelterTeamFilters(qb, teamIds, query);
+
+    const [{ total }] = await scoped(
+      this.teamRepo
+        .createQueryBuilder("t")
+        .innerJoin("t.shelter", "s")
+        .select("COUNT(DISTINCT s.id)", "total"),
+    ).getRawMany<{ total: string }>();
+
+    const groups = scoped(
+      this.teamRepo
+        .createQueryBuilder("t")
+        .innerJoin("t.shelter", "s")
+        .select("s.id", "id")
+        .addSelect("s.name", "name")
+        .addSelect("COUNT(t.id)", "teamCount")
+        .groupBy("s.id")
+        .addGroupBy("s.name"),
+    );
+    const order = query.order ?? SortOrder.ASC;
+    if (query.sortBy === ShelterTeamsSortBy.TEAM_COUNT) {
+      groups.orderBy("teamCount", order).addOrderBy("s.name", "ASC");
+    } else {
+      groups.orderBy("s.name", order);
+    }
+    groups.addOrderBy("s.id", "ASC");
+    if (isPaginated(query)) {
+      const { skip, take } = pageWindow(query);
+      groups.offset(skip).limit(take);
+    }
+    const shelters = await groups.getRawMany<{ id: string }>();
+    if (shelters.length === 0) return { teams: [], total: Number(total) };
+
+    const rank = new Map(shelters.map((row, index) => [row.id, index]));
+    const teams = await this.applyShelterTeamFilters(
+      this.teamRepo
+        .createQueryBuilder("t")
+        .innerJoinAndSelect("t.shelter", "s")
+        .leftJoinAndSelect("t.members", "m")
+        .leftJoinAndSelect("m.user", "u")
+        .where("s.id IN (:...pageShelters)", {
+          pageShelters: shelters.map((row) => row.id),
+        }),
+      teamIds,
+      query,
+    )
+      .orderBy("t.numberTeam", "ASC")
+      .getMany();
+
+    teams.sort(
+      (a, b) =>
+        (rank.get(a.shelter.id) ?? 0) - (rank.get(b.shelter.id) ?? 0) ||
+        a.numberTeam - b.numberTeam,
+    );
+    return { teams, total: Number(total) };
+  }
+
+  private applyShelterTeamFilters(
+    qb: SelectQueryBuilder<TeamEntity>,
+    teamIds: readonly string[] | undefined,
+    query: ShelterTeamsQueryDto,
+  ): SelectQueryBuilder<TeamEntity> {
+    if (teamIds)
+      qb.andWhere("t.id IN (:...scopeTeams)", { scopeTeams: [...teamIds] });
+    if (query.shelterId) {
+      qb.andWhere("s.id = :shelterId", { shelterId: query.shelterId });
+    }
+    const search = normalizeSearch(query.search);
+    if (search) {
+      qb.andWhere(
+        `(CONCAT_WS(' ', s.name, CONCAT('Equipe ', t.numberTeam), COALESCE(t.description, '')) LIKE :search ESCAPE '\\\\'
+          OR EXISTS (SELECT 1 FROM member_profiles mp INNER JOIN users mu ON mu.id = mp.user_id
+                     WHERE mp.team_id = t.id AND mu.name LIKE :search ESCAPE '\\\\'))`,
+        { search: `%${escapeLike(search)}%` },
+      );
+    }
+    return qb;
   }
 
   findTeamWithMembers(teamId: string): Promise<TeamEntity | null> {

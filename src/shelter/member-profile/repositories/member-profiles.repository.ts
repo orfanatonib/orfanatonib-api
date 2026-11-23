@@ -32,6 +32,17 @@ export class MemberProfilesRepository {
     private readonly teamRepo: Repository<TeamEntity>,
   ) {}
 
+  /** Reordena `items` pela posição de cada id em `ids` (ordem da página já decidida no banco). */
+  static sortByIds<T extends { id: string }>(
+    items: T[],
+    ids: readonly string[],
+  ): T[] {
+    const rank = new Map(ids.map((id, index) => [id, index] as const));
+    return [...items].sort(
+      (a, b) => (rank.get(a.id) ?? 0) - (rank.get(b.id) ?? 0),
+    );
+  }
+
   private baseQB(): SelectQueryBuilder<MemberProfileEntity> {
     return this.memberRepo
       .createQueryBuilder("member")
@@ -240,7 +251,9 @@ export class MemberProfilesRepository {
       .addOrderBy("shelter.name", "ASC")
       .addOrderBy("member.createdAt", "ASC");
     this.applyRoleFilter(itemsQB, ctx);
-    const items = await itemsQB.getMany();
+    const loaded = await itemsQB.getMany();
+    // A página já veio ordenada da consulta de ids; a hidratação com joins não garante essa ordem.
+    const items = MemberProfilesRepository.sortByIds(loaded, ids);
 
     return { items, total, page, limit };
   }

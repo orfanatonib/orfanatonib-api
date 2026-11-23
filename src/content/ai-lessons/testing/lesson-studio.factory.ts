@@ -1,3 +1,4 @@
+import { LessonNotificationService } from '../services/lesson-notification.service';
 import { ConfigService } from '@nestjs/config';
 import { WeekMaterialsPageCreateService } from 'src/content/ai-lessons/publication/services/create-week-material.service';
 import { WeekMaterialsPageGetService } from 'src/content/ai-lessons/publication/services/get-week-material.service';
@@ -61,7 +62,10 @@ export function createLessonStudio(
   media: MediaItemProcessor,
 ): LessonStudioServices {
   const lessons = new GetLessonService(repo);
-  const support = new LessonStudioSupportService(repo, s3, media);
+  const support = new LessonStudioSupportService(repo, s3, media, {
+    workflow: () => Promise.resolve(),
+    generationFinished: () => Promise.resolve(),
+  } as unknown as LessonNotificationService);
   const assets = new LessonAssetGenerationService(s3);
   const progressStore = new MemoryLessonProgressStore();
   const progress = new LessonGenerationProgressService(progressStore);

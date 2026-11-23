@@ -24,6 +24,8 @@ import { GenerateLessonCoverService } from './services/generate-lesson-cover.ser
 import { UpdateLessonCoverService } from './services/update-lesson-cover.service';
 import { UpdateLessonVerseService } from './services/update-lesson-verse.service';
 import { LessonGenerationService } from './services/lesson-generation.service';
+import { InboxNotificationModule } from 'src/communication/inbox/inbox-notification.module';
+import { LessonNotificationService } from './services/lesson-notification.service';
 import { LessonStudioSupportService } from './services/lesson-studio-support.service';
 import { PublishLessonService } from './services/publish-lesson.service';
 import { UpdateLessonContentService } from './services/update-lesson-content.service';
@@ -56,6 +58,7 @@ import { LessonImageBriefService } from './services/lesson-image-brief.service';
       AdminLessonPromptEntity,
     ]),
     WeekMaterialsPageModule,
+    InboxNotificationModule,
     MediaModule,
   ],
   controllers: [AiLessonsController, AiProvidersController],
@@ -67,6 +70,7 @@ import { LessonImageBriefService } from './services/lesson-image-brief.service';
     GetLessonService,
     GetLessonPublicationService,
     LessonStudioSupportService,
+    LessonNotificationService,
     LessonAssetGenerationService,
     GenerateLessonCoverService,
     UpdateLessonCoverService,

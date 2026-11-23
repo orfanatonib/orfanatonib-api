@@ -29,6 +29,8 @@ import { validate } from "class-validator";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 import { PaginatedImageSectionResponseDto } from "./dto/paginated-image-section.dto";
 import { Request } from "express";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import { PageListQueryDto } from "../page-list-query";
 import { IMAGE_GALLERY_UPLOAD_OPTIONS } from "src/shared/media/storage/upload-limits.constants";
 import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
 import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
@@ -116,8 +118,16 @@ export class ImageController {
   @FeatureFlag(FeatureFlagKeys.PUBLIC_GALLERIES)
   @UseGuards(FeatureFlagGuard)
   @Get()
-  async findAll(@Req() req: Request): Promise<ImagePageResponseDto[]> {
-    return this.getService.findAll(await this.getService.canSeeNonPublic(req));
+  async findAll(
+    @Req() req: Request,
+    @Query() query: PageListQueryDto,
+  ): Promise<
+    ImagePageResponseDto[] | PaginatedResponseDto<ImagePageResponseDto>
+  > {
+    return this.getService.findList(
+      await this.getService.canSeeNonPublic(req),
+      query,
+    );
   }
 
   @FeatureFlag(FeatureFlagKeys.SHELTER_FEED)

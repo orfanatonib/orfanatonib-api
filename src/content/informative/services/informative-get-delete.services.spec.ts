@@ -20,12 +20,14 @@ const entity = (id = "i1") =>
 describe("GetInformativeService", () => {
   it("lista mapeando para DTO; falha do repositório vira 500 sem vazar detalhe", async () => {
     const repo = {
-      findAllSorted: jest.fn().mockResolvedValue([entity()]),
+      findFiltered: jest
+        .fn()
+        .mockResolvedValue({ items: [entity()], total: 1 }),
       findOneById: jest.fn(),
     };
     const svc = new GetInformativeService(repo as never);
     expect(await svc.findAll()).toHaveLength(1);
-    repo.findAllSorted.mockRejectedValue(new Error("db secret"));
+    repo.findFiltered.mockRejectedValue(new Error("db secret"));
     await expect(svc.findAll()).rejects.toThrow(
       "Erro ao buscar banners informativos",
     );
@@ -33,7 +35,7 @@ describe("GetInformativeService", () => {
 
   it("findOne: 404 quando não existe", async () => {
     const repo = {
-      findAllSorted: jest.fn(),
+      findFiltered: jest.fn(),
       findOneById: jest.fn().mockResolvedValue(null),
     };
     const svc = new GetInformativeService(repo as never);

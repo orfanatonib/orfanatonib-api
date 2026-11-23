@@ -1,13 +1,19 @@
 import { Injectable, Logger, NotFoundException } from "@nestjs/common";
 import { Request } from "express";
-import { VisitReportRepository } from "../visit-report.repository";
+import {
+  VisitReportListActor,
+  VisitReportRepository,
+} from "../visit-report.repository";
+import { QueryVisitReportDto } from "../dto/query-visit-report.dto";
+import { VisitReportSortBy } from "../enums/visit-report-sort-by.enum";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import {
+  isPaginated,
+  toPaginated,
+} from "src/shared/list-query/list-query.util";
 import { VisitReportEntity } from "../entities/visit-report.entity";
 import type { ShelterAccessContext } from "src/shelter/shelter/types";
-import {
-  canAccessReport,
-  filterReportsForActor,
-} from "../utils/visit-report-access.util";
-import { normalizeRole } from "src/core/auth/utils/auth-token.util";
+import { canAccessReport } from "../utils/visit-report-access.util";
 import { AuthContextService } from "src/core/auth/services/auth-context.service";
 
 @Injectable()
@@ -19,54 +25,34 @@ export class ListVisitReportsService {
     private readonly authCtx: AuthContextService,
   ) {}
 
-  async execute(req: Request): Promise<VisitReportEntity[]> {
+  /**
+   * Lista no escopo do ator. Os filtros por id nunca ampliam o escopo: líder só recebe o que lidera.
+   * Sem `page` devolve o array de sempre; com `page`, `{ data, meta }` recortado no banco.
+   */
+  async execute(
+    req: Request,
+    query: QueryVisitReportDto = {},
+  ): Promise<VisitReportEntity[] | PaginatedResponseDto<VisitReportEntity>> {
     this.logger.log("Listing visit reports");
 
     const payload = await this.authCtx.tryGetPayload(req);
     const role = payload?.role?.toLowerCase();
-    const userId = payload?.sub;
-
-    const teamId = (req.query?.teamId as string) || null;
-    const shelterId = (req.query?.shelterId as string) || null;
-    const scheduleId = (req.query?.scheduleId as string) || null;
-
-    const actor: ShelterAccessContext = {
-      userId: userId ?? null,
-      role: normalizeRole(payload?.role) ?? null,
+    const actor: VisitReportListActor = {
+      role: role === "admin" || role === "leader" ? role : null,
+      userId: payload?.sub ?? null,
     };
 
-    // Filtros por id nunca ampliam o escopo: líder só recebe o que lidera.
-    if (scheduleId) {
-      this.logger.log(`Filtering reports by scheduleId: ${scheduleId}`);
-      const report = await this.visitReportRepo.findByScheduleId(scheduleId);
-      return report ? filterReportsForActor(actor, [report]) : [];
-    }
-
-    if (teamId) {
-      this.logger.log(`Filtering reports by teamId: ${teamId}`);
-      return filterReportsForActor(
-        actor,
-        await this.visitReportRepo.findByTeamId(teamId),
-      );
-    }
-
-    if (shelterId) {
-      this.logger.log(`Filtering reports by shelterId: ${shelterId}`);
-      return filterReportsForActor(
-        actor,
-        await this.visitReportRepo.findByShelterId(shelterId),
-      );
-    }
-
-    if (role === "admin") {
-      return this.visitReportRepo.findAll();
-    }
-
-    if (role === "leader" && userId) {
-      return this.visitReportRepo.findByLeaderId(userId);
-    }
-
-    return [];
+    const { items, total } = await this.visitReportRepo.findFiltered(
+      actor,
+      query,
+    );
+    if (!isPaginated(query)) return items;
+    return toPaginated(
+      items,
+      query,
+      total,
+      query.sortBy ?? VisitReportSortBy.CREATED_AT,
+    );
   }
 
   async findOne(

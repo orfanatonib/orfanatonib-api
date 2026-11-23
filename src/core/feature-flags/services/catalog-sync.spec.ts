@@ -61,11 +61,11 @@ describe("catálogo de feature flags", () => {
   });
 
   describe("definições de fábrica", () => {
-    it("o catálogo tem as 55 flags de interface em snake_case e as 17 de e-mail", () => {
+    it("o catálogo tem as 59 flags de interface em snake_case e as 17 de e-mail", () => {
       const keys = DEFAULT_FEATURE_FLAGS.map((flag) => flag.key);
       const ui = keys.filter((key) => !isInternalFeatureFlag(key));
 
-      expect(ui).toHaveLength(55);
+      expect(ui).toHaveLength(59);
       expect(ui.every((key) => /^[a-z]+(_[a-z]+)*$/.test(key))).toBe(true);
       expect(keys.filter(isInternalFeatureFlag)).toHaveLength(17);
       expect(new Set(keys).size).toBe(keys.length);
@@ -141,18 +141,25 @@ describe("catálogo de feature flags", () => {
     });
 
     it("troca a descrição genérica antiga pela do catálogo sem mexer no estado", async () => {
-      const antiga = buildFlag("pagelas");
+      const antiga = buildFlag("pagelas_management");
       antiga.enabled = false;
       antiga.description = "Interruptor do recurso: pagelas.";
       repository.findByKey.mockImplementation((key: string) =>
-        Promise.resolve(key === "pagelas" ? antiga : null),
+        Promise.resolve(key === "pagelas_management" ? antiga : null),
       );
 
       await service.seedDefaults();
 
-      const definition = DEFAULT_FEATURE_FLAGS.find((f) => f.key === "pagelas");
+      const definition = DEFAULT_FEATURE_FLAGS.find((f) => f.key === "pagelas_management");
       expect(antiga.description).toBe(definition?.description);
       expect(antiga.enabled).toBe(false);
+    });
+
+    it("toda chave do catálogo tem no mínimo duas palavras (snake_case)", () => {
+      const singleWord = DEFAULT_FEATURE_FLAGS.filter(
+        (flag) => flag.key.split(/[_-]/).filter(Boolean).length < 2,
+      ).map((flag) => flag.key);
+      expect(singleWord).toEqual([]);
     });
 
     it("todas as flags do catálogo têm descrição própria e detalhada", () => {
@@ -225,7 +232,7 @@ describe("catálogo de feature flags", () => {
 
       const copied = await service.copyRenamedFlags();
 
-      expect(copied.sort()).toEqual(["pagelas", "sheltered_area"]);
+      expect(copied.sort()).toEqual(["pagelas_management", "sheltered_area"]);
       expect(saved().every((flag) => flag.enabled === false)).toBe(true);
     });
 

@@ -18,6 +18,7 @@ import { AnyFilesInterceptor } from "@nestjs/platform-express";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
 import { CreateVisitMaterialsPageDto } from "./dto/create-visit-material-page.dto";
 import { UpdateVisitMaterialsPageDto } from "./dto/update-visit-material-page.dto";
 import { QueryVisitMaterialsPageDto } from "./dto/query-visit-material-pages.dto";
@@ -91,7 +92,10 @@ export class VisitMaterialsPageController {
   @Get()
   async findAll(
     @Query() query: QueryVisitMaterialsPageDto,
-  ): Promise<VisitMaterialsPageResponseDTO[]> {
+  ): Promise<
+    | VisitMaterialsPageResponseDTO[]
+    | PaginatedResponseDto<VisitMaterialsPageResponseDTO>
+  > {
     return this.getService.findAll(query);
   }
 

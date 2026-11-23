@@ -25,9 +25,10 @@ const page = (id: string, isPublic: boolean) =>
 
 function setup(options: { pages?: unknown[]; fail?: boolean } = {}) {
   const pages = {
-    findAllPagesWithSections: jest.fn(async () => {
+    findListWithSections: jest.fn(async () => {
       if (options.fail) throw new Error("db");
-      return options.pages ?? [page("a", true)];
+      const items = options.pages ?? [page("a", true)];
+      return { items, total: items.length };
     }),
     findOnePageById: jest.fn(async (id: string) =>
       id === "missing" ? null : page(id, true),
@@ -89,5 +90,38 @@ describe("GetIdeasPageService", () => {
   it("falha do repository é propagada", async () => {
     const { service } = setup({ fail: true });
     await expect(service.findAllPagesWithMedia()).rejects.toThrow("db");
+  });
+});
+
+describe("GetIdeasPageService.findList", () => {
+  it("sem page devolve o array legado e repassa os filtros", async () => {
+    const { service, pages } = setup();
+    const query = { search: "x" };
+    const result = await service.findList(query);
+    expect(Array.isArray(result)).toBe(true);
+    expect(pages.findListWithSections).toHaveBeenCalledWith(query);
+  });
+
+  it("com page devolve { data, meta } e só busca mídia das seções da janela", async () => {
+    const { service, media } = setup({ pages: [page("b", true)] });
+    const result = await service.findList({
+      page: 3,
+      limit: 1,
+      sortBy: "title" as never,
+    });
+    expect(media.findManyMediaItemsByTargets).toHaveBeenCalledWith(
+      ["b-s1"],
+      expect.anything(),
+    );
+    expect(result).toMatchObject({
+      data: [{ id: "b" }],
+      meta: { page: 3, limit: 1, totalItems: 1, orderBy: "title" },
+    });
+  });
+
+  it("janela vazia não consulta mídia", async () => {
+    const { service, media } = setup({ pages: [] });
+    expect(await service.findList({ page: 9 })).toMatchObject({ data: [] });
+    expect(media.findManyMediaItemsByTargets).not.toHaveBeenCalled();
   });
 });

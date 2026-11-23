@@ -40,6 +40,7 @@ import { AtendenteModule } from "./shelter/atendente/atendente.module";
 import { RemindersModule } from "./shelter/reminders/reminders.module";
 import { AiProviderAdminModule } from "./content/ai-lessons/ai-provider-admin.module";
 import { ContentStudioModule } from "./content/studio/content-studio.module";
+import { InboxNotificationModule } from "./communication/inbox/inbox-notification.module";
 import { GlobalExceptionFilter } from "./common/filters";
 import { RequestContextModule } from "./core/request-context";
 import { ObservabilityModule } from "./core/observability/observability.module";
@@ -110,6 +111,7 @@ function getEnvFilePath(): string {
     AtendenteModule,
     RemindersModule,
     ContentStudioModule,
+    InboxNotificationModule,
     AiProviderAdminModule,
     HealthModule,
     RequestContextModule,

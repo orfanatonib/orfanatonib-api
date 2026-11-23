@@ -8,6 +8,13 @@ import { toFeedSectionContext, toMyImageSectionDto } from "../utils";
 import { MyImageSectionDto } from "../dto/my-image-section.dto";
 import { ImageSectionPendingCountDto } from "../dto/image-section-pending-count.dto";
 import { In } from "typeorm";
+import { ImageSectionListQueryDto } from "../dto/image-section-list-query.dto";
+import { ImageSectionSortBy } from "../enums/image-section-sort-by.enum";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import {
+  isPaginated,
+  toPaginated,
+} from "src/shared/list-query/list-query.util";
 
 @Injectable()
 export class GetImageSectionService {
@@ -37,8 +44,13 @@ export class GetImageSectionService {
     return { pending: await this.sectionRepository.countPending() };
   }
 
-  async findAll(authorId?: string): Promise<ImageSectionResponseDto[]> {
-    const sections = await this.sectionRepository.findAllOrfaSections(authorId);
+  async findAll(
+    query: ImageSectionListQueryDto = {},
+  ): Promise<
+    ImageSectionResponseDto[] | PaginatedResponseDto<ImageSectionResponseDto>
+  > {
+    const { items: sections, total } =
+      await this.sectionRepository.findQueue(query);
     const sectionIds = sections.map((section) => section.id);
 
     const mediaItems =
@@ -53,12 +65,21 @@ export class GetImageSectionService {
       mediaMap.get(item.targetId)!.push(item);
     }
 
-    return sections.map((section) =>
+    const data = sections.map((section) =>
       ImageSectionResponseDto.fromEntity(
         section,
         mediaMap.get(section.id) || [],
       ),
     );
+    if (isPaginated(query)) {
+      return toPaginated(
+        data,
+        query,
+        total,
+        query.sortBy ?? ImageSectionSortBy.CREATED_AT,
+      );
+    }
+    return data;
   }
 
   /**

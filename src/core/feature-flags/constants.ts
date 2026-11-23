@@ -30,6 +30,9 @@ export const RETIRED_FEATURE_FLAGS: readonly string[] = [
   "event-email-notifications",
   // Nunca existiu no Orfanato NIB; removida do catálogo.
   "special_family_day",
+  // Nomes provisórios das flags da home (viraram `home_shelters_*` antes de ir a produção).
+  "shelters_section_public",
+  "shelters_section_private",
 ];
 
 /**
@@ -61,9 +64,14 @@ export const FEATURE_FLAG_RENAMES: readonly {
   readonly to: readonly string[];
 }[] = [
   { from: "shelter-address", to: ["shelter_address"] },
+  // Chave genérica demais: passa a dizer qual integração governa (Feira de Ministério).
+  { from: "integration", to: ["ministry_fair_integration"] },
   { from: "shelter-management", to: ["sheltered_management"] },
   // Uma chave antiga governava a área do membro E o painel: vira duas.
-  { from: "shelter-pagelas", to: ["sheltered_area", "pagelas"] },
+  { from: "shelter-pagelas", to: ["sheltered_area", "pagelas_management"] },
+  // Chaves de uma palavra só (regra: no mínimo duas palavras).
+  { from: "pagelas", to: ["pagelas_management"] },
+  { from: "attendance", to: ["attendance_control"] },
   { from: "content-studio", to: ["content_studio"] },
   { from: "content-studio-generation", to: ["content_studio_generation"] },
   { from: "content-studio-review", to: ["content_studio_review"] },
@@ -206,6 +214,22 @@ export const DEFAULT_FEATURE_FLAGS = [
     targetRoles: [],
   },
   {
+    key: "home_shelters_public",
+    name: "Home: abrigos para visitantes",
+    description:
+      "Controla a seção \"Abrigos onde estamos presentes\" na página inicial para quem NÃO está logado: o carrossel com a foto, o nome, a cidade e a descrição de cada abrigo. Desligada, o visitante deixa de ver a seção inteira. Não muda nada para quem está logado (veja \"Home: abrigos para logados\") e não depende de papel.",
+    enabled: true,
+    targetRoles: [],
+  },
+  {
+    key: "home_shelters_private",
+    name: "Home: abrigos para logados",
+    description:
+      "Controla a seção \"Abrigos onde estamos presentes\" na página inicial para quem ESTÁ logado. Com ela ligada, o card do abrigo abre a página de detalhe, com endereço, equipes, líderes e membros (e a foto de cada um ao clicar). Desligada, quem está logado não vê a seção nem esse atalho. Não muda nada para o visitante (veja \"Home: abrigos para visitantes\") e não depende de papel.",
+    enabled: true,
+    targetRoles: [],
+  },
+  {
     key: "member_area",
     name: "Área do Membro (hub e casca)",
     description:
@@ -318,7 +342,7 @@ export const DEFAULT_FEATURE_FLAGS = [
     targetRoles: ["admin", "leader", "member"],
   },
   {
-    key: "attendance",
+    key: "attendance_control",
     name: "Frequência",
     description:
       "Liga o controle de frequência: lançar, consultar e acompanhar presenças das equipes, e o aviso de pendências. Desligada, todo o módulo de presença some do painel e da API.",
@@ -326,10 +350,10 @@ export const DEFAULT_FEATURE_FLAGS = [
     targetRoles: ["admin", "leader", "member"],
   },
   {
-    key: "integration",
+    key: "ministry_fair_integration",
     name: "Integração Feira de Ministério",
     description:
-      "Integração Feira de Ministério: botão 'Integração' na Área do Membro e no cartão dos acolhidos, e a página de registro da integração (admin e líder). Desligada, o botão e a página somem e a API recusa os registros.",
+      "Integração Feira de Ministério: atalho 'Integrações FM' na Área do Membro e a página de registro das integrações (admin e líder). Desligada, o atalho e a página somem e a API recusa os registros.",
     enabled: true,
     targetRoles: ["admin", "leader"],
   },
@@ -415,11 +439,19 @@ export const DEFAULT_FEATURE_FLAGS = [
   },
   {
     key: "user_management",
-    name: "Gestão de usuários e perfis",
+    name: "Gestão de usuários",
     description:
-      "Libera no painel a gestão de usuários e perfis (listar, editar, ativar/desativar, trocar papel). Desligada, as telas de Usuários e Perfis ficam bloqueadas.",
+      "Libera no painel a gestão de usuários (listar, editar, ativar/desativar, trocar papel). Desligada, a tela de Usuários fica bloqueada.",
     enabled: true,
     targetRoles: ["admin"],
+  },
+  {
+    key: "profile_management",
+    name: "Gestão de perfis",
+    description:
+      "Liga e desliga a tela de Perfis do painel (conhecer as pessoas do ministério: temperamento, cor, aniversário). Desligada, a tela e a consulta ficam bloqueadas. Quem pode abrir é regra de papel da rota e da API, não desta flag.",
+    enabled: true,
+    targetRoles: ["admin", "leader"],
   },
   {
     key: "leader_management",
@@ -454,7 +486,7 @@ export const DEFAULT_FEATURE_FLAGS = [
     targetRoles: ["admin", "leader"],
   },
   {
-    key: "pagelas",
+    key: "pagelas_management",
     name: "Pagelas",
     description:
       "Libera as pagelas no painel: registro semanal de cada acolhido por abrigo. Desligada, a tela de Pagelas e a API correspondente ficam bloqueadas.",
@@ -484,6 +516,14 @@ export const DEFAULT_FEATURE_FLAGS = [
       "Libera os relatórios de visita (preenchimento, consulta e lista de pendências por abrigo). Desligada, as telas e a API de relatórios ficam bloqueadas.",
     enabled: true,
     targetRoles: ["admin", "leader"],
+  },
+  {
+    key: "notification_center",
+    name: "Central de notificações (sininho)",
+    description:
+      "Liga a caixa de entrada do sininho: avisos guardados por usuário (lida/não lida), como os das produções dos Estúdios para os administradores. Desligada, o sininho mostra só as pendências de presença e de relatórios, e a API de avisos responde 403.",
+    enabled: true,
+    targetRoles: ["admin", "leader", "member"],
   },
   {
     key: "content_studio",

@@ -14,7 +14,7 @@ describe("Informative delete/get/update services", () => {
   let repo: {
     findOneWithRelations: jest.Mock;
     findOneById: jest.Mock;
-    findAllSorted: jest.Mock;
+    findFiltered: jest.Mock;
     remove: jest.Mock;
     removeWithRoute: jest.Mock;
   };
@@ -24,7 +24,7 @@ describe("Informative delete/get/update services", () => {
     repo = {
       findOneWithRelations: jest.fn(),
       findOneById: jest.fn(),
-      findAllSorted: jest.fn(),
+      findFiltered: jest.fn(),
       remove: jest.fn(),
       removeWithRoute: jest.fn(),
     };
@@ -64,12 +64,12 @@ describe("Informative delete/get/update services", () => {
       new GetInformativeService(repo as unknown as InformativeRepository);
 
     it("findAll devolve lista (vazia inclusive)", async () => {
-      repo.findAllSorted.mockResolvedValue([]);
+      repo.findFiltered.mockResolvedValue({ items: [], total: 0 });
       await expect(build().findAll()).resolves.toEqual([]);
     });
 
     it("findAll converte falha em 500 padronizado", async () => {
-      repo.findAllSorted.mockRejectedValue(new Error("db"));
+      repo.findFiltered.mockRejectedValue(new Error("db"));
       await expect(build().findAll()).rejects.toBeInstanceOf(
         InternalServerErrorException,
       );

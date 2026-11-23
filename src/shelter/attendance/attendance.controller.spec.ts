@@ -129,11 +129,14 @@ describe("AttendanceController", () => {
 
   it("repassa as listagens do líder", async () => {
     await controller.listLeaderTeams(request);
-    await controller.listLeaderTeamsWithMembers(request);
+    await controller.listLeaderTeamsWithMembers(request, {});
     await controller.listSheetsHierarchical(request, {});
 
     expect(teamsService.listLeaderTeams).toHaveBeenCalledWith(actor);
-    expect(teamsService.listLeaderTeamsWithMembers).toHaveBeenCalledWith(actor);
+    expect(teamsService.listLeaderTeamsWithMembers).toHaveBeenCalledWith(
+      actor,
+      {},
+    );
     expect(schedulesService.listSheetsHierarchical).toHaveBeenCalledWith(
       actor,
       {},

@@ -80,8 +80,8 @@ describe("catalogDefaultFor", () => {
     expect(catalogDefaultFor("contact_form")).toBe(true);
     expect(catalogDefaultFor("member_area")).toBe(false);
     expect(catalogDefaultFor("member_area", "member")).toBe(true);
-    expect(catalogDefaultFor("integration", "member")).toBe(false);
-    expect(catalogDefaultFor("integration", "leader")).toBe(true);
+    expect(catalogDefaultFor("ministry_fair_integration", "member")).toBe(false);
+    expect(catalogDefaultFor("ministry_fair_integration", "leader")).toBe(true);
   });
 
   it("flag desligada de fábrica e chave fora do catálogo ficam desligadas", () => {

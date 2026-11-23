@@ -62,6 +62,7 @@ function setup(gatewayDirective?: string, attempts = 1, quota?: number) {
       gateway,
       images as never,
       requestImages as never,
+      { generationFinished: jest.fn() } as never,
     ),
   };
 }

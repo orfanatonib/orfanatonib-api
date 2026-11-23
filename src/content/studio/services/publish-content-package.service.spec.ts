@@ -75,6 +75,7 @@ describe("PublishContentPackageService", () => {
       documents as never,
       createPage as never,
       pages as never,
+      { published: jest.fn() } as never,
     );
     repo.findByIdempotencyKey.mockResolvedValue(null);
     repo.findLatestByPackageId.mockResolvedValue(null);

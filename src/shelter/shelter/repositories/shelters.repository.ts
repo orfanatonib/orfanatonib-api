@@ -36,6 +36,11 @@ import {
 } from "../types";
 import { SHELTER_ROUTE_ENTITY_TYPE } from "../constants";
 import {
+  createdRange,
+  escapeLike,
+  normalizeSearch,
+} from "src/shared/list-query/list-query.util";
+import {
   ShelterTeamSelectOptionDto,
   toShelterTeamSelectOption,
 } from "../dto/shelter-team-select-option.dto";
@@ -129,6 +134,10 @@ export class SheltersRepository {
       order = "ASC",
       searchString,
       shelterName,
+      city,
+      state,
+      createdFrom,
+      createdTo,
     } = q;
 
     const sortMap: Record<string, string> = {
@@ -188,11 +197,30 @@ export class SheltersRepository {
       );
     }
 
+    const cityTerm = normalizeSearch(city);
+    if (cityTerm) {
+      idQb.andWhere("LOWER(address.city) LIKE LOWER(:cityTerm) ESCAPE '\\\\'", {
+        cityTerm: `%${escapeLike(cityTerm)}%`,
+      });
+    }
+    const stateTerm = normalizeSearch(state);
+    if (stateTerm) {
+      idQb.andWhere(
+        "LOWER(address.state) LIKE LOWER(:stateTerm) ESCAPE '\\\\'",
+        { stateTerm: `%${escapeLike(stateTerm)}%` },
+      );
+    }
+    const { from, to } = createdRange({ createdFrom, createdTo });
+    if (from)
+      idQb.andWhere("shelter.createdAt >= :createdFrom", { createdFrom: from });
+    if (to) idQb.andWhere("shelter.createdAt <= :createdTo", { createdTo: to });
+
     const totalQb = idQb.clone();
     const total = await totalQb.getCount();
 
     idQb
       .orderBy("orderField", orderDir)
+      .addOrderBy("shelter.id", "ASC")
       .offset((page - 1) * limit)
       .limit(limit);
 

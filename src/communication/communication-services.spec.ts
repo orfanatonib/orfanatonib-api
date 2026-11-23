@@ -58,7 +58,7 @@ describe("contato", () => {
 describe("feedback do site", () => {
   function setup() {
     const repo = {
-      findAll: jest.fn(),
+      findFiltered: jest.fn(),
       findOneBy: jest.fn(),
       findById: jest.fn(),
       save: jest.fn((f: unknown) => Promise.resolve(f)),
@@ -75,8 +75,8 @@ describe("feedback do site", () => {
 
   it("get: lista e busca; inexistente 404", async () => {
     const { repo, get } = setup();
-    repo.findAll.mockResolvedValue([{ id: "1" }]);
-    expect(await get.findAll()).toHaveLength(1);
+    repo.findFiltered.mockResolvedValue({ items: [{ id: "1" }], total: 1 });
+    expect((await get.findFiltered()).items).toHaveLength(1);
     repo.findOneBy.mockResolvedValue(null);
     await expect(get.findOne("x")).rejects.toBeInstanceOf(NotFoundException);
     repo.findOneBy.mockResolvedValue({ id: "1" });

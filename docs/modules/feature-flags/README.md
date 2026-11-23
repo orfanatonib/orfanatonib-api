@@ -169,10 +169,11 @@ npx playwright test --config=playwright.live.config.ts e2e/live/feature-flags.ui
   divergências na §4.1 do plano 09.
 - **Renomeação sem acidente:** `FEATURE_FLAG_RENAMES` cria a chave nova
   **copiando `enabled` e `targetRoles` da antiga** no boot (`shelter-pagelas`
-  gera `sheltered_area` e `pagelas`). Rollout em dois passos: na versão N as
+  gera `sheltered_area` e `pagelas_management`). Rollout em dois passos: na versão N as
   chaves antigas permanecem (instâncias antigas ainda as leem); na versão N+1
   vão para `RETIRED_FEATURE_FLAGS`. `INTERNAL_FEATURE_FLAG_PREFIXES` cobre
   `email_` e, durante a versão N, também `email-` (não vazam no mapa público).
+- **Nome da chave:** no mínimo duas palavras (snake_case), garantido por teste em `catalog-sync.spec.ts`. Renomeadas por isso: `integration` → `ministry_fair_integration`, `attendance` → `attendance_control`, `pagelas` → `pagelas_management` (estado e papéis copiados no boot).
 - **Front:** `FeatureFlagKeys` com as mesmas 54 chaves; `FeatureFlagRoute` em 55
   rotas; o slice ignora resposta de requisição antiga (troca de sessão).
 

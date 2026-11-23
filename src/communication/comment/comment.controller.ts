@@ -11,6 +11,7 @@ import {
   Logger,
   UseGuards,
   ParseUUIDPipe,
+  Query,
 } from "@nestjs/common";
 import { plainToInstance } from "class-transformer";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
@@ -21,6 +22,8 @@ import { GetCommentService } from "./services/get-comment.service";
 import { UpdateCommentService } from "./services/update-comment.service";
 import { CreateCommentDto } from "./dto/create-comment.dto";
 import { CommentResponseDto } from "./dto/comment-response.dto";
+import { CommentListQueryDto } from "./dto/comment-list-query.dto";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
 import { CommentPendingCountDto } from "./dto/comment-pending-count.dto";
 import { UpdateCommentDto } from "./dto/update-comment.dto";
 import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
@@ -54,9 +57,16 @@ export class CommentController {
   @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async findAll(): Promise<CommentResponseDto[]> {
-    const comments = await this.getCommentService.findAll();
-    return plainToInstance(CommentResponseDto, comments);
+  async findAll(
+    @Query() query: CommentListQueryDto,
+  ): Promise<CommentResponseDto[] | PaginatedResponseDto<CommentResponseDto>> {
+    const result = await this.getCommentService.findAll(query);
+    if (Array.isArray(result))
+      return plainToInstance(CommentResponseDto, result);
+    return {
+      data: plainToInstance(CommentResponseDto, result.data),
+      meta: result.meta,
+    };
   }
 
   @FeatureFlag(FeatureFlagKeys.HOME_COMMENTS)

@@ -5,6 +5,17 @@ import { IsNull, Repository } from "typeorm";
 import { IdeasPageEntity } from "../../ideas-page/entities/ideas-page.entity";
 import { IdeasSectionEntity } from "../entities/ideas-section.entity";
 import { IdeasSectionData } from "../types";
+import { IdeasSectionListQueryDto } from "../dto/ideas-section-list-query.dto";
+import { IdeasSectionSortBy } from "../enums/ideas-section-sort-by.enum";
+import { SortOrder } from "src/shared/enums/sort-order.enum";
+import { MediaTargetType } from "src/shared/media/media-target-type.enum";
+import {
+  createdRange,
+  escapeLike,
+  isPaginated,
+  normalizeSearch,
+  pageWindow,
+} from "src/shared/list-query/list-query.util";
 
 /**
  * Único ponto do módulo que fala TypeORM.
@@ -46,6 +57,52 @@ export class IdeasSectionRepository {
       relations: ["user"],
       order: { createdAt: "DESC" },
     });
+  }
+
+  /**
+   * Fila filtrada, ordenada e (com `page`) recortada no banco.
+   * Sem `sortBy` e sem `page` mantém a ordem legada (mais recentes primeiro).
+   */
+  async findUnattachedFiltered(
+    query: IdeasSectionListQueryDto = {},
+  ): Promise<{ items: IdeasSectionEntity[]; total: number }> {
+    const qb = this.sections
+      .createQueryBuilder("s")
+      .leftJoinAndSelect("s.user", "user")
+      .leftJoin("s.page", "page")
+      .where("page.id IS NULL");
+
+    const search = normalizeSearch(query.search);
+    if (search) {
+      qb.andWhere(
+        "(s.title LIKE :search ESCAPE '\\\\' OR s.description LIKE :search ESCAPE '\\\\' OR user.name LIKE :search ESCAPE '\\\\' OR user.email LIKE :search ESCAPE '\\\\')",
+        { search: `%${escapeLike(search)}%` },
+      );
+    }
+    if (query.mediaType) {
+      qb.andWhere(
+        "EXISTS (SELECT 1 FROM media_items mi WHERE mi.targetId = s.id AND mi.targetType = :mediaTarget AND mi.mediaType = :mediaType)",
+        {
+          mediaTarget: MediaTargetType.IdeasSection,
+          mediaType: query.mediaType,
+        },
+      );
+    }
+    const { from, to } = createdRange(query);
+    if (from) qb.andWhere("s.createdAt >= :createdFrom", { createdFrom: from });
+    if (to) qb.andWhere("s.createdAt <= :createdTo", { createdTo: to });
+
+    const column = query.sortBy ?? IdeasSectionSortBy.CREATED_AT;
+    qb.orderBy(`s.${column}`, query.order ?? SortOrder.DESC).addOrderBy(
+      "s.id",
+      "ASC",
+    );
+    if (isPaginated(query)) {
+      const { skip, take } = pageWindow(query);
+      qb.skip(skip).take(take);
+    }
+    const [items, total] = await qb.getManyAndCount();
+    return { items, total };
   }
 
   async findPageById(id: string): Promise<IdeasPageEntity | null> {

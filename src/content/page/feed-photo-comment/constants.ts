@@ -3,7 +3,7 @@ export const FEED_COMMENT_MIN_LENGTH = 1;
 export const FEED_COMMENT_DEFAULT_PAGE_SIZE = 10;
 export const FEED_COMMENT_MAX_PAGE_SIZE = 50;
 export const FEED_COMMENT_REASON_MAX_LENGTH = 500;
-export const FEED_COMMENT_SEARCH_MAX_LENGTH = 200;
+export const FEED_COMMENT_SEARCH_MAX_LENGTH = 120;
 
 /** Antispam: cada envio pendente vira e-mail para a coordenação. */
 export const FEED_COMMENT_RATE_WINDOW_MS = 60_000;

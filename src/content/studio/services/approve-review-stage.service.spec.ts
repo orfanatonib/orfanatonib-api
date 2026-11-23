@@ -1,5 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 
+import { StudioNotificationService } from "./studio-notification.service";
+
 import { ApproveReviewStageService } from "./approve-review-stage.service";
 import { ContentPackageEntity } from "../entities/content-package.entity";
 import { ContentReviewRepository } from "../repositories/content-review.repository";
@@ -16,6 +18,10 @@ describe("ApproveReviewStageService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ApproveReviewStageService,
+        {
+          provide: StudioNotificationService,
+          useValue: { approved: jest.fn() },
+        },
         {
           provide: ContentReviewRepository,
           useValue: mockRepository,

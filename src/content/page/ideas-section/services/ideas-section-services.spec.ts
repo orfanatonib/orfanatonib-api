@@ -50,6 +50,7 @@ describe("serviços de ideias compartilhadas", () => {
           useValue: {
             findById: jest.fn(),
             findUnattached: jest.fn(),
+            findUnattachedFiltered: jest.fn(),
             countUnattached: jest.fn(),
             findPageById: jest.fn(),
             createUnattached: jest.fn(),
@@ -318,17 +319,19 @@ describe("serviços de ideias compartilhadas", () => {
     });
 
     it("a listagem busca as mídias de todas as seções numa consulta", async () => {
-      repository.findUnattached.mockResolvedValue([
-        buildSection({ id: "s1" }),
-        buildSection({ id: "s2" }),
-      ]);
+      repository.findUnattachedFiltered.mockResolvedValue({
+        items: [buildSection({ id: "s1" }), buildSection({ id: "s2" })],
+        total: 2,
+      });
       mediaService.findBySections.mockResolvedValue([
         buildMediaEntity({ id: "m1", targetId: "s1" }),
         buildMediaEntity({ id: "m2", targetId: "s2" }),
         buildMediaEntity({ id: "m3", targetId: "s1" }),
       ]);
 
-      const response = await service.findUnattached();
+      const response = (await service.findUnattached()) as Array<{
+        medias: unknown[];
+      }>;
 
       expect(mediaService.findBySections).toHaveBeenCalledTimes(1);
       expect(response.map((item) => item.medias.length)).toEqual([2, 1]);
@@ -342,7 +345,10 @@ describe("serviços de ideias compartilhadas", () => {
     });
 
     it("sem seção alguma, não consulta mídia", async () => {
-      repository.findUnattached.mockResolvedValue([]);
+      repository.findUnattachedFiltered.mockResolvedValue({
+        items: [],
+        total: 0,
+      });
 
       expect(await service.findUnattached()).toEqual([]);
       expect(mediaService.findBySections).not.toHaveBeenCalled();

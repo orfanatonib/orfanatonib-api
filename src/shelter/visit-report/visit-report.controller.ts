@@ -11,11 +11,14 @@ import {
   UseGuards,
   ValidationPipe,
   Req,
+  Query,
   ParseUUIDPipe,
 } from "@nestjs/common";
 import { Request } from "express";
 import { CreateVisitReportDto } from "./dto/create-visit-report.dto";
 import { UpdateVisitReportDto } from "./dto/update-visit-report.dto";
+import { QueryVisitReportDto } from "./dto/query-visit-report.dto";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
 import { VisitReportResponseDto } from "./dto/visit-report-response.dto";
 import { CreateVisitReportService } from "./services/create-visit-report.service";
 import { ListVisitReportsService } from "./services/list-visit-reports.service";
@@ -60,10 +63,23 @@ export class VisitReportController {
   @FeatureFlag(FeatureFlagKeys.VISIT_REPORTS)
   @UseGuards(FeatureFlagGuard)
   @Get()
-  async findAll(@Req() req: Request): Promise<VisitReportResponseDto[]> {
+  async findAll(
+    @Req() req: Request,
+    @Query() query: QueryVisitReportDto,
+  ): Promise<
+    VisitReportResponseDto[] | PaginatedResponseDto<VisitReportResponseDto>
+  > {
     this.logger.log("Listing visit reports");
-    const reports = await this.listService.execute(req);
-    return reports.map((report) => VisitReportResponseDto.fromEntity(report));
+    const result = await this.listService.execute(req, query);
+    if (Array.isArray(result)) {
+      return result.map((report) => VisitReportResponseDto.fromEntity(report));
+    }
+    return {
+      data: result.data.map((report) =>
+        VisitReportResponseDto.fromEntity(report),
+      ),
+      meta: result.meta,
+    };
   }
 
   @FeatureFlag(FeatureFlagKeys.VISIT_REPORTS)

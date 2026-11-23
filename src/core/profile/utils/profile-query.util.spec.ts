@@ -48,4 +48,8 @@ describe("likeParam", () => {
     expect(likeParam("ana")).toBe("%ana%");
     expect(likeParam("a'b")).toBe("%a'b%");
   });
+
+  it("escapa curingas digitados: % e _ viram literais", () => {
+    expect(likeParam("50%_x")).toBe("%50\\%\\_x%");
+  });
 });

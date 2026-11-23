@@ -1,8 +1,17 @@
 import { Injectable } from "@nestjs/common";
-import { DataSource, EntityManager, Repository } from "typeorm";
+import { DataSource, EntityManager, In, Repository } from "typeorm";
 import { MediaItemEntity } from "src/shared/media/media-item/media-item.entity";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { VideosPage } from "../entities/video-page.entity";
+import {
+  PageListQueryDto,
+  PageListResult,
+  applyPageListFilters,
+  applyPageListOrder,
+  applyPageWindow,
+  sortByIds,
+} from "../../page-list-query";
+import { isPaginated } from "src/shared/list-query/list-query.util";
 
 @Injectable()
 export class VideosPageRepository extends Repository<VideosPage> {
@@ -17,11 +26,40 @@ export class VideosPageRepository extends Repository<VideosPage> {
     });
   }
 
-  async findAll(): Promise<VideosPage[]> {
-    return this.find({
+  /** Páginas filtradas, ordenadas e paginadas no banco; a rota (eager) só vem para a janela. */
+  async findList(
+    query: PageListQueryDto,
+    includeNonPublic: boolean,
+  ): Promise<PageListResult<VideosPage>> {
+    const columns = {
+      title: "name",
+      search: ["name", "description"],
+      publicColumn: true,
+    };
+    const filtered = applyPageListFilters(
+      this.createQueryBuilder("page"),
+      "page",
+      columns,
+      query,
+      includeNonPublic,
+    );
+    const idsQuery = applyPageWindow(
+      applyPageListOrder(
+        filtered.clone().select("page.id"),
+        "page",
+        columns.title,
+        query,
+      ),
+      query,
+    );
+    const ids = (await idsQuery.getMany()).map((row) => row.id);
+    const total = isPaginated(query) ? await filtered.getCount() : ids.length;
+    if (ids.length === 0) return { items: [], total };
+    const items = await this.find({
+      where: { id: In(ids) },
       relations: ["route"],
-      order: { id: "ASC" },
     });
+    return { items: sortByIds(items, ids), total };
   }
 
   async upsertPage(data: Partial<VideosPage>): Promise<VideosPage> {

@@ -4,6 +4,19 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-23 - SININHO COM CAIXA DE ENTRADA (ESTÚDIOS)
+
+- **FEAT (notificações)**: nova caixa de entrada persistida do sininho (`inbox_notifications`, módulo `communication/inbox`, migration gerada pelo CLI). Endpoints `GET /notifications/me` (paginado, `status=unread`, `type`), `/summary` (`unreadCount`, `total`, `revision`, `recentUnread`), `/:id`, `PATCH /:id/read` e `PATCH /read-all` (idempotentes). O destinatário vem sempre da sessão; aviso de outra pessoa é `404`. Atrás da flag `notification_center` (catálogo: 59 flags de interface).
+- **FEAT (Estúdios)**: TODOS os administradores ativos recebem aviso de: produção da categoria concluída, envio/reenvio para revisão, ajuste solicitado, item aprovado, categoria publicada e geração por IA concluída/falha (Estúdio Orfanato: `StudioNotificationService`; Estúdio Clubinho/`ai-lessons`: `LessonNotificationService`, ligado ao ponto único `LessonStudioSupportService.audit`). Sem e-mail: só sino.
+- **ROBUSTEZ**: o aviso nunca derruba a operação de origem (`CreateInboxNotificationService.notifyAdmins` não lança; falha vira log). Um evento = um aviso por admin (`UNIQUE (recipientId, dedupeKey)` + `INSERT IGNORE`), com a chave derivada do id da decisão/job/publicação.
+- **DOCS**: `docs/diagrams/database/inbox-notifications-schema` e `docs/diagrams/flow/inbox-notifications/notify-admins`.
+
+## [Unreleased] - 2026-11-22 - FLAG DA INTEGRAÇÃO FEIRA DE MINISTÉRIO
+
+- **REFACTOR (flag)**: a chave genérica `integration` virou `ministry_fair_integration` (enum `MINISTRY_FAIR_INTEGRATION`). O mapa `FEATURE_FLAG_RENAMES` copia `enabled` e `targetRoles` da chave antiga na subida da API (rollout em dois passos: a antiga fica no banco nesta versão e só entra em `RETIRED_FEATURE_FLAGS` na seguinte). Os seis handlers de `/integrations` passam a exigir a chave nova. `attendableType = "integration"` (vínculo do antecedente) é outro conceito e não mudou.
+- **FEAT (flag)**: nova `profile_management` ("Gestão de perfis") é o interruptor da tela de Perfis; `user_management` passa a ser só o de Usuários (nome e descrição ajustados). Quem pode abrir cada tela continua sendo regra de papel (rota e API), não da flag; o `targetRoles` da flag apenas acompanha os papéis que a tela atende. `GET /profiles` aceita qualquer uma de `user_management`, `profile_management` ou `leader_management`. Catálogo: 56 flags de interface.
+- **REFACTOR (flags de uma palavra)**: regra nova — toda chave do catálogo tem no mínimo duas palavras (teste em `catalog-sync.spec.ts`). `attendance` → `attendance_control` e `pagelas` → `pagelas_management` (enum `ATTENDANCE_CONTROL`/`PAGELAS_MANAGEMENT`), com cópia de estado e papéis por `FEATURE_FLAG_RENAMES` (`shelter-pagelas` agora gera `sheltered_area` + `pagelas_management`).
+
 ## [Unreleased] - 2026-11-22 - CONTATO (plano 38, cenários E2E)
 
 - **FIX**: `:id` malformado em `PATCH /contact/:id/read` e `DELETE /contact/:id` agora responde `400` (`ParseUUIDPipe`), como nas demais rotas.

@@ -35,6 +35,7 @@ import {
   DEFAULT_RETRY_POLICY,
   RetryPolicy,
 } from "../queue/provider-retry.utils";
+import { StudioNotificationService } from "./studio-notification.service";
 import { ContentGenerationRepository } from "../repositories/content-generation.repository";
 import { ContentStageContentRepository } from "../repositories/content-stage-content.repository";
 
@@ -57,6 +58,12 @@ interface GenerationRun {
   /** `false` quando o job já estava concluído/cancelado e foi só descartado (não é uma ação). */
   readonly ran: boolean;
   readonly errorCode: string | null;
+}
+
+/** Quem pediu e de qual pacote é o job que esta passada processou (preenchido assim que o job é carregado). */
+interface GenerationJobRef {
+  packageId?: string;
+  requestedById?: string;
 }
 
 /** Versículo da lição aprovada: fonte fechada dos visuais e da fixação do versículo. */
@@ -84,6 +91,7 @@ export class ProcessGenerationJobService {
     private readonly gateway: AiGenerationGateway,
     private readonly images: ProcessStageImagesService,
     private readonly requestImages: RequestStageImagesService,
+    private readonly notices: StudioNotificationService,
     @Optional() private readonly boundary?: ActionBoundaryService,
   ) {}
 
@@ -96,10 +104,11 @@ export class ProcessGenerationJobService {
    */
   async handle(queued: AiQueueJob): Promise<AiJobOutcome> {
     // Cada passada é uma ação auditada (job `content-studio-generation`, recurso = o job); só ids, nunca conteúdo.
+    const ref: GenerationJobRef = {};
     const run = await runAuditedJob<GenerationRun>(
       this.boundary,
       GENERATION_AUDIT_JOB_NAME,
-      () => this.execute(queued),
+      () => this.execute(queued, ref),
       (result) =>
         !result.ran
           ? null
@@ -112,10 +121,35 @@ export class ProcessGenerationJobService {
       },
       (result) => result.errorCode,
     );
+    await this.announce(queued.jobId, ref, run);
     return run.outcome;
   }
 
-  private async execute(queued: AiQueueJob): Promise<GenerationRun> {
+  /** Avisa os administradores do desfecho definitivo (concluído ou falha sem nova tentativa); nunca atrapalha a fila. */
+  private async announce(
+    jobId: string,
+    ref: GenerationJobRef,
+    run: GenerationRun,
+  ): Promise<void> {
+    if (!run.ran || !ref.packageId || run.outcome.status === "retry") return;
+    try {
+      await this.notices.generationFinished(
+        ref.packageId,
+        jobId,
+        run.outcome.status === "failed",
+        ref.requestedById,
+      );
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Aviso da geração ${jobId} não foi criado: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  private async execute(
+    queued: AiQueueJob,
+    ref: GenerationJobRef,
+  ): Promise<GenerationRun> {
     const job = await this.generations.startGenerationJob(
       queued.jobId,
       this.workerId,
@@ -123,6 +157,8 @@ export class ProcessGenerationJobService {
     );
     if (!job)
       return { outcome: { status: "done" }, ran: false, errorCode: null };
+    ref.packageId = job.packageId;
+    ref.requestedById = job.requestedById;
 
     let where = `job=${job.jobId} pacote=${job.packageId} etapa=${job.stageId}`;
     const startedAt = new Date().toISOString();

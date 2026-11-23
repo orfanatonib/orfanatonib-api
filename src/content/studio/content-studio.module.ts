@@ -2,9 +2,11 @@ import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { VisitMaterialsPageModule } from "src/content/page/visit-material-page/visit-material-page.module";
+import { InboxNotificationModule } from "src/communication/inbox/inbox-notification.module";
 import { AuthModule } from "src/core/auth/auth.module";
 import { FeatureFlagsModule } from "src/core/feature-flags/feature-flags.module";
 
+import { StudioNotificationService } from "./services/studio-notification.service";
 import { ContentStudioController } from "./content-studio.controller";
 import { AiJobQueuePort } from "./queue/ai-job-queue.port";
 import { AiUsageRepository } from "./ai-management/ai-usage.repository";
@@ -89,6 +91,7 @@ const FAKE_AI_DEFAULT_QUOTA_TOKENS = 500_000;
     FeatureFlagsModule,
     AiProviderSettingsModule,
     VisitMaterialsPageModule,
+    InboxNotificationModule,
     TypeOrmModule.forFeature([
       ContentAssetEntity,
       ContentGenerationJobEntity,
@@ -166,6 +169,7 @@ const FAKE_AI_DEFAULT_QUOTA_TOKENS = 500_000;
           : new InMemoryAiJobQueue();
       },
     },
+    StudioNotificationService,
     RequestStageChangesService,
     ResolveReviewCommentService,
     SaveStageContentService,

@@ -12,6 +12,7 @@ import {
   ValidationPipe,
   Get,
   Patch,
+  Query,
   UseGuards,
 } from "@nestjs/common";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
@@ -24,6 +25,8 @@ import { plainToInstance } from "class-transformer";
 import { validate } from "class-validator";
 
 import { CreateIdeasPageDto } from "./dto/create-ideas-page.dto";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import { IdeasPageListQueryDto } from "./dto/ideas-page-list-query.dto";
 import { IdeasPageResponseDto } from "./dto/ideas-page-response.dto";
 import { UpdateIdeasPageDto } from "./dto/update-ideas-page.dto";
 
@@ -156,8 +159,12 @@ export class IdeasPageController {
   @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard)
   @Get()
-  async findAll(): Promise<IdeasPageResponseDto[]> {
-    return this.getService.findAllPagesWithMedia();
+  async findAll(
+    @Query() query: IdeasPageListQueryDto,
+  ): Promise<
+    IdeasPageResponseDto[] | PaginatedResponseDto<IdeasPageResponseDto>
+  > {
+    return this.getService.findList(query);
   }
 
   @FeatureFlag(FeatureFlagKeys.IDEAS_SHARING)

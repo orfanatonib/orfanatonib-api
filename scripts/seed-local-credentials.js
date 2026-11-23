@@ -54,10 +54,10 @@ const FEATURE_FLAGS = [
   { key: 'shelter-address', name: 'Endereço do abrigo', description: 'Mostra o endereço dos abrigos (cartões, detalhes e formulário). Desligada, o endereço fica oculto.' },
   { key: 'shelter-pagelas', name: 'Pagelas', description: 'Libera as pagelas: registro semanal de cada acolhido por abrigo. Desligada, a tela de Pagelas e a API correspondente ficam bloqueadas.' },
   {
-    key: 'integration',
+    key: 'ministry_fair_integration',
     name: 'Integração Feira de Ministério',
     description:
-      'Integração Feira de Ministério: botão na Área do Membro e nos acolhidos, e a página de registro (admin e líder).',
+      'Integração Feira de Ministério: atalho na Área do Membro e a página de registro das integrações (admin e líder).',
   },
 ];
 

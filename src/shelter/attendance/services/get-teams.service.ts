@@ -6,6 +6,16 @@ import { AttendanceScopeService } from "./attendance-scope.service";
 import { AttendanceActor } from "../types";
 import { ATTENDANCE_MESSAGES } from "../constants";
 import { memberUsersOf } from "../mappers/attendance.mapper";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import {
+  isPaginated,
+  toPaginated,
+} from "src/shared/list-query/list-query.util";
+import {
+  ShelterTeamsQueryDto,
+  ShelterTeamsSortBy,
+  usesShelterTeamsFeatures,
+} from "../dto/shelter-teams-query.dto";
 import {
   LeaderTeamDto,
   ShelterTeamsMembersDto,
@@ -59,11 +69,39 @@ export class GetTeamsService {
     }));
   }
 
-  /** As mesmas equipes, agrupadas por abrigo e com os membros. */
+  /**
+   * As mesmas equipes, agrupadas por abrigo e com os membros. Com filtros (`search`, `shelterId`,
+   * `sortBy`, `order`, `page`) o banco filtra/ordena/recorta; com `page` vira `{ data, meta }`.
+   */
   async listLeaderTeamsWithMembers(
     actor: AttendanceActor,
-  ): Promise<ShelterTeamsMembersDto[]> {
-    const teams = await this.leaderTeams(actor);
+    query?: ShelterTeamsQueryDto,
+  ): Promise<
+    ShelterTeamsMembersDto[] | PaginatedResponseDto<ShelterTeamsMembersDto>
+  > {
+    if (!query || !usesShelterTeamsFeatures(query)) {
+      return this.groupByShelter(await this.leaderTeams(actor));
+    }
+
+    const scope = await this.scopeService.resolve(actor);
+    const filter = this.scopeService.leaderTeamFilter(scope);
+    const { teams, total } =
+      filter && filter.length === 0
+        ? { teams: [], total: 0 }
+        : await this.repository.findShelterPage(filter, query);
+    const data = this.groupByShelter(teams);
+    if (isPaginated(query)) {
+      return toPaginated(
+        data,
+        query,
+        total,
+        query.sortBy ?? ShelterTeamsSortBy.SHELTER_NAME,
+      );
+    }
+    return data;
+  }
+
+  private groupByShelter(teams: TeamEntity[]): ShelterTeamsMembersDto[] {
     const byShelter = new Map<string, ShelterTeamsMembersDto>();
 
     for (const team of teams) {

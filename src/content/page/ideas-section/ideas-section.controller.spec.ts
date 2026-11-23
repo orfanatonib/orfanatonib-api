@@ -140,7 +140,7 @@ describe("IdeasSectionController", () => {
   it("a listagem delega ao serviço de leitura", async () => {
     getService.findUnattached.mockResolvedValue([]);
 
-    expect(await controller.findUnattached()).toEqual([]);
+    expect(await controller.findUnattached({})).toEqual([]);
   });
 
   it("pendingCount delega ao serviço de leitura", async () => {

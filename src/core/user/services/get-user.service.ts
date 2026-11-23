@@ -53,6 +53,12 @@ export class GetUsersService {
     return admins.map((admin) => admin.email).filter((email) => !!email);
   }
 
+  /** Ids dos administradores ativos, para os avisos do sininho que vão a todos eles. */
+  async findAdminIds(): Promise<string[]> {
+    const admins = await this.userRepo.findAllAdmins();
+    return admins.map((admin) => admin.id);
+  }
+
   /** Igual a `findOne`, mas devolve `null` em vez de lançar. */
   async findByIdOrNull(id: string): Promise<UserEntity | null> {
     return this.userRepo.findById(id);

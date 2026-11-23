@@ -17,7 +17,13 @@ const page = (id: string, isPublic: boolean) =>
 
 function setup(loggedIn: boolean) {
   const pages = {
-    findAll: jest.fn(async () => [page("pub", true), page("priv", false)]),
+    // A visibilidade agora é aplicada pelo repositório (no banco): o dublê a reproduz.
+    findList: jest.fn(async (_query: unknown, includeNonPublic: boolean) => {
+      const items = includeNonPublic
+        ? [page("pub", true), page("priv", false)]
+        : [page("pub", true)];
+      return { items, total: items.length };
+    }),
     findById: jest.fn(async (id: string) =>
       id === "pub" ? page("pub", true) : page("priv", false),
     ),
@@ -57,5 +63,28 @@ describe("páginas de vídeo: visibilidade por sessão", () => {
     );
     expect((await svc.findOne("pub", false)).id).toBe("pub");
     expect((await svc.findOne("priv", true)).id).toBe("priv");
+  });
+});
+
+describe("páginas de vídeo: listagem com filtros e paginação", () => {
+  it("sem page devolve o array legado e repassa visibilidade e filtros ao repositório", async () => {
+    const svc = setup(true);
+    const result = await svc.findList(true, { search: "x", public: false });
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it("com page devolve { data, meta }; visitante só enxerga públicas", async () => {
+    const svc = setup(false);
+    const result = await svc.findList(false, { page: 1, limit: 5 });
+    expect(result).toMatchObject({
+      data: [{ id: "pub" }],
+      meta: {
+        page: 1,
+        limit: 5,
+        totalItems: 1,
+        totalPages: 1,
+        orderBy: "createdAt",
+      },
+    });
   });
 });

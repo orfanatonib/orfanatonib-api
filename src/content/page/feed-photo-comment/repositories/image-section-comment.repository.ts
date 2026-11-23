@@ -3,6 +3,17 @@ import { Brackets, DataSource, MoreThanOrEqual, Repository } from "typeorm";
 import { ImageSectionCommentEntity } from "../entities/image-section-comment.entity";
 import { FeedCommentStatus } from "../enums/feed-comment-status.enum";
 import { FeedCommentDecision } from "../types";
+import { FeedCommentSortBy } from "../enums/feed-comment-sort-by.enum";
+import { SortOrder } from "src/shared/enums/sort-order.enum";
+import { createdRange } from "src/shared/list-query/list-query.util";
+
+/** Filtros extras da fila: intervalo de criação e ordenação (padrão: mais recentes primeiro). */
+export interface FeedCommentModerationFilters {
+  createdFrom?: string;
+  createdTo?: string;
+  sortBy?: FeedCommentSortBy;
+  order?: SortOrder;
+}
 
 @Injectable()
 export class ImageSectionCommentRepository extends Repository<ImageSectionCommentEntity> {
@@ -105,6 +116,7 @@ export class ImageSectionCommentRepository extends Repository<ImageSectionCommen
     limit: number,
     status?: FeedCommentStatus,
     search?: string,
+    filters: FeedCommentModerationFilters = {},
   ): Promise<[ImageSectionCommentEntity[], number]> {
     const qb = this.createQueryBuilder("c")
       .innerJoinAndSelect("c.author", "author")
@@ -122,8 +134,13 @@ export class ImageSectionCommentRepository extends Repository<ImageSectionCommen
         { search: `%${search.replace(/[%_\\]/g, "\\$&")}%` },
       );
     }
+    const { from, to } = createdRange(filters);
+    if (from) qb.andWhere("c.createdAt >= :createdFrom", { createdFrom: from });
+    if (to) qb.andWhere("c.createdAt <= :createdTo", { createdTo: to });
+    const column = filters.sortBy ?? FeedCommentSortBy.CREATED_AT;
+    const order = filters.order ?? SortOrder.DESC;
     return qb
-      .orderBy("c.createdAt", "DESC")
+      .orderBy(`c.${column}`, order)
       .addOrderBy("c.id", "DESC")
       .skip((page - 1) * limit)
       .take(limit)

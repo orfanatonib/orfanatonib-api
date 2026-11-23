@@ -4,6 +4,15 @@ import { ILike, Repository } from "typeorm";
 import { InformativeEntity } from "./entities/informative.entity";
 import { RouteEntity } from "src/infrastructure/route/route-page.entity";
 import { QueryInformativeDto } from "./dto/query-informative.dto";
+import { SortOrder } from "src/shared/enums/sort-order.enum";
+import {
+  createdRange,
+  escapeLike,
+  isPaginated,
+  normalizeSearch,
+  pageWindow,
+} from "src/shared/list-query/list-query.util";
+import { InformativeSortBy } from "./enums/informative-sort-by.enum";
 
 @Injectable()
 export class InformativeRepository {
@@ -33,20 +42,44 @@ export class InformativeRepository {
   async findAllSorted(
     query?: QueryInformativeDto,
   ): Promise<InformativeEntity[]> {
-    const search = query?.search?.trim();
+    return (await this.findFiltered(query)).items;
+  }
+
+  /** Filtros, ordenação e (com `page`) recorte da página, tudo no banco. */
+  async findFiltered(
+    query: QueryInformativeDto = {},
+  ): Promise<{ items: InformativeEntity[]; total: number }> {
+    const qb = this.repo.createQueryBuilder("i");
+
+    const search = normalizeSearch(query.search);
     if (search) {
-      return this.repo.find({
-        where: [
-          { title: ILike(`%${search}%`) },
-          { description: ILike(`%${search}%`) },
-        ],
-        order: { createdAt: "DESC" },
-      });
+      qb.andWhere(
+        "(i.title LIKE :search ESCAPE '\\\\' OR i.description LIKE :search ESCAPE '\\\\')",
+        { search: `%${escapeLike(search)}%` },
+      );
     }
 
-    return this.repo.find({
-      order: { createdAt: "DESC" },
-    });
+    if (query.public !== undefined) {
+      qb.andWhere("i.public = :isPublic", { isPublic: query.public });
+    }
+
+    const { from, to } = createdRange(query);
+    if (from) qb.andWhere("i.createdAt >= :createdFrom", { createdFrom: from });
+    if (to) qb.andWhere("i.createdAt <= :createdTo", { createdTo: to });
+
+    const column = query.sortBy ?? InformativeSortBy.CREATED_AT;
+    qb.orderBy(`i.${column}`, query.order ?? SortOrder.DESC).addOrderBy(
+      "i.id",
+      "ASC",
+    );
+
+    if (isPaginated(query)) {
+      const { skip, take } = pageWindow(query);
+      qb.skip(skip).take(take);
+    }
+
+    const [items, total] = await qb.getManyAndCount();
+    return { items, total };
   }
 
   async findOneWithRelations(id: string): Promise<InformativeEntity | null> {

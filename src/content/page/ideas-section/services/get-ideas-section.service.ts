@@ -8,6 +8,13 @@ import {
   groupMediasByTarget,
   toIdeasSectionDto,
 } from "../mappers/ideas-section.mapper";
+import { IdeasSectionListQueryDto } from "../dto/ideas-section-list-query.dto";
+import { IdeasSectionSortBy } from "../enums/ideas-section-sort-by.enum";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import {
+  isPaginated,
+  toPaginated,
+} from "src/shared/list-query/list-query.util";
 import { IdeasSectionRepository } from "../repositories/ideas-section.repository";
 import { IdeasSectionMediaService } from "./ideas-section-media.service";
 
@@ -40,17 +47,32 @@ export class GetIdeasSectionService {
    * As mídias de todas as seções vêm numa consulta só — eram duas no total,
    * mas o agrupamento vivia no serviço; agora é do mapper.
    */
-  async findUnattached(): Promise<IdeasSectionResponseDto[]> {
-    const sections = await this.repository.findUnattached();
-    if (sections.length === 0) return [];
-
-    const medias = await this.mediaService.findBySections(
-      sections.map((section) => section.id),
+  async findUnattached(
+    query: IdeasSectionListQueryDto = {},
+  ): Promise<
+    IdeasSectionResponseDto[] | PaginatedResponseDto<IdeasSectionResponseDto>
+  > {
+    const { items: sections, total } =
+      await this.repository.findUnattachedFiltered(query);
+    const bySection = groupMediasByTarget(
+      sections.length === 0
+        ? []
+        : await this.mediaService.findBySections(
+            sections.map((section) => section.id),
+          ),
     );
-    const bySection = groupMediasByTarget(medias);
 
-    return sections.map((section) =>
+    const data = sections.map((section) =>
       toIdeasSectionDto(section, bySection.get(section.id) ?? []),
     );
+    if (isPaginated(query)) {
+      return toPaginated(
+        data,
+        query,
+        total,
+        query.sortBy ?? IdeasSectionSortBy.CREATED_AT,
+      );
+    }
+    return data;
   }
 }

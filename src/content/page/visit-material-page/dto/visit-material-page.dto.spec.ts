@@ -184,4 +184,33 @@ describe("QueryVisitMaterialsPageDto", () => {
       failingProperties(QueryVisitMaterialsPageDto, { testament: "GOSPEL" }),
     ).toContain("testament");
   });
+  it("accepts the paginated filters (search, public, currentWeek, dates, sort, page)", () => {
+    const strict = (payload: Record<string, unknown>): string[] =>
+      validateSync(plainToInstance(QueryVisitMaterialsPageDto, payload), {
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }).map((error) => error.property);
+
+    expect(
+      strict({
+        search: "visita",
+        public: "false",
+        currentWeek: "true",
+        testament: "OLD_TESTAMENT",
+        category: "BABY",
+        createdFrom: "2026-01-01",
+        createdTo: "2026-12-31",
+        sortBy: "testament",
+        order: "ASC",
+        page: "2",
+        limit: "50",
+      }),
+    ).toEqual([]);
+    expect(strict({ sortBy: "route" })).toContain("sortBy");
+    expect(strict({ currentWeek: "talvez" })).toContain("currentWeek");
+    expect(strict({ public: "talvez" })).toContain("public");
+    expect(strict({ page: "0" })).toContain("page");
+    expect(strict({ limit: "101" })).toContain("limit");
+    expect(strict({ createdFrom: "01-01-2026" })).toContain("createdFrom");
+  });
 });

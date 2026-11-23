@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  Query,
   Param,
   ParseUUIDPipe,
   Patch,
@@ -30,6 +31,8 @@ import { UpdateIdeasSectionDto } from "./dto/update-ideas-section.dto";
 import { AttachIdeasSectionService } from "./services/attach-ideas-section.service";
 import { CreateIdeasSectionService } from "./services/create-ideas-section.service";
 import { DeleteIdeasSectionService } from "./services/delete-ideas-section.service";
+import { IdeasSectionListQueryDto } from "./dto/ideas-section-list-query.dto";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
 import { GetIdeasSectionService } from "./services/get-ideas-section.service";
 import { UpdateIdeasSectionService } from "./services/update-ideas-section.service";
 import {
@@ -127,8 +130,12 @@ export class IdeasSectionController {
   @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(AdminRoleGuard)
-  async findUnattached(): Promise<IdeasSectionResponseDto[]> {
-    return this.getService.findUnattached();
+  async findUnattached(
+    @Query() query: IdeasSectionListQueryDto,
+  ): Promise<
+    IdeasSectionResponseDto[] | PaginatedResponseDto<IdeasSectionResponseDto>
+  > {
+    return this.getService.findUnattached(query);
   }
 
   /** Selo do painel do admin: quantas ideias aguardam publicação. */

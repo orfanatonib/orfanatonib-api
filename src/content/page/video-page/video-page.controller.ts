@@ -12,9 +12,12 @@ import {
   Logger,
   UseGuards,
   HttpException,
+  Query,
   Req,
 } from "@nestjs/common";
 import type { Request } from "express";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import { PageListQueryDto } from "../page-list-query";
 import { AnyFilesInterceptor } from "@nestjs/platform-express";
 
 /** Vídeos/imagens da página: até 10 arquivos de 200 MB. */
@@ -142,8 +145,16 @@ export class VideosPageController {
   })
   @UseGuards(FeatureFlagGuard)
   @Get()
-  async findAll(@Req() req: Request): Promise<VideosPageResponseDto[]> {
-    return this.getService.findAll(await this.getService.canSeeNonPublic(req));
+  async findAll(
+    @Req() req: Request,
+    @Query() query: PageListQueryDto,
+  ): Promise<
+    VideosPageResponseDto[] | PaginatedResponseDto<VideosPageResponseDto>
+  > {
+    return this.getService.findList(
+      await this.getService.canSeeNonPublic(req),
+      query,
+    );
   }
 
   @FeatureFlag({

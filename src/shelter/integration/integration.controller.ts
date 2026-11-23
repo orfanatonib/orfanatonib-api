@@ -52,7 +52,7 @@ export class IntegrationController {
     private readonly deleteService: DeleteIntegrationService,
   ) {}
 
-  @FeatureFlag(FeatureFlagKeys.INTEGRATION)
+  @FeatureFlag(FeatureFlagKeys.MINISTRY_FAIR_INTEGRATION)
   @UseGuards(FeatureFlagGuard)
   @Post()
   @UseInterceptors(AnyFilesInterceptor(INTEGRATION_UPLOAD_OPTIONS))
@@ -107,7 +107,7 @@ export class IntegrationController {
     }
   }
 
-  @FeatureFlag(FeatureFlagKeys.INTEGRATION)
+  @FeatureFlag(FeatureFlagKeys.MINISTRY_FAIR_INTEGRATION)
   @UseGuards(FeatureFlagGuard)
   @Get()
   async findAllPaginated(
@@ -116,14 +116,14 @@ export class IntegrationController {
     return this.getService.findAllPaginated(query);
   }
 
-  @FeatureFlag(FeatureFlagKeys.INTEGRATION)
+  @FeatureFlag(FeatureFlagKeys.MINISTRY_FAIR_INTEGRATION)
   @UseGuards(FeatureFlagGuard)
   @Get("simple")
   async findAll(): Promise<IntegrationResponseDto[]> {
     return this.getService.findAll();
   }
 
-  @FeatureFlag(FeatureFlagKeys.INTEGRATION)
+  @FeatureFlag(FeatureFlagKeys.MINISTRY_FAIR_INTEGRATION)
   @UseGuards(FeatureFlagGuard)
   @Get(":id")
   async findOne(
@@ -132,7 +132,7 @@ export class IntegrationController {
     return this.getService.findOne(id);
   }
 
-  @FeatureFlag(FeatureFlagKeys.INTEGRATION)
+  @FeatureFlag(FeatureFlagKeys.MINISTRY_FAIR_INTEGRATION)
   @UseGuards(FeatureFlagGuard)
   @Put(":id")
   @UseInterceptors(AnyFilesInterceptor(INTEGRATION_UPLOAD_OPTIONS))
@@ -188,7 +188,7 @@ export class IntegrationController {
     }
   }
 
-  @FeatureFlag(FeatureFlagKeys.INTEGRATION)
+  @FeatureFlag(FeatureFlagKeys.MINISTRY_FAIR_INTEGRATION)
   @UseGuards(FeatureFlagGuard)
   @Delete(":id")
   async remove(@Param("id", ParseUUIDPipe) id: string): Promise<void> {

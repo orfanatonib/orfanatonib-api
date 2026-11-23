@@ -15,6 +15,7 @@ import {
   LeaderSimpleListDto,
   toLeaderSimple,
 } from "../dto/leader-simple-list.dto";
+import { createdRange } from "src/shared/list-query/list-query.util";
 import { LeaderProfilesQueryDto } from "../dto/leader-profiles.query.dto";
 
 type SortDir = "ASC" | "DESC";
@@ -108,7 +109,26 @@ export class LeaderProfilesRepository {
       teamId,
       teamName,
       hasTeam,
+      shelterId,
+      createdFrom,
+      createdTo,
     } = params;
+
+    if (shelterId) {
+      qb.andWhere(
+        `EXISTS (
+          SELECT 1 FROM leader_teams lt
+          JOIN teams t ON t.id = lt.team_id
+          WHERE lt.leader_id = leader.id AND t.shelter_id = :filterShelterId
+        )`,
+        { filterShelterId: shelterId },
+      );
+    }
+
+    const { from, to } = createdRange({ createdFrom, createdTo });
+    if (from)
+      qb.andWhere("leader.createdAt >= :createdFrom", { createdFrom: from });
+    if (to) qb.andWhere("leader.createdAt <= :createdTo", { createdTo: to });
 
     if (leaderSearchString?.trim()) {
       const like = `%${leaderSearchString.trim().toLowerCase()}%`;

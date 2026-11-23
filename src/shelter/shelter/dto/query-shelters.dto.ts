@@ -1,5 +1,18 @@
 import { Type } from "class-transformer";
-import { IsInt, IsOptional, Min, IsString, IsIn } from "class-validator";
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  Min,
+  Max,
+  MaxLength,
+  IsString,
+  IsIn,
+} from "class-validator";
+import {
+  LIST_QUERY_MAX_LIMIT,
+  LIST_QUERY_SEARCH_MAX,
+} from "src/shared/list-query/list-query.dto";
 
 export class QuerySheltersDto {
   @IsOptional()
@@ -12,6 +25,9 @@ export class QuerySheltersDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(LIST_QUERY_MAX_LIMIT, {
+    message: `limit aceita no máximo ${LIST_QUERY_MAX_LIMIT}`,
+  })
   limit?: number = 10;
 
   @IsOptional()
@@ -24,9 +40,35 @@ export class QuerySheltersDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(LIST_QUERY_SEARCH_MAX)
   searchString?: string;
 
   @IsOptional()
   @IsString()
   shelterName?: string;
+
+  /** Trecho da cidade do endereço (LIKE no banco). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  city?: string;
+
+  /** Trecho do estado (UF) do endereço (LIKE no banco). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
+  state?: string;
+
+  /** Início do intervalo de criação (inclusivo), `AAAA-MM-DD`. */
+  @IsOptional()
+  @IsDateString(
+    { strict: true },
+    { message: "createdFrom deve ser AAAA-MM-DD" },
+  )
+  createdFrom?: string;
+
+  /** Fim do intervalo de criação (inclusivo, dia inteiro), `AAAA-MM-DD`. */
+  @IsOptional()
+  @IsDateString({ strict: true }, { message: "createdTo deve ser AAAA-MM-DD" })
+  createdTo?: string;
 }

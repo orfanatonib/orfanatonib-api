@@ -19,10 +19,15 @@ const page = (id: string, isPublic: boolean) =>
 
 function setup(loggedIn: boolean) {
   const pages = {
-    findAllWithSections: jest.fn(async () => [
-      page("pub", true),
-      page("priv", false),
-    ]),
+    // A visibilidade agora é aplicada pelo repositório (no banco): o dublê a reproduz.
+    findListWithSections: jest.fn(
+      async (_query: unknown, includeNonPublic: boolean) => {
+        const items = includeNonPublic
+          ? [page("pub", true), page("priv", false)]
+          : [page("pub", true)];
+        return { items, total: items.length };
+      },
+    ),
     findByIdWithSections: jest.fn(async (id: string) =>
       id === "pub" ? page("pub", true) : page("priv", false),
     ),
@@ -127,5 +132,55 @@ describe("ImageController: paginação de seções sanitizada", () => {
       expectedLimit,
       req,
     );
+  });
+});
+
+describe("galerias: listagem com filtros e paginação", () => {
+  it("sem page devolve o array legado e repassa visibilidade e filtros ao repositório", async () => {
+    const { service, pages } = setup(true);
+    const query = { search: "x", public: true };
+    const result = await service.findList(true, query);
+    expect(Array.isArray(result)).toBe(true);
+    expect(pages.findListWithSections).toHaveBeenCalledWith(query, true);
+  });
+
+  it("com page devolve { data, meta } com o total vindo do banco", async () => {
+    const { service, pages } = setup(true);
+    pages.findListWithSections.mockResolvedValueOnce({
+      items: [page("pub", true)],
+      total: 25,
+    } as never);
+    const result = await service.findList(true, {
+      page: 2,
+      limit: 10,
+      sortBy: "title" as never,
+    });
+    expect(result).toMatchObject({
+      data: [{ id: "pub" }],
+      meta: {
+        page: 2,
+        limit: 10,
+        totalItems: 25,
+        totalPages: 3,
+        orderBy: "title",
+      },
+    });
+  });
+
+  it("visitante pedindo public=false recebe vazio, sem consultar mídia", async () => {
+    const { service, pages } = setup(false);
+    pages.findListWithSections.mockResolvedValueOnce({
+      items: [],
+      total: 0,
+    } as never);
+    const result = await service.findList(false, { public: false, page: 1 });
+    expect(pages.findListWithSections).toHaveBeenCalledWith(
+      { public: false, page: 1 },
+      false,
+    );
+    expect(result).toMatchObject({
+      data: [],
+      meta: { totalItems: 0, totalPages: 1 },
+    });
   });
 });

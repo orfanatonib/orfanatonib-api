@@ -32,9 +32,11 @@ describe("ResolveReviewCommentService", () => {
       resolveReviewComment: jest.fn().mockResolvedValue({ id: "p1" }),
     };
     const exports = { pregenerateStagePdfs: jest.fn() };
+    const notices = { resolvedAndReturned: jest.fn() };
     const svc = new ResolveReviewCommentService(
       packages as never,
       exports as never,
+      notices as never,
     );
     await expect(svc.execute("p1", "c1", "msg", "u1")).resolves.toEqual({
       id: "p1",
@@ -61,9 +63,11 @@ describe("ResolveReviewCommentService", () => {
       }),
     };
     const exports = { pregenerateStagePdfs: jest.fn() };
+    const notices = { resolvedAndReturned: jest.fn() };
     await new ResolveReviewCommentService(
       packages as never,
       exports as never,
+      notices as never,
     ).execute("p1", "c1", "msg", "u1");
     expect(exports.pregenerateStagePdfs).toHaveBeenCalledWith("p1", ["s1"]);
   });
@@ -78,6 +82,7 @@ describe("ResolveReviewCommentService", () => {
       new ResolveReviewCommentService(
         packages as never,
         { pregenerateStagePdfs: jest.fn() } as never,
+        { resolvedAndReturned: jest.fn() } as never,
       ).execute("p", "c", "msg", "u"),
     ).rejects.toThrow("inexistente");
   });

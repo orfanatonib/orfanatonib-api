@@ -28,7 +28,7 @@ const media = (targetId: string) =>
   }) as never;
 
 function setup() {
-  const repo = { findAllSorted: jest.fn(), findOneById: jest.fn() };
+  const repo = { findFiltered: jest.fn(), findOneById: jest.fn() };
   const media = {
     findManyMediaItemsByTargets: jest.fn(),
     findMediaItemsByTarget: jest.fn(),
@@ -43,14 +43,17 @@ function setup() {
 describe("GetDocumentService", () => {
   it("lista sem documentos não consulta mídia", async () => {
     const { svc, repo, media: m } = setup();
-    repo.findAllSorted.mockResolvedValue([]);
+    repo.findFiltered.mockResolvedValue({ items: [], total: 0 });
     expect(await svc.findAll()).toEqual([]);
     expect(m.findManyMediaItemsByTargets).not.toHaveBeenCalled();
   });
 
   it("lista associa cada mídia ao seu documento em UMA consulta", async () => {
     const { svc, repo, media: m } = setup();
-    repo.findAllSorted.mockResolvedValue([doc("a"), doc("b")]);
+    repo.findFiltered.mockResolvedValue({
+      items: [doc("a"), doc("b")],
+      total: 2,
+    });
     m.findManyMediaItemsByTargets.mockResolvedValue([media("b")]);
     const out = await svc.findAll({ search: "x" } as never);
     expect(m.findManyMediaItemsByTargets).toHaveBeenCalledTimes(1);
@@ -61,7 +64,7 @@ describe("GetDocumentService", () => {
 
   it("falha do repositório vira 500 genérico (sem vazar detalhe)", async () => {
     const { svc, repo } = setup();
-    repo.findAllSorted.mockRejectedValue(new Error("db secret"));
+    repo.findFiltered.mockRejectedValue(new Error("db secret"));
     await expect(svc.findAll()).rejects.toBeInstanceOf(
       InternalServerErrorException,
     );

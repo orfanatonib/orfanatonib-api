@@ -29,6 +29,7 @@ describe("ideias compartilhadas: valores padrão e ramos de borda", () => {
           useValue: {
             findById: jest.fn().mockResolvedValue(buildSection()),
             findUnattached: jest.fn(),
+            findUnattachedFiltered: jest.fn(),
             findPageById: jest.fn().mockResolvedValue(buildPage()),
             createUnattached: jest.fn().mockResolvedValue(buildSection()),
             updateData: jest.fn().mockResolvedValue(buildSection()),
@@ -102,12 +103,17 @@ describe("ideias compartilhadas: valores padrão e ramos de borda", () => {
   });
 
   it("listar: seção sem nenhuma mídia sai com lista vazia", async () => {
-    repository.findUnattached.mockResolvedValue([buildSection({ id: "s1" })]);
+    repository.findUnattachedFiltered.mockResolvedValue({
+      items: [buildSection({ id: "s1" })],
+      total: 1,
+    });
     media.findBySections.mockResolvedValue([
       buildMediaEntity({ id: "m9", targetId: "outra" }),
     ]);
 
-    const [only] = await moduleRef.get(GetIdeasSectionService).findUnattached();
+    const [only] = (await moduleRef
+      .get(GetIdeasSectionService)
+      .findUnattached()) as Array<{ medias: unknown[] }>;
 
     expect(only.medias).toEqual([]);
   });

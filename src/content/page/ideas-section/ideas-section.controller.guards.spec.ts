@@ -21,7 +21,14 @@ describe("IdeasSectionController: guards de papel", () => {
     },
   );
 
-  it.each(["findUnattached", "pendingCount", "findOne", "update", "attach", "remove"] as const)(
+  it.each([
+    "findUnattached",
+    "pendingCount",
+    "findOne",
+    "update",
+    "attach",
+    "remove",
+  ] as const)(
     "%s exige admin (a fila de ideias traz nome, e-mail e telefone dos autores)",
     (handler) => {
       expect(guardsOf(IdeasSectionController.prototype[handler])).toContain(

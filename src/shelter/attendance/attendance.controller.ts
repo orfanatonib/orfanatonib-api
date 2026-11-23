@@ -14,6 +14,8 @@ import { AuthenticatedRequest } from "src/core/auth/auth.types";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminOrLeaderRoleGuard } from "src/core/auth/guards/role-guard";
 
+import { PaginatedResponseDto as SharedPaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import { ShelterTeamsQueryDto } from "./dto/shelter-teams-query.dto";
 import { RegisterAttendanceDto } from "./dto/register-attendance.dto";
 import { RegisterTeamAttendanceDto } from "./dto/register-team-attendance.dto";
 import {
@@ -56,7 +58,7 @@ export class AttendanceController {
     private readonly statsService: GetStatsService,
   ) {}
 
-  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE_CONTROL)
   @UseGuards(FeatureFlagGuard)
   @Post("register")
   registerAttendance(
@@ -66,7 +68,7 @@ export class AttendanceController {
     return this.registerService.registerOwn(toAttendanceActor(request), dto);
   }
 
-  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE_CONTROL)
   @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Post("register/team")
@@ -77,7 +79,7 @@ export class AttendanceController {
     return this.registerService.registerTeam(toAttendanceActor(request), dto);
   }
 
-  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE_CONTROL)
   @UseGuards(FeatureFlagGuard)
   @Get("pending/all")
   getAllPendings(
@@ -86,7 +88,7 @@ export class AttendanceController {
     return this.pendingsService.execute(toAttendanceActor(request), new Date());
   }
 
-  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE_CONTROL)
   @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Get("team/:teamId/members")
@@ -100,7 +102,7 @@ export class AttendanceController {
     );
   }
 
-  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE_CONTROL)
   @UseGuards(FeatureFlagGuard)
   @Get("team/:teamId/schedules")
   listTeamSchedules(
@@ -115,7 +117,7 @@ export class AttendanceController {
     );
   }
 
-  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE_CONTROL)
   @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Get("leader/teams")
@@ -125,19 +127,24 @@ export class AttendanceController {
     return this.teamsService.listLeaderTeams(toAttendanceActor(request));
   }
 
-  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE_CONTROL)
   @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Get("leader/teams/members")
   listLeaderTeamsWithMembers(
     @Req() request: AuthenticatedRequest,
-  ): Promise<ShelterTeamsMembersDto[]> {
+    @Query() query: ShelterTeamsQueryDto,
+  ): Promise<
+    | ShelterTeamsMembersDto[]
+    | SharedPaginatedResponseDto<ShelterTeamsMembersDto>
+  > {
     return this.teamsService.listLeaderTeamsWithMembers(
       toAttendanceActor(request),
+      query,
     );
   }
 
-  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE_CONTROL)
   @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Get("sheets/hierarchical")
@@ -151,7 +158,7 @@ export class AttendanceController {
     );
   }
 
-  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE_CONTROL)
   @UseGuards(FeatureFlagGuard)
   @Get("records")
   listAttendanceRecords(
@@ -161,7 +168,7 @@ export class AttendanceController {
     return this.recordsService.execute(toAttendanceActor(request), filters);
   }
 
-  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE_CONTROL)
   @UseGuards(FeatureFlagGuard)
   @Get("stats")
   getAttendanceStats(
@@ -175,7 +182,7 @@ export class AttendanceController {
     });
   }
 
-  @FeatureFlag(FeatureFlagKeys.ATTENDANCE)
+  @FeatureFlag(FeatureFlagKeys.ATTENDANCE_CONTROL)
   @UseGuards(FeatureFlagGuard)
   @UseGuards(AdminOrLeaderRoleGuard)
   @Get("leader/stats/team/:teamId")

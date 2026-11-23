@@ -34,6 +34,7 @@ function setup() {
     findByShelterId: jest.fn(async () => [report("r1")]),
     findAll: jest.fn(async () => [report("r1")]),
     findByLeaderId: jest.fn(async () => [report("r1")]),
+    findFiltered: jest.fn(async () => ({ items: [report("r1")], total: 1 })),
     isLeaderOfTeam: jest.fn(async (userId: string) => userId === "l1"),
     create: jest.fn(async () => report()),
     update: jest.fn(async () => undefined),
@@ -128,24 +129,56 @@ describe("escopo dos relatórios de visita", () => {
   describe("listagem", () => {
     const reqWith = (query: Record<string, string>) => ({ query }) as never;
 
-    it("filtro por teamId/shelterId/scheduleId nunca amplia o escopo do líder", async () => {
+    it("o ator vira escopo do repositório: líder com o id dele, admin sem restrição de equipe", async () => {
       const { list, auth, reports } = setup();
       auth.tryGetPayload.mockResolvedValue({ sub: "l2", role: "leader" });
-      expect(await list.execute(reqWith({ teamId: "t1" }))).toEqual([]);
-      expect(await list.execute(reqWith({ shelterId: "sh" }))).toEqual([]);
-      reports.findByScheduleId.mockResolvedValue(report());
-      expect(await list.execute(reqWith({ scheduleId: "s1" }))).toEqual([]);
+      await list.execute(reqWith({}), { teamId: "t1", shelterId: "sh" });
+      expect(reports.findFiltered).toHaveBeenLastCalledWith(
+        { role: "leader", userId: "l2" },
+        { teamId: "t1", shelterId: "sh" },
+      );
+      auth.tryGetPayload.mockResolvedValue({ sub: "a", role: "admin" });
+      await list.execute(reqWith({}));
+      expect(reports.findFiltered).toHaveBeenLastCalledWith(
+        { role: "admin", userId: "a" },
+        {},
+      );
     });
 
-    it("líder dono vê; admin vê; membro/sem papel recebe lista vazia", async () => {
-      const { list, auth } = setup();
-      auth.tryGetPayload.mockResolvedValue({ sub: "l1", role: "leader" });
-      expect(await list.execute(reqWith({ teamId: "t1" }))).toHaveLength(1);
+    it("membro/sem papel entra no repositório sem papel (lista vazia, decidida lá)", async () => {
+      const { list, auth, reports } = setup();
+      auth.tryGetPayload.mockResolvedValue({ sub: "m", role: "member" });
+      await list.execute(reqWith({}));
+      expect(reports.findFiltered).toHaveBeenLastCalledWith(
+        { role: null, userId: "m" },
+        {},
+      );
+    });
+
+    it("sem page devolve o array; com page devolve { data, meta } com o total filtrado", async () => {
+      const { list, auth, reports } = setup();
       auth.tryGetPayload.mockResolvedValue({ sub: "a", role: "admin" });
       expect(await list.execute(reqWith({}))).toHaveLength(1);
-      auth.tryGetPayload.mockResolvedValue({ sub: "m", role: "member" });
-      expect(await list.execute(reqWith({ teamId: "t1" }))).toEqual([]);
-      expect(await list.execute(reqWith({}))).toEqual([]);
+      reports.findFiltered.mockResolvedValue({
+        items: [report("r1")],
+        total: 25,
+      });
+      const page = (await list.execute(reqWith({}), {
+        page: 2,
+        limit: 12,
+        sortBy: "shelter",
+      } as never)) as unknown as {
+        data: unknown[];
+        meta: Record<string, unknown>;
+      };
+      expect(page.data).toHaveLength(1);
+      expect(page.meta).toMatchObject({
+        page: 2,
+        limit: 12,
+        totalItems: 25,
+        totalPages: 3,
+        orderBy: "shelter",
+      });
     });
   });
 });

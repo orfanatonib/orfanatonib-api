@@ -5,6 +5,9 @@ import { VisitMaterialsPageRepository } from "./visit-material-page.repository";
 import { VisitMaterialsPageEntity } from "../entities/visit-material-page.entity";
 import { TestamentType } from "../enums/testament-type.enum";
 import { VisitMaterialCategory } from "../enums/visit-material-category.enum";
+import { VisitMaterialSortBy } from "../enums/visit-material-sort-by.enum";
+import { createdRange } from "src/shared/list-query/list-query.util";
+import { SortOrder } from "src/shared/enums/sort-order.enum";
 import { buildPageEntity } from "../visit-material-page.fixtures";
 
 type WhereCall = [string, Record<string, unknown>?];
@@ -14,11 +17,17 @@ const createQueryBuilderMock = () => {
     leftJoinAndSelect: jest.fn(),
     andWhere: jest.fn(),
     orderBy: jest.fn(),
-    getMany: jest.fn().mockResolvedValue([buildPageEntity()]),
+    addOrderBy: jest.fn(),
+    skip: jest.fn(),
+    take: jest.fn(),
+    getManyAndCount: jest.fn().mockResolvedValue([[buildPageEntity()], 1]),
   };
   builder.leftJoinAndSelect.mockReturnValue(builder);
   builder.andWhere.mockReturnValue(builder);
   builder.orderBy.mockReturnValue(builder);
+  builder.addOrderBy.mockReturnValue(builder);
+  builder.skip.mockReturnValue(builder);
+  builder.take.mockReturnValue(builder);
   return builder;
 };
 
@@ -112,6 +121,55 @@ describe("VisitMaterialsPageRepository", () => {
       expect(clause?.[0]).toContain("page.subtitle");
       expect(clause?.[0]).toContain("page.description");
       expect(clause?.[1]).toEqual({ searchString: "%visita%" });
+    });
+
+    it("search wins over the legacy searchString and escapes LIKE wildcards", async () => {
+      await repository.findAll({ search: "a_b", searchString: "velho" });
+
+      const clause = clauseMatching("page.title");
+      expect(clause?.[0]).toContain("ESCAPE");
+      expect(clause?.[1]).toEqual({ searchString: "%a\\_b%" });
+    });
+
+    it("filters by public (route), currentWeek and the creation range", async () => {
+      await repository.findAll({
+        public: false,
+        currentWeek: true,
+        createdFrom: "2026-01-01",
+        createdTo: "2026-01-31",
+      });
+
+      expect(clauseMatching("route.public")?.[1]).toEqual({ isPublic: false });
+      expect(clauseMatching("page.currentWeek")?.[1]).toEqual({
+        currentWeek: true,
+      });
+      expect(clauseMatching("page.createdAt >=")?.[1]).toEqual({
+        createdFrom: createdRange({ createdFrom: "2026-01-01" }).from,
+      });
+      expect(clauseMatching("page.createdAt <=")?.[1]).toEqual({
+        createdTo: createdRange({ createdTo: "2026-01-31" }).to,
+      });
+    });
+
+    it("sorts by the whitelisted column with id as tiebreaker, and paginates in the database", async () => {
+      const result = await repository.findFiltered({
+        sortBy: VisitMaterialSortBy.TITLE,
+        order: SortOrder.ASC,
+        page: 3,
+        limit: 5,
+      });
+
+      expect(queryBuilder.orderBy).toHaveBeenCalledWith("page.title", "ASC");
+      expect(queryBuilder.addOrderBy).toHaveBeenCalledWith("page.id", "ASC");
+      expect(queryBuilder.skip).toHaveBeenCalledWith(10);
+      expect(queryBuilder.take).toHaveBeenCalledWith(5);
+      expect(result.total).toBe(1);
+    });
+
+    it("does not slice without page", async () => {
+      await repository.findFiltered({});
+
+      expect(queryBuilder.take).not.toHaveBeenCalled();
     });
 
     it("ignores a blank search", async () => {

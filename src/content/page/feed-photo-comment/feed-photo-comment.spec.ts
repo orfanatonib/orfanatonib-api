@@ -351,6 +351,7 @@ describe("GetFeedCommentService", () => {
       10,
       FeedCommentStatus.PENDING,
       "oi",
+      expect.objectContaining({}),
     );
     expect(out.counts).toEqual({ pending: 1, approved: 2, rejected: 3 });
     expect(out.items[0].post?.caption).toBe("Visita");

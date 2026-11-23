@@ -1,6 +1,15 @@
 import { Injectable } from "@nestjs/common";
-import { DataSource, Repository } from "typeorm";
+import { DataSource, In, Repository } from "typeorm";
 import { ImagePageEntity } from "../entities/image-page.entity";
+import {
+  PageListQueryDto,
+  PageListResult,
+  applyPageListFilters,
+  applyPageListOrder,
+  applyPageWindow,
+  sortByIds,
+} from "../../page-list-query";
+import { isPaginated } from "src/shared/list-query/list-query.util";
 
 @Injectable()
 export class ImagePageRepository extends Repository<ImagePageEntity> {
@@ -22,11 +31,43 @@ export class ImagePageRepository extends Repository<ImagePageEntity> {
     });
   }
 
-  async findAllWithSections(): Promise<ImagePageEntity[]> {
-    return this.find({
+  /**
+   * Galerias filtradas, ordenadas e paginadas no banco. Primeiro só os ids da janela;
+   * seções (e a rota eager) são carregadas apenas para eles.
+   */
+  async findListWithSections(
+    query: PageListQueryDto,
+    includeNonPublic: boolean,
+  ): Promise<PageListResult<ImagePageEntity>> {
+    const columns = {
+      title: "name",
+      search: ["name", "description"],
+      publicColumn: true,
+    };
+    const filtered = applyPageListFilters(
+      this.createQueryBuilder("page"),
+      "page",
+      columns,
+      query,
+      includeNonPublic,
+    );
+    const idsQuery = applyPageWindow(
+      applyPageListOrder(
+        filtered.clone().select("page.id"),
+        "page",
+        columns.title,
+        query,
+      ),
+      query,
+    );
+    const ids = (await idsQuery.getMany()).map((row) => row.id);
+    const total = isPaginated(query) ? await filtered.getCount() : ids.length;
+    if (ids.length === 0) return { items: [], total };
+    const items = await this.find({
+      where: { id: In(ids) },
       relations: ["sections"],
-      order: { id: "ASC" },
     });
+    return { items: sortByIds(items, ids), total };
   }
 
   async upsertGallery(

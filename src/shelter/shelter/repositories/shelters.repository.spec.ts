@@ -244,6 +244,36 @@ describe("SheltersRepository", () => {
       expect(clause?.[0]).toContain("member_profiles");
     });
 
+    it("filters by city and state with escaped LIKE and by creation range", async () => {
+      await repository.findAllPaginated(
+        buildQuerySheltersDto({
+          city: " Man_aus ",
+          state: "AM",
+          createdFrom: "2026-01-10",
+          createdTo: "2026-01-12",
+        }),
+      );
+
+      expect(clauseMatching("address.city) LIKE")?.[1]).toEqual({
+        cityTerm: "%Man\\_aus%",
+      });
+      expect(clauseMatching("address.state) LIKE")?.[1]).toEqual({
+        stateTerm: "%AM%",
+      });
+      expect(clauseMatching("shelter.createdAt >=")?.[1]).toEqual({
+        createdFrom: new Date("2026-01-10T00:00:00.000"),
+      });
+      expect(clauseMatching("shelter.createdAt <=")?.[1]).toEqual({
+        createdTo: new Date("2026-01-12T23:59:59.999"),
+      });
+    });
+
+    it("breaks ties by id so pages never repeat a shelter", async () => {
+      await repository.findAllPaginated(buildQuerySheltersDto());
+
+      expect(queryBuilder.addOrderBy).toHaveBeenCalledWith("shelter.id", "ASC");
+    });
+
     it("ignores a blank search string", async () => {
       await repository.findAllPaginated(
         buildQuerySheltersDto({ searchString: "   ", shelterName: "  " }),

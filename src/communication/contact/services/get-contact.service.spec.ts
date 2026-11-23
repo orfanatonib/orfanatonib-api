@@ -1,9 +1,10 @@
+import { InternalServerErrorException } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { GetContactService } from "./get-contact.service";
 import { ContactRepository } from "../contact.repository";
 
 describe("GetContactService", () => {
-  const repository = { getAll: jest.fn(), countUnread: jest.fn() };
+  const repository = { findFiltered: jest.fn(), countUnread: jest.fn() };
   let service: GetContactService;
 
   beforeEach(async () => {
@@ -19,14 +20,23 @@ describe("GetContactService", () => {
     service = moduleRef.get(GetContactService);
   });
 
-  it("returns all contacts", async () => {
-    const contacts = [{ id: "1", name: "Maria" }];
-    repository.getAll.mockResolvedValue(contacts);
+  it("returns the filtered contacts and the filtered total", async () => {
+    const items = [{ id: "1", name: "Maria" }];
+    repository.findFiltered.mockResolvedValue({ items, total: 7 });
+    const query = { read: false, page: 2 } as never;
 
-    const result = await service.getAllContacts();
+    const result = await service.findFiltered(query);
 
-    expect(result).toEqual(contacts);
-    expect(repository.getAll).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({ items, total: 7 });
+    expect(repository.findFiltered).toHaveBeenCalledWith(query);
+  });
+
+  it("turns a repository failure into a 500 without leaking details", async () => {
+    repository.findFiltered.mockRejectedValue(new Error("db secret"));
+
+    await expect(service.findFiltered()).rejects.toBeInstanceOf(
+      InternalServerErrorException,
+    );
   });
 
   it("counts the messages still unread", async () => {

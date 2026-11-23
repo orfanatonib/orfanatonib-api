@@ -2,6 +2,16 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { DataSource, Repository, IsNull, Not } from "typeorm";
 import { ImageSectionEntity } from "../../image-page/entities/image-section.entity";
 import { ImageSectionReviewStatus } from "../enums/image-section-review-status.enum";
+import { ImageSectionSortBy } from "../enums/image-section-sort-by.enum";
+import { ImageSectionListQueryDto } from "../dto/image-section-list-query.dto";
+import { SortOrder } from "src/shared/enums/sort-order.enum";
+import {
+  createdRange,
+  escapeLike,
+  isPaginated,
+  normalizeSearch,
+  pageWindow,
+} from "src/shared/list-query/list-query.util";
 
 @Injectable()
 export class ImageSectionRepository extends Repository<ImageSectionEntity> {
@@ -67,6 +77,56 @@ export class ImageSectionRepository extends Repository<ImageSectionEntity> {
       },
       relations: ["author"],
     });
+  }
+
+  /**
+   * Fila de moderação filtrada, ordenada e (com `page`) recortada no banco.
+   * Sem `sortBy` mantém a ordem legada (sem ordenação explícita) quando não há `page`.
+   */
+  async findQueue(
+    query: ImageSectionListQueryDto = {},
+  ): Promise<{ items: ImageSectionEntity[]; total: number }> {
+    const qb = this.createQueryBuilder("s")
+      .leftJoinAndSelect("s.author", "author")
+      .leftJoin("s.page", "page")
+      .where("page.id IS NULL");
+
+    if (query.authorId) {
+      qb.andWhere("author.id = :authorId", { authorId: query.authorId });
+    }
+    const search = normalizeSearch(query.search);
+    if (search) {
+      qb.andWhere(
+        "(s.caption LIKE :search ESCAPE '\\\\' OR s.description LIKE :search ESCAPE '\\\\' OR author.name LIKE :search ESCAPE '\\\\')",
+        { search: `%${escapeLike(search)}%` },
+      );
+    }
+    if (query.reviewStatus) {
+      qb.andWhere("s.reviewStatus = :reviewStatus", {
+        reviewStatus: query.reviewStatus,
+      });
+    }
+    if (query.public !== undefined) {
+      qb.andWhere("s.public = :isPublic", { isPublic: query.public });
+    }
+    const { from, to } = createdRange(query);
+    if (from) qb.andWhere("s.createdAt >= :createdFrom", { createdFrom: from });
+    if (to) qb.andWhere("s.createdAt <= :createdTo", { createdTo: to });
+
+    const paginated = isPaginated(query);
+    if (query.sortBy || paginated) {
+      const column = query.sortBy ?? ImageSectionSortBy.CREATED_AT;
+      qb.orderBy(`s.${column}`, query.order ?? SortOrder.DESC).addOrderBy(
+        "s.id",
+        "ASC",
+      );
+    }
+    if (paginated) {
+      const { skip, take } = pageWindow(query);
+      qb.skip(skip).take(take);
+    }
+    const [items, total] = await qb.getManyAndCount();
+    return { items, total };
   }
 
   /** Publicações aguardando revisão (selo do painel do admin). */

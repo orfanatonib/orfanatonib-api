@@ -8,7 +8,8 @@ import { DataSource, Repository, SelectQueryBuilder } from "typeorm";
 import { PagelaEntity } from "./entities/pagela.entity";
 import { ShelteredEntity } from "src/shelter/sheltered/entities/sheltered.entity";
 import { MemberProfileEntity } from "src/shelter/member-profile/entities/member-profile.entity/member-profile.entity";
-import { PagelaFiltersDto } from "./dto/pagela-filters.dto";
+import { PagelaFiltersDto, PagelaSortBy } from "./dto/pagela-filters.dto";
+import { SortOrder } from "src/shared/enums/sort-order.enum";
 
 @Injectable()
 export class PagelasRepository {
@@ -68,6 +69,18 @@ export class PagelasRepository {
       qb.andWhere("p.present = :present", { present: f.present });
     }
 
+    if (f.referenceFrom) {
+      qb.andWhere("p.referenceDate >= :referenceFrom", {
+        referenceFrom: f.referenceFrom,
+      });
+    }
+
+    if (f.referenceTo) {
+      qb.andWhere("p.referenceDate <= :referenceTo", {
+        referenceTo: f.referenceTo,
+      });
+    }
+
     if (f.searchString?.trim()) {
       const like = `%${f.searchString.trim()}%`;
       qb.andWhere(
@@ -96,6 +109,32 @@ export class PagelasRepository {
     return qb.getMany();
   }
 
+  /** Ordem pedida (whitelist em `PagelaSortBy`); sem `sortBy`, ano e visita do mais novo ao mais antigo. */
+  private applyOrder(
+    qb: SelectQueryBuilder<PagelaEntity>,
+    filters?: PagelaFiltersDto,
+  ): void {
+    const direction = filters?.order ?? SortOrder.DESC;
+    switch (filters?.sortBy) {
+      case PagelaSortBy.REFERENCE_DATE:
+        qb.orderBy("p.referenceDate", direction)
+          .addOrderBy("p.visit", direction)
+          .addOrderBy("p.id", "ASC");
+        return;
+      case PagelaSortBy.MEMBER:
+        qb.orderBy("memberUser.name", direction)
+          .addOrderBy("p.year", "DESC")
+          .addOrderBy("p.visit", "DESC")
+          .addOrderBy("p.id", "ASC");
+        return;
+      default:
+        qb.orderBy("p.year", direction)
+          .addOrderBy("p.visit", direction)
+          .addOrderBy("sheltered.name", "ASC")
+          .addOrderBy("p.id", "ASC");
+    }
+  }
+
   async findAllPaginated(
     filters: PagelaFiltersDto | undefined,
     page: number,
@@ -103,9 +142,7 @@ export class PagelasRepository {
     shelterIds?: readonly string[],
   ): Promise<{ items: PagelaEntity[]; total: number }> {
     const qb = this.applyFilters(this.baseQB(), filters, shelterIds);
-    qb.orderBy("p.year", "DESC")
-      .addOrderBy("p.visit", "DESC")
-      .addOrderBy("sheltered.name", "ASC");
+    this.applyOrder(qb, filters);
 
     const [items, total] = await qb
       .skip((page - 1) * limit)

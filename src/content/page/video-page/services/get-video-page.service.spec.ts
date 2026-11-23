@@ -5,7 +5,7 @@ import { AuthContextService } from "src/core/auth/services/auth-context.service"
 import { GetVideosPageService } from "./get-video-page.service";
 
 describe("GetVideosPageService", () => {
-  let repo: { findAll: jest.Mock; findById: jest.Mock };
+  let repo: { findList: jest.Mock; findById: jest.Mock };
   let media: {
     findManyMediaItemsByTargets: jest.Mock;
     findMediaItemsByTarget: jest.Mock;
@@ -17,7 +17,17 @@ describe("GetVideosPageService", () => {
   ];
 
   beforeEach(() => {
-    repo = { findAll: jest.fn().mockResolvedValue(pages), findById: jest.fn() };
+    repo = {
+      findList: jest
+        .fn()
+        .mockImplementation((_query: unknown, includeNonPublic: boolean) => {
+          const items = includeNonPublic
+            ? pages
+            : pages.filter((p) => p.public);
+          return Promise.resolve({ items, total: items.length });
+        }),
+      findById: jest.fn(),
+    };
     media = {
       findManyMediaItemsByTargets: jest.fn().mockResolvedValue([]),
       findMediaItemsByTarget: jest.fn().mockResolvedValue([]),

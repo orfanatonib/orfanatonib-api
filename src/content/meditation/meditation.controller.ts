@@ -34,6 +34,7 @@ import {
   MeditationDto,
   WeekMeditationResponseDto,
 } from "./dto/meditation-response.dto";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
 import { QueryMeditationDto } from "./dto/query-meditation.dto";
 
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
@@ -95,7 +96,10 @@ export class MeditationController {
   @UseGuards(JwtAuthGuard)
   async findAll(
     @Query() query: QueryMeditationDto,
-  ): Promise<WeekMeditationResponseDto[]> {
+  ): Promise<
+    | WeekMeditationResponseDto[]
+    | PaginatedResponseDto<WeekMeditationResponseDto>
+  > {
     return this.getService.findAll(query);
   }
 

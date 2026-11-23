@@ -2,11 +2,15 @@ import { Injectable } from "@nestjs/common";
 
 import { RequestStageChangesDto } from "../dto/request-stage-changes.dto";
 import { ContentPackageEntity } from "../entities/content-package.entity";
+import { StudioNotificationService } from "./studio-notification.service";
 import { ContentReviewRepository } from "../repositories/content-review.repository";
 
 @Injectable()
 export class RequestStageChangesService {
-  constructor(private readonly packages: ContentReviewRepository) {}
+  constructor(
+    private readonly packages: ContentReviewRepository,
+    private readonly notices: StudioNotificationService,
+  ) {}
 
   async execute(
     packageId: string,
@@ -14,7 +18,7 @@ export class RequestStageChangesService {
     dto: RequestStageChangesDto,
     authorId: string,
   ): Promise<ContentPackageEntity> {
-    return this.packages.requestStageChanges({
+    const contentPackage = await this.packages.requestStageChanges({
       packageId,
       stageId,
       message: dto.message.trim(),
@@ -24,5 +28,7 @@ export class RequestStageChangesService {
       lockVersion: dto.lockVersion,
       contentChecksum: dto.contentChecksum,
     });
+    await this.notices.changesRequested(contentPackage, stageId, authorId);
+    return contentPackage;
   }
 }

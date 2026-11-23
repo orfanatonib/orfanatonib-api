@@ -4,6 +4,9 @@ import { HttpStatus } from "@nestjs/common";
 import { ResourceNotFoundException } from "src/common/exceptions";
 import { MediaItemProcessor } from "src/shared/media/media-item-processor";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import { VisitMaterialSortBy } from "../enums/visit-material-sort-by.enum";
+import { VisitMaterialsPageResponseDTO } from "../dto/visit-material-page-response.dto";
 import { GetVisitMaterialPageService } from "./get-visit-material-page.service";
 import { VisitMaterialsPageRepository } from "../repositories/visit-material-page.repository";
 import { TestamentType } from "../enums/testament-type.enum";
@@ -14,7 +17,7 @@ import {
 
 describe("GetVisitMaterialPageService", () => {
   const repository = {
-    findAll: jest.fn(),
+    findFiltered: jest.fn(),
     findById: jest.fn(),
     findCurrentWeek: jest.fn(),
   };
@@ -53,23 +56,29 @@ describe("GetVisitMaterialPageService", () => {
 
   describe("findAll", () => {
     it("forwards the query and maps every page", async () => {
-      repository.findAll.mockResolvedValue([
-        buildPageEntity({ id: "page-1" }),
-        buildPageEntity({ id: "page-2" }),
-      ]);
+      repository.findFiltered.mockResolvedValue({
+        total: 2,
+        items: [
+          buildPageEntity({ id: "page-1" }),
+          buildPageEntity({ id: "page-2" }),
+        ],
+      });
 
       const query = { testament: TestamentType.NEW_TESTAMENT };
       const result = await service.findAll(query);
 
-      expect(repository.findAll).toHaveBeenCalledWith(query);
+      expect(repository.findFiltered).toHaveBeenCalledWith(query);
       expect(result.map((page) => page.id)).toEqual(["page-1", "page-2"]);
     });
 
     it("loads the media of every page in a single query and groups it", async () => {
-      repository.findAll.mockResolvedValue([
-        buildPageEntity({ id: "page-1" }),
-        buildPageEntity({ id: "page-2" }),
-      ]);
+      repository.findFiltered.mockResolvedValue({
+        total: 2,
+        items: [
+          buildPageEntity({ id: "page-1" }),
+          buildPageEntity({ id: "page-2" }),
+        ],
+      });
       mediaItemProcessor.findManyMediaItemsByTargets.mockResolvedValue([
         buildMediaEntity({ id: "m1", targetId: "page-1" }),
         buildMediaEntity({ id: "m2", targetId: "page-2" }),
@@ -92,9 +101,47 @@ describe("GetVisitMaterialPageService", () => {
     });
 
     it("skips the media query entirely when there is no page", async () => {
-      repository.findAll.mockResolvedValue([]);
+      repository.findFiltered.mockResolvedValue({ items: [], total: 0 });
 
       await expect(service.findAll()).resolves.toEqual([]);
+      expect(
+        mediaItemProcessor.findManyMediaItemsByTargets,
+      ).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("findAll paginado", () => {
+    it("com page devolve { data, meta } com o total filtrado e a ordenação pedida", async () => {
+      repository.findFiltered.mockResolvedValue({
+        items: [buildPageEntity({ id: "page-1" })],
+        total: 25,
+      });
+
+      const result = (await service.findAll({
+        page: 2,
+        limit: 12,
+        sortBy: VisitMaterialSortBy.TITLE,
+      })) as PaginatedResponseDto<VisitMaterialsPageResponseDTO>;
+
+      expect(result.data.map((page) => page.id)).toEqual(["page-1"]);
+      expect(result.meta).toMatchObject({
+        page: 2,
+        limit: 12,
+        totalItems: 25,
+        totalPages: 3,
+        orderBy: "title",
+      });
+    });
+
+    it("página vazia ainda traz o meta e não consulta mídia", async () => {
+      repository.findFiltered.mockResolvedValue({ items: [], total: 0 });
+
+      const result = (await service.findAll({
+        page: 1,
+      })) as PaginatedResponseDto<VisitMaterialsPageResponseDTO>;
+
+      expect(result.data).toEqual([]);
+      expect(result.meta.totalItems).toBe(0);
       expect(
         mediaItemProcessor.findManyMediaItemsByTargets,
       ).not.toHaveBeenCalled();

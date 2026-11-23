@@ -1,3 +1,4 @@
+import { LessonNotificationService } from './lesson-notification.service';
 import { Injectable, Logger } from '@nestjs/common';
 import { EntityManager } from 'typeorm';
 import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
@@ -26,6 +27,7 @@ export class LessonStudioSupportService {
     private readonly repo: AiLessonsRepository,
     private readonly s3: AwsS3Service,
     private readonly media: MediaItemProcessor,
+    private readonly notices: LessonNotificationService,
   ) {}
 
   /** Recomputes and persists the aggregate status from the stages in memory. */
@@ -156,5 +158,17 @@ export class LessonStudioSupportService {
         (details.weekMaterialId ? ` material=${details.weekMaterialId}` : '') +
         (details.commentId ? ` comentário=${details.commentId}` : ''),
     );
+    // Sem esperar: o aviso do sininho é auxiliar e nunca atrasa nem derruba a ação.
+    void this.notices.workflow(action, lessonId, actorId, details);
+  }
+
+  /** Fim (ou falha definitiva) de uma geração por IA, para o sininho dos administradores. */
+  notifyGeneration(
+    lessonId: string,
+    stage: LessonStageType,
+    failed: boolean,
+    actorId?: string,
+  ): void {
+    void this.notices.generationFinished(lessonId, stage, failed, actorId);
   }
 }

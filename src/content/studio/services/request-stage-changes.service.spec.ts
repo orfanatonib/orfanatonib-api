@@ -1,5 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 
+import { StudioNotificationService } from "./studio-notification.service";
+
 import { RequestStageChangesService } from "./request-stage-changes.service";
 import { RequestStageChangesDto } from "../dto/request-stage-changes.dto";
 import { ContentPackageEntity } from "../entities/content-package.entity";
@@ -17,6 +19,10 @@ describe("RequestStageChangesService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RequestStageChangesService,
+        {
+          provide: StudioNotificationService,
+          useValue: { changesRequested: jest.fn() },
+        },
         {
           provide: ContentReviewRepository,
           useValue: mockRepository,

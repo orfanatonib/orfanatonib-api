@@ -22,7 +22,10 @@ const media = (id: string, targetId: string) => ({
 function setup() {
   const repo = {
     findByAuthor: jest.fn(async () => [section("s1"), section("s2")]),
-    findAllOrfaSections: jest.fn(async () => [section("s1"), section("s2")]),
+    findQueue: jest.fn(async () => ({
+      items: [section("s1"), section("s2")],
+      total: 2,
+    })),
     findOne: jest.fn(async () => section("s1") as object | null),
     find: jest.fn(async () => [section("s1")]),
     findPublishedById: jest.fn(
@@ -48,14 +51,35 @@ function setup() {
 describe("GetImageSectionService", () => {
   it("findAll: agrupa as mídias por publicação e repassa o filtro de autor", async () => {
     const { service, repo } = setup();
-    const result = await service.findAll("u1");
-    expect(repo.findAllOrfaSections).toHaveBeenCalledWith("u1");
-    expect(result.map((r) => r.mediaItems.length)).toEqual([2, 1]);
+    const result = await service.findAll({ authorId: "u1" });
+    expect(repo.findQueue).toHaveBeenCalledWith({ authorId: "u1" });
+    expect(Array.isArray(result)).toBe(true);
+    expect(
+      (result as Array<{ mediaItems: unknown[] }>).map(
+        (r) => r.mediaItems.length,
+      ),
+    ).toEqual([2, 1]);
+  });
+
+  it("findAll: com page devolve { data, meta } com o total do banco", async () => {
+    const { service, repo } = setup();
+    repo.findQueue.mockResolvedValueOnce({ items: [section("s1")], total: 25 });
+    const result = await service.findAll({ page: 2, limit: 10 });
+    expect(result).toMatchObject({
+      data: [{ id: "s1" }],
+      meta: {
+        page: 2,
+        limit: 10,
+        totalItems: 25,
+        totalPages: 3,
+        orderBy: "createdAt",
+      },
+    });
   });
 
   it("findAll: fila vazia devolve lista vazia", async () => {
     const { service, repo } = setup();
-    repo.findAllOrfaSections.mockResolvedValueOnce([]);
+    repo.findQueue.mockResolvedValueOnce({ items: [], total: 0 });
     expect(await service.findAll()).toEqual([]);
   });
 

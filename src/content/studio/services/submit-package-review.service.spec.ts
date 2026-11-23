@@ -1,3 +1,4 @@
+import { StudioNotificationService } from "./studio-notification.service";
 import { Test, TestingModule } from "@nestjs/testing";
 
 import { ContentPackageEntity } from "../entities/content-package.entity";
@@ -30,6 +31,10 @@ describe("SubmitPackageReviewService", () => {
         SubmitPackageReviewService,
         { provide: ContentReviewRepository, useValue: repository },
         { provide: StudioExportService, useValue: exportsService },
+        {
+          provide: StudioNotificationService,
+          useValue: { submitted: jest.fn() },
+        },
       ],
     }).compile();
     service = module.get(SubmitPackageReviewService);

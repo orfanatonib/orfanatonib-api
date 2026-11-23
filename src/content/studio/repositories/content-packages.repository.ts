@@ -150,6 +150,14 @@ export class ContentPackagesRepository {
     return { data, total, page, limit };
   }
 
+  /** Só o tema (rótulo dos avisos do sininho); `null` se o pacote não existe mais. */
+  async findThemeById(id: string): Promise<string | null> {
+    const found = await this.dataSource
+      .getRepository(ContentPackageEntity)
+      .findOne({ where: { id }, select: { id: true, theme: true } });
+    return found?.theme ?? null;
+  }
+
   async findByIdWithGraph(id: string): Promise<ContentPackageEntity | null> {
     return this.packageRepo.findOne({
       where: { id },

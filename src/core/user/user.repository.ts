@@ -4,6 +4,7 @@ import { Repository } from "typeorm";
 import { UserEntity } from "./entities/user.entity";
 import { GetUsersQueryDto } from "./dto/get-users-query.dto";
 import { UserRole } from "../auth/auth.types";
+import { createdRange } from "src/shared/list-query/list-query.util";
 
 @Injectable()
 export class UserRepository {
@@ -75,6 +76,8 @@ export class UserRepository {
       role,
       active,
       completed,
+      createdFrom,
+      createdTo,
       sort = "updatedAt",
       order = "DESC",
     } = q;
@@ -133,6 +136,10 @@ export class UserRepository {
     } else if (completed === "incomplete") {
       qb.andWhere("u.completed = :completed", { completed: false });
     }
+
+    const { from, to } = createdRange({ createdFrom, createdTo });
+    if (from) qb.andWhere("u.createdAt >= :createdFrom", { createdFrom: from });
+    if (to) qb.andWhere("u.createdAt <= :createdTo", { createdTo: to });
 
     qb.orderBy(sortCol, sortDir).skip(skip).take(limit);
 

@@ -1,3 +1,4 @@
+import { InboxNotificationEntity } from "../src/communication/inbox/entities/inbox-notification.entity";
 import { AcceptedChristEntity } from "../src/shelter/accepted-christ/entities/accepted-christ.entity";
 import { AddressEntity } from "../src/shelter/address/entities/address.entity/address.entity";
 import { AtendenteEntity } from "../src/shelter/atendente/entities/atendente.entity";
@@ -102,4 +103,5 @@ export const DATABASE_ENTITIES = [
   ContentPromptPreferenceEntity,
   ContentPublicationEntity,
   ContentReviewDecisionEntity,
+  InboxNotificationEntity,
 ];

@@ -37,6 +37,7 @@ const user = (id: string) => ({
   phone: "9",
   name: `Nome ${id}`,
   role: "member",
+  createdAt: new Date("2026-01-02T03:04:05.000Z"),
 });
 
 describe("GetAllProfilesService: escopo por papel", () => {
@@ -84,12 +85,27 @@ describe("GetAllProfilesService: filtros e ordenação", () => {
     await svc.execute("a1", UserRole.ADMIN, { q: "ana'; DROP TABLE users;--" });
 
     const [sql, params] = calls()[0];
-    expect(sql).toContain("(u.name LIKE ? OR u.email LIKE ?)");
+    expect(sql).toContain(
+      "(u.name LIKE ? ESCAPE '\\\\' OR u.email LIKE ? ESCAPE '\\\\')",
+    );
     expect(sql).not.toContain("DROP TABLE");
     expect(params.slice(0, 2)).toEqual([
       "%ana'; DROP TABLE users;--%",
       "%ana'; DROP TABLE users;--%",
     ]);
+  });
+
+  it("`search` é o mesmo que `q` (e `q` tem precedência)", async () => {
+    const { svc, calls } = setup([]);
+
+    await svc.execute("a1", UserRole.ADMIN, { search: "ana" });
+    expect(calls()[0][0]).toContain(
+      "(u.name LIKE ? ESCAPE '\\\\' OR u.email LIKE ? ESCAPE '\\\\')",
+    );
+    expect(calls()[0][1].slice(0, 2)).toEqual(["%ana%", "%ana%"]);
+
+    await svc.execute("a1", UserRole.ADMIN, { q: "beto", search: "ana" });
+    expect(calls()[2][1].slice(0, 2)).toEqual(["%beto%", "%beto%"]);
   });
 
   it("papel e preferências viram parâmetros", async () => {
@@ -102,8 +118,51 @@ describe("GetAllProfilesService: filtros e ordenação", () => {
 
     const [sql, params] = calls()[0];
     expect(sql).toContain("u.role = ?");
-    expect(sql).toContain("up.loveLanguages LIKE ?");
+    expect(sql).toContain("up.loveLanguages LIKE ? ESCAPE");
     expect(params).toEqual(["leader", "%toque%", 10, 0]);
+  });
+
+  it("gênero, mês de aniversário e datas de cadastro viram parâmetros nas duas consultas", async () => {
+    const { svc, calls } = setup([]);
+
+    await svc.execute("a1", UserRole.ADMIN, {
+      gender: "Feminino",
+      birthMonth: 6,
+      createdFrom: "2026-05-01",
+      createdTo: "2026-05-10",
+    });
+
+    const [listSql, listParams] = calls()[0];
+    const [countSql, countParams] = calls()[1];
+    for (const sql of [listSql, countSql]) {
+      expect(sql).toContain("pd.gender = ?");
+      expect(sql).toContain("MONTH(pd.birthDate) = ?");
+      expect(sql).toContain("u.createdAt >= ?");
+      expect(sql).toContain("u.createdAt <= ?");
+    }
+    const expected = [
+      "Feminino",
+      6,
+      new Date(2026, 4, 1, 0, 0, 0, 0),
+      new Date(2026, 4, 10, 23, 59, 59, 999),
+    ];
+    expect(listParams).toEqual([...expected, 10, 0]);
+    expect(countParams).toEqual(expected);
+  });
+
+  it("líder: a contagem também enxerga os dados pessoais e preferências dos filtros", async () => {
+    const { svc, calls } = setup([]);
+
+    await svc.execute("lider-1", UserRole.LEADER, {
+      temperaments: "colérico",
+      birthMonth: 3,
+    });
+
+    const countSql = calls()[1][0];
+    expect(countSql).toContain("LEFT JOIN personal_data pd");
+    expect(countSql).toContain("LEFT JOIN user_preferences up");
+    expect(countSql).toContain("up.temperaments LIKE ? ESCAPE");
+    expect(countSql).toContain("MONTH(pd.birthDate) = ?");
   });
 
   it.each([
@@ -159,6 +218,7 @@ describe("GetAllProfilesService: paginação e montagem", () => {
       id: "u1",
       personalData: { birthDate: "1990-05-17", gender: "F" },
     });
+    expect(result.items[0].createdAt).toBe("2026-01-02T03:04:05.000Z");
     expect(result.items[0].image).toBeNull();
   });
 });

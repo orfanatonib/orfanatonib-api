@@ -12,6 +12,7 @@ import {
   Patch,
   UseGuards,
   ParseUUIDPipe,
+  Query,
 } from "@nestjs/common";
 import { plainToInstance } from "class-transformer";
 import { CreateSiteFeedbackService } from "./services/create-site-feedback.service";
@@ -22,6 +23,13 @@ import { CreateSiteFeedbackDto } from "./dto/create-site-feedback.dto";
 import { SiteFeedbackPendingCountDto } from "./dto/site-feedback-pending-count.dto";
 import { SiteFeedbackResponseDto } from "./dto/site-feedback-response.dto";
 import { UpdateSiteFeedbackDto } from "./dto/update-site-feedback.dto";
+import { QuerySiteFeedbackDto } from "./dto/query-site-feedback.dto";
+import { SiteFeedbackSortBy } from "./enums/site-feedback-sort-by.enum";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import {
+  isPaginated,
+  toPaginated,
+} from "src/shared/list-query/list-query.util";
 import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
 import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
@@ -57,9 +65,22 @@ export class SiteFeedbackController {
   @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async findAll(): Promise<SiteFeedbackResponseDto[]> {
-    const feedbacks = await this.getFeedbackService.findAll();
-    return plainToInstance(SiteFeedbackResponseDto, feedbacks);
+  async findAll(
+    @Query() query: QuerySiteFeedbackDto,
+  ): Promise<
+    SiteFeedbackResponseDto[] | PaginatedResponseDto<SiteFeedbackResponseDto>
+  > {
+    const { items, total } = await this.getFeedbackService.findFiltered(query);
+    const data = plainToInstance(SiteFeedbackResponseDto, items);
+    // Sem `page` continua o array de sempre; com `page`, `{ data, meta }` paginado no banco.
+    return isPaginated(query)
+      ? toPaginated(
+          data,
+          query,
+          total,
+          query.sortBy ?? SiteFeedbackSortBy.CREATED_AT,
+        )
+      : data;
   }
 
   /** Selo do painel do admin: quantos feedbacks ainda não foram lidos. */

@@ -15,6 +15,7 @@ import {
 import { CreateInformativeDto } from "./dto/create-informative.dto";
 import { UpdateInformativeDto } from "./dto/update-informative.dto";
 import { InformativeResponseDto } from "./dto/informative-response.dto";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
 import { QueryInformativeDto } from "./dto/query-informative.dto";
 import { CreateInformativeService } from "./services/create-informative.service";
 import { GetInformativeService } from "./services/get-informative.service";
@@ -97,7 +98,9 @@ export class InformativeController {
   @UseGuards(JwtAuthGuard)
   async findAll(
     @Query() query: QueryInformativeDto,
-  ): Promise<InformativeResponseDto[]> {
+  ): Promise<
+    InformativeResponseDto[] | PaginatedResponseDto<InformativeResponseDto>
+  > {
     return this.getService.findAll(query);
   }
 }

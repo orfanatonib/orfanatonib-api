@@ -10,7 +10,10 @@ import { DataSource } from "typeorm";
 export class ProfilesQueryRepository {
   constructor(private readonly dataSource: DataSource) {}
 
-  query<T>(sql: string, params: readonly (string | number)[]): Promise<T> {
+  query<T>(
+    sql: string,
+    params: readonly (string | number | Date)[],
+  ): Promise<T> {
     return this.dataSource.query<T>(sql, [...params]);
   }
 }

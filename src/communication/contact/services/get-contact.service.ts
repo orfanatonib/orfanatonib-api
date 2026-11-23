@@ -5,6 +5,7 @@ import {
 } from "@nestjs/common";
 import { ContactRepository } from "../contact.repository";
 import { ContactEntity } from "../contact.entity";
+import { QueryContactDto } from "../dto/query-contact.dto";
 import { ContactPendingCountDto } from "../dto/contact-pending-count.dto";
 import {
   ContactMessages,
@@ -17,9 +18,12 @@ export class GetContactService {
 
   constructor(private readonly contactRepo: ContactRepository) {}
 
-  async getAllContacts(): Promise<ContactEntity[]> {
+  /** Lista filtrada no banco; `total` já vem com os filtros aplicados. */
+  async findFiltered(
+    query?: QueryContactDto,
+  ): Promise<{ items: ContactEntity[]; total: number }> {
     try {
-      return await this.contactRepo.getAll();
+      return await this.contactRepo.findFiltered(query);
     } catch {
       this.logger.error(ContactNotificationLogs.FETCH_ERROR);
       throw new InternalServerErrorException(ContactMessages.FETCH_ERROR);

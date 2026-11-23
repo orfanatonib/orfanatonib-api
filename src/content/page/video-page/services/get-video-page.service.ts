@@ -5,6 +5,12 @@ import { VideosPageResponseDto } from "../dto/video-page-response.dto";
 import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 import { AuthContextService } from "src/core/auth/services/auth-context.service";
 import type { Request } from "express";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import {
+  isPaginated,
+  toPaginated,
+} from "src/shared/list-query/list-query.util";
+import { PageListQueryDto, pageOrderBy } from "../../page-list-query";
 
 @Injectable()
 export class GetVideosPageService {
@@ -21,17 +27,39 @@ export class GetVideosPageService {
     return this.authContext.isLoggedIn(req);
   }
 
+  /** Lista legada (array, `id ASC`) ou, com `page`, `{ data, meta }`; filtros, ordem e janela no banco. */
+  async findList(
+    includeNonPublic: boolean,
+    query: PageListQueryDto = {},
+  ): Promise<
+    VideosPageResponseDto[] | PaginatedResponseDto<VideosPageResponseDto>
+  > {
+    const { data, total } = await this.loadList(includeNonPublic, query);
+    return isPaginated(query)
+      ? toPaginated(data, query, total, pageOrderBy(query))
+      : data;
+  }
+
   async findAll(includeNonPublic = true): Promise<VideosPageResponseDto[]> {
-    const allPages = await this.videosPageRepo.findAll();
-    const pages = includeNonPublic
-      ? allPages
-      : allPages.filter((page) => page.public);
+    return (await this.loadList(includeNonPublic, {})).data;
+  }
+
+  private async loadList(
+    includeNonPublic: boolean,
+    query: PageListQueryDto,
+  ): Promise<{ data: VideosPageResponseDto[]; total: number }> {
+    const { items: pages, total } = await this.videosPageRepo.findList(
+      query,
+      includeNonPublic,
+    );
     const pageIds = pages.map((page) => page.id);
     const mediaItems =
-      await this.mediaItemProcessor.findManyMediaItemsByTargets(
-        pageIds,
-        MediaTargetType.VideosPage,
-      );
+      pageIds.length === 0
+        ? []
+        : await this.mediaItemProcessor.findManyMediaItemsByTargets(
+            pageIds,
+            MediaTargetType.VideosPage,
+          );
 
     const mediaMap = new Map<string, typeof mediaItems>();
     for (const item of mediaItems) {
@@ -39,9 +67,12 @@ export class GetVideosPageService {
       mediaMap.get(item.targetId)!.push(item);
     }
 
-    return pages.map((page) =>
-      VideosPageResponseDto.fromEntity(page, mediaMap.get(page.id) || []),
-    );
+    return {
+      data: pages.map((page) =>
+        VideosPageResponseDto.fromEntity(page, mediaMap.get(page.id) || []),
+      ),
+      total,
+    };
   }
 
   async findOne(

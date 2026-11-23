@@ -1,4 +1,11 @@
-import { IsInt, IsOptional, IsString, IsIn, Min } from "class-validator";
+import {
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsIn,
+  Min,
+} from "class-validator";
 import { Type } from "class-transformer";
 
 export class GetUsersQueryDto {
@@ -29,6 +36,19 @@ export class GetUsersQueryDto {
   @IsOptional()
   @IsIn(["all", "completed", "incomplete"])
   completed?: "all" | "completed" | "incomplete";
+
+  /** Início do intervalo de criação (inclusivo), `AAAA-MM-DD`. */
+  @IsOptional()
+  @IsDateString(
+    { strict: true },
+    { message: "createdFrom deve ser AAAA-MM-DD" },
+  )
+  createdFrom?: string;
+
+  /** Fim do intervalo de criação (inclusivo, dia inteiro), `AAAA-MM-DD`. */
+  @IsOptional()
+  @IsDateString({ strict: true }, { message: "createdTo deve ser AAAA-MM-DD" })
+  createdTo?: string;
 
   @IsOptional()
   @IsIn(["name", "email", "phone", "role", "createdAt", "updatedAt"])

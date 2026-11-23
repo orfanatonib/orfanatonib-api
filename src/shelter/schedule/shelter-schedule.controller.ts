@@ -12,6 +12,7 @@ import {
   UseGuards,
   ValidationPipe,
   Req,
+  Query,
 } from "@nestjs/common";
 import { Request } from "express";
 import type { AuthenticatedRequest } from "src/core/auth/auth.types";
@@ -19,6 +20,8 @@ import { toShelterAccessContext } from "src/shelter/shelter/utils/shelter-access
 import { CreateShelterScheduleDto } from "./dto/create-shelter-schedule.dto";
 import { UpdateShelterScheduleDto } from "./dto/update-shelter-schedule.dto";
 import { ShelterScheduleResponseDto } from "./dto/shelter-schedule-response.dto";
+import { QueryShelterScheduleDto } from "./dto/query-shelter-schedule.dto";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
 import { CreateShelterScheduleService } from "./services/create-shelter-schedule.service";
 import { ListShelterSchedulesService } from "./services/list-shelter-schedules.service";
 import { UpdateShelterScheduleService } from "./services/update-shelter-schedule.service";
@@ -64,12 +67,15 @@ export class ShelterScheduleController {
   })
   @UseGuards(FeatureFlagGuard)
   @Get()
-  async findAll(@Req() req: Request): Promise<ShelterScheduleResponseDto[]> {
+  async findAll(
+    @Req() req: Request,
+    @Query() query: QueryShelterScheduleDto,
+  ): Promise<
+    | ShelterScheduleResponseDto[]
+    | PaginatedResponseDto<ShelterScheduleResponseDto>
+  > {
     this.logger.log("Listing shelter schedules");
-    const schedules = await this.listService.execute(req);
-    return schedules.map((schedule) =>
-      ShelterScheduleResponseDto.fromEntity(schedule),
-    );
+    return this.listService.executeQuery(req, query);
   }
 
   @FeatureFlag(FeatureFlagKeys.SHELTER_SCHEDULE)

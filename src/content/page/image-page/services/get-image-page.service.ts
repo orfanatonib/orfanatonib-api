@@ -12,6 +12,12 @@ import { AuthContextService } from "src/core/auth/services/auth-context.service"
 import { GetCelebrationService } from "src/content/page/feed-celebration/services/get-celebration.service";
 import { GetFeedCommentService } from "src/content/page/feed-photo-comment/services/get-feed-comment.service";
 import { FeedSectionExtras } from "../types";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import {
+  isPaginated,
+  toPaginated,
+} from "src/shared/list-query/list-query.util";
+import { PageListQueryDto, pageOrderBy } from "../../page-list-query";
 
 @Injectable()
 export class GetImagePageService {
@@ -31,11 +37,32 @@ export class GetImagePageService {
     return this.authContext.isLoggedIn(req);
   }
 
+  /** Lista legada (array, `id ASC`) ou, com `page`, `{ data, meta }`; filtros, ordem e janela no banco. */
+  async findList(
+    includeNonPublic: boolean,
+    query: PageListQueryDto = {},
+  ): Promise<
+    ImagePageResponseDto[] | PaginatedResponseDto<ImagePageResponseDto>
+  > {
+    const { data, total } = await this.loadList(includeNonPublic, query);
+    return isPaginated(query)
+      ? toPaginated(data, query, total, pageOrderBy(query))
+      : data;
+  }
+
   async findAll(includeNonPublic = true): Promise<ImagePageResponseDto[]> {
-    const allPages = await this.imagePageRepository.findAllWithSections();
-    const pages = includeNonPublic
-      ? allPages
-      : allPages.filter((page) => page.public);
+    return (await this.loadList(includeNonPublic, {})).data;
+  }
+
+  private async loadList(
+    includeNonPublic: boolean,
+    query: PageListQueryDto,
+  ): Promise<{ data: ImagePageResponseDto[]; total: number }> {
+    const { items: pages, total } =
+      await this.imagePageRepository.findListWithSections(
+        query,
+        includeNonPublic,
+      );
 
     const sectionIds = pages.flatMap((page) => page.sections.map((s) => s.id));
     const mediaItems =
@@ -44,16 +71,13 @@ export class GetImagePageService {
         "ImagesPage",
       );
 
-    const mediaMap = new Map<string, MediaItemEntity[]>();
-    for (const item of mediaItems) {
-      if (!mediaMap.has(item.targetId)) mediaMap.set(item.targetId, []);
-      mediaMap.get(item.targetId)!.push(item);
-    }
-
-    const result = pages.map((page) =>
-      ImagePageResponseDto.fromEntity(page, mediaMap),
-    );
-    return result;
+    const mediaMap = this.groupMediaBySectionId(mediaItems);
+    return {
+      data: pages.map((page) =>
+        ImagePageResponseDto.fromEntity(page, mediaMap),
+      ),
+      total,
+    };
   }
 
   async findOne(

@@ -39,6 +39,8 @@ import { RejectImageSectionService } from "./services/reject-image-section.servi
 import { RejectImageSectionDto } from "./dto/reject-image-section.dto";
 import { ImageSectionPendingCountDto } from "./dto/image-section-pending-count.dto";
 import { MyImageSectionDto } from "./dto/my-image-section.dto";
+import { ImageSectionListQueryDto } from "./dto/image-section-list-query.dto";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
 
 /**
  * Fotos e vídeo da seção: até 10 fotos + 1 vídeo (11 arquivos), o maior com 100 MB.
@@ -195,11 +197,11 @@ export class ImageSectionController {
   @Get()
   @UseGuards(AdminRoleGuard)
   async getAll(
-    @Query("authorId", new ParseUUIDPipe({ optional: true }))
-    authorId?: string,
-  ): Promise<ImageSectionResponseDto[]> {
-    const result = await this.getService.findAll(authorId);
-    return result;
+    @Query() query: ImageSectionListQueryDto,
+  ): Promise<
+    ImageSectionResponseDto[] | PaginatedResponseDto<ImageSectionResponseDto>
+  > {
+    return this.getService.findAll(query);
   }
 
   private parseDto<T>(raw: string, dtoClass: new () => T): T {

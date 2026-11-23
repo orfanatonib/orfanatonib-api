@@ -1,5 +1,7 @@
 import { Test, TestingModule } from "@nestjs/testing";
 
+import { StudioNotificationService } from "./studio-notification.service";
+
 import { CompleteProductionStageService } from "./complete-production-stage.service";
 import { ContentPackageEntity } from "../entities/content-package.entity";
 import { ContentStageContentRepository } from "../repositories/content-stage-content.repository";
@@ -16,6 +18,10 @@ describe("CompleteProductionStageService", () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CompleteProductionStageService,
+        {
+          provide: StudioNotificationService,
+          useValue: { productionCompleted: jest.fn() },
+        },
         {
           provide: ContentStageContentRepository,
           useValue: mockRepository,

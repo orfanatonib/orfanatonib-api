@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { ContentPackageEntity } from "../entities/content-package.entity";
 import { ContentStageStatus } from "../enums/content-stage-status.enum";
 import { StudioExportService } from "../export/studio-export.service";
+import { StudioNotificationService } from "./studio-notification.service";
 import { ContentReviewRepository } from "../repositories/content-review.repository";
 
 @Injectable()
@@ -10,6 +11,7 @@ export class ResolveReviewCommentService {
   constructor(
     private readonly packages: ContentReviewRepository,
     private readonly exports: StudioExportService,
+    private readonly notices: StudioNotificationService,
   ) {}
 
   async execute(
@@ -32,6 +34,11 @@ export class ResolveReviewCommentService {
       );
     if (stage?.status === ContentStageStatus.IN_REVIEW) {
       void this.exports.pregenerateStagePdfs(packageId, [stage.id]);
+      await this.notices.resolvedAndReturned(
+        contentPackage,
+        stage.id,
+        reviewerId,
+      );
     }
     return contentPackage;
   }

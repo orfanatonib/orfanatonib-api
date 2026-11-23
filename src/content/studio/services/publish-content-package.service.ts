@@ -19,6 +19,7 @@ import {
   isDuplicateKeyError,
   needsReconciliation,
 } from "../utils/content-publication.util";
+import { StudioNotificationService } from "./studio-notification.service";
 import { BuildPublicationDocumentsService } from "./build-publication-documents.service";
 import { CreatePublicationPageService } from "./create-publication-page.service";
 import { GetPublicationPageService } from "./get-publication-page.service";
@@ -41,6 +42,7 @@ export class PublishContentPackageService {
     private readonly documents: BuildPublicationDocumentsService,
     private readonly createPage: CreatePublicationPageService,
     private readonly pages: GetPublicationPageService,
+    private readonly notices: StudioNotificationService,
   ) {}
 
   async execute(
@@ -178,6 +180,12 @@ export class PublishContentPackageService {
         publication.id,
         snapshot.packageId,
         page.id,
+      );
+      await this.notices.published(
+        snapshot.packageId,
+        missing.map((track) => track.audience),
+        publication.id,
+        publication.requestedById ?? "system",
       );
       return completed;
     } catch (error) {

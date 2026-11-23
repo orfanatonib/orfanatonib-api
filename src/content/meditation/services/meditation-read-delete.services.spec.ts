@@ -11,6 +11,7 @@ describe("Meditation get/delete services", () => {
   let repo: {
     findOneWithRelations: jest.Mock;
     findAllWithRelations: jest.Mock;
+    findFiltered: jest.Mock;
     delete: jest.Mock;
   };
   let media: {
@@ -24,6 +25,7 @@ describe("Meditation get/delete services", () => {
     repo = {
       findOneWithRelations: jest.fn(),
       findAllWithRelations: jest.fn(),
+      findFiltered: jest.fn(),
       delete: jest.fn(),
     };
     media = {
@@ -42,7 +44,7 @@ describe("Meditation get/delete services", () => {
       );
 
     it("findAll sem meditações não consulta mídia", async () => {
-      repo.findAllWithRelations.mockResolvedValue([]);
+      repo.findFiltered.mockResolvedValue({ items: [], total: 0 });
       await expect(build().findAll()).resolves.toEqual([]);
       expect(media.findManyMediaItemsByTargets).not.toHaveBeenCalled();
     });
