@@ -1,6 +1,11 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import {
+  MEDIA_KEY_REFERENCE_COLUMNS,
+  MEDIA_URL_REFERENCE_COLUMNS,
+} from "./storage/media-storage.constants";
+
 /**
  * Teste de arquitetura (plano 02, T2.2): `expectNoOrphans` do E2E só enxerga os objetos do bucket que
  * estão referenciados pelas colunas listadas em `MEDIA_URL_COLUMNS` / `MEDIA_KEY_COLUMNS`
@@ -115,6 +120,31 @@ describe("colunas de mídia: varredura das entidades (independe do app)", () => 
     expect(NOT_A_REFERENCE.filter((e) => !keys.has(key(e))).map(key)).toEqual(
       [],
     );
+  });
+});
+
+describe("colunas de mídia × inventário da API (reconciliação e descarte de upload)", () => {
+  it("toda coluna de mídia das entidades protege o arquivo da remoção como órfão", () => {
+    const protectedKeys = new Set(
+      [
+        { table: "media_items", column: "url" },
+        ...MEDIA_URL_REFERENCE_COLUMNS,
+        ...MEDIA_KEY_REFERENCE_COLUMNS,
+      ].map(key),
+    );
+    const unprotected = entityFiles(SRC)
+      .flatMap((file) => {
+        const source = readFileSync(file, "utf8");
+        const table = tableOf(source);
+        return table ? mediaLikeColumns(source, table) : [];
+      })
+      .map(key)
+      .filter(
+        (name) =>
+          !protectedKeys.has(name) &&
+          !NOT_A_REFERENCE.some((e) => key(e) === name),
+      );
+    expect(unprotected).toEqual([]);
   });
 });
 

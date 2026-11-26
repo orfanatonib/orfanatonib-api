@@ -9,3 +9,9 @@ export interface MediaReconciliationReport {
   removedKeys: string[];
   brokenReferences: string[];
 }
+
+/** Coluna do banco que referencia um arquivo do bucket. */
+export interface MediaReferenceColumn {
+  readonly table: string;
+  readonly column: string;
+}

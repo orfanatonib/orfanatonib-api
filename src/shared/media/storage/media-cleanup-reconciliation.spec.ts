@@ -36,7 +36,7 @@ describe("MediaReconciliationService", () => {
   const now = new Date("2026-11-18T12:00:00Z");
   const old = new Date("2026-11-10T00:00:00Z");
   const fresh = new Date("2026-11-18T11:00:00Z");
-  function setup() {
+  function setup(extra: string[] = []) {
     const s3 = {
       getBucketName: () => "b",
       getEnvironment: () => "local",
@@ -53,9 +53,14 @@ describe("MediaReconciliationService", () => {
         "local/E/1/missing.png",
       ]),
     };
+    const references = { findAllReferences: jest.fn(async () => extra) };
     return {
       s3,
-      svc: new MediaReconciliationService(s3 as never, media as never),
+      svc: new MediaReconciliationService(
+        s3 as never,
+        media as never,
+        references as never,
+      ),
     };
   }
 
@@ -66,6 +71,18 @@ describe("MediaReconciliationService", () => {
     expect(r.removedKeys).toEqual([]);
     expect(r.brokenReferences).toEqual(["local/E/1/missing.png"]);
     expect(s3.deleteKey).not.toHaveBeenCalled();
+  });
+
+  it("não é órfão o arquivo referenciado fora de media_items (capa/arquivo do Estúdio, imagem de rota)", async () => {
+    const { svc, s3 } = setup([
+      "http://x/b/local/E/1/orphan-old.png",
+      "local/content-studio/p/missing.pdf",
+    ]);
+    const r = await svc.reconcile({ dryRun: false, now });
+    expect(r.orphanKeys).toEqual([]);
+    expect(s3.deleteKey).not.toHaveBeenCalled();
+    // Referência dessas tabelas sem objeto também é relatada como quebrada.
+    expect(r.brokenReferences).toContain("local/content-studio/p/missing.pdf");
   });
 
   it("[media-upload.reconcile.job#execucao-so-orfao-antigo] execução apaga só órfão antigo, nunca a referência quebrada nem o recente", async () => {

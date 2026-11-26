@@ -1,5 +1,4 @@
 @startuml media-storage-flow
-!theme plain
 hide footbox
 title Mídia — upload, gravação e remoção sem órfão
 
@@ -32,7 +31,9 @@ end
 
 note over S3, DB
   Exclusão do dono: linhas antes dos objetos; objetos só depois do commit.
-  Reconciliação diária (dry-run) compara bucket x media_items;
-  teste de arquitetura exige a cascata em todo delete-*.service.
+  Reconciliação diária (dry-run) compara o bucket com TODAS as colunas de
+  mídia (media_items, imagem de rota, capas e arquivos do Estúdio); o mesmo
+  inventário protege o descarte de upload. Testes de arquitetura exigem o
+  inventário completo e a cascata em todo delete-*.service.
 end note
 @enduml

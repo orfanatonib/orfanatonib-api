@@ -6,7 +6,7 @@
 - `MediaStorageService` (`src/shared/media/storage`): `uploadAll` (valida MIME, **assinatura dos bytes** e tamanho por `MediaType`; chave `<env>/<entidade>/<ownerId>/<uuid>.<ext>`), `UploadBatch.discard()` (apaga o que subiu se algo falhar), `deleteAfterCommit(urls)` (remoção depois do commit; falha vai para `media_cleanup_queue`), `deleteStrict(url)`.
 - `AwsS3Service.upload`/`delete` (**caminho legado**, ainda usado por ~35 arquivos): chave `<env>/uploads/<uuid>_<nome saneado>`; dentro de uma requisição HTTP o `UploadScopeInterceptor` **adia** as exclusões até o sucesso e descarta os uploads novos se a requisição falhar; exclusão imediata que falha vai para a fila de limpeza.
 - `media_cleanup_queue`: reprocessada a cada 10 min (`MediaCleanupService`); após 5 tentativas recebe `failedAt`.
-- `MediaReconciliationService`: compara bucket × `media_items`; órfão com mais de 24 h só é removido com `dryRun: false`; referência sem objeto é apenas reportada. O agendamento diário (3h) roda só em dry-run; `POST /media-storage/reconcile` (admin) para execução manual.
+- `MediaReconciliationService`: compara o bucket com **todas** as colunas de mídia (`media_items` + `MEDIA_URL_REFERENCE_COLUMNS` / `MEDIA_KEY_REFERENCE_COLUMNS`: imagem de rota, capas e arquivos do Estúdio), o mesmo inventário que `MediaReferenceRepository` usa antes de descartar um upload; coluna de mídia nova tem de entrar na lista (o teste de arquitetura falha). Órfão com mais de 24 h só é removido com `dryRun: false`; referência sem objeto é apenas reportada. O agendamento diário (3h) roda só em dry-run; `POST /media-storage/reconcile` (admin) para execução manual.
 - `media_items.storageKey` (nullable): registros antigos continuam resolvendo a chave pela URL.
 
 ## Política de upload

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
 import { MediaItemRepository } from "../media-item-repository";
+import { MediaReferenceRepository } from "./media-reference.repository";
 import { MEDIA_RECONCILIATION_MIN_AGE_HOURS } from "./media-storage.constants";
 import type { MediaReconciliationReport } from "./media-storage.types";
 import { extractStorageKey } from "./media-storage.utils";
@@ -11,10 +12,11 @@ export class MediaReconciliationService {
   constructor(
     private readonly s3: AwsS3Service,
     private readonly media: MediaItemRepository,
+    private readonly references: MediaReferenceRepository,
   ) {}
 
   /**
-   * Compara bucket × media_items sob o prefixo do ambiente.
+   * Compara o bucket com TODAS as referências do banco, sob o prefixo do ambiente.
    * Órfãos mais velhos que a janela são removidos (a menos que dryRun);
    * referências sem objeto são apenas reportadas.
    */
@@ -30,7 +32,10 @@ export class MediaReconciliationService {
     const prefix = `${this.s3.getEnvironment()}/`;
 
     const referenced = new Set<string>();
-    for (const ref of await this.media.findLocalFileUrls()) {
+    for (const ref of [
+      ...(await this.media.findLocalFileUrls()),
+      ...(await this.references.findAllReferences()),
+    ]) {
       referenced.add(extractStorageKey(ref, bucket) ?? ref);
     }
 
