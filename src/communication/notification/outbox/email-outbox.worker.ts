@@ -5,6 +5,7 @@ import { ActionBoundaryService } from "src/core/audit/services/action-boundary.s
 import { runAuditedJob } from "src/core/audit/utils/audited-job.utils";
 import { EmailService } from "src/infrastructure/email/services/email.service";
 import { EmailOutboxService } from "./email-outbox.service";
+import { EmailDispatchService } from "../services/email-dispatch.service";
 import { OutboxLogs } from "../constants/notification.constants";
 
 /**
@@ -21,6 +22,7 @@ export class EmailOutboxWorker {
   constructor(
     private readonly outbox: EmailOutboxService,
     private readonly emailService: EmailService,
+    private readonly dispatcher: EmailDispatchService,
     @Optional() private readonly boundary?: ActionBoundaryService,
   ) {}
 
@@ -43,6 +45,11 @@ export class EmailOutboxWorker {
           let failed = 0;
           for (const entry of due) {
             try {
+              // A flag é um interruptor imediato: vale também para o que já estava na fila.
+              if (!(await this.dispatcher.isEnabled(entry.templateKey))) {
+                await this.outbox.markSkipped(entry);
+                continue;
+              }
               await this.emailService.dispatch({
                 to: entry.recipient,
                 subject: entry.subject,

@@ -141,6 +141,8 @@ módulo usa `isEnabledOrDefault(chave, true)`.
 
 O e-mail barrado por flag **fica registrado** no outbox como `skipped`:
 desligar o envio não apaga o rastro de que a aplicação quis avisar alguém.
+A flag é conferida ao enfileirar **e de novo no envio**: o que já estava `pending`
+(ou aguardando nova tentativa) quando a flag foi desligada também vira `skipped`.
 
 No ambiente local `email_delivery` fica **desligada** — sem isso, rodar
 os testes dispararia e-mail de verdade, porque `env/local.env` costuma ter

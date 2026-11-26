@@ -71,15 +71,20 @@ deactivate Domain
 Worker -> Outbox : lote pendente e vencido (20)
 activate Worker
 loop cada linha
-  Worker -> Smtp : dispatch(to, subject, text, html)
-  alt entregue
-    Worker -> Outbox : status = sent, sentAt
-  else falhou
-    Worker -> Outbox : attempts += 1, lastError
-    alt ainda há tentativa
-      Worker -> Outbox : status = pending\nscheduledFor += backoff (60s x2, teto 1h)
-    else esgotou 5 tentativas
-      Worker -> Outbox : status = failed
+  Worker -> Dispatch : isEnabled(chave)
+  alt flag desligada depois de enfileirar
+    Worker -> Outbox : status = skipped (sem SMTP)
+  else flag ligada
+    Worker -> Smtp : dispatch(to, subject, text, html)
+    alt entregue
+      Worker -> Outbox : status = sent, sentAt
+    else falhou
+      Worker -> Outbox : attempts += 1, lastError
+      alt ainda há tentativa
+        Worker -> Outbox : status = pending\nscheduledFor += backoff (60s x2, teto 1h)
+      else esgotou 5 tentativas
+        Worker -> Outbox : status = failed
+      end
     end
   end
 end

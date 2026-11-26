@@ -45,6 +45,7 @@ describe("EmailOutboxService", () => {
   const repository = {
     create: jest.fn(),
     save: jest.fn(),
+    insertMany: jest.fn(),
     saveOne: jest.fn(),
     existsByDedupeKey: jest.fn(),
     findDue: jest.fn(),
@@ -148,15 +149,37 @@ describe("EmailOutboxService", () => {
     it("registra o e-mail barrado sem enfileirar para envio", async () => {
       await service.recordSkipped(buildInput());
 
-      const [entries] = repository.save.mock.calls[0] as [EmailOutboxEntity[]];
+      const [entries] = repository.insertMany.mock.calls[0] as [
+        EmailOutboxEntity[],
+      ];
       expect(entries[0].status).toBe(EmailOutboxStatus.SKIPPED);
       expect(entries[0].dedupeKey).toBeNull();
+    });
+
+    it("muitos destinatários: grava em lotes, sem o INSERT + releitura por linha do save()", async () => {
+      const total = OUTBOX_CONFIG.SKIPPED_INSERT_CHUNK * 2 + 1;
+      const recipients = Array.from(
+        { length: total },
+        (_, index) => `p${index}@orfanatonib.test`,
+      );
+
+      await service.recordSkipped(buildInput({ recipients }));
+
+      const sizes = repository.insertMany.mock.calls.map(
+        ([entries]) => (entries as EmailOutboxEntity[]).length,
+      );
+      expect(sizes).toEqual([
+        OUTBOX_CONFIG.SKIPPED_INSERT_CHUNK,
+        OUTBOX_CONFIG.SKIPPED_INSERT_CHUNK,
+        1,
+      ]);
+      expect(repository.save).not.toHaveBeenCalled();
     });
 
     it("não grava nada sem destinatário", async () => {
       await service.recordSkipped(buildInput({ recipients: [] }));
 
-      expect(repository.save).not.toHaveBeenCalled();
+      expect(repository.insertMany).not.toHaveBeenCalled();
     });
   });
 

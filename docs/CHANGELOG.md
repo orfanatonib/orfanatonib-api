@@ -4,6 +4,13 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 ---
 
+## [Unreleased] - 2026-11-26 - CAMPANHA E2E: MÍDIA E FILA DE E-MAIL
+
+- **FIX (perda de dados)**: `POST /media-storage/reconcile?dryRun=false` tratava como órfão tudo o que só era referenciado fora de `media_items` e **apagava capas e arquivos do Estúdio e imagens de rota em uso**. A reconciliação e o descarte de upload passam a consultar todas as colunas de mídia.
+- **FIX (interruptor de e-mail)**: o worker da fila não conferia as flags: desligar `email_delivery`/`email_<tipo>` não parava o que já estava `pending`. Agora a flag é conferida no envio e a linha vira `skipped`.
+- **PERF**: o registro `skipped` de um aviso para todos usava `save()` (INSERT + releitura por destinatário, com o HTML); agora é INSERT em lotes de 100.
+- **TEST**: suíte Jest recuperada (specs herdadas de outro projeto e expectativas anteriores à publicação incremental).
+
 ## [Unreleased] - 2026-11-23 - SININHO COM CAIXA DE ENTRADA (ESTÚDIOS)
 
 - **FEAT (notificações)**: nova caixa de entrada persistida do sininho (`inbox_notifications`, módulo `communication/inbox`, migration gerada pelo CLI). Endpoints `GET /notifications/me` (paginado, `status=unread`, `type`), `/summary` (`unreadCount`, `total`, `revision`, `recentUnread`), `/:id`, `PATCH /:id/read` e `PATCH /read-all` (idempotentes). O destinatário vem sempre da sessão; aviso de outra pessoa é `404`. Atrás da flag `notification_center` (catálogo: 59 flags de interface).

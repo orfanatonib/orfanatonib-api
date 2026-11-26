@@ -5,6 +5,7 @@ import { EmailOutboxService } from "./email-outbox.service";
 import { EmailOutboxEntity } from "./email-outbox.entity";
 import { EmailOutboxStatus } from "../enums/email-outbox-status.enum";
 import { EmailTemplateKey } from "../enums/email-template-key.enum";
+import { EmailDispatchService } from "../services/email-dispatch.service";
 
 const buildEntry = (
   overrides: Partial<EmailOutboxEntity> = {},
@@ -30,7 +31,9 @@ describe("EmailOutboxWorker", () => {
     findDue: jest.fn(),
     markSent: jest.fn(),
     markAttemptFailed: jest.fn(),
+    markSkipped: jest.fn(),
   };
+  const dispatcher = { isEnabled: jest.fn() };
   const emailService = { dispatch: jest.fn() };
 
   let worker: EmailOutboxWorker;
@@ -43,12 +46,14 @@ describe("EmailOutboxWorker", () => {
         EmailOutboxWorker,
         { provide: EmailOutboxService, useValue: outbox },
         { provide: EmailService, useValue: emailService },
+        { provide: EmailDispatchService, useValue: dispatcher },
       ],
     }).compile();
     moduleRef.useLogger(false);
 
     worker = moduleRef.get(EmailOutboxWorker);
 
+    dispatcher.isEnabled.mockResolvedValue(true);
     outbox.findDue.mockResolvedValue([]);
     outbox.markSent.mockResolvedValue(undefined);
     outbox.markAttemptFailed.mockResolvedValue(true);
@@ -78,6 +83,25 @@ describe("EmailOutboxWorker", () => {
       html: "<p>corpo</p>",
     });
     expect(outbox.markSent).toHaveBeenCalledTimes(2);
+  });
+
+  it("flag desligada DEPOIS de enfileirar: não chama o SMTP e registra como barrado", async () => {
+    const barred = buildEntry({
+      id: "barrado",
+      templateKey: EmailTemplateKey.CONTACT_RECEIVED,
+    });
+    const allowed = buildEntry({ id: "livre" });
+    outbox.findDue.mockResolvedValue([barred, allowed]);
+    dispatcher.isEnabled.mockImplementation((key: EmailTemplateKey) =>
+      Promise.resolve(key !== EmailTemplateKey.CONTACT_RECEIVED),
+    );
+
+    await worker.drain();
+
+    expect(outbox.markSkipped).toHaveBeenCalledWith(barred);
+    expect(emailService.dispatch).toHaveBeenCalledTimes(1);
+    expect(outbox.markSent).toHaveBeenCalledWith(allowed);
+    expect(outbox.markAttemptFailed).not.toHaveBeenCalled();
   });
 
   it("uma falha não impede os outros e-mails do lote", async () => {

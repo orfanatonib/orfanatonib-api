@@ -20,6 +20,16 @@ export class EmailOutboxRepository {
     return this.repo.save(entries);
   }
 
+  /** INSERT em lote, sem reler as linhas gravadas. */
+  async insertMany(entries: EmailOutboxEntity[]): Promise<void> {
+    await this.repo
+      .createQueryBuilder()
+      .insert()
+      .values(entries)
+      .updateEntity(false)
+      .execute();
+  }
+
   saveOne(entry: EmailOutboxEntity): Promise<EmailOutboxEntity> {
     return this.repo.save(entry);
   }

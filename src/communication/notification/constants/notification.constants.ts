@@ -29,6 +29,8 @@ export const OUTBOX_CONFIG = {
   BACKOFF_MAX_SECONDS: 3600,
   /** Tamanho máximo do erro guardado na linha. */
   ERROR_MAX_LENGTH: 1000,
+  /** Linhas por INSERT ao registrar os avisos barrados pela flag (cada uma carrega o HTML). */
+  SKIPPED_INSERT_CHUNK: 100,
 } as const;
 
 /** Janela dos lembretes agendados. */

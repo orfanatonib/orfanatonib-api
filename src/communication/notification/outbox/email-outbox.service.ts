@@ -82,12 +82,28 @@ export class EmailOutboxService {
       }),
     );
 
-    await this.repository.save(entries);
+    // Um aviso para todos são milhares de linhas com o HTML inteiro: nada aqui precisa da releitura do `save()`.
+    for (
+      let start = 0;
+      start < entries.length;
+      start += OUTBOX_CONFIG.SKIPPED_INSERT_CHUNK
+    ) {
+      await this.repository.insertMany(
+        entries.slice(start, start + OUTBOX_CONFIG.SKIPPED_INSERT_CHUNK),
+      );
+    }
     this.logger.log(OutboxLogs.SKIPPED_BY_FLAG(input.templateKey));
   }
 
   findDue(now: Date): Promise<EmailOutboxEntity[]> {
     return this.repository.findDue(OUTBOX_CONFIG.BATCH_SIZE, now);
+  }
+
+  /** A flag foi desligada enquanto a linha aguardava: sai da fila sem envio e sem perder o rastro. */
+  async markSkipped(entry: EmailOutboxEntity): Promise<void> {
+    entry.status = EmailOutboxStatus.SKIPPED;
+    await this.repository.saveOne(entry);
+    this.logger.log(OutboxLogs.SKIPPED_BY_FLAG(entry.templateKey));
   }
 
   async markSent(entry: EmailOutboxEntity): Promise<void> {
