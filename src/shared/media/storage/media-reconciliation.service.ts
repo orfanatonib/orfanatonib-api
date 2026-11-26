@@ -31,6 +31,10 @@ export class MediaReconciliationService {
     const bucket = this.s3.getBucketName();
     const prefix = `${this.s3.getEnvironment()}/`;
 
+    // Bucket primeiro: o envio grava o objeto antes da linha, então quem foi listado e já tem linha fica protegido.
+    const objects = await this.s3.listKeys(prefix);
+    const present = new Set(objects.map((o) => o.key));
+
     const referenced = new Set<string>();
     for (const ref of [
       ...(await this.media.findLocalFileUrls()),
@@ -38,9 +42,6 @@ export class MediaReconciliationService {
     ]) {
       referenced.add(extractStorageKey(ref, bucket) ?? ref);
     }
-
-    const objects = await this.s3.listKeys(prefix);
-    const present = new Set(objects.map((o) => o.key));
 
     const orphanKeys = objects
       .filter((o) => !referenced.has(o.key))
@@ -51,9 +52,14 @@ export class MediaReconciliationService {
       )
       .map((o) => o.key);
 
-    const brokenReferences = [...referenced].filter(
+    // Para referência quebrada vale o contrário: confirma numa listagem posterior à leitura do banco.
+    let brokenReferences = [...referenced].filter(
       (k) => k.startsWith(prefix) && !present.has(k),
     );
+    if (brokenReferences.length > 0) {
+      const later = new Set((await this.s3.listKeys(prefix)).map((o) => o.key));
+      brokenReferences = brokenReferences.filter((k) => !later.has(k));
+    }
 
     const removedKeys: string[] = [];
     if (!options.dryRun) {

@@ -85,6 +85,24 @@ describe("MediaReconciliationService", () => {
     expect(r.brokenReferences).toContain("local/content-studio/p/missing.pdf");
   });
 
+  it("lista o bucket ANTES de ler as referências (upload concluído no meio não vira órfão)", async () => {
+    const order: string[] = [];
+    const { svc, s3 } = setup();
+    s3.listKeys.mockImplementation(async () => {
+      order.push("bucket");
+      return [];
+    });
+    const original = svc["references"].findAllReferences;
+    svc["references"].findAllReferences = jest.fn(async () => {
+      order.push("banco");
+      return original();
+    });
+
+    await svc.reconcile({ dryRun: true, now });
+
+    expect(order.slice(0, 2)).toEqual(["bucket", "banco"]);
+  });
+
   it("[media-upload.reconcile.job#execucao-so-orfao-antigo] execução apaga só órfão antigo, nunca a referência quebrada nem o recente", async () => {
     const { svc, s3 } = setup();
     const r = await svc.reconcile({ dryRun: false, now });
