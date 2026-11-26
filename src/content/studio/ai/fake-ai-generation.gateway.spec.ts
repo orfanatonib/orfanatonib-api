@@ -59,6 +59,7 @@ describe("FakeAiGenerationGateway", () => {
     ["[[fake:500]]", AiProviderErrorKind.SERVER],
     ["[[fake:schema]]", AiProviderErrorKind.SCHEMA],
     ["[[fake:network]]", AiProviderErrorKind.NETWORK],
+    ["[[fake:truncated]]", AiProviderErrorKind.OUTPUT_TRUNCATED],
   ])("diretiva %s vira %s", async (directive, kind) => {
     expect(await kindOf(make().generateStructuredText(req(directive)))).toBe(
       kind,

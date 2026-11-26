@@ -84,7 +84,11 @@ import { SaveStageContentService } from "./services/save-stage-content.service";
 import { SubmitPackageReviewService } from "./services/submit-package-review.service";
 
 /** Cota simulada: 4 públicos × 5 etapas são 20 pedidos de ~2 mil tokens por material; o E2E cria vários. */
-const FAKE_AI_DEFAULT_QUOTA_TOKENS = 500_000;
+/**
+ * A cota simulada é do processo e só desce: um teto baixo faria a geração falhar conforme quantos testes rodaram
+ * antes. Esgotamento se prova com `[[fake:quota]]` (ou `FAKE_AI_QUOTA_TOKENS`).
+ */
+const FAKE_AI_DEFAULT_QUOTA_TOKENS = 100_000_000;
 
 @Module({
   imports: [

@@ -43,6 +43,12 @@ const KIND_BY_FAILURE: Readonly<Record<FakeAiFailure, AiProviderErrorKind>> = {
   [FakeAiFailure.SERVER_ERROR]: AiProviderErrorKind.SERVER,
   [FakeAiFailure.INVALID_SCHEMA]: AiProviderErrorKind.SCHEMA,
   [FakeAiFailure.NETWORK]: AiProviderErrorKind.NETWORK,
+  [FakeAiFailure.TRUNCATED]: AiProviderErrorKind.OUTPUT_TRUNCATED,
+};
+
+/** O mesmo código de causa que os gateways reais registram. */
+const DETAIL_BY_FAILURE: Partial<Record<FakeAiFailure, string>> = {
+  [FakeAiFailure.TRUNCATED]: "incomplete:max_output_tokens",
 };
 
 /**
@@ -82,6 +88,7 @@ export class FakeAiGenerationGateway extends AiGenerationGateway {
     if (directive && this.failures.shouldFail(correlationId, directive)) {
       throw new AiProviderRequestError(
         KIND_BY_FAILURE[directive.descriptor.failure],
+        DETAIL_BY_FAILURE[directive.descriptor.failure],
       );
     }
     if (!this.quota.consume(tokens))

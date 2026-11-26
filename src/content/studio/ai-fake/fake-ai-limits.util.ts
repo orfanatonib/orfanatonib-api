@@ -12,6 +12,8 @@ export enum FakeAiFailure {
   SERVER_ERROR = "500",
   INVALID_SCHEMA = "schema",
   NETWORK = "network",
+  /** Resposta cortada pelo limite de tokens de saída (`status: incomplete`). */
+  TRUNCATED = "truncated",
 }
 
 export interface FakeAiFailureDescriptor {
@@ -58,6 +60,11 @@ const FAILURES: Readonly<Record<FakeAiFailure, FakeAiFailureDescriptor>> = {
   [FakeAiFailure.NETWORK]: {
     failure: FakeAiFailure.NETWORK,
     httpStatus: null,
+    retryable: true,
+  },
+  [FakeAiFailure.TRUNCATED]: {
+    failure: FakeAiFailure.TRUNCATED,
+    httpStatus: 200,
     retryable: true,
   },
 };
