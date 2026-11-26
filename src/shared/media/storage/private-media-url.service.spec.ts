@@ -28,9 +28,10 @@ const publicKey = buildStorageKey({
 });
 
 function setup(ttlEnv?: string) {
-  const getSignedReadUrl = jest.fn(
-    async (key: string, ttl: number) =>
+  const getSignedReadUrl = jest.fn((key: string, ttl: number) =>
+    Promise.resolve(
       `https://signed.example/${key}?X-Amz-Expires=${ttl}&X-Amz-Signature=abc`,
+    ),
   );
   const s3 = {
     getBucketName: () => BUCKET,

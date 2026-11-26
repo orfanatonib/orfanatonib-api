@@ -44,7 +44,11 @@ describe("e-mail 'nova publicação' (aos admins)", () => {
 describe("e-mail 'publicação reprovada' (ao autor)", () => {
   it("saúda o autor, mostra o motivo e leva à área de envio; escapa HTML do motivo", () => {
     const out = renderImageRejected(
-      { userName: "Maria", postCaption: "Visita", reason: "<b>rosto</b> visível" },
+      {
+        userName: "Maria",
+        postCaption: "Visita",
+        reason: "<b>rosto</b> visível",
+      },
       context,
     );
     expect(out.html).toContain("Olá <strong>Maria</strong>");
@@ -88,8 +92,8 @@ describe("flag própria das notificações de publicação", () => {
     expect(outbox.enqueue).toHaveBeenCalledTimes(1);
 
     outbox.enqueue.mockClear();
-    flags.isEnabledOrDefault.mockImplementation(
-      async (key: string) => key !== "email_image_rejected_notification",
+    flags.isEnabledOrDefault.mockImplementation((key: string) =>
+      Promise.resolve(key !== "email_image_rejected_notification"),
     );
     await send();
     expect(outbox.enqueue).not.toHaveBeenCalled();
