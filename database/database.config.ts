@@ -9,10 +9,7 @@ import {
   DEFAULT_DATABASE_USERNAME,
 } from "./database.constants";
 import { DATABASE_ENTITIES } from "./database.entities";
-import {
-  DatabaseEnvironment,
-  DatabaseOptionsOverrides,
-} from "./database.types";
+import { DatabaseEnvironment } from "./database.types";
 
 function parseDatabasePort(value: string | number | undefined): number {
   if (value === undefined) {
@@ -30,7 +27,6 @@ function parseDatabasePort(value: string | number | undefined): number {
 
 export function createDatabaseOptions(
   environment: DatabaseEnvironment,
-  overrides: DatabaseOptionsOverrides = {},
 ): MysqlConnectionOptions {
   return {
     type: "mysql",
@@ -42,6 +38,9 @@ export function createDatabaseOptions(
     entities: DATABASE_ENTITIES,
     migrations: [join(__dirname, "migrations", "*{.ts,.js}")],
     migrationsTableName: DATABASE_MIGRATIONS_TABLE,
-    synchronize: overrides.synchronize ?? false,
+    // Schema só muda por migration (nunca por sincronização de entidades).
+    synchronize: false,
+    migrationsRun: false,
+    dropSchema: false,
   };
 }

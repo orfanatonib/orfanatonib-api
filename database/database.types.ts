@@ -5,7 +5,3 @@ export interface DatabaseEnvironment {
   readonly DB_PASSWORD?: string;
   readonly DB_NAME?: string;
 }
-
-export interface DatabaseOptionsOverrides {
-  readonly synchronize?: boolean;
-}

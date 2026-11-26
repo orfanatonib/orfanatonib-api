@@ -15,6 +15,20 @@ remain mandatory before rollout there. Existing environments were historically
 created with `synchronize: true`; never run the baseline normally over those
 tables.
 
+## Production transition (rehearsed 2026-11-23)
+
+Production (35 tables, no `typeorm_migrations`) is adopted by `scripts/deploy/database.cjs auto`:
+
+1. schema fingerprint must equal `database/adoption/legacy-schema.json` (otherwise it aborts, nothing altered);
+2. DB default collation is aligned to the tables' (`utf8mb4_0900_ai_ci`) so new FKs are compatible;
+3. `LegacyProductionUpgrade1795459199000` brings the schema to the entities (18 new tables, 6 altered; `feature_flags.environment` is dropped exactly once);
+4. `ReleaseBaseline1795459200000` is only *recorded* (fake), then `ReleaseDataPolicies1795459201000` runs;
+5. `createSchemaBuilder().log()` must return 0 operations.
+
+Later environments (already adopted) just run pending migrations. Empty databases run the baseline normally.
+Entity ↔ migration map: `ENTITY_MIGRATION_MAP.md`. TypeORM `synchronize` is hard-coded `false` (no override).
+Rehearsal rule: every rehearsal restores the **latest** S3 backup into a new database; never reuse a dump.
+
 ## Local commands
 
 Run commands from `orfanatonib-api`:

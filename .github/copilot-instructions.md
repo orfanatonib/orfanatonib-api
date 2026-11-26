@@ -2,7 +2,7 @@
 
 These instructions apply to all suggestions and edits in this repository.
 
-Read and follow [`AGENTS.md`](../AGENTS.md), [`docs/ORFANATO_BACKEND_BEST_PRACTICES.md`](../docs/ORFANATO_BACKEND_BEST_PRACTICES.md), [`AI_DATABASE_CHANGE_REQUIREMENTS.md`](../AI_DATABASE_CHANGE_REQUIREMENTS.md) for database work, [`docs/ERROR_HANDLING_GUIDE.md`](../docs/ERROR_HANDLING_GUIDE.md), and applicable domain rules.
+Read and follow [`AGENTS.md`](../AGENTS.md), [`docs/ORFANATO_BACKEND_BEST_PRACTICES.md`](../docs/ORFANATO_BACKEND_BEST_PRACTICES.md), [`docs/deploy/README.md`](../docs/deploy/README.md) (deploy: never without explicit approval), [`AI_DATABASE_CHANGE_REQUIREMENTS.md`](../AI_DATABASE_CHANGE_REQUIREMENTS.md) for database work, [`docs/ERROR_HANDLING_GUIDE.md`](../docs/ERROR_HANDLING_GUIDE.md), and applicable domain rules.
 
 - Generate NestJS 11 and TypeScript code, not FastAPI/Python patterns.
 - Controllers delegate; services orchestrate; repositories own TypeORM; providers own external APIs.

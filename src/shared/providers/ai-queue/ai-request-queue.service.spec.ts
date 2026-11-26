@@ -72,14 +72,14 @@ describe('central AI queue', () => {
     worker.run.mockResolvedValue(undefined);
     job.remove.mockResolvedValue(undefined);
     completion.mockResolvedValue({
-      resultKey: 'test:llm-result:request',
+      resultKey: 'orfanato-nib-local-test:llm-result:request',
     });
     jest.mocked(Redis).mockImplementation(() => redis as unknown as Redis);
     jest.mocked(Queue).mockImplementation(() => queue as never);
     jest.mocked(QueueEvents).mockImplementation(() => events as never);
     jest.mocked(Worker).mockImplementation(() => worker as never);
     service = new AiRequestQueueService(
-      new ConfigService({ AI_QUEUE_PREFIX: 'test', AI_QUEUE_CONCURRENCY: 2 }),
+      new ConfigService({ AI_QUEUE_PREFIX: 'orfanato-nib-local-test', AI_QUEUE_CONCURRENCY: 2 }),
       processor as unknown as AiRequestProcessor,
     );
   });
@@ -90,7 +90,7 @@ describe('central AI queue', () => {
   const cancelKeys = (): string[] =>
     redis.set.mock.calls
       .map(([key]) => key)
-      .filter((key) => /^test:llm-cancel:/.test(key));
+      .filter((key) => /^orfanato-nib-local-test:llm-cancel:/.test(key));
 
   it('sets Redis global concurrency before consuming and disables extra provider retries in BullMQ', async () => {
     await service.onModuleInit();
@@ -101,7 +101,7 @@ describe('central AI queue', () => {
     expect(Queue).toHaveBeenCalledWith(
       AI_QUEUE.name,
       expect.objectContaining({
-        prefix: 'test',
+        prefix: 'orfanato-nib-local-test',
         defaultJobOptions: expect.objectContaining({ attempts: 1 }) as unknown,
       }),
     );
@@ -136,7 +136,7 @@ describe('central AI queue', () => {
       events,
       AI_QUEUE.waitMs + options.timeout + AI_QUEUE.terminalGraceMs,
     );
-    expect(redis.getdel).toHaveBeenCalledWith('test:llm-result:request');
+    expect(redis.getdel).toHaveBeenCalledWith('orfanato-nib-local-test:llm-result:request');
     expect(job.remove).toHaveBeenCalled();
   });
 
@@ -200,7 +200,7 @@ describe('central AI queue', () => {
   it('identifies the producer, keeps it alive and prioritizes interactive lookups', async () => {
     await service.onModuleInit();
     expect(redis.set).toHaveBeenCalledWith(
-      expect.stringMatching(/^test:llm-producer:/),
+      expect.stringMatching(/^orfanato-nib-local-test:llm-producer:/),
       '1',
       'PX',
       AI_QUEUE.producerTtlMs,
@@ -227,7 +227,7 @@ describe('central AI queue', () => {
     );
     await service.onModuleDestroy();
     expect(redis.del).toHaveBeenCalledWith(
-      expect.stringMatching(/^test:llm-producer:/),
+      expect.stringMatching(/^orfanato-nib-local-test:llm-producer:/),
     );
   });
 

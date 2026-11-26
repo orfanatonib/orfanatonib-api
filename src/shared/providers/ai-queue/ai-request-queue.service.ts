@@ -9,6 +9,7 @@ import { randomUUID } from 'node:crypto';
 import { Job, Queue, QueueEvents, Worker } from 'bullmq';
 import Redis from 'ioredis';
 import { AI_QUEUE } from './constants';
+import { redisNamespace } from './namespace.utils';
 import { AiQueueFailure, AiQueueFeature, AiQueueMethod } from './enums';
 import {
   AiQueueCompletion,
@@ -53,9 +54,7 @@ export class AiRequestQueueService implements OnModuleInit, OnModuleDestroy {
     config: ConfigService,
     private readonly processor: AiRequestProcessor,
   ) {
-    const prefix = config.get<string>('AI_QUEUE_PREFIX') || AI_QUEUE.prefix;
-    if (!/^[a-zA-Z0-9_-]+$/.test(prefix))
-      throw new Error('AI_QUEUE_PREFIX inválido.');
+    const prefix = redisNamespace((key) => config.get<string>(key));
     this.settings = {
       connection: redisConnection(
         config.get<string>('REDIS_URL') || AI_QUEUE.redisUrl,

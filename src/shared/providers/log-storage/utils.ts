@@ -9,7 +9,7 @@ import {
   LOG_TTL_DAYS_MIN,
   LogStorageEnv,
 } from "./constants";
-import { LogRecordType, LogStorageKind, LogStream } from "./enums";
+import { LogCredentialsSource, LogRecordType, LogStorageKind, LogStream } from "./enums";
 import {
   AuditStreamConfig,
   JsonValue,
@@ -142,11 +142,20 @@ const parseStreamStorage = (
       `${LogStorageEnv.AwsRegion} é obrigatória quando ${storageKey}=dynamodb.`,
     );
   }
+  const source = readTrimmed(read, LogStorageEnv.CredentialsSource);
+  if (source && source !== LogCredentialsSource.Default && source !== LogCredentialsSource.InstanceProfile) {
+    throw new LogStorageConfigError('LOG_AWS_CREDENTIALS_SOURCE deve ser default ou instance-profile.');
+  }
+  const endpoint = readTrimmed(read, LogStorageEnv.DynamoEndpoint) ?? null;
+  if (endpoint && source === LogCredentialsSource.InstanceProfile) {
+    throw new LogStorageConfigError('Credenciais da EC2 não podem ser usadas com endpoint DynamoDB customizado.');
+  }
   return {
     kind,
     tableName,
     region,
-    endpoint: readTrimmed(read, LogStorageEnv.DynamoEndpoint) ?? null,
+    endpoint,
+    ...(source ? { credentialsSource: source as LogCredentialsSource } : {}),
   };
 };
 

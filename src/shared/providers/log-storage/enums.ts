@@ -4,6 +4,11 @@ export enum LogStorageKind {
   DynamoDb = "dynamodb",
 }
 
+export enum LogCredentialsSource {
+  Default = "default",
+  InstanceProfile = "instance-profile",
+}
+
 /** Os dois fluxos lógicos que compartilham a mesma tabela/pasta. */
 export enum LogStream {
   Observability = "observability",

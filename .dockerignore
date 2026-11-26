@@ -11,5 +11,8 @@ env
 docs
 test
 e2e
-scripts
+scripts/*
+!scripts/deploy
+scripts/deploy/*
+!scripts/deploy/*.cjs
 .dynamodb-local

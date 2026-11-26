@@ -11,6 +11,7 @@ Before modifying any source, test, configuration, database, or documentation fil
 - [`docs/ORFANATO_BACKEND_BEST_PRACTICES.md`](docs/ORFANATO_BACKEND_BEST_PRACTICES.md)
 - [`AI_DATABASE_CHANGE_REQUIREMENTS.md`](AI_DATABASE_CHANGE_REQUIREMENTS.md) for every database, entity, relation, index, or schema change.
 - [`docs/ERROR_HANDLING_GUIDE.md`](docs/ERROR_HANDLING_GUIDE.md) when behavior can fail through HTTP.
+- [`docs/deploy/README.md`](docs/deploy/README.md) for any deploy, migration rollout, Dockerfile, CI workflow, or production env change. Never deploy without explicit owner approval.
 
 The backend best-practices document is the canonical detailed guide. This file is the always-loaded entrypoint and does not replace it.
 

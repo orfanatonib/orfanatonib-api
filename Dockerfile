@@ -32,6 +32,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=builder /app/dist ./dist
+COPY scripts/deploy/*.cjs ./scripts/deploy/
+COPY database/adoption/legacy-schema.json ./database/adoption/legacy-schema.json
 
 # Não roda como root.
 RUN chown -R node:node /app

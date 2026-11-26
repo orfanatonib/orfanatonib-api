@@ -2,6 +2,7 @@ import { UserRole } from "src/core/auth/auth.types";
 
 import {
   LogActorType,
+  LogCredentialsSource,
   LogRecordType,
   LogSourceType,
   LogStorageKind,
@@ -54,6 +55,7 @@ export interface DynamoDbStorageConfig {
   region: string;
   /** Somente para DynamoDB Local em desenvolvimento. */
   endpoint: string | null;
+  credentialsSource?: LogCredentialsSource;
 }
 
 export type StreamStorageConfig = FileStorageConfig | DynamoDbStorageConfig;

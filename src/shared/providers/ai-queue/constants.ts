@@ -1,6 +1,11 @@
+export const REDIS_NAMESPACE = {
+  application: 'orfanato-nib',
+  environments: ['local', 'dev', 'staging', 'prod'] as readonly string[],
+} as const;
+
 export const AI_QUEUE = {
   name: 'llm-requests',
-  prefix: 'orfanato',
+  prefix: 'orfanato-nib-local',
   jobName: 'provider-request',
   redisUrl: 'redis://127.0.0.1:6379/0',
   concurrency: 1,

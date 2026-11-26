@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { redisNamespace } from "../../shared/providers/ai-queue/namespace.utils";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 import { VisitMaterialsPageModule } from "src/content/page/visit-material-page/visit-material-page.module";
@@ -165,7 +166,10 @@ const FAKE_AI_DEFAULT_QUOTA_TOKENS = 500_000;
           config.get<string>("CS_QUEUE_DRIVER") ?? ""
         ).toLowerCase();
         return redisUrl && driver !== "memory"
-          ? new BullMqAiJobQueue({ redisUrl })
+          ? new BullMqAiJobQueue({
+              redisUrl,
+              prefix: `${redisNamespace((key) => config.get<string>(key))}:studio`,
+            })
           : new InMemoryAiJobQueue();
       },
     },

@@ -21,14 +21,18 @@ describe("createDatabaseOptions", () => {
       entities: DATABASE_ENTITIES,
       migrationsTableName: "typeorm_migrations",
       synchronize: false,
+      migrationsRun: false,
+      dropSchema: false,
     });
     expect(options.migrations).toHaveLength(1);
   });
 
-  it("allows the application to preserve synchronization during baseline work", () => {
-    const options = createDatabaseOptions({}, { synchronize: true });
+  it("never synchronizes entities, runs migrations on boot or drops the schema", () => {
+    const options = createDatabaseOptions({});
 
-    expect(options.synchronize).toBe(true);
+    expect(options.synchronize).toBe(false);
+    expect(options.migrationsRun).toBe(false);
+    expect(options.dropSchema).toBe(false);
   });
 
   it.each(["0", "65536", "invalid"])("rejects invalid DB_PORT %s", (port) => {

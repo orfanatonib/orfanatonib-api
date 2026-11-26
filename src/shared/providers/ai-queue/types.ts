@@ -1,4 +1,6 @@
 import { RedisOptions } from 'ioredis';
+
+export type RedisEnvironmentReader = (key: string) => string | undefined;
 import {
   AiQueueFeature,
   AiQueueProviderName,

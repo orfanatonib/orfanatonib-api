@@ -1,6 +1,6 @@
 # Claude Project Instructions — Orfanato NIB Backend
 
-Read and comply with [`AGENTS.md`](AGENTS.md), [`docs/ORFANATO_BACKEND_BEST_PRACTICES.md`](docs/ORFANATO_BACKEND_BEST_PRACTICES.md), [`AI_DATABASE_CHANGE_REQUIREMENTS.md`](AI_DATABASE_CHANGE_REQUIREMENTS.md) for database work, and applicable error/domain documentation before modifying this repository.
+Read and comply with [`AGENTS.md`](AGENTS.md), [`docs/ORFANATO_BACKEND_BEST_PRACTICES.md`](docs/ORFANATO_BACKEND_BEST_PRACTICES.md), [`AI_DATABASE_CHANGE_REQUIREMENTS.md`](AI_DATABASE_CHANGE_REQUIREMENTS.md) for database work, [`docs/deploy/README.md`](docs/deploy/README.md) for deploy/migration rollout (never deploy without explicit approval), and applicable error/domain documentation before modifying this repository.
 
 Mandatory summary:
 

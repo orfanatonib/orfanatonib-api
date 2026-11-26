@@ -20,6 +20,7 @@ export const LogStorageEnv = {
   DynamoTableName: "LOG_DYNAMODB_TABLE_NAME",
   DynamoEndpoint: "LOG_DYNAMODB_ENDPOINT",
   AwsRegion: "AWS_REGION",
+  CredentialsSource: "LOG_AWS_CREDENTIALS_SOURCE",
 } as const;
 
 /**

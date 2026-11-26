@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 import { AI_QUEUE } from 'src/shared/providers/ai-queue/constants';
 import { redisConnection } from 'src/shared/providers/ai-queue/utils';
+import { redisNamespace } from 'src/shared/providers/ai-queue/namespace.utils';
 import { LESSON_GENERATION_PROGRESS } from '../constants/lesson-generation-progress.constants';
 import type { LessonProgressStore } from '../types/lesson-generation-progress.types';
 
@@ -22,7 +23,7 @@ export class RedisLessonProgressStore
 
   constructor(config: ConfigService) {
     this.url = config.get<string>('REDIS_URL') || AI_QUEUE.redisUrl;
-    const prefix = config.get<string>('AI_QUEUE_PREFIX') || AI_QUEUE.prefix;
+    const prefix = redisNamespace((key) => config.get<string>(key));
     this.root = `${prefix}:${LESSON_GENERATION_PROGRESS.namespace}`;
   }
 
