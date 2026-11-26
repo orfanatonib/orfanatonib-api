@@ -437,6 +437,22 @@ describe("PDF da etapa guardado (a revisão lê um arquivo pronto, não monta na
     expect(s3.deleteKey).toHaveBeenCalledWith("test/antigo.pdf");
   });
 
+  it("refeito com o MESMO conteúdo (mesma chave): não apaga o PDF que acabou de gravar", async () => {
+    const { svc, assets, s3 } = setup(graph());
+    // O registro antigo aponta para a mesma chave do arquivo novo (reconstrução após leitura que falhou,
+    // ou dois pedidos em sequência).
+    assets.replaceStagePdf.mockImplementation(
+      async (input: { storageKey: string }) =>
+        Promise.resolve([input.storageKey, "test/antigo.pdf"]),
+    );
+
+    await svc.exportStage("p1", "s1", StudioExportFormat.PDF);
+
+    const stored = s3.putObject.mock.calls[0][0] as string;
+    expect(s3.deleteKey).not.toHaveBeenCalledWith(stored);
+    expect(s3.deleteKey).toHaveBeenCalledWith("test/antigo.pdf");
+  });
+
   it("pré-geração: gera uma etapa por vez e uma falha não impede as seguintes", async () => {
     const two = stage(
       "s2",

@@ -8,6 +8,7 @@ Registro completo de todas as mudanças, atualizações e melhorias do projeto.
 
 - **FIX (perda de dados)**: `POST /media-storage/reconcile?dryRun=false` tratava como órfão tudo o que só era referenciado fora de `media_items` e **apagava capas e arquivos do Estúdio e imagens de rota em uso**. A reconciliação e o descarte de upload passam a consultar todas as colunas de mídia.
 - **FIX (interruptor de e-mail)**: o worker da fila não conferia as flags: desligar `email_delivery`/`email_<tipo>` não parava o que já estava `pending`. Agora a flag é conferida no envio e a linha vira `skipped`.
+- **FIX (arquivo sumia)**: PDF de etapa refeito com o mesmo conteúdo apagava o próprio objeto recém-gravado (a chave "antiga" era igual à nova). Falha ao atualizar a capa da página publicada apagava a imagem nova e deixava o pacote apontando para ela; agora o pacote volta à capa anterior.
 - **PERF**: o registro `skipped` de um aviso para todos usava `save()` (INSERT + releitura por destinatário, com o HTML); agora é INSERT em lotes de 100.
 - **TEST**: suíte Jest recuperada (specs herdadas de outro projeto e expectativas anteriores à publicação incremental).
 

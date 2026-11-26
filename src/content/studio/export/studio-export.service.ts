@@ -266,7 +266,8 @@ export class StudioExportService {
         sizeBytes: buffer.length,
         checksum: contentKey,
       });
-      for (const key of stale) {
+      // Reconstruído com o mesmo conteúdo, o registro antigo tem a MESMA chave: o objeto é o recém-gravado.
+      for (const key of stale.filter((item) => item !== storageKey)) {
         try {
           await this.s3.deleteKey(key);
         } catch (error) {

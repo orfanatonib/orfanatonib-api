@@ -121,7 +121,11 @@ export class GeneratePackageCoverService {
       const page = await this.pages.findBySourceLessonId(packageId);
       if (page?.route?.id) await this.pageCover.execute(page.route.id, url);
     } catch (error: unknown) {
-      // Nada liga a imagem nova: ela seria lixo no bucket.
+      // O pacote volta à capa anterior ANTES de a nova sair do bucket: se não der para voltar, o arquivo fica.
+      await this.packages.update(
+        { id: packageId },
+        { coverImageUrl: previous },
+      );
       await this.s3.deleteKey(key).catch(() => undefined);
       throw error;
     }
