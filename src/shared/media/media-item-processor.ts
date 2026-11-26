@@ -338,6 +338,9 @@ export class MediaItemProcessor {
         firstError ??= error;
       }
     }
-    if (firstError !== undefined) throw firstError;
+    if (firstError !== undefined)
+      throw firstError instanceof Error
+        ? firstError
+        : new Error("Falha ao descartar upload sem referência");
   }
 }
