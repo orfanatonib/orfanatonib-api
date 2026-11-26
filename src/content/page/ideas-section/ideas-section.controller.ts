@@ -1,167 +1,159 @@
 import {
+  Body,
   Controller,
-  Post,
-  Patch,
   Delete,
   Get,
+  Query,
   Param,
-  Body,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Req,
   UploadedFiles,
-  UseInterceptors,
   UseGuards,
-  Logger,
-  BadRequestException,
-  NotFoundException,
-  Request,
-} from '@nestjs/common';
-import { AnyFilesInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
-import { AdminRoleGuard } from 'src/core/auth/guards/role-guard';
-import { plainToInstance } from 'class-transformer';
-import { validate } from 'class-validator';
-import { IdeasSectionUpdateService } from './services/ideas-section-update.service';
-import { IdeasSectionGetService } from './services/ideas-section-get.service';
-import { IdeasSectionDeleteService } from './services/ideas-section-delete.service';
-import { IdeasSectionResponseDto } from './dto/ideas-section-response.dto';
-import { CreateIdeasSectionDto } from './dto/create-ideas-section.dto';
-import { UpdateIdeasSectionDto } from './dto/update-ideas-section.dto';
-import { IdeasSectionCreateService } from './services/ideas-section-create.service';
+  UseInterceptors,
+} from "@nestjs/common";
+import { AnyFilesInterceptor } from "@nestjs/platform-express";
 
-@Controller('ideas-sections')
+import { UnauthenticatedException } from "src/common/exceptions";
+import { AuthenticatedRequest } from "src/core/auth/auth.types";
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { IdeasSectionPendingCountDto } from "./dto/ideas-section-pending-count.dto";
+import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
+
+import {
+  IDEAS_SECTION_MESSAGES,
+  IDEAS_SECTION_PAYLOAD_FIELD,
+} from "./constants";
+import { CreateIdeasSectionDto } from "./dto/create-ideas-section.dto";
+import { IdeasSectionResponseDto } from "./dto/ideas-section-response.dto";
+import { UpdateIdeasSectionDto } from "./dto/update-ideas-section.dto";
+import { AttachIdeasSectionService } from "./services/attach-ideas-section.service";
+import { CreateIdeasSectionService } from "./services/create-ideas-section.service";
+import { DeleteIdeasSectionService } from "./services/delete-ideas-section.service";
+import { IdeasSectionListQueryDto } from "./dto/ideas-section-list-query.dto";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import { GetIdeasSectionService } from "./services/get-ideas-section.service";
+import { UpdateIdeasSectionService } from "./services/update-ideas-section.service";
+import {
+  parseIdeasSectionPayload,
+  toFilesDict,
+} from "./utils/ideas-section-payload.util";
+import { IDEAS_UPLOAD_OPTIONS } from "./utils/ideas-section-upload.util";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
+
+/**
+ * Ideias compartilhadas pelos membros.
+ *
+ * Toda a rota é autenticada: a seção expõe nome, e-mail e telefone de quem a
+ * enviou, e as duas leituras estavam **abertas ao público**.
+ */
+@Controller("ideas-sections")
+@UseGuards(JwtAuthGuard)
 export class IdeasSectionController {
-  private readonly logger = new Logger(IdeasSectionController.name);
-
   constructor(
-    private readonly createService: IdeasSectionCreateService,
-    private readonly updateService: IdeasSectionUpdateService,
-    private readonly getService: IdeasSectionGetService,
-    private readonly deleteService: IdeasSectionDeleteService,
+    private readonly createService: CreateIdeasSectionService,
+    private readonly updateService: UpdateIdeasSectionService,
+    private readonly attachService: AttachIdeasSectionService,
+    private readonly getService: GetIdeasSectionService,
+    private readonly deleteService: DeleteIdeasSectionService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
+  /** Qualquer usuário autenticado pode compartilhar uma ideia. */
+  @FeatureFlag(FeatureFlagKeys.IDEA_SUBMISSION)
+  @UseGuards(FeatureFlagGuard)
   @Post()
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(IDEAS_UPLOAD_OPTIONS))
   async create(
-    @Request() req,
+    @Req() request: AuthenticatedRequest,
     @UploadedFiles() files: Express.Multer.File[],
-    @Body('sectionData') raw: string | Buffer,
+    @Body(IDEAS_SECTION_PAYLOAD_FIELD) raw: string,
   ): Promise<IdeasSectionResponseDto> {
-
-    const parsedData = JSON.parse(Buffer.isBuffer(raw) ? raw.toString() : raw);
-    const dto = plainToInstance(CreateIdeasSectionDto, parsedData);
-    const validationErrors = await validate(dto, {
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    });
-
-    if (validationErrors.length > 0) {
-      this.logger.error('Validation errors:', JSON.stringify(validationErrors, null, 2));
-      throw new BadRequestException('Invalid data in request');
+    const userId = request.user?.userId;
+    if (!userId) {
+      throw new UnauthenticatedException(
+        IDEAS_SECTION_MESSAGES.UNAUTHENTICATED,
+      );
     }
 
-    const filesDict: Record<string, Express.Multer.File> = {};
-    files.forEach((file) => (filesDict[file.fieldname] = file));
-    const userId = req.user.userId;
-    this.logger.log(`Creating new ideas section for user ${userId}`);
-    const result = await this.createService.createSection(dto, filesDict, userId);
-    this.logger.log(`Ideas section created successfully: ${result.id}`);
-    return result;
+    const dto = parseIdeasSectionPayload(raw, CreateIdeasSectionDto);
+    return this.createService.execute(dto, toFilesDict(files), userId);
   }
 
- @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  @Patch(':id')
-  @UseInterceptors(AnyFilesInterceptor())
+  @FeatureFlag(FeatureFlagKeys.IDEA_MODERATION)
+  @UseGuards(FeatureFlagGuard)
+  @Patch(":id")
+  @UseGuards(AdminRoleGuard)
+  @UseInterceptors(AnyFilesInterceptor(IDEAS_UPLOAD_OPTIONS))
   async update(
-    @Param('id') id: string,
+    @Param("id", new ParseUUIDPipe()) id: string,
     @UploadedFiles() files: Express.Multer.File[],
-    @Body('sectionData') raw: string | Buffer,
+    @Body(IDEAS_SECTION_PAYLOAD_FIELD) raw: string,
   ): Promise<IdeasSectionResponseDto> {
-
-    const parsedData = JSON.parse(Buffer.isBuffer(raw) ? raw.toString() : raw);
-    const dto = plainToInstance(UpdateIdeasSectionDto, parsedData);
-    const validationErrors = await validate(dto, {
-      whitelist: true,
-      forbidNonWhitelisted: true,
-    });
-
-    if (validationErrors.length > 0) {
-      this.logger.error('Validation errors:', JSON.stringify(validationErrors, null, 2));
-      throw new BadRequestException('Invalid data in request');
-    }
-
-    const filesDict: Record<string, Express.Multer.File> = {};
-    files.forEach((file) => (filesDict[file.fieldname] = file));
-    this.logger.log(`Updating ideas section: ${id}`);
-    const result = await this.updateService.updateSection(id, dto, filesDict);
-    this.logger.log(`Ideas section updated successfully: ${id}`);
-    return result;
+    const dto = parseIdeasSectionPayload(raw, UpdateIdeasSectionDto);
+    return this.updateService.execute(id, dto, toFilesDict(files));
   }
 
-  @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  @Patch(':id/attach/:pageId')
-  @UseInterceptors(AnyFilesInterceptor())
-  async editAndAttachToPage(
-    @Param('id') sectionId: string,
-    @Param('pageId') pageId: string,
+  @FeatureFlag(FeatureFlagKeys.IDEA_MODERATION)
+  @UseGuards(FeatureFlagGuard)
+  @Patch(":id/attach/:pageId")
+  @UseGuards(AdminRoleGuard)
+  @UseInterceptors(AnyFilesInterceptor(IDEAS_UPLOAD_OPTIONS))
+  async attach(
+    @Param("id", new ParseUUIDPipe()) id: string,
+    @Param("pageId", new ParseUUIDPipe()) pageId: string,
     @UploadedFiles() files: Express.Multer.File[],
-    @Body('sectionData') raw: string,
+    @Body(IDEAS_SECTION_PAYLOAD_FIELD) raw: string,
   ): Promise<IdeasSectionResponseDto> {
-
-    try {
-      if (!raw) throw new BadRequestException('sectionData is required.');
-
-      const parsedData = JSON.parse(Buffer.isBuffer(raw) ? raw.toString() : raw);
-      const dto = plainToInstance(UpdateIdeasSectionDto, parsedData);
-      const validationErrors = await validate(dto, {
-        whitelist: true,
-        forbidNonWhitelisted: true,
-      });
-
-      if (validationErrors.length > 0) {
-        this.logger.error('Validation errors:', JSON.stringify(validationErrors, null, 2));
-        throw new BadRequestException('Invalid data in request');
-      }
-
-      const filesDict: Record<string, Express.Multer.File> = {};
-      files.forEach((file) => (filesDict[file.fieldname] = file));
-
-      this.logger.log(`Updating and attaching ideas section: ${sectionId} to page: ${pageId}`);
-      const result = await this.updateService.editAndAttachSectionToPage(sectionId, pageId, dto, filesDict);
-      this.logger.log(`Ideas section updated and attached successfully: ${sectionId}`);
-      return result;
-    } catch (error) {
-      this.logger.error('Error editing and linking section', error);
-      throw new BadRequestException('Error editing and linking ideas section.');
-    }
+    const dto = parseIdeasSectionPayload(raw, UpdateIdeasSectionDto);
+    return this.attachService.execute(id, pageId, dto, toFilesDict(files));
   }
 
-  @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  @Delete(':id')
-  async delete(@Param('id') id: string) {
-
-    this.logger.log(`Deleting ideas section: ${id}`);
-    await this.deleteService.deleteSection(id);
-    this.logger.log(`Ideas section deleted successfully: ${id}`);
-
-    return { message: 'Seção de ideias removida com sucesso.' };
+  @FeatureFlag(FeatureFlagKeys.IDEA_MODERATION)
+  @UseGuards(FeatureFlagGuard)
+  @Delete(":id")
+  @UseGuards(AdminRoleGuard)
+  async remove(
+    @Param("id", new ParseUUIDPipe()) id: string,
+  ): Promise<{ message: string }> {
+    await this.deleteService.execute(id);
+    return { message: "Seção de ideias removida com sucesso." };
   }
 
-  @Get(':id')
-  async getById(@Param('id') id: string): Promise<IdeasSectionResponseDto> {
-
-    const result = await this.getService.findOne(id);
-    if (!result) {
-      throw new NotFoundException(`Seção de ideias com id=${id} não encontrada`);
-    }
-
-    return result;
-  }
-
+  /**
+   * As ideias ainda não publicadas em nenhuma página — fila de moderação do admin.
+   * A resposta traz nome, e-mail e telefone do autor: nunca para outros membros.
+   */
+  @FeatureFlag(FeatureFlagKeys.IDEA_MODERATION)
+  @UseGuards(FeatureFlagGuard)
   @Get()
-  async getAll(): Promise<IdeasSectionResponseDto[]> {
-
-    const result = await this.getService.findAll();
-    return result;
+  @UseGuards(AdminRoleGuard)
+  async findUnattached(
+    @Query() query: IdeasSectionListQueryDto,
+  ): Promise<
+    IdeasSectionResponseDto[] | PaginatedResponseDto<IdeasSectionResponseDto>
+  > {
+    return this.getService.findUnattached(query);
   }
 
+  /** Selo do painel do admin: quantas ideias aguardam publicação. */
+  @FeatureFlag(FeatureFlagKeys.IDEA_MODERATION)
+  @UseGuards(FeatureFlagGuard)
+  @Get("pending-count")
+  @UseGuards(AdminRoleGuard)
+  async pendingCount(): Promise<IdeasSectionPendingCountDto> {
+    return this.getService.pendingCount();
+  }
+
+  @FeatureFlag(FeatureFlagKeys.IDEA_MODERATION)
+  @UseGuards(FeatureFlagGuard)
+  @Get(":id")
+  @UseGuards(AdminRoleGuard)
+  async findOne(
+    @Param("id", new ParseUUIDPipe()) id: string,
+  ): Promise<IdeasSectionResponseDto> {
+    return this.getService.findOne(id);
+  }
 }

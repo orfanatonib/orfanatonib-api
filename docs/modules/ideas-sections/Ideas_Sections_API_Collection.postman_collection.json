@@ -1,0 +1,193 @@
+{
+  "info": {
+    "name": "Ideas Sections API Collection",
+    "description": "Ideias compartilhadas. POST: qualquer autenticado (flag idea_submission). GET/PATCH/attach/DELETE: só admin (flag idea_moderation). Upload: 10 arquivos de até 100 MB; só imagem, vídeo e documento.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "{{base_url}}",
+      "type": "string"
+    },
+    {
+      "key": "section_id",
+      "value": ""
+    },
+    {
+      "key": "page_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Ideas Sections",
+      "item": [
+        {
+          "name": "Compartilhar ideia (autenticado)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ideas-sections",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ideas-sections"
+              ]
+            },
+            "description": "Multipart: campo sectionData (JSON) + arquivos. 400 sem payload/validação, 400 MEDIA_MIME para tipo recusado, 401 sem token.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "sectionData",
+                  "value": "{\"title\":\"Brincadeira da corda\",\"description\":\"Como brincar\",\"public\":true,\"medias\":[{\"uploadType\":\"link\",\"mediaType\":\"video\",\"isLocalFile\":false,\"url\":\"https://youtu.be/abc\",\"platformType\":\"youtube\",\"title\":\"Vídeo\"}]}",
+                  "type": "text"
+                },
+                {
+                  "key": "image_upload",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar fila de ideias (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ideas-sections",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ideas-sections"
+              ]
+            },
+            "description": "Ideias ainda não vinculadas a uma página. 403 para membro/líder."
+          }
+        },
+        {
+          "name": "Detalhe da ideia (admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ideas-sections/{{section_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ideas-sections",
+                "{{section_id}}"
+              ]
+            },
+            "description": "404 se não existir; 403 para membro/líder."
+          }
+        },
+        {
+          "name": "Editar ideia (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ideas-sections/{{section_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ideas-sections",
+                "{{section_id}}"
+              ]
+            },
+            "description": "A lista de mídias enviada é a verdade sobre a seção.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "sectionData",
+                  "value": "{\"title\":\"Brincadeira da corda\",\"description\":\"Como brincar\",\"public\":true,\"medias\":[{\"uploadType\":\"link\",\"mediaType\":\"video\",\"isLocalFile\":false,\"url\":\"https://youtu.be/abc\",\"platformType\":\"youtube\",\"title\":\"Vídeo\"}]}",
+                  "type": "text"
+                },
+                {
+                  "key": "image_upload",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Vincular a uma página (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ideas-sections/{{section_id}}/attach/{{page_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ideas-sections",
+                "{{section_id}}",
+                "attach",
+                "{{page_id}}"
+              ]
+            },
+            "description": "409 se já vinculada; 404 seção/página inexistente.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "sectionData",
+                  "value": "{\"title\":\"Brincadeira da corda\",\"description\":\"Como brincar\",\"public\":true,\"medias\":[{\"uploadType\":\"link\",\"mediaType\":\"video\",\"isLocalFile\":false,\"url\":\"https://youtu.be/abc\",\"platformType\":\"youtube\",\"title\":\"Vídeo\"}]}",
+                  "type": "text"
+                },
+                {
+                  "key": "image_upload",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Remover ideia (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/ideas-sections/{{section_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "ideas-sections",
+                "{{section_id}}"
+              ]
+            },
+            "description": "409 se já vinculada a uma página; remove também os arquivos do bucket."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+@startuml shelter-feed-flow
+title Feed v2 - celebrar e comentar
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+
+actor "Pessoa logada" as U
+participant "App (feed)" as App
+participant "FeedCelebrationController" as CC
+participant "UpdateCelebrationService" as US
+participant "GetImageSectionService" as SS
+database "MySQL" as DB
+
+== Celebrar (alternar) ==
+U -> App : clique em "Celebrar"
+App -> App : otimista: +1 / -1 e aria-pressed
+App -> CC : POST /feed-sections/:id/celebration/toggle
+CC -> CC : JwtAuthGuard + flags shelter_feed e shelter_feed_celebrations
+CC -> US : toggle(sectionId, userId)
+US -> SS : assertFeedSectionVisible (404 se oculta)
+US -> DB : DELETE (seção, usuário)
+alt nada removido
+  US -> DB : INSERT (ER_DUP_ENTRY é absorvido)
+end
+US --> App : { count, celebratedByMe } (verdade do servidor)
+App -> App : reconcilia; em erro, rollback + aviso
+
+== Comentar (nasce pendente) ==
+U -> App : envia comentário (requestId novo)
+App -> "FeedPhotoCommentController" : POST /feed-sections/:id/comments
+"FeedPhotoCommentController" -> "CreateFeedCommentService" : create(actor, texto, requestId)
+"CreateFeedCommentService" -> SS : assertFeedSectionVisible
+"CreateFeedCommentService" -> "CreateFeedCommentService" : normaliza, limite 500, recusa e-mail/telefone/link
+"CreateFeedCommentService" -> DB : já existe (autor, requestId)?
+alt reenvio com o mesmo texto
+  "CreateFeedCommentService" --> App : o mesmo comentário (sem duplicar, sem e-mail)
+else mesmo requestId, outro texto
+  "CreateFeedCommentService" --> App : 409
+else novo
+  "CreateFeedCommentService" -> DB : limite de envios por minuto, INSERT status=pending
+  "CreateFeedCommentService" ->> "FeedCommentNotificationService" : e-mail aos admins (flag email_feed_comment_pending)
+  "CreateFeedCommentService" --> App : comentário pendente
+  App -> App : "Seu comentário foi enviado e aguarda aprovação"
+end
+
+== Ver comentários ==
+U -> App : abre os comentários
+App -> "FeedPhotoCommentController" : GET /feed-sections/:id/comments (só APROVADOS, para todos)
+App -> "FeedPhotoCommentController" : GET /feed-sections/:id/comments/mine (os do autor, qualquer status, com o motivo)
+note right of DB : commentCount do feed conta só aprovados
+
+== Moderar (admin) ==
+actor "Admin" as A
+A -> App : painel /adm/comentarios-feed
+App -> "FeedPhotoCommentController" : GET /feed-section-comments/moderation (status, busca, página) e /moderation/pending-count
+A -> App : aprova ou reprova (motivo obrigatório)
+App -> "FeedPhotoCommentController" : PATCH /feed-section-comments/:id/approve | /reject
+"FeedPhotoCommentController" -> "UpdateFeedCommentService" : decide(admin)
+"UpdateFeedCommentService" -> DB : UPDATE ... WHERE status = pending
+alt já estava na mesma decisão
+  "UpdateFeedCommentService" --> App : 200 idempotente, sem novo e-mail
+else decisão contrária sobre já moderado
+  "UpdateFeedCommentService" --> App : 409
+else decidiu
+  "UpdateFeedCommentService" ->> "FeedCommentNotificationService" : e-mail ao autor (email_feed_comment_approved | email_feed_comment_rejected)
+  "UpdateFeedCommentService" --> App : comentário atualizado
+end
+
+== Remover ==
+U -> App : remover comentário
+App -> "FeedPhotoCommentController" : DELETE /feed-section-comments/:id
+"FeedPhotoCommentController" -> "DeleteFeedCommentService" : remove(actor)
+"DeleteFeedCommentService" -> DB : autor remove o seu (qualquer status); admin remove qualquer (403 para os demais)
+@enduml

@@ -775,16 +775,20 @@ Authorization: Bearer {token}
 
 **Causas:**
 - `visitMaterialsPageData` não fornecido
-- Dados inválidos no DTO
-- Validação de campos falhou
-- Arquivo ausente quando `fieldKey` é fornecido
+- JSON malformado no campo `visitMaterialsPageData`
+- Dados inválidos no DTO (inclusive campos fora do contrato)
+- `fieldKey` ausente em um item de mídia marcado como upload
+- Arquivo ausente para o `fieldKey` informado
+- `:id` fora do formato UUID
 
 **Exemplo:**
 ```json
 {
-  "message": "visitMaterialsPageData é obrigatório.",
-  "error": "Bad Request",
-  "statusCode": 400
+  "statusCode": 400,
+  "message": "O campo \"visitMaterialsPageData\" é obrigatório.",
+  "error": "RULE",
+  "category": "RULE",
+  "details": [{ "field": "pageTitle", "constraints": { "isString": "..." } }]
 }
 ```
 
@@ -826,15 +830,19 @@ Authorization: Bearer {token}
 ### 404 Not Found
 
 **Causas:**
-- Página não encontrada (ID inválido)
-- Material atual não encontrado
+- Página não encontrada em `GET/PATCH/DELETE /:id` ou em `POST /current-material/:id`
+- Página sem rota associada, ao atualizar
+
+> `GET /current-material` **não** retorna 404 quando não há material atual:
+> responde `200` com `null`.
 
 **Exemplo:**
 ```json
 {
-  "message": "Página de materiais não encontrada",
-  "error": "Not Found",
-  "statusCode": 404
+  "statusCode": 404,
+  "message": "Página de materiais não encontrada.",
+  "error": "BUSINESS",
+  "category": "BUSINESS"
 }
 ```
 
@@ -843,16 +851,21 @@ Authorization: Bearer {token}
 ### 500 Internal Server Error
 
 **Causas:**
-- Erro interno do servidor
-- Falha ao processar upload
+- Falha de infraestrutura ao criar, atualizar ou remover a página
+- Falha ao processar upload no S3
 - Erro de banco de dados
+
+A mensagem é genérica por decisão de privacidade: o detalhe do erro fica no log
+do servidor, correlacionado pelo `correlationId` da resposta.
 
 **Exemplo:**
 ```json
 {
-  "message": "Erro ao criar a página de materiais: [detalhes do erro]",
-  "error": "Internal Server Error",
-  "statusCode": 500
+  "statusCode": 500,
+  "message": "Erro ao criar a página de materiais.",
+  "error": "PROCESS",
+  "category": "PROCESS",
+  "correlationId": "corr-1705312200000-abc123def"
 }
 ```
 

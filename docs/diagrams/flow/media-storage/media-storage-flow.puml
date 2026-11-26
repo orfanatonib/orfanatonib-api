@@ -1,0 +1,39 @@
+@startuml media-storage-flow
+hide footbox
+title Mídia — upload, gravação e remoção sem órfão
+
+actor Admin
+participant "Controller\n(FileInterceptor com limits)" as C
+participant "UploadScopeInterceptor\n(escopo da requisição)" as Scope
+participant "Service da feature" as S
+participant "AwsS3Service /\nMediaStorageService" as Storage
+database "MySQL\n(media_items)" as DB
+collections "S3 (bucket)" as S3
+queue "media_cleanup_queue" as Q
+
+Admin -> C : multipart (arquivos)
+C -> Scope : abre escopo (uploads e exclusões ficam registrados)
+C -> S : dto + arquivos
+S -> Storage : valida (MIME declarado, tamanho e\nassinatura dos bytes) e envia
+Storage -> S3 : PutObject (chave com UUID)
+S -> DB : transação: grava linhas novas\n(e retira as antigas)
+
+alt sucesso
+  Scope -> Storage : executa as exclusões ADIADAS\n(objetos antigos)
+  Storage -> S3 : DeleteObject
+  alt exclusão falha
+    Storage -> Q : enfileira a chave (retry a cada 10 min,\nfailedAt após 5 tentativas)
+  end
+else falha na requisição
+  Scope -> Storage : descarta SÓ os uploads novos\n(o objeto antigo continua referenciado)
+  Storage -> S3 : DeleteObject (novos)
+end
+
+note over S3, DB
+  Exclusão do dono: linhas antes dos objetos; objetos só depois do commit.
+  Reconciliação diária (dry-run) compara o bucket com TODAS as colunas de
+  mídia (media_items, imagem de rota, capas e arquivos do Estúdio); o mesmo
+  inventário protege o descarte de upload. Testes de arquitetura exigem o
+  inventário completo e a cascata em todo delete-*.service.
+end note
+@enduml

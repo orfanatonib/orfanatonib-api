@@ -1,25 +1,25 @@
-import { Module, forwardRef } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Module, forwardRef } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { UserEntity } from './entities/user.entity';
-import { ShelterEntity } from '../../shelter/shelter/entities/shelter.entity/shelter.entity';
-import { MediaItemEntity } from '../../shared/media/media-item/media-item.entity';
+import { UserEntity } from "./entities/user.entity";
+import { ShelterEntity } from "../../shelter/shelter/entities/shelter.entity/shelter.entity";
+import { MediaItemEntity } from "../../shared/media/media-item/media-item.entity";
 
-import { UserRepository } from './user.repository';
-import { CreateUserService } from './services/create-user.service';
-import { GetUsersService } from './services/get-user.service';
-import { UserController } from './user.controller';
+import { UserRepository } from "./user.repository";
+import { CreateUserService } from "./services/create-user.service";
+import { GetUsersService } from "./services/get-user.service";
+import { UserController } from "./user.controller";
 
-import { MemberProfilesModule } from '../../shelter/member-profile/member-profiles.module';
-import { LeaderProfilesModule } from '../../shelter/leader-profile/leader-profiles.module';
-import { MediaModule } from '../../shared/media/media.module';
-import { AuthModule } from '../auth/auth.module';
-import { UpdateUserService } from './services/update-user.service';
-import { DeleteUserService } from './services/delete-user.service';
-import { UpdateUserImageService } from './services/update-user-image.service';
-import { UpdateOwnProfileService } from './services/update-own-profile.service';
-import { ChangePasswordService } from './services/change-password.service';
-import { ProfileController } from './profile.controller';
+import { MemberProfilesModule } from "../../shelter/member-profile/member-profiles.module";
+import { LeaderProfilesModule } from "../../shelter/leader-profile/leader-profiles.module";
+import { MediaModule } from "../../shared/media/media.module";
+import { AuthModule } from "../auth/auth.module";
+import { UpdateUserService } from "./services/update-user.service";
+import { DeleteUserService } from "./services/delete-user.service";
+import { UpdateUserImageService } from "./services/update-user-image.service";
+import { UpdateOwnProfileService } from "./services/update-own-profile.service";
+import { ChangePasswordService } from "./services/change-password.service";
+import { ProfileController } from "./profile.controller";
 
 @Module({
   imports: [
@@ -49,4 +49,4 @@ import { ProfileController } from './profile.controller';
     TypeOrmModule,
   ],
 })
-export class UserModule { }
+export class UserModule {}

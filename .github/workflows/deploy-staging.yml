@@ -43,6 +43,22 @@ jobs:
       - name: 🏗 Build project
         run: npm run build
 
+      # Migrations de banco (plano 01, T4.x): rodam DEPOIS do build e ANTES de subir o container novo.
+      # Se falhar, o job para aqui e o deploy NAO continua (o container atual segue no ar).
+      # O runner do GitHub precisa alcancar o banco (staging): DB_HOST publico/liberado no security
+      # group para o runner (ou runner self-hosted na VPC). Secrets usados (ja existentes):
+      # DB_HOST, DB_PORT, DB_USERNAME, DB_PASSWORD, STAGING_DB_NAME. Rollback: nao e automatico;
+      # exporte as DB_* do banco e rode `npm run db:migration:revert` (1 migration por vez) (ver README do deploy/CI).
+      - name: Run database migrations
+        env:
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_USERNAME: ${{ secrets.DB_USERNAME }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.STAGING_DB_NAME }}
+        run: npm run db:migration:deploy
+
       - name: 🔐 Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -76,20 +92,18 @@ jobs:
       - name: 🐳 Build Docker image
         env:
           ECR_REPOSITORY: ${{ steps.ecr-info.outputs.repository_uri }}
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "🔨 Building image: ${ECR_REPOSITORY}:${IMAGE_TAG}"
-          docker build -f DockerFile -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
-          docker tag ${ECR_REPOSITORY}:${IMAGE_TAG} ${ECR_REPOSITORY}:${{ github.sha }}
+          docker build -f Dockerfile -t ${ECR_REPOSITORY}:${IMAGE_TAG} .
 
       - name: 📤 Push image to ECR
         env:
           ECR_REPOSITORY: ${{ steps.ecr-info.outputs.repository_uri }}
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "📤 Pushing image: ${ECR_REPOSITORY}:${IMAGE_TAG}"
           docker push ${ECR_REPOSITORY}:${IMAGE_TAG}
-          docker push ${ECR_REPOSITORY}:${{ github.sha }}
           echo "✅ Images pushed successfully!"
 
       - name: 🔍 Get EC2 instance info
@@ -126,17 +140,15 @@ jobs:
           AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_S3_BUCKET_NAME=${{ secrets.AWS_S3_BUCKET_NAME }}
-          SES_DEFAULT_FROM=${{ secrets.STAGING_SES_DEFAULT_FROM }}
-          SES_DEFAULT_TO=${{ secrets.STAGING_SES_DEFAULT_TO }}
+          GMAIL_SMTP_USER=${{ secrets.STAGING_GMAIL_SMTP_USER }}
+          GMAIL_SMTP_APP_PASSWORD=${{ secrets.STAGING_GMAIL_SMTP_APP_PASSWORD }}
+          EMAIL_FROM_NAME=${{ secrets.STAGING_EMAIL_FROM_NAME }}
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN  }}
           JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
           JWT_REFRESH_EXPIRES_IN=${{ secrets.JWT_REFRESH_EXPIRES_IN  }}
-          TWILIO_ACCOUNT_SID=${{ secrets.STAGING_TWILIO_ACCOUNT_SID }}
-          TWILIO_AUTH_TOKEN=${{ secrets.STAGING_TWILIO_AUTH_TOKEN }}
-          TWILIO_WHATSAPP_FROM=${{ secrets.STAGING_TWILIO_WHATSAPP_FROM }}
-          TWILIO_WHATSAPP_TO=${{ secrets.STAGING_TWILIO_WHATSAPP_TO }}
           FEED_ORFANATO_PAGE_ID=${{ secrets.STAGING_FEED_ORFANATO_PAGE_ID }}
+          AI_PROVIDER_SETTINGS_ENCRYPTION_KEY=${{ secrets.AI_PROVIDER_SETTINGS_ENCRYPTION_KEY }}
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
           EOF
@@ -145,7 +157,7 @@ jobs:
         env:
           INSTANCE_ID: ${{ steps.ec2-info.outputs.instance_id }}
           ECR_REPOSITORY: ${{ steps.ecr-info.outputs.repository_uri }}
-          IMAGE_TAG: latest
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           echo "🚀 Deploying to EC2 instance: $INSTANCE_ID"
 
@@ -247,7 +259,7 @@ jobs:
           echo ""
           echo "📋 Summary:"
           echo "   Environment: staging"
-          echo "   Image: ${{ steps.ecr-info.outputs.repository_uri }}:latest"
+          echo "   Image: ${{ steps.ecr-info.outputs.repository_uri }}:${{ github.sha }}"
           echo "   Commit: ${{ github.sha }}"
           echo ""
           echo "🌐 API URL: https://staging-api.orfanatonib.com"

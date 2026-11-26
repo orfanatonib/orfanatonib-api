@@ -1,56 +1,41 @@
-import { IdeasSectionEntity } from 'src/content/page/ideas-section/entites/ideas-section.entity';
-import { MediaItemEntity } from 'src/shared/media/media-item/media-item.entity';
-import { MediaItemDto } from 'src/shared/dto/media-item-dto';
+import {
+  MediaType,
+  PlatformType,
+  UploadType,
+} from "src/shared/media/media-item/media-item.entity";
 
+/**
+ * Respostas do módulo. Só tipos: quem monta é o mapper, e o que entra está nos
+ * DTOs de criação e atualização.
+ */
+
+/** Autor da seção, como a tela o exibe. */
 export class IdeasSectionUserDto {
-  email: string;
-  phone: string;
-  name: string;
+  name!: string;
+  email!: string;
+  phone?: string;
 }
 
-function formatUserName(fullName: string | null | undefined): string {
-  if (!fullName) return '';
-  const parts = fullName.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0];
-  return `${parts[0]} ${parts[parts.length - 1]}`;
+export class IdeasSectionMediaDto {
+  id!: string;
+  title!: string;
+  description!: string;
+  uploadType!: UploadType;
+  mediaType!: MediaType;
+  isLocalFile!: boolean;
+  url!: string;
+  platformType?: PlatformType;
+  originalName?: string;
+  size?: number;
 }
 
 export class IdeasSectionResponseDto {
-  id: string;
-  title: string;
-  description: string;
-  public: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  medias: MediaItemDto[];
+  id!: string;
+  title!: string;
+  description!: string;
+  public!: boolean;
+  createdAt!: Date;
+  updatedAt!: Date;
+  medias!: IdeasSectionMediaDto[];
   user?: IdeasSectionUserDto;
-
-  static fromEntity(section: IdeasSectionEntity, medias: MediaItemEntity[]): IdeasSectionResponseDto {
-    return {
-      id: section.id,
-      title: section.title,
-      description: section.description,
-      public: section.public,
-      createdAt: section.createdAt,
-      updatedAt: section.updatedAt,
-      medias: medias.map((item) => ({
-        id: item.id,
-        title: item.title,
-        description: item.description,
-        uploadType: item.uploadType,
-        mediaType: item.mediaType,
-        isLocalFile: item.isLocalFile,
-        url: item.url,
-        platformType: item.platformType,
-        originalName: item.originalName,
-        size: item.size,
-        fieldKey: undefined,
-      })),
-      user: section.user ? {
-        email: section.user.email,
-        phone: section.user.phone,
-        name: formatUserName(section.user.name),
-      } : undefined,
-    };
-  }
 }

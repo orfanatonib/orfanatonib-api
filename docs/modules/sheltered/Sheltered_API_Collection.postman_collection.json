@@ -32,7 +32,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/sheltered?page=1&limit=20&orderBy=name&order=ASC&shelteredSearchingString=Ana&shelterSearchingString=Abrigo&gender=F&addressFilter=São Paulo&birthDateFrom=2010-01-01&birthDateTo=2015-12-31&joinedFrom=2024-01-01&joinedTo=2024-12-31",
+              "raw": "{{base_url}}/sheltered?page=1&limit=20&orderBy=name&order=ASC&searchString=Ana&shelterSearchingString=Abrigo&addressFilter=Manaus&gender=F&birthDateFrom=2010-01-01&birthDateTo=2015-12-31&joinedFrom=2024-01-01&joinedTo=2024-12-31",
               "host": [
                 "{{base_url}}"
               ],
@@ -48,56 +48,62 @@
                 {
                   "key": "limit",
                   "value": "20",
-                  "description": "Itens por página (padrão: 20)"
+                  "description": "Itens por página (padrão: 20, máximo: 100)"
                 },
                 {
                   "key": "orderBy",
                   "value": "name",
-                  "description": "Campo para ordenação (name, birthDate, joinedAt, createdAt)"
+                  "description": "Allowlist de ordenação: name, birthDate, joinedAt, createdAt, updatedAt"
                 },
                 {
                   "key": "order",
                   "value": "ASC",
-                  "description": "Ordem da ordenação (ASC, DESC)"
+                  "description": "Ordem: ASC ou DESC (maiúsculas)"
                 },
                 {
-                  "key": "shelteredSearchingString",
+                  "key": "searchString",
+                  "value": "Ana",
+                  "description": "Busca geral: nome do acolhido, nome ou telefone do responsável"
+                },
+                {
+                  "key": "shelterId",
                   "value": "",
-                  "description": "Busca geral: nome do abrigado, responsável ou telefone"
+                  "disabled": true,
+                  "description": "Filtra por um abrigo específico (UUID)"
                 },
                 {
                   "key": "shelterSearchingString",
-                  "value": "",
-                  "description": "Busca por dados do abrigo: nome, endereço, cidade, estado"
+                  "value": "Abrigo",
+                  "description": "Busca por dados do abrigo: nome, cidade ou estado"
                 },
                 {
                   "key": "addressFilter",
-                  "value": "",
-                  "description": "Filtro de endereço: todos os campos de endereço"
+                  "value": "Manaus",
+                  "description": "Filtro do endereço do acolhido: rua, bairro, cidade ou estado"
                 },
                 {
                   "key": "gender",
-                  "value": "",
+                  "value": "F",
                   "description": "Filtro por gênero (M, F)"
                 },
                 {
                   "key": "birthDateFrom",
-                  "value": "",
+                  "value": "2010-01-01",
                   "description": "Range de data de nascimento - início (YYYY-MM-DD)"
                 },
                 {
                   "key": "birthDateTo",
-                  "value": "",
+                  "value": "2015-12-31",
                   "description": "Range de data de nascimento - fim (YYYY-MM-DD)"
                 },
                 {
                   "key": "joinedFrom",
-                  "value": "",
+                  "value": "2024-01-01",
                   "description": "Range 'no abrigo desde' - início (YYYY-MM-DD)"
                 },
                 {
                   "key": "joinedTo",
-                  "value": "",
+                  "value": "2024-12-31",
                   "description": "Range 'no abrigo desde' - fim (YYYY-MM-DD)"
                 }
               ]
@@ -158,13 +164,43 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/sheltered/simple",
+              "raw": "{{base_url}}/sheltered/simple?page=1&limit=20",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "sheltered",
                 "simple"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Número da página (padrão: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "20",
+                  "description": "Itens por página (padrão: 20, máximo: 100)"
+                },
+                {
+                  "key": "searchString",
+                  "value": "",
+                  "disabled": true,
+                  "description": "Busca por nome do abrigo, nome ou telefone do responsável"
+                },
+                {
+                  "key": "acceptedJesus",
+                  "value": "all",
+                  "disabled": true,
+                  "description": "accepted | not_accepted | all (padrão: all)"
+                },
+                {
+                  "key": "active",
+                  "value": "all",
+                  "disabled": true,
+                  "description": "active | inactive | all (padrão: all)"
+                }
               ]
             },
             "description": "Lista todos os sheltered em formato simplificado. Disponível para todos os roles."
@@ -528,6 +564,42 @@
               "body": "{\n  \"statusCode\": 404,\n  \"message\": \"Abrigado não encontrado ou sem acesso\",\n  \"error\": \"Not Found\"\n}"
             }
           ]
+        },
+        {
+          "name": "Ativar/Inativar Sheltered",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/sheltered/:id/status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "sheltered",
+                ":id",
+                "status"
+              ],
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "{{sheltered_id}}",
+                  "description": "UUID do acolhido"
+                }
+              ]
+            },
+            "description": "Alterna apenas o campo active. Retorna o ShelteredResponseDto atualizado."
+          },
+          "response": []
         },
         {
           "name": "Deletar Sheltered",

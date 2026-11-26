@@ -1,0 +1,133 @@
+// Notas editoriais curadas das pastas de lições; não ingerir o acervo histórico às cegas.
+/** Internal ids of the lesson's visual scenes: scene-01, scene-02… */
+export const LESSON_SCENE_ID_PREFIX = "scene-";
+export const LESSON_SCENE_ID_DIGITS = 2;
+
+export const LESSON_EDITORIAL_FIELD_ORDER = [
+  "title",
+  "biblicalReference",
+  "characters",
+  "supportMaterials",
+  "icebreaker",
+  "story",
+  "applicationAndAppeal",
+  "reviewQuestions",
+  "memoryVerse",
+  "verseOptions",
+] as const;
+
+/**
+ * Reasoning fields of the LESSON output. They come before the sections they
+ * steer (the model writes JSON in schema order) and are removed before the
+ * content is saved, so they never reach the editor, the PDF or later stages.
+ */
+export const LESSON_INTERNAL_FIELDS = [
+  "centralMessage",
+  "verseChoice",
+  "reviewerNotes",
+] as const;
+
+export const LESSON_INTERNAL_FIELD_DESCRIPTIONS: Record<
+  (typeof LESSON_INTERNAL_FIELDS)[number],
+  string
+> = {
+  centralMessage:
+    "Uso interno, não aparece na lição. Em uma frase, o ensino principal que a passagem transmite sobre Deus, Jesus e a salvação (o que Jesus ou o texto quis ensinar), e não um detalhe, objeto, personagem ou uma moral de comportamento. Se o administrador definiu o propósito, use-o. Todas as seções da lição devem servir a esta mensagem.",
+  verseChoice:
+    "Uso interno, não aparece na lição. Em até três frases: por que o versículo escolhido em memoryVerse resume centralMessage e por que é curto o bastante para crianças memorizarem. Se a justificativa depender de um detalhe secundário da passagem, escolha outro versículo antes de preencher memoryVerse.",
+  reviewerNotes:
+    "Uso interno, não aparece na lição. Pontos que precisam de conferência humana: redação NVI incerta, harmonização entre evangelhos, referência complementar, música ou paginação a confirmar. Vazio quando não houver. Nada disso pode aparecer nos demais campos.",
+};
+
+export const LESSON_BASE_PROMPT = `Produza somente a LIÇÃO BÍBLICA, seguindo o padrão editorial das lições manuais do Clubinho Bíblico NIB.
+
+PÚBLICO E TOM
+- Escreva em português brasileiro para crianças de 5 a 11 anos, com frases claras, calorosas, concretas e naturais para o professor falar em voz alta. Explique palavras difíceis imediatamente.
+- Entregue uma aula completa pronta para ministrar, com narrativa desenvolvida, diálogos fundamentados na passagem, transições e ensino aplicado. Não entregue resumo, sinopse, lista de acontecimentos, artigo ou roteiro telegráfico. Desenvolva cada episódio essencial sem repetição artificial; siga as metas de TAMANHO DA AULA.
+- Inclua uma abertura participativa ligada ao cotidiano infantil, perguntas breves às crianças e orientações práticas ao professor entre parênteses, como (mostre a Bíblia), (aguarde as respostas) ou (mostre uma semente). Use recursos simples, seguros e relevantes ao princípio.
+- Mantenha o conteúdo apropriado à idade, sem violência gráfica, imagens assustadoras, sexualização, romance ou debates de sexualidade. Não use comparações como múmia para pessoas ressuscitadas.
+
+MENSAGEM CENTRAL (POLÍTICA DO CLUBINHO)
+- O Clubinho é um ministério evangelístico para crianças. Entre as leituras fiéis possíveis de uma passagem, a mensagem central (centralMessage) e o propósito tratam do que ela ensina sobre Deus, sobre Jesus e sobre a salvação — quem Jesus é, o que Ele fez e como responder a Ele —, e não de uma moral de comportamento.
+- Atitudes práticas (compartilhar, ser gentil, obedecer, ajudar) entram na aplicação para quem já crê, como fruto dessa mensagem, nunca como o centro da lição nem como condição para ser aceito por Deus.
+- Quando o administrador definir o propósito da lição, ele é a mensagem central.
+
+VOZ DA AULA
+- A explicação do princípio, a história, a aplicação e o apelo são falados pelo professor diretamente às crianças, em narração viva, conversando com elas como nas lições manuais (“Sabe, crianças…”, “Que vida difícil! Mas sabe de uma coisa? Deus o amava!”).
+- Orientações ao professor são curtas, práticas e entre parênteses, como (mostre a Bíblia) ou (aguarde as respostas). Nunca escreva instruções sobre como narrar ou o que evitar, como “conte de forma breve”, “não acrescente…” ou “não prolongue a descrição”.
+- As regras deste prompt orientam você, não o professor: nunca as copie, cite ou parafraseie no material. Não escreva comentários sobre fontes, sobre o que cada evangelista registra, sobre conferência da NVI ou de paginação, nem ressalvas doutrinárias ou médicas. Cumpra os cuidados pela forma de escrever. Dúvidas que precisem de conferência humana vão somente para reviewerNotes, um campo interno que não aparece na lição.
+- As perguntas da lição tratam da história e do ensino, nunca de fontes, evangelistas ou ressalvas.
+
+TAMANHO DA AULA
+- As lições manuais do Clubinho ocupam de 3 a 4 páginas A4: a lição inteira tem por volta de 1.500 a 2.000 palavras, e a LIÇÃO BÍBLICA (story) sozinha tem de 900 a 1.400 palavras. Uma história com poucos parágrafos curtos é um resumo e não cumpre o contrato.
+- Cada relato (cada sub-história, quando houver mais de uma) tem pelo menos quatro parágrafos desenvolvidos: contexto e personagens; a situação ou o problema, com as falas que o texto bíblico registra; a ação de Jesus ou o acontecimento central; o desfecho e a reação das pessoas. Inclua os detalhes concretos que as passagens informam (lugares, números, objetos, falas) e o ensino integrado ao longo da narrativa.
+- Explicação do princípio: um parágrafo desenvolvido, com exemplo concreto. Aplicação e apelo: dois parágrafos completos. Aconselhamento: um parágrafo completo.
+- O tamanho vem do conteúdo bíblico e do ensino, nunca de repetição, enfeite ou invenção.
+
+FORMATO DO TEXTO
+- Escreva texto simples em todos os campos: não use Markdown (asteriscos, sublinhados, cerquilhas fora dos subtítulos ### da história, listas com hífen). Rótulos como “Para quem já crê em Jesus:” ficam em texto simples no início do parágrafo.
+
+FIDELIDADE E REFERÊNCIAS
+- Preserve o tema, as referências informadas e os acontecimentos essenciais. Não invente ações, pensamentos, costumes ou diálogos como fatos bíblicos. Exemplos do cotidiano devem estar claramente separados dos acontecimentos da passagem.
+- Use a NVI nas citações literais. Se não puder garantir a redação exata, mantenha a referência, reconte sem aspas e registre a dúvida em reviewerNotes, sem apresentar uma paráfrase como NVI.
+- Relatos paralelos do mesmo acontecimento podem ser harmonizados com cuidado. Histórias distintas devem ter subtítulos e referências próprios; não invente uma cronologia entre elas com expressões como algum tempo depois.
+- Quando o tema exigir acontecimentos ausentes das passagens informadas, preserve biblicalReference literalmente e registre em reviewerNotes quais referências complementares precisam de conferência humana. Não complete a fonte silenciosamente nem atribua fatos à passagem errada.
+- Quando houver referência editorial fornecida nas orientações, preserve a ênfase do propósito, a ordem dos episódios e os pontos pedagógicos essenciais. Os versículos dos exemplos são sugestões editoriais: a escolha deve priorizar um texto curto, memorável e plenamente contextualizado à lição, salvo indicação explícita do administrador. Não copie possíveis erros bíblicos, ortográficos ou históricos do original.
+- Não copie nomes de voluntários, escalas, dados pessoais, propaganda, política, relatórios eleitorais ou anotações operacionais.
+
+REGRAS GERAIS PARA QUALQUER TEMA
+- Narrativa completa: todo relato deve chegar ao acontecimento central, seu desfecho e a ligação com o princípio. Não encerre em pergunta, fala interrompida, suspense ou preparação para o milagre, a decisão ou a conclusão. Conclua todas as sub-histórias antes da aplicação. Se precisar reduzir o tamanho, reduza repetições e descrições periféricas; nunca omita o desfecho.
+- Harmonização: quando houver passagens paralelas, preserve o número de pessoas e os detalhes atribuídos a cada uma. Não transfira automaticamente para todos os personagens uma fala, comportamento, estado ou ação que um evangelho descreve de apenas um deles. Não combine falas de fontes diferentes como uma única citação literal. Não invente uma distância temporal entre relatos; use transições neutras quando o intervalo não estiver informado. Conte os relatos paralelos como uma narrativa única, dizendo “a Bíblia conta”, sem citar qual evangelista registrou cada detalhe. Quando eles diferirem, siga com naturalidade um dos relatos e registre a escolha em reviewerNotes, sem comparar evangelhos no texto.
+- Linguagem infantil: apresente medo, doença, violência, morte e sofrimento de forma breve, acolhedora e não gráfica, sem detalhes de ferimentos, automutilação ou agressões. Centre a aula no cuidado de Deus e no ensino da passagem; não use suspense assustador, nem sugira que a criança deve se sentir ameaçada. Não generalize acontecimentos sobrenaturais de uma passagem para afirmar que doenças, deficiências ou emoções são sinais de ação demoníaca. Cumpra isso pela forma de narrar, não com avisos: no máximo uma frase curta ao professor, entre parênteses, e nunca como pergunta da lição.
+- Convite: deixe explícito que participar da oração é voluntário, usando “Se você deseja, pode orar comigo”. Não use comandos como “Então, repita comigo” como obrigação para todas as crianças.
+- Coerência: cada pergunta e resposta deve ter apoio no conteúdo realmente ensinado na narrativa, explicação, aplicação ou versículo escolhido. Não cobre uma fala ou um desfecho ausente. Revise também as citações do gabarito.
+
+ORDEM OBRIGATÓRIA DO CONTEÚDO
+1. TÍTULO (title): retorne somente o tema exato em caixa alta. O editor apresenta três linhas separadas: LIÇÃO com o número de weekNumber, TÍTULO e o tema. Não acrescente um título criativo nem substitua o tema.
+2. TEXTO BÍBLICO (biblicalReference): preserve literalmente todas as referências fornecidas pelo administrador.
+3. PROPÓSITO (purpose): escreva uma única frase curta, específica e compreensível ao professor, começando com verbo e indicando o que a criança deve compreender ou praticar em relação ao tema. Preserve a ênfase pedagógica da referência, sem copiar expressões vagas nem restringir o público a um grupo não indicado nas passagens ou pelo administrador. Exemplo para as multiplicações: “Mostrar às crianças que Jesus cuida de cada um de nós, suprindo nossas necessidades físicas e espirituais.” Não prometa riqueza, ausência de dificuldades ou satisfação automática de todos os desejos.
+4. MÚSICAS (songs): indique duas músicas infantis cristãs conhecidas, do repertório de corinhos cantados com crianças em igrejas, escolas bíblicas e clubes bíblicos: curtas, de melodia simples, com refrão fácil de repetir e, de preferência, gestos. Escolha pela mensagem desta lição: a letra deve conversar com a mensagem central e o propósito. As músicas citadas no acervo são registros de lições anteriores, não uma lista para reutilizar; não as repita por hábito. Evite hinos congregacionais e cânticos de adoração de adultos, longos ou de vocabulário difícil. Não invente títulos, artistas ou letras; se precisar de conferência, registre em reviewerNotes.
+5. VERSÍCULO PARA MEMORIZAR (memoryVerse): escolha o texto bíblico em NVI que RESUMA a mensagem central da lição inteira — o propósito e o principal ensino da história —, de modo que, ao recitá-lo, a criança se lembre do que aprendeu. Antes de escolher, defina a mensagem central (centralMessage) e só então procure o versículo que a carrega. Não escolha um versículo ligado apenas a um objeto, personagem, circunstância ou ensino secundário da passagem. O texto pode vir de outra passagem, desde que resuma fielmente esse ensino. Use um versículo; use dois versículos consecutivos somente quando um sozinho não completar o ensino e o conjunto continuar curto. Como as crianças de 5 a 11 anos precisam memorizá-lo, Prefira até 20 palavras no total e nunca ultrapasse cerca de 30, dando preferência a uma frase de 3 a 12 palavras quando ela expressar o ensino completo; evite passagens longas quando um trecho curto transmitir o mesmo ensino. Pode escolher um versículo diferente do exemplo histórico se for mais adequado a esses critérios; as notas do acervo não obrigam repetir a seleção. Respeite um versículo explicitamente solicitado pelo administrador. Se usar um trecho, mantenha as palavras na ordem original, delimite-o claramente e não corte de modo a alterar o sentido ou omitir uma condição essencial. Não invente abreviações ou paráfrases apresentadas como citação NVI. O campo reference deve conter somente livro, capítulo, versículo e delimitação do trecho; a sigla NVI pertence exclusivamente ao campo version. A explicação do princípio e as perguntas devem usar exatamente o texto escolhido, sem voltar ao versículo do exemplo antigo.
+6. EXPLICAÇÃO DO PRINCÍPIO (principleExplanation): comece orientando a leitura diretamente na Bíblia; explique o sentido do versículo com exemplo concreto, participação das crianças e conexão com o propósito. Evite apenas definir conceitos abstratos. Não atribua ao versículo palavras, títulos ou imagens que ele não contém: se o texto escolhido fala de “pão da vida”, não diga que nele Jesus se apresenta também como “água da vida”. Diferencie a satisfação espiritual de uma promessa automática de que a criança nunca terá fome física ou passará por dificuldades.
+7. LIÇÃO BÍBLICA (story): abertura participativa, contexto, episódios desenvolvidos com subtítulos quando houver mais de um relato, clímax e conclusão. Integre o princípio, o amor de Deus, o pecado, a obra de Jesus e a resposta de fé nos momentos pertinentes, sem interromper a história com sermões repetidos nem introduzir doutrina alheia ao tema. Diferencie fato bíblico, explicação e aplicação. Narre apenas ações, sentimentos, intenções e diálogos sustentados pelas referências; não acrescente como fato expressões como “coração apertado”, motivos para ficar sozinho ou especulações sobre o que os discípulos lembravam ou pensavam. Quando a passagem não informar uma emoção ou intenção, descreva somente o acontecimento. Diálogos recontados com linguagem infantil devem ser identificáveis como reconto, sem aspas que os façam parecer uma citação literal NVI. Ilustrações fictícias do cotidiano podem aparecer na abertura, mas devem ser apresentadas explicitamente como exemplo, fora do relato bíblico. Use apenas texto para o professor ministrar e instruções pedagógicas; não inclua descrições de imagens, prompts de arte ou marcadores scene-01 no campo story.
+8. APLICAÇÃO / APELO (applicationAndAppeal): conecte explicitamente a resposta da criança ao propósito, ao versículo escolhido e aos acontecimentos ensinados. Desenvolva dois parágrafos distintos: primeiro, “Para quem já crê em Jesus”, proponha atitudes concretas no cotidiano infantil coerentes com a lição (como confiar em Jesus, agradecer, compartilhar e evitar desperdício no tema das multiplicações); depois, “Para quem deseja seguir Jesus”, apresente um convite voluntário e explique o evangelho em linguagem simples. Explique que pecado é pensar, falar ou fazer o que desagrada a Deus, com exemplos como mentir, desobedecer ou machucar alguém. Relacione o perdão à morte e ressurreição de Jesus e à resposta de fé, não apenas a sentir um vazio ou desejar felicidade. Não trate brinquedos, doces, amizades ou necessidades físicas como pecado por si mesmos. Não use medo, pressão emocional, promessa material nem sugira que repetir uma oração garante por si só a salvação. Após o convite, inclua a oração de apelo como possibilidade voluntária. Preserve o sentido da oração do exemplo fornecido; sem exemplo, use: “Senhor Deus, perdoa os meus pecados e vem entrar no meu coração. Eu creio que Jesus, teu Filho, morreu na cruz no meu lugar e ressuscitou. Eu escolho te seguir! Quero que tu sejas o meu Senhor e Salvador, em nome de Jesus! Amém.”
+9. ACONSELHAMENTO / CANTINHO DO ACONSELHAMENTO (counseling): oriente conversa individual e acolhedora para confirmar a compreensão, usando Bíblia, Livro Sem Palavras ou equivalente, Cartão de Decisão e Cartão de Aniversário de Novo Nascimento. Inclua uma pergunta de acolhida e oriente fazer as perguntas do Manual do Professor (páginas 17 a 21), como nas lições manuais. Não invente perguntas do manual nem exponha a criança. Não trate a repetição de uma oração como prova de compreensão, mas cumpra isso conduzindo uma conversa de verdade, sem escrever esse aviso no texto.
+10. PERGUNTAS DA LIÇÃO (reviewQuestions): de oito a dez perguntas com gabarito completo, cobrindo os episódios e o princípio. Preserve quantidade e ordem quando houver exemplo correspondente. Não use apenas perguntas sobre nomes e lugares; inclua compreensão e aplicação. Não crie perguntas sobre fatos ausentes da aula.
+11. FALANDO COM DEUS (closingPrayer): somente quando a orientação pedir explicitamente uma oração final separada. No padrão dos exemplos abaixo, devolva string vazia neste campo; a oração do apelo permanece em applicationAndAppeal. Não duplique a oração nem acrescente esta seção por hábito.
+
+LIÇÕES COM DUAS OU MAIS SUB-HISTÓRIAS
+- Quando o tema ou a orientação do administrador indicar duas ou mais histórias, apresente explicitamente essa quantidade na abertura da aula e desenvolva cada relato separadamente, na ordem solicitada. Não transforme episódios distintos em um único acontecimento.
+- No campo story, escreva cada subtítulo em uma linha própria com o prefixo exato "### ", seguido do nome específico do relato e da referência bíblica correspondente. Deixe uma linha em branco antes e depois. Esse marcador será convertido em um título destacado no editor e no PDF; não use outros marcadores Markdown no restante da narrativa.
+- Exemplo: "### A Primeira Multiplicação dos Pães (Mateus 14:13-21)" e, após a narrativa e uma transição clara de tempo/contexto, "### A Segunda Multiplicação dos Pães (Mateus 15:29-39; Marcos 8:1-10)". Desenvolva cada história com contexto, personagens, acontecimentos e conclusão próprios. Preserve o princípio comum e uma aplicação final conjunta, sem duplicar todas as seções da lição.
+- Não use o número de evangelhos citados para contar histórias: passagens paralelas podem narrar o mesmo acontecimento. Não invente subdivisões quando houver apenas um relato. As perguntas devem contemplar todas as sub-histórias.
+
+CENAS VISUAIS SEPARADAS
+- Preencha visualScenes separadamente, com IDs únicos scene-01, scene-02 etc., propósito, descrição visual e texto alternativo, usando apenas acontecimentos explicitamente presentes em story.
+- Nunca copie essas descrições para story. A narrativa deve continuar legível sem qualquer arte; a etapa posterior produzirá os visuais da história.
+
+REFERÊNCIAS EDITORIAIS DO ACERVO (NOTAS CURADAS)
+Os versículos citados abaixo registram escolhas históricas e são sugestões; prevalecem os critérios de brevidade, fidelidade e contexto descritos em memoryVerse. Estas notas descrevem escolhas e estilo reais; não são transcrições bíblicas nem confirmação automática de exatidão NVI. Use o conteúdo temático apenas quando o tema e as passagens corresponderem; o número da semana sozinho não autoriza reutilizar fatos, músicas ou versículos de outro tema.
+- Semana 14, O poder de Jesus sobre a morte (João 11:1-44; Lucas 7:11-17): propósito de mostrar o poder de Jesus sobre a morte, sua ressurreição e a futura ressurreição dos filhos de Deus. Texto de memorização: João 11:25, sem acrescentar 11:26. Músicas: Deus é bom pra mim; Obedecer. A explicação usa uma semente mostrada às crianças. A abertura pergunta sobre um amigo doente. Primeiro desenvolve Lázaro, depois o filho da viúva de Naim, com subtítulos. Inclui dez perguntas.
+- Semana 15, A primeira e a segunda multiplicação dos pães (Mateus 14:13-21; Marcos 6:30-44; Lucas 9:10-17; João 6:1-15; Mateus 15:29-39; Marcos 8:1-10): duas histórias distintas, com subtítulos próprios e transição entre elas. Primeira: cinco pães, dois peixes, cinco mil homens e doze cestos de sobras. Segunda: sete pães, alguns peixes, quatro mil homens e sete cestos de sobras. Nunca misture essas quantidades. Não apresente uma estimativa de mulheres e crianças como número bíblico informado. Propósito de mostrar que Jesus supre necessidades físicas e espirituais; texto principal de memorização João 6:48. A abertura relaciona a fome ao cotidiano das crianças. Preserve a ordem primeira/segunda e formule perguntas sobre ambas; não replique as omissões ou imprecisões do original.
+- Semana 25, Julgamento e morte de Jesus: propósito de a criança crer em Jesus como Salvador, confiando em sua morte como pagamento pelo pecado. Texto de memorização: Hebreus 9:22b. Músicas: No meu coração, vem hoje entrar ó Cristo; Limpa o meu coração Jesus. A explicação conecta os sacrifícios do Antigo Testamento ao sacrifício de Jesus. Desenvolve prisão, julgamento e morte, ensinando inocência, entrega voluntária, perdão e amor de Jesus durante a narrativa. Inclui dez perguntas. Não acrescente a queda de Jesus carregando a cruz como fato bíblico; o sepultamento exige referência complementar quando as passagens informadas terminarem antes dele.
+- Semana 26, Ressurreição, ascensão de Jesus e a grande comissão: propósito de mostrar que Jesus se entregou na cruz por nós e voltou a viver, mostrando seu poder sobre a morte. Texto de memorização 1 Coríntios 15:3b-4; músicas Pare, eu vou contar-lhe; Ouvir e obedecer. Abre perguntando se a morte foi o fim. Desenvolve ressurreição, aparições a Maria e aos discípulos, Tomé e o ensino sobre crer sem ver, grande comissão e ascensão. Não omita Tomé ao resumir as aparições de João 20. Inclui oito perguntas. O cabeçalho histórico não lista todas as passagens usadas: a grande comissão requer conferir Mateus 28:18-20, e a ascensão Lucas 24:50-53 e Atos 1:1-11. Não atribua a ascensão a João 20 nem misture palavras de comissões distintas como uma única citação.
+
+REVISÃO ANTES DE ENTREGAR
+Faça uma revisão interna obrigatória e reescreva os trechos que não atendem aos critérios antes de devolver o JSON. Não basta dizer que o texto precisa de revisão humana:
+- Voz: releia a lição como o professor vai falar. Retire qualquer instrução sobre como narrar, comentário sobre fontes, evangelistas, NVI ou paginação, e ressalva repetida; o que precisar de conferência vai para reviewerNotes.
+- Tamanho: confira se a história tem de 900 a 1.400 palavras e se cada relato tem pelo menos quatro parágrafos desenvolvidos. Se parecer um resumo, desenvolva os episódios com os detalhes e falas das passagens antes de entregar.
+- Coerência em cadeia: centralMessage, propósito, versículo, explicação do princípio, conclusão da história, aplicação e a última pergunta precisam apontar para a mesma mensagem central. Se o versículo puxar a explicação ou a aplicação para outro ensino, troque o versículo; não adapte o resto da lição a ele.
+- Conclusão do ensino: depois do último acontecimento, a história termina com um parágrafo curto que diz às crianças o que Jesus (ou a passagem) quis ensinar, ligado à mensagem central. A aplicação e o apelo retomam esse ensino e os acontecimentos da história; a última pergunta verifica se a criança o entendeu.
+- Versículo: confira se ele resume a mensagem central da lição inteira e não um detalhe secundário — recitando só o versículo, a criança se lembra do ensino principal? Se não, troque-o e ajuste a explicação do princípio, a aplicação e as perguntas. Confira também que é um versículo, ou no máximo dois consecutivos, curto o bastante para memorizar. Se uma frase curta e fiel transmitir o princípio, prefira essa frase ao versículo inteiro. Não acrescente introduções como “Então Jesus declarou” para a memorização. Quando a seleção for parcial, indique isso só pela letra do versículo (ex.: Hebreus 9:22b), sem escrever “trecho” na referência. Não duplique NVI na referência e na versão.
+- Narrativa: retire toda emoção, intenção, lembrança, relação pessoal ou cronologia sem apoio nas passagens. Substitua especulações por ações observáveis sustentadas pelo texto. Preserve sentimentos que a passagem informa expressamente. Confirme que o acontecimento central e o desfecho de cada relato foram narrados e que nenhuma fala ficou interrompida.
+- Princípio: explique apenas o sentido do versículo selecionado; não acrescente um título bíblico de outra passagem sem identificá-la e conferir sua pertinência.
+- Aplicação: confira se há ao menos dois exemplos concretos de pecado (como mentir e desobedecer), atitudes práticas para quem já crê e convite voluntário para quem deseja seguir Jesus. A definição genérica de pecado sozinha não cumpre esse requisito. Evite reduzir o convite à sensação de vazio ou à comparação com brinquedos e doces.
+Confira se o professor consegue ministrar sem completar lacunas essenciais, se a lição inteira serve à mesma mensagem central, se todos os episódios foram ensinados, se o propósito é claro e ligado ao tema, se o versículo escolhido é curto, fiel e contextualizado, se a narrativa contém participação e aplicações concretas, se as citações estão identificadas corretamente, se emoções e intenções têm apoio na passagem, se a aplicação contempla quem já crê e quem deseja seguir Jesus com exemplos concretos e se faltam referências. Não crie brincadeira, fixação ou meditação nesta etapa. Responda somente nos campos do JSON Schema. A revisão humana continua necessária.`;
+
+export const LESSON_NARRATIVE_INCOMPLETE_PREFIX =
+  "Conteúdo incompleto da lição";
+
+export const LESSON_NARRATIVE_QUOTE_PAIRS = [
+  ["“", "”"],
+  ["«", "»"],
+] as const;

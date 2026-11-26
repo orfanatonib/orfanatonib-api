@@ -4,9 +4,10 @@ import {
   IsArray,
   ValidateNested,
   IsBoolean,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-import { MediaItemDto } from 'src/shared/dto/media-item-dto';
+  Equals,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { MediaItemDto } from "src/shared/dto/media-item-dto";
 
 export class IdeasSectionDto {
   @IsOptional()
@@ -36,13 +37,20 @@ export class UpdateIdeasPageDto {
 
   @IsString({ message: 'O campo "title" da página deve ser uma string.' })
   title: string;
-  
+
   @IsOptional()
   @IsString({ message: 'O campo "subtitle" da página deve ser uma string.' })
   subtitle?: string;
 
   @IsString({ message: 'O campo "description" da página deve ser uma string.' })
   description: string;
+
+  /** Página de ideias é sempre privada: `public: true` é rejeitado (400); nunca persistido. */
+  @IsOptional()
+  @Equals(false, {
+    message: 'A página de ideias é sempre privada: "public" não pode ser true.',
+  })
+  public?: false;
 
   @IsArray({ message: 'O campo "sections" deve ser um array.' })
   @ValidateNested({ each: true })

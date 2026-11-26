@@ -1,18 +1,21 @@
+import type { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import {
   Injectable,
   Logger,
   NotFoundException,
   ConflictException,
-} from '@nestjs/common';
-import { ShelterScheduleRepository } from '../shelter-schedule.repository';
-import { UpdateShelterScheduleDto } from '../dto/update-shelter-schedule.dto';
-import { ShelterScheduleEntity } from '../entities/shelter-schedule.entity';
-import { TeamsService } from 'src/shelter/team/services/teams.service';
-import { EventRepository } from 'src/content/event/event.repository';
-import { CreateEventService } from 'src/content/event/services/create-event-service';
-import { UpdateEventService } from 'src/content/event/services/update-event-service';
-import { DeleteEventService } from 'src/content/event/services/delete-event-service';
-import { EventAudience, EventType, EventEntity } from 'src/content/event/entities/event.entity';
+} from "@nestjs/common";
+import { ShelterScheduleRepository } from "../shelter-schedule.repository";
+import { UpdateShelterScheduleDto } from "../dto/update-shelter-schedule.dto";
+import { ShelterScheduleEntity } from "../entities/shelter-schedule.entity";
+import { GetTeamsService } from "src/shelter/team/services/get-teams.service";
+import { ShelterScheduleEventService } from "./shelter-schedule-event.service";
+
+import type { ShelterAccessContext } from "src/shelter/shelter/types";
+import {
+  assertCanAttemptScheduleWrite,
+  assertCanManageScheduleIn,
+} from "../utils/schedule-access.util";
 
 @Injectable()
 export class UpdateShelterScheduleService {
@@ -20,12 +23,42 @@ export class UpdateShelterScheduleService {
 
   constructor(
     private readonly scheduleRepo: ShelterScheduleRepository,
-    private readonly teamsService: TeamsService,
-    private readonly eventRepo: EventRepository,
-    private readonly createEventService: CreateEventService,
-    private readonly updateEventService: UpdateEventService,
-    private readonly deleteEventService: DeleteEventService,
-  ) { }
+    private readonly getTeamsService: GetTeamsService,
+    private readonly scheduleEventService: ShelterScheduleEventService,
+  ) {}
+
+  /**
+   * Entrada HTTP: admin, ou líder do abrigo da agenda — e, se a equipe muda,
+   * também do abrigo da equipe de destino.
+   */
+  async executeAs(
+    actor: ShelterAccessContext,
+    id: string,
+    dto: UpdateShelterScheduleDto,
+  ): Promise<ShelterScheduleEntity> {
+    assertCanAttemptScheduleWrite(actor);
+    const schedule = await this.scheduleRepo.findById(id);
+    if (!schedule) {
+      throw new NotFoundException(`Shelter schedule with ID ${id} not found`);
+    }
+    await assertCanManageScheduleIn(
+      actor,
+      schedule.team.shelter.id,
+      this.getTeamsService,
+    );
+    if (dto.teamId && dto.teamId !== schedule.team.id) {
+      const target = await this.getTeamsService.findOneEntity(dto.teamId);
+      if (!target) {
+        throw new NotFoundException(`Team with ID ${dto.teamId} not found`);
+      }
+      await assertCanManageScheduleIn(
+        actor,
+        target.shelter.id,
+        this.getTeamsService,
+      );
+    }
+    return this.execute(id, dto);
+  }
 
   async execute(
     id: string,
@@ -39,7 +72,7 @@ export class UpdateShelterScheduleService {
     }
 
     if (dto.teamId) {
-      const team = await this.teamsService.findOneEntity(dto.teamId);
+      const team = await this.getTeamsService.findOneEntity(dto.teamId);
       if (!team) {
         throw new NotFoundException(`Team with ID ${dto.teamId} not found`);
       }
@@ -49,10 +82,11 @@ export class UpdateShelterScheduleService {
     const newTeamId = dto.teamId ?? schedule.team.id;
 
     if (dto.visitNumber !== undefined || dto.teamId !== undefined) {
-      const existingSchedule = await this.scheduleRepo.findByTeamIdAndVisitNumber(
-        newTeamId,
-        newVisitNumber,
-      );
+      const existingSchedule =
+        await this.scheduleRepo.findByTeamIdAndVisitNumber(
+          newTeamId,
+          newVisitNumber,
+        );
       if (existingSchedule && existingSchedule.id !== id) {
         throw new ConflictException(
           `A schedule for this team with visit number ${newVisitNumber} already exists. Cannot create duplicate visit.`,
@@ -60,11 +94,12 @@ export class UpdateShelterScheduleService {
       }
     }
 
-    const updateData: any = {};
+    const updateData: QueryDeepPartialEntity<ShelterScheduleEntity> = {};
     if (dto.visitNumber !== undefined) updateData.visitNumber = dto.visitNumber;
     if (dto.visitDate !== undefined) updateData.visitDate = dto.visitDate;
     if (dto.meetingDate !== undefined) updateData.meetingDate = dto.meetingDate;
-    if (dto.lessonContent !== undefined) updateData.lessonContent = dto.lessonContent;
+    if (dto.lessonContent !== undefined)
+      updateData.lessonContent = dto.lessonContent;
     if (dto.observation !== undefined) updateData.observation = dto.observation;
     if (dto.meetingRoom !== undefined) updateData.meetingRoom = dto.meetingRoom;
     if (dto.teamId !== undefined) updateData.team = { id: dto.teamId };
@@ -75,23 +110,23 @@ export class UpdateShelterScheduleService {
     const newObservation = dto.observation ?? schedule.observation;
     const newMeetingRoom = dto.meetingRoom ?? schedule.meetingRoom;
 
+    // Resolve a equipe ANTES de gravar: sem ela os eventos não podem ser sincronizados e a
+    // agenda ficaria alterada com os eventos antigos.
+    const team = await this.getTeamsService.findOneEntity(newTeamId);
+    if (!team) {
+      throw new NotFoundException(`Team with ID ${newTeamId} not found`);
+    }
+
     await this.scheduleRepo.update(id, updateData);
 
-    const team = await this.teamsService.findOneEntity(newTeamId);
-
-    const existingEvents = await this.eventRepo.findByScheduleId(id);
-    const visitEvent = existingEvents.find((e) => e.eventType === EventType.VISIT);
-    const meetingEvent = existingEvents.find((e) => e.eventType === EventType.MEETING);
-
-    await this.handleVisitEvent(visitEvent, newVisitDate, newLessonContent, team, id);
-
-    await this.handleMeetingEvent(
-      meetingEvent,
+    await this.scheduleEventService.syncEventsForUpdate(
+      id,
+      newVisitDate,
       newMeetingDate,
+      newLessonContent,
       newObservation,
       newMeetingRoom,
       team,
-      id,
     );
 
     const updated = await this.scheduleRepo.findById(id);
@@ -101,133 +136,5 @@ export class UpdateShelterScheduleService {
 
     this.logger.log(`Shelter schedule ${id} updated successfully`);
     return updated;
-  }
-
-  private async handleVisitEvent(
-    existingEvent: EventEntity | undefined,
-    newDate: string | undefined,
-    lessonContent: string | undefined,
-    team: any,
-    scheduleId: string,
-  ): Promise<void> {
-    const hasValidDate = this.isValidDate(newDate);
-
-    if (existingEvent && hasValidDate) {
-      const eventData = this.buildVisitEventData(newDate!, lessonContent, team);
-
-      const hasChanges =
-        existingEvent.date !== eventData.date ||
-        existingEvent.description !== eventData.description ||
-        existingEvent.location !== eventData.location ||
-        existingEvent.title !== eventData.title;
-
-      if (hasChanges) {
-        await this.updateEventService.update(existingEvent.id, eventData);
-        this.logger.log(`Visit event ${existingEvent.id} updated for schedule ${scheduleId}`);
-      } else {
-        this.logger.log(`No changes detected for visit event ${existingEvent.id}, skipping update`);
-      }
-    } else if (!existingEvent && hasValidDate) {
-      const eventData = {
-        ...this.buildVisitEventData(newDate!, lessonContent, team),
-        eventType: EventType.VISIT,
-        shelterSchedule: { id: scheduleId },
-      };
-      await this.createEventService.create(eventData);
-      this.logger.log(`Visit event created for schedule ${scheduleId}`);
-    } else if (existingEvent && !hasValidDate) {
-      await this.deleteEventService.remove(existingEvent.id);
-      this.logger.log(`Visit event ${existingEvent.id} deleted for schedule ${scheduleId}`);
-    }
-  }
-
-  private async handleMeetingEvent(
-    existingEvent: EventEntity | undefined,
-    newDate: string | undefined,
-    observation: string | undefined,
-    meetingRoom: string | undefined,
-    team: any,
-    scheduleId: string,
-  ): Promise<void> {
-    const hasValidDate = this.isValidDate(newDate);
-
-    if (existingEvent && hasValidDate) {
-      const eventData = this.buildMeetingEventData(newDate!, observation, meetingRoom, team);
-
-      const hasChanges =
-        existingEvent.date !== eventData.date ||
-        existingEvent.description !== eventData.description ||
-        existingEvent.location !== eventData.location ||
-        existingEvent.title !== eventData.title;
-
-      if (hasChanges) {
-        await this.updateEventService.update(existingEvent.id, eventData);
-        this.logger.log(`Meeting event ${existingEvent.id} updated for schedule ${scheduleId}`);
-      } else {
-        this.logger.log(`No changes detected for meeting event ${existingEvent.id}, skipping update`);
-      }
-    } else if (!existingEvent && hasValidDate) {
-      const eventData = {
-        ...this.buildMeetingEventData(newDate!, observation, meetingRoom, team),
-        eventType: EventType.MEETING,
-        shelterSchedule: { id: scheduleId },
-      };
-      await this.createEventService.create(eventData);
-      this.logger.log(`Meeting event created for schedule ${scheduleId}`);
-    } else if (existingEvent && !hasValidDate) {
-      await this.deleteEventService.remove(existingEvent.id);
-      this.logger.log(`Meeting event ${existingEvent.id} deleted for schedule ${scheduleId}`);
-    }
-  }
-
-  private buildVisitEventData(
-    visitDate: string,
-    lessonContent: string | undefined,
-    team: any,
-  ): any {
-    const shelter = team.shelter;
-    const address = shelter?.address;
-    const visitLocation = address?.street
-      ? `${address.street}, ${address.number || 's/n'} - ${address.city || ''}, ${address.state || ''}`.trim()
-      : shelter?.name || 'Local a definir';
-
-    const teamInfo = `Equipe ${team.numberTeam} - ${shelter?.name || 'Abrigo'}`;
-    const visitTitle = `Visita - ${teamInfo}`;
-
-    return {
-      title: visitTitle,
-      description: `${lessonContent || ''}\n\n${teamInfo}`,
-      date: visitDate,
-      location: visitLocation,
-      audience: EventAudience.MEMBERS,
-    };
-  }
-
-  private buildMeetingEventData(
-    meetingDate: string,
-    observation: string | undefined,
-    meetingRoom: string | undefined,
-    team: any,
-  ): any {
-    const shelter = team.shelter;
-    const teamInfo = `Equipe ${team.numberTeam} - ${shelter?.name || 'Abrigo'}`;
-    const meetingTitle = `Reunião - ${teamInfo}`;
-
-    return {
-      title: meetingTitle,
-      description: `${observation || 'Reunião de planejamento'}\n\n${teamInfo}`,
-      date: meetingDate,
-      location: meetingRoom || 'NIB - Nova Igreja Batista',
-      audience: EventAudience.MEMBERS,
-    };
-  }
-
-  private isValidDate(date: string | undefined): boolean {
-    if (!date || typeof date !== 'string' || date.trim() === '') {
-      return false;
-    }
-
-    const parsedDate = new Date(date);
-    return !isNaN(parsedDate.getTime());
   }
 }

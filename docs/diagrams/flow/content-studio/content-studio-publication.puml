@@ -1,0 +1,55 @@
+@startuml
+title Content Studio - incremental publication by category (visit material page)
+
+actor Administrator
+participant "Frontend\n(review screen)" as Frontend
+participant "Guards\n(JWT, admin, flags)" as Guards
+participant "PublishContentPackageService" as Publish
+participant "ContentPublicationRepository" as Repo
+participant "BuildPublicationDocumentsService" as Docs
+participant "CreatePublicationPageService" as Pages
+participant "CreateVisitMaterialPageService /\nAppendVisitMaterialSectionsService\n(visit-material-page module)" as Page
+database "MySQL" as Db
+participant "S3" as S3
+
+Administrator -> Frontend: Approve all and publish (testament on the first publication)
+Frontend -> Guards: POST /content-studio/packages/:id/publish\n{ idempotencyKey, testament }
+Guards -> Publish: content_studio + content_studio_publication on
+Publish -> Repo: find by idempotencyKey
+alt key already used
+  Repo --> Publish: existing publication
+  Publish --> Frontend: same publication (reconciled if UNCERTAIN/stale)
+else new key
+  Publish -> Repo: begin (transaction)
+  Repo -> Db: lock package; require READY_FOR_PUBLICATION
+  Repo -> Db: publishable tracks = every required stage APPROVED\nand track not published yet
+  note right: none => 409
+  Repo -> Db: package PUBLISHING + publication PUBLISHING\n(approvedVersions + audiences of those tracks only)
+  Publish -> Page: find page by sourceLessonId = packageId (and its sections)
+  alt no page yet (first publication)
+    Publish -> Docs: DOCX + PDF of the tracks being published
+    Publish -> Pages: create page (title, subtitle, description,\ntestament, one section per category)
+    Pages -> Page: create
+  else page exists
+    Publish -> Docs: DOCX + PDF only of the categories the page lacks\n(+ full material only if this publication completes all categories)
+    Publish -> Pages: append sections
+    Pages -> Page: append (creates ONLY new sections;\nexisting sections are never changed or removed)
+  end
+  Page -> Db: sections + media (own transaction)
+  Page -> S3: upload documents (rolled back on failure)
+  alt page ready
+    Publish -> Repo: complete (transaction)
+    Repo -> Db: tracks published_at + publication_id (locked from now on)
+    Repo -> Db: publication PUBLISHED; package PUBLISHED if every category\nis published, else back to IN_REVIEW / CHANGES_REQUESTED /\nREADY_FOR_PUBLICATION / IN_PROGRESS (the path of the rest)
+  else render/page failed
+    Publish -> Repo: fail (transaction)
+    Repo -> Db: publication FAILED + package READY_FOR_PUBLICATION
+  else page written but final write failed
+    Publish -> Repo: markUncertain
+    Repo -> Db: publication UNCERTAIN (package stays PUBLISHING)
+    note right: next call reconciles: the page must have\nALL categories of the publication
+  end
+  Publish --> Frontend: publication DTO (audiences, page path)
+  Frontend --> Administrator: go to /adm/paginas-materiais-visita
+end
+@enduml

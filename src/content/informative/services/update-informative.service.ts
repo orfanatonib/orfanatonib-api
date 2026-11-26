@@ -1,15 +1,11 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
-import { DataSource } from 'typeorm';
-import { InformativeRepository } from '../informative.repository';
-import { UpdateInformativeDto } from '../dto/update-informative.dto';
-import { InformativeEntity } from '../entities/informative.entity';
-import { RouteService } from 'src/infrastructure/route/route.service';
-import { RouteEntity, RouteType } from 'src/infrastructure/route/route-page.entity';
-import { MediaTargetType } from 'src/shared/media/media-target-type.enum';
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { DataSource, EntityManager } from "typeorm";
+import { InformativeRepository } from "../informative.repository";
+import { UpdateInformativeDto } from "../dto/update-informative.dto";
+import { InformativeEntity } from "../entities/informative.entity";
+import { RouteService } from "src/infrastructure/route/services/route.service";
+import { RouteEntity } from "src/infrastructure/route/route-page.entity";
+import { INFORMATIVE_ROUTE_PREFIX } from "../constants";
 
 @Injectable()
 export class UpdateInformativeService {
@@ -19,14 +15,16 @@ export class UpdateInformativeService {
     private readonly dataSource: DataSource,
     private readonly informativeRepo: InformativeRepository,
     private readonly routeService: RouteService,
-  ) { }
+  ) {}
 
-  async execute(id: string, dto: UpdateInformativeDto): Promise<InformativeEntity> {
-
+  async execute(
+    id: string,
+    dto: UpdateInformativeDto,
+  ): Promise<InformativeEntity> {
     const existing = await this.informativeRepo.findOneWithRelations(id);
     if (!existing) {
       this.logger.warn(`Informative banner not found: ID=${id}`);
-      throw new NotFoundException('Informative not found.');
+      throw new NotFoundException("Informative not found.");
     }
 
     return await this.dataSource.transaction(async (manager) => {
@@ -39,11 +37,7 @@ export class UpdateInformativeService {
       const saved = await manager.save(InformativeEntity, updated);
 
       if (saved.route) {
-        const updatedRoute = await this.updateRoute(
-          saved.route.id,
-          dto,
-          saved.id,
-        );
+        const updatedRoute = await this.updateRoute(saved.route, dto, manager);
         saved.route = updatedRoute;
       }
 
@@ -51,26 +45,27 @@ export class UpdateInformativeService {
     });
   }
 
+  /**
+   * Só o que mudou, na MESMA transação do banner. O tipo e a ligação com a entidade ficam como nasceram; o caminho
+   * é regenerado a partir do título (prefixo `informativo_`) só quando o título muda.
+   */
   private async updateRoute(
-    routeId: string,
+    route: RouteEntity,
     dto: UpdateInformativeDto,
-    informativeId: string,
+    manager: EntityManager,
   ): Promise<RouteEntity> {
-
+    // Título repetido não conta como mudança: reenviá-lo regeneraria o caminho (e quebraria o link já publicado).
+    const titleChanged = dto.title !== undefined && dto.title !== route.title;
     const routeData: Partial<RouteEntity> = {
-      title: dto.title,
-      subtitle: dto.description,
-      description: dto.description,
-      idToFetch: informativeId,
-      entityType: MediaTargetType.Informative,
-      entityId: informativeId,
-      public: dto.public,
-      type: RouteType.PAGE,
-      path: 'informativo_',
-      image: '',
+      path: INFORMATIVE_ROUTE_PREFIX,
+      ...(titleChanged && { title: dto.title }),
+      ...(dto.description !== undefined && {
+        subtitle: dto.description,
+        description: dto.description,
+      }),
+      ...(dto.public !== undefined && { public: dto.public }),
     };
 
-    const route = await this.routeService.upsertRoute(routeId, routeData);
-    return route;
+    return this.routeService.upsertRoute(route.id, routeData, manager);
   }
 }

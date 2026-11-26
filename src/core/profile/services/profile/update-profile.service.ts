@@ -1,10 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { UserRepository } from '../../../user/user.repository';
-import { PersonalDataRepository } from '../../repositories/personal-data.repository';
-import { UserPreferencesRepository } from '../../repositories/user-preferences.repository';
-import { UpdateCompleteProfileDto } from '../../dto/update-complete-profile.dto';
-import { CompleteProfileResponseDto } from '../../dto/complete-profile-response.dto';
-import { UserErrorMessages } from '../../../user/constants/user.constants';
+import { Injectable, NotFoundException } from "@nestjs/common";
+import { UserRepository } from "../../../user/user.repository";
+import { PersonalDataRepository } from "../../repositories/personal-data.repository";
+import { UserPreferencesRepository } from "../../repositories/user-preferences.repository";
+import { ProfileWriteRepository } from "../../repositories/profile-write.repository";
+import { UpdateCompleteProfileDto } from "../../dto/update-complete-profile.dto";
+import { CompleteProfileResponseDto } from "../../dto/complete-profile-response.dto";
+import { parseBirthDate } from "../../utils/birth-date.util";
+import { toCompleteProfileResponse } from "../../mappers/complete-profile.mapper";
+import { UserErrorMessages } from "../../../user/constants/user.constants";
 
 @Injectable()
 export class UpdateProfileService {
@@ -12,68 +15,36 @@ export class UpdateProfileService {
     private readonly userRepository: UserRepository,
     private readonly personalDataRepository: PersonalDataRepository,
     private readonly userPreferencesRepository: UserPreferencesRepository,
-  ) { }
+    private readonly profileWriteRepository: ProfileWriteRepository,
+  ) {}
 
-  async execute(userId: string, dto: UpdateCompleteProfileDto): Promise<CompleteProfileResponseDto> {
+  /** Grava só as seções enviadas (atômico); as demais voltam como já estão. */
+  async execute(
+    userId: string,
+    dto: UpdateCompleteProfileDto,
+  ): Promise<CompleteProfileResponseDto> {
     const user = await this.userRepository.findById(userId);
     if (!user) {
       throw new NotFoundException(UserErrorMessages.USER_NOT_FOUND);
     }
 
-    let personalData: Awaited<ReturnType<typeof this.personalDataRepository.findByUserId>> = null;
-    let preferences: Awaited<ReturnType<typeof this.userPreferencesRepository.findByUserId>> = null;
-
-    if (dto.personalData) {
-      const existing = await this.personalDataRepository.findByUserId(userId);
-      const dataToSave = {
+    const saved = await this.profileWriteRepository.saveSections(userId, {
+      personalData: dto.personalData && {
         ...dto.personalData,
-        birthDate: dto.personalData.birthDate ? new Date(dto.personalData.birthDate) : undefined,
-      };
-      if (existing) {
-        personalData = await this.personalDataRepository.updateByUserId(userId, dataToSave);
-      } else {
-        personalData = await this.personalDataRepository.createForUser(userId, dataToSave);
-      }
-    } else {
-      personalData = await this.personalDataRepository.findByUserId(userId);
-    }
-
-    if (dto.preferences) {
-      const existing = await this.userPreferencesRepository.findByUserId(userId);
-      if (existing) {
-        preferences = await this.userPreferencesRepository.updateByUserId(userId, dto.preferences);
-      } else {
-        preferences = await this.userPreferencesRepository.createForUser(userId, dto.preferences);
-      }
-    } else {
-      preferences = await this.userPreferencesRepository.findByUserId(userId);
-    }
-
-    return {
-      id: user.id,
-      email: user.email,
-      phone: user.phone,
-      name: user.name,
-      role: user.role,
-      personalData: personalData ? {
-        birthDate: personalData.birthDate
-          ? (personalData.birthDate instanceof Date
-            ? personalData.birthDate.toISOString().split('T')[0]
-            : String(personalData.birthDate).split('T')[0])
+        birthDate: dto.personalData.birthDate
+          ? parseBirthDate(dto.personalData.birthDate)
           : undefined,
-        gender: personalData.gender,
-        gaLeaderName: personalData.gaLeaderName,
-        gaLeaderContact: personalData.gaLeaderContact,
-      } : undefined,
-      preferences: preferences ? {
-        loveLanguages: preferences.loveLanguages,
-        temperaments: preferences.temperaments,
-        favoriteColor: preferences.favoriteColor,
-        favoriteFood: preferences.favoriteFood,
-        favoriteMusic: preferences.favoriteMusic,
-        whatMakesYouSmile: preferences.whatMakesYouSmile,
-        skillsAndTalents: preferences.skillsAndTalents,
-      } : undefined,
-    };
+      },
+      preferences: dto.preferences,
+    });
+
+    const personalData =
+      saved.personalData ??
+      (await this.personalDataRepository.findByUserId(userId));
+    const preferences =
+      saved.preferences ??
+      (await this.userPreferencesRepository.findByUserId(userId));
+
+    return toCompleteProfileResponse(user, personalData, preferences);
   }
 }

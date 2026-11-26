@@ -1,10 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
-import { PagelaEntity } from './entities/pagela.entity';
-import { ShelteredEntity } from 'src/shelter/sheltered/entities/sheltered.entity';
-import { MemberProfileEntity } from 'src/shelter/member-profile/entities/member-profile.entity/member-profile.entity';
-import { PagelaFiltersDto } from './dto/pagela-filters.dto';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { DataSource, Repository, SelectQueryBuilder } from "typeorm";
+import { PagelaEntity } from "./entities/pagela.entity";
+import { ShelteredEntity } from "src/shelter/sheltered/entities/sheltered.entity";
+import { MemberProfileEntity } from "src/shelter/member-profile/entities/member-profile.entity/member-profile.entity";
+import { PagelaFiltersDto, PagelaSortBy } from "./dto/pagela-filters.dto";
+import { SortOrder } from "src/shared/enums/sort-order.enum";
 
 @Injectable()
 export class PagelasRepository {
@@ -16,39 +21,64 @@ export class PagelasRepository {
     private readonly shelteredRepo: Repository<ShelteredEntity>,
     @InjectRepository(MemberProfileEntity)
     private readonly memberRepo: Repository<MemberProfileEntity>,
-  ) { }
+  ) {}
 
   private baseQB(): SelectQueryBuilder<PagelaEntity> {
     return this.repo
-      .createQueryBuilder('p')
-      .leftJoin('p.sheltered', 'sheltered')
-      .addSelect(['sheltered.id', 'sheltered.name'])
-      .leftJoin('p.member', 'member')
-      .addSelect(['member.id'])
-      .leftJoin('member.user', 'memberUser')
-      .addSelect(['memberUser.id', 'memberUser.name']);
+      .createQueryBuilder("p")
+      .leftJoin("p.sheltered", "sheltered")
+      .addSelect(["sheltered.id", "sheltered.name"])
+      .leftJoin("p.member", "member")
+      .addSelect(["member.id"])
+      .leftJoin("member.user", "memberUser")
+      .addSelect(["memberUser.id", "memberUser.name"]);
   }
 
   private applyFilters(
     qb: SelectQueryBuilder<PagelaEntity>,
     f?: PagelaFiltersDto,
+    shelterIds?: readonly string[],
   ) {
+    if (shelterIds) {
+      if (shelterIds.length === 0) {
+        qb.andWhere("1 = 0");
+      } else {
+        qb.leftJoin("sheltered.shelter", "scopeShelter").andWhere(
+          "scopeShelter.id IN (:...scopeShelterIds)",
+          { scopeShelterIds: [...shelterIds] },
+        );
+      }
+    }
     if (!f) return qb;
 
     if (f.shelteredId) {
-      qb.andWhere('sheltered.id = :shelteredId', { shelteredId: f.shelteredId });
+      qb.andWhere("sheltered.id = :shelteredId", {
+        shelteredId: f.shelteredId,
+      });
     }
 
     if (f.year !== undefined) {
-      qb.andWhere('p.year = :year', { year: f.year });
+      qb.andWhere("p.year = :year", { year: f.year });
     }
 
     if (f.visit !== undefined) {
-      qb.andWhere('p.visit = :visit', { visit: f.visit });
+      qb.andWhere("p.visit = :visit", { visit: f.visit });
     }
 
     if (f.present !== undefined) {
-      qb.andWhere('p.present = :present', { present: f.present });
+      qb.andWhere("p.present = :present", { present: f.present });
+    }
+
+    if (f.referenceFrom) {
+      qb.andWhere("p.referenceDate >= :referenceFrom", {
+        referenceFrom: f.referenceFrom,
+      });
+    }
+
+    if (f.referenceTo) {
+      qb.andWhere("p.referenceDate <= :referenceTo", {
+        referenceTo: f.referenceTo,
+      });
     }
 
     if (f.searchString?.trim()) {
@@ -60,42 +90,103 @@ export class PagelasRepository {
           LOWER(COALESCE(p.notes, '')) LIKE LOWER(:searchString) OR
           LOWER(COALESCE(memberUser.name, '')) LIKE LOWER(:searchString)
         )`,
-        { searchString: like, searchStringRaw: `%${f.searchString.trim()}%` }
+        { searchString: like, searchStringRaw: `%${f.searchString.trim()}%` },
       );
     }
 
     return qb;
   }
 
-  async findAllSimple(filters?: PagelaFiltersDto): Promise<PagelaEntity[]> {
-    const qb = this.applyFilters(this.baseQB(), filters)
-      .orderBy('p.year', 'DESC')
-      .addOrderBy('p.visit', 'DESC')
-      .addOrderBy('sheltered.name', 'ASC');
+  async findAllSimple(
+    filters?: PagelaFiltersDto,
+    shelterIds?: readonly string[],
+  ): Promise<PagelaEntity[]> {
+    const qb = this.applyFilters(this.baseQB(), filters, shelterIds)
+      .orderBy("p.year", "DESC")
+      .addOrderBy("p.visit", "DESC")
+      .addOrderBy("sheltered.name", "ASC");
 
     return qb.getMany();
+  }
+
+  /** Ordem pedida (whitelist em `PagelaSortBy`); sem `sortBy`, ano e visita do mais novo ao mais antigo. */
+  private applyOrder(
+    qb: SelectQueryBuilder<PagelaEntity>,
+    filters?: PagelaFiltersDto,
+  ): void {
+    const direction = filters?.order ?? SortOrder.DESC;
+    switch (filters?.sortBy) {
+      case PagelaSortBy.REFERENCE_DATE:
+        qb.orderBy("p.referenceDate", direction)
+          .addOrderBy("p.visit", direction)
+          .addOrderBy("p.id", "ASC");
+        return;
+      case PagelaSortBy.MEMBER:
+        qb.orderBy("memberUser.name", direction)
+          .addOrderBy("p.year", "DESC")
+          .addOrderBy("p.visit", "DESC")
+          .addOrderBy("p.id", "ASC");
+        return;
+      default:
+        qb.orderBy("p.year", direction)
+          .addOrderBy("p.visit", direction)
+          .addOrderBy("sheltered.name", "ASC")
+          .addOrderBy("p.id", "ASC");
+    }
   }
 
   async findAllPaginated(
     filters: PagelaFiltersDto | undefined,
     page: number,
     limit: number,
+    shelterIds?: readonly string[],
   ): Promise<{ items: PagelaEntity[]; total: number }> {
-    const qb = this.applyFilters(this.baseQB(), filters);
-    qb.orderBy('p.year', 'DESC').addOrderBy('p.visit', 'DESC').addOrderBy('sheltered.name', 'ASC');
+    const qb = this.applyFilters(this.baseQB(), filters, shelterIds);
+    this.applyOrder(qb, filters);
 
-    const [items, total] = await qb.skip((page - 1) * limit).take(limit).getManyAndCount();
+    const [items, total] = await qb
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getManyAndCount();
     return { items, total };
   }
 
+  /** Abrigo do acolhido (null se o acolhido não existe ou não tem abrigo). */
+  async findShelterIdOfSheltered(shelteredId: string): Promise<string | null> {
+    const sheltered = await this.shelteredRepo.findOne({
+      where: { id: shelteredId },
+      relations: { shelter: true },
+    });
+    return sheltered?.shelter?.id ?? null;
+  }
+
+  /** Acolhido e abrigo a que a pagela pertence (null se a pagela não existe). */
+  async findScopeOfPagela(
+    id: string,
+  ): Promise<{ shelteredId: string; shelterId: string | null } | null> {
+    const pagela = await this.repo.findOne({
+      where: { id },
+      relations: { sheltered: { shelter: true } },
+    });
+    if (!pagela?.sheltered) return null;
+    return {
+      shelteredId: pagela.sheltered.id,
+      shelterId: pagela.sheltered.shelter?.id ?? null,
+    };
+  }
+
   async findOneOrFail(id: string): Promise<PagelaEntity> {
-    const qb = this.baseQB().where('p.id = :id', { id });
+    const qb = this.baseQB().where("p.id = :id", { id });
     const item = await qb.getOne();
-    if (!item) throw new NotFoundException('Pagela not found');
+    if (!item) throw new NotFoundException("Pagela not found");
     return item;
   }
 
-  async findOneByChildYearVisitOrNull(shelteredId: string, year: number, visit: number): Promise<PagelaEntity | null> {
+  async findOneByChildYearVisitOrNull(
+    shelteredId: string,
+    year: number,
+    visit: number,
+  ): Promise<PagelaEntity | null> {
     return this.repo.findOne({
       where: { sheltered: { id: shelteredId }, year, visit },
       relations: { sheltered: true, member: true },
@@ -120,14 +211,20 @@ export class PagelasRepository {
         txSheltered.findOne({ where: { id: data.shelteredId } }),
         txMember.findOne({ where: { id: data.memberProfileId } }),
       ]);
-      if (!sheltered) throw new NotFoundException('Sheltered not found');
-      if (!member) throw new NotFoundException('MemberProfile not found');
+      if (!sheltered) throw new NotFoundException("Sheltered not found");
+      if (!member) throw new NotFoundException("MemberProfile not found");
 
       const existing = await txPagela.findOne({
-        where: { sheltered: { id: data.shelteredId }, year: data.year, visit: data.visit },
+        where: {
+          sheltered: { id: data.shelteredId },
+          year: data.year,
+          visit: data.visit,
+        },
       });
       if (existing) {
-        throw new ConflictException('Pagela already exists for this sheltered in this visit/year');
+        throw new ConflictException(
+          "Pagela already exists for this sheltered in this visit/year",
+        );
       }
 
       const entity = txPagela.create({
@@ -142,33 +239,37 @@ export class PagelasRepository {
 
       try {
         return await txPagela.save(entity);
-      } catch (e: any) {
-        if (e?.code === 'ER_DUP_ENTRY') {
-          throw new ConflictException('Já existe Pagela para este abrigado nesta visita/ano');
+      } catch (e: unknown) {
+        if ((e as { code?: string } | null)?.code === "ER_DUP_ENTRY") {
+          throw new ConflictException(
+            "Já existe Pagela para este abrigado nesta visita/ano",
+          );
         }
         throw e;
       }
     });
   }
 
-  async updateOne(id: string, data: Partial<PagelaEntity>): Promise<PagelaEntity> {
+  async updateOne(
+    id: string,
+    data: Partial<PagelaEntity>,
+  ): Promise<PagelaEntity> {
     return this.dataSource.transaction(async (manager) => {
       const txPagela = manager.withRepository(this.repo);
       const entity = await txPagela.findOne({
         where: { id },
         relations: { sheltered: true, member: true },
       });
-      if (!entity) throw new NotFoundException('Pagela not found');
-
-      if (data.member) {
-      }
+      if (!entity) throw new NotFoundException("Pagela not found");
 
       Object.assign(entity, data);
       try {
         return await txPagela.save(entity);
-      } catch (e: any) {
-        if (e?.code === 'ER_DUP_ENTRY') {
-          throw new ConflictException('Pagela already exists for this sheltered in this visit/year');
+      } catch (e: unknown) {
+        if ((e as { code?: string } | null)?.code === "ER_DUP_ENTRY") {
+          throw new ConflictException(
+            "Pagela already exists for this sheltered in this visit/year",
+          );
         }
         throw e;
       }

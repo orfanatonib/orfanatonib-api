@@ -1,0 +1,148 @@
+@startuml auth-flow
+title Fluxo do módulo Auth — API Orfanato NIB
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam ParticipantBorderColor #37474F
+
+actor "Usuário\n(orfanatonib-app)" as Client
+participant "AuthController" as Controller
+participant "LoginService" as LoginSvc
+participant "GoogleLoginService" as GoogleSvc
+participant "AuthTokenService" as TokenSvc
+participant "RegisterService" as RegisterSvc
+participant "GetMeService" as MeSvc
+participant "JwtService" as Jwt
+participant "GetUsersService\n(core/user)" as Users
+participant "UpdateUserService\n(core/user)" as UpdateUser
+participant "CreateUserService\n(core/user)" as CreateUser
+participant "GetOneProfileService\n(core/profile)" as Profile
+participant "MemberProfilesService\n(shelter/member-profile)" as Members
+participant "MediaItemProcessor\n(shared)" as Media
+participant "OAuth2Client\n(google-auth-library)" as Google
+
+== POST /auth/login ==
+Client -> Controller : { email, password }
+activate Controller
+Controller -> LoginSvc : execute(dto)
+activate LoginSvc
+LoginSvc -> Users : findByEmail(email)
+LoginSvc -> LoginSvc : bcrypt.compare(senha, hash)
+note right of LoginSvc
+  E-mail inexistente e senha errada
+  respondem a MESMA mensagem 401:
+  não revela quais e-mails existem.
+end note
+alt conta inativa
+  LoginSvc --> Controller : 201 { message, user } sem tokens
+  note right of LoginSvc
+    A tela de login lê active === false
+    para pedir a validação.
+  end note
+else conta ativa
+  LoginSvc -> TokenSvc : issueFor(user)
+  activate TokenSvc
+  TokenSvc -> Jwt : sign(claims)                 // access
+  TokenSvc -> Jwt : sign(claims + jti, refresh)  // refresh
+  note right of TokenSvc
+    O jti torna cada refresh único.
+    Sem ele, duas emissões no mesmo
+    segundo saíam idênticas.
+  end note
+  TokenSvc -> UpdateUser : setRefreshToken(id, refresh)
+  TokenSvc --> LoginSvc : { accessToken, refreshToken }
+  deactivate TokenSvc
+  LoginSvc --> Controller : 201 { message, user, tokens }
+end
+deactivate LoginSvc
+
+== POST /auth/google ==
+Controller -> GoogleSvc : execute(credential)
+activate GoogleSvc
+GoogleSvc -> Google : verifyIdToken(credential)
+note right of GoogleSvc
+  Só a verificação fica no try:
+  falha de banco não vira mais
+  "Google authentication failed".
+  Expirado / inválido / genérico
+  saem da mensagem da biblioteca.
+end note
+GoogleSvc -> Users : findByEmail(email)
+alt sem conta
+  GoogleSvc -> CreateUser : create(inativa, incompleta)
+  GoogleSvc --> Controller : { newUser: true }
+else cadastro incompleto
+  GoogleSvc --> Controller : { newUser: true }
+else conta inativa
+  GoogleSvc --> Controller : { active: false }
+else conta ativa
+  GoogleSvc -> TokenSvc : issueFor(user)
+  GoogleSvc --> Controller : { user, tokens }
+end
+deactivate GoogleSvc
+
+== POST /auth/refresh ==
+Controller -> TokenSvc : refresh(token)
+activate TokenSvc
+TokenSvc -> Jwt : verify(token, refreshSecret)
+TokenSvc -> Users : findByIdOrNull(sub)
+note right of TokenSvc
+  O token precisa ser o ÚLTIMO emitido:
+  user.refreshToken === token.
+  É o que invalida a sessão antiga.
+end note
+TokenSvc -> TokenSvc : issueFor(user)
+TokenSvc --> Controller : novo par
+deactivate TokenSvc
+
+== POST /auth/logout ==
+Controller -> TokenSvc : logout(userId)
+TokenSvc -> UpdateUser : setRefreshToken(id, null)
+
+== GET /auth/me ==
+Client -> Controller : Authorization: Bearer + access token
+Controller -> Controller : JwtAuthGuard → request.user.userId
+Controller -> MeSvc : execute(userId)
+activate MeSvc
+MeSvc -> Users : findWithProfiles(userId)
+group em paralelo
+  MeSvc -> Media : findMediaItemByTarget(userId, UserEntity)
+  MeSvc -> Profile : execute(userId)
+end
+note right of MeSvc
+  Dados pessoais e preferências vêm do
+  contrato do módulo de perfil, que já
+  devolve essa forma — inclusive a data
+  normalizada, antes duplicada aqui.
+end note
+MeSvc -> MeSvc : toMeDto(user, extras)
+MeSvc --> Controller : MeResponseDto
+deactivate MeSvc
+
+== POST /auth/register e /auth/complete-register ==
+Controller -> RegisterSvc : register(dto) | completeRegister(dto)
+activate RegisterSvc
+RegisterSvc -> Users : findByEmail(email)
+note right of RegisterSvc
+  E-mail já cadastrado = 409 Conflict.
+  Cadastro já concluído = 409.
+  E-mail sem conta = 404.
+end note
+RegisterSvc -> CreateUser : create(...)  // register
+RegisterSvc -> UpdateUser : update(...)  // complete-register
+opt papel member e teamId informado
+  RegisterSvc -> Members : assignTeamForUser(userId, teamId)
+  note right of Members
+    Falhar aqui não desfaz o cadastro:
+    a conta existe e a equipe pode
+    ser ajustada depois.
+  end note
+end
+RegisterSvc --> Controller : { message, user? }
+deactivate RegisterSvc
+
+Controller --> Client : resposta sem hash de senha\ne sem refresh guardado
+deactivate Controller
+
+@enduml

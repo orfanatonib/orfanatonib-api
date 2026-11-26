@@ -1,48 +1,122 @@
-import { Body, Controller, Post, Get, Patch, Param, Logger, Delete, UseGuards } from '@nestjs/common';
-import { ContactService } from './contact.service';
-import { ContactEntity } from './contact.entity';
-import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
-import { AdminRoleGuard } from 'src/core/auth/guards/role-guard';
+import {
+  Body,
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Param,
+  Logger,
+  Delete,
+  UseGuards,
+  ParseUUIDPipe,
+  Query,
+} from "@nestjs/common";
+import { CreateContactService } from "./services/create-contact.service";
+import { GetContactService } from "./services/get-contact.service";
+import { UpdateContactService } from "./services/update-contact.service";
+import { DeleteContactService } from "./services/delete-contact.service";
+import {
+  ContactReceiptDto,
+  ContactResponseDto,
+} from "./dto/contact-response.dto";
+import { CreateContactDto } from "./dto/create-contact.dto";
+import { QueryContactDto } from "./dto/query-contact.dto";
+import { ContactSortBy } from "./enums/contact-sort-by.enum";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import {
+  isPaginated,
+  toPaginated,
+} from "src/shared/list-query/list-query.util";
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
+import { randomUUID } from "crypto";
+import { isHoneypotTripped } from "./utils/contact-honeypot.util";
+import { ContactPendingCountDto } from "./dto/contact-pending-count.dto";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
-@Controller('contact')
+@Controller("contact")
 export class ContactController {
   private readonly logger = new Logger(ContactController.name);
 
-  constructor(private readonly contactService: ContactService) { }
+  constructor(
+    private readonly createContactService: CreateContactService,
+    private readonly getContactService: GetContactService,
+    private readonly updateContactService: UpdateContactService,
+    private readonly deleteContactService: DeleteContactService,
+  ) {}
 
+  @FeatureFlag(FeatureFlagKeys.CONTACT_FORM)
+  @UseGuards(FeatureFlagGuard)
   @Post()
-  async create(@Body() body: {
-    name: string;
-    email: string;
-    phone: string;
-    message: string;
-  }): Promise<ContactEntity> {
-    this.logger.log('Creating new contact message');
-    const result = await this.contactService.createContact(body);
+  async create(@Body() body: CreateContactDto): Promise<ContactReceiptDto> {
+    if (isHoneypotTripped(body.website)) {
+      // Robô: responde como se tivesse enviado, sem gravar nem avisar ninguém.
+      this.logger.warn("Contact form honeypot tripped; message discarded");
+      return { id: randomUUID(), createdAt: new Date() };
+    }
+    this.logger.log("Creating new contact message");
+    // Só os campos do DTO chegam ao serviço: `read`, `id` etc. nunca vêm do cliente.
+    const result = await this.createContactService.execute({
+      name: body.name,
+      email: body.email,
+      phone: body.phone,
+      message: body.message,
+    });
     this.logger.log(`Contact message created successfully: ${result.id}`);
-    return result;
+    return ContactReceiptDto.fromEntity(result);
   }
 
+  @FeatureFlag(FeatureFlagKeys.CONTACT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async getAll(): Promise<ContactEntity[]> {
-    return this.contactService.getAllContacts();
+  async getAll(
+    @Query() query: QueryContactDto,
+  ): Promise<ContactResponseDto[] | PaginatedResponseDto<ContactResponseDto>> {
+    const { items, total } = await this.getContactService.findFiltered(query);
+    const data = items.map((contact) => ContactResponseDto.fromEntity(contact));
+    // Sem `page` continua o array de sempre; com `page`, `{ data, meta }` paginado no banco.
+    return isPaginated(query)
+      ? toPaginated(
+          data,
+          query,
+          total,
+          query.sortBy ?? ContactSortBy.CREATED_AT,
+        )
+      : data;
   }
 
-  @Patch(':id/read')
+  /** Selo do painel do admin: quantas mensagens ainda não foram lidas. */
+  @FeatureFlag(FeatureFlagKeys.CONTACT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
+  @Get("pending-count")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async setRead(@Param('id') id: string): Promise<ContactEntity> {
+  async pendingCount(): Promise<ContactPendingCountDto> {
+    return this.getContactService.pendingCount();
+  }
+
+  @FeatureFlag(FeatureFlagKeys.CONTACT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
+  @Patch(":id/read")
+  @UseGuards(JwtAuthGuard, AdminRoleGuard)
+  async setRead(
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<ContactResponseDto> {
     this.logger.log(`Marking contact as read: ${id}`);
-    const result = await this.contactService.setReadOnContact(id);
+    const result = await this.updateContactService.setReadOnContact(id);
     this.logger.log(`Contact marked as read successfully: ${id}`);
-    return result;
+    return ContactResponseDto.fromEntity(result);
   }
 
-  @Delete(':id')
+  @FeatureFlag(FeatureFlagKeys.CONTACT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
+  @Delete(":id")
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  async delete(@Param('id') id: string): Promise<void> {
+  async delete(@Param("id", ParseUUIDPipe) id: string): Promise<void> {
     this.logger.log(`Deleting contact: ${id}`);
-    await this.contactService.deleteContact(id);
+    await this.deleteContactService.execute(id);
     this.logger.log(`Contact deleted successfully: ${id}`);
   }
 }

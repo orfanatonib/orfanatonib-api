@@ -1,8 +1,20 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Request } from 'express';
-import { VisitReportRepository } from '../visit-report.repository';
-import { VisitReportEntity } from '../entities/visit-report.entity';
-import { AuthContextService } from 'src/core/auth/services/auth-context.service';
+import { Injectable, Logger, NotFoundException } from "@nestjs/common";
+import { Request } from "express";
+import {
+  VisitReportListActor,
+  VisitReportRepository,
+} from "../visit-report.repository";
+import { QueryVisitReportDto } from "../dto/query-visit-report.dto";
+import { VisitReportSortBy } from "../enums/visit-report-sort-by.enum";
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import {
+  isPaginated,
+  toPaginated,
+} from "src/shared/list-query/list-query.util";
+import { VisitReportEntity } from "../entities/visit-report.entity";
+import type { ShelterAccessContext } from "src/shelter/shelter/types";
+import { canAccessReport } from "../utils/visit-report-access.util";
+import { AuthContextService } from "src/core/auth/services/auth-context.service";
 
 @Injectable()
 export class ListVisitReportsService {
@@ -13,49 +25,44 @@ export class ListVisitReportsService {
     private readonly authCtx: AuthContextService,
   ) {}
 
-  async execute(req: Request): Promise<VisitReportEntity[]> {
-    this.logger.log('Listing visit reports');
+  /**
+   * Lista no escopo do ator. Os filtros por id nunca ampliam o escopo: líder só recebe o que lidera.
+   * Sem `page` devolve o array de sempre; com `page`, `{ data, meta }` recortado no banco.
+   */
+  async execute(
+    req: Request,
+    query: QueryVisitReportDto = {},
+  ): Promise<VisitReportEntity[] | PaginatedResponseDto<VisitReportEntity>> {
+    this.logger.log("Listing visit reports");
 
     const payload = await this.authCtx.tryGetPayload(req);
     const role = payload?.role?.toLowerCase();
-    const userId = payload?.sub;
+    const actor: VisitReportListActor = {
+      role: role === "admin" || role === "leader" ? role : null,
+      userId: payload?.sub ?? null,
+    };
 
-    const teamId = (req.query?.teamId as string) || null;
-    const shelterId = (req.query?.shelterId as string) || null;
-    const scheduleId = (req.query?.scheduleId as string) || null;
-
-    if (scheduleId) {
-      this.logger.log(`Filtering reports by scheduleId: ${scheduleId}`);
-      const report = await this.visitReportRepo.findByScheduleId(scheduleId);
-      return report ? [report] : [];
-    }
-
-    if (teamId) {
-      this.logger.log(`Filtering reports by teamId: ${teamId}`);
-      return this.visitReportRepo.findByTeamId(teamId);
-    }
-
-    if (shelterId) {
-      this.logger.log(`Filtering reports by shelterId: ${shelterId}`);
-      return this.visitReportRepo.findByShelterId(shelterId);
-    }
-
-    if (role === 'admin') {
-      return this.visitReportRepo.findAll();
-    }
-
-    if (role === 'leader' && userId) {
-      return this.visitReportRepo.findByLeaderId(userId);
-    }
-
-    return [];
+    const { items, total } = await this.visitReportRepo.findFiltered(
+      actor,
+      query,
+    );
+    if (!isPaginated(query)) return items;
+    return toPaginated(
+      items,
+      query,
+      total,
+      query.sortBy ?? VisitReportSortBy.CREATED_AT,
+    );
   }
 
-  async findOne(id: string): Promise<VisitReportEntity> {
+  async findOne(
+    id: string,
+    actor: ShelterAccessContext,
+  ): Promise<VisitReportEntity> {
     this.logger.log(`Finding visit report by ID: ${id}`);
 
     const report = await this.visitReportRepo.findById(id);
-    if (!report) {
+    if (!report || !canAccessReport(actor, report)) {
       throw new NotFoundException(`Visit report with ID ${id} not found`);
     }
 

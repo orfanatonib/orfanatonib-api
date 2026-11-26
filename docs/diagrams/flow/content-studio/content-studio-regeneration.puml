@@ -1,0 +1,36 @@
+@startuml content-studio-regeneration
+title Estúdio Orfanato - gerar de novo um item e fixação do versículo com peças
+
+actor Produtor
+participant "Tela de produção" as UI
+participant "RequestStageGenerationService" as Request
+participant "ContentGenerationRepository" as Repo
+participant "ProcessGenerationJobService" as Text
+participant "ContentStageContentRepository" as Content
+participant "ProcessStageImagesService" as Images
+
+Produtor -> UI: Gerar novamente (item N)
+UI -> Request: POST .../stages/:stageId/generations
+Request -> Repo: requestStageGeneration
+alt categoria já enviada para a revisão (algum item IN_REVIEW ou APPROVED)\n e o item está PRODUCER_APPROVED
+  Repo --> UI: 409 "só um item devolvido pelo revisor pode ser gerado de novo"
+else item NOT_STARTED, DRAFT, FAILED, STALE, CHANGES_REQUESTED ou PRODUCER_APPROVED
+  Repo -> Repo: item N -> GENERATING
+  Repo --> UI: job PENDING
+  Text -> Content: saveStageContent(completedJobId)
+  Content -> Content: item N -> DRAFT (nova versão)
+  Content -> Content: itens N+1..5 com versão -> STALE\n(os que estão com a revisão ficam como estão)
+  note right of Content
+    Edição manual: só ficam STALE
+    os itens que dependem do item editado.
+  end note
+end
+
+== Fixação divertida do versículo (item 4) ==
+Text -> Images: enfileira IMAGE_GENERATION
+Images -> Images: compilado-01 (folha de instruções, paisagem)
+Images -> Images: peca-01..N (uma por trecho do versículo)
+Images -> Images: peca-referencia
+Images -> Images: padToA4 com sobra branca (nada é recortado)
+UI -> Produtor: documento + imagens (PDF: uma por página, A4 paisagem)
+@enduml

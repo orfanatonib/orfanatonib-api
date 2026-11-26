@@ -1,0 +1,36 @@
+@startuml inbox-notifications-schema
+title Sininho - caixa de entrada (inbox_notifications)
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam EntityBorderColor #37474F
+
+entity "users" as users {
+  * id : uuid
+}
+
+entity "inbox_notifications" as notices {
+  * id : uuid
+  --
+  recipientId : uuid
+  source : enum(ORFANATO_STUDIO, CLUBINHO_LESSONS)
+  type : enum
+  title : varchar(160)
+  preview : varchar(400)
+  targetKind : enum(STUDIO_PACKAGE, CLUBINHO_LESSON)
+  targetId : uuid
+  targetAudience : varchar(20)?
+  targetStage : varchar(40)?
+  actorId : uuid?
+  dedupeKey : varchar(190)
+  readAt : datetime?
+  createdAt : datetime
+  updatedAt : datetime
+  ..
+  UQ (recipientId, dedupeKey)
+  IDX (recipientId, readAt, createdAt)
+}
+
+users ||--o{ notices : "recipientId (CASCADE)"
+@enduml

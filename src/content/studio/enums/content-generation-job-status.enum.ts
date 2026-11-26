@@ -1,0 +1,8 @@
+export enum ContentGenerationJobStatus {
+  PENDING = "PENDING",
+  RUNNING = "RUNNING",
+  RETRY_SCHEDULED = "RETRY_SCHEDULED",
+  SUCCEEDED = "SUCCEEDED",
+  FAILED = "FAILED",
+  CANCELLED = "CANCELLED",
+}

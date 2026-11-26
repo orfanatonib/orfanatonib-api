@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >-
+  Tabela DynamoDB de registros de observabilidade e auditoria do Orfanato NIB.
+  Uma tabela por ambiente; nunca compartilhar com outra aplicação.
+  Espelha o contrato do provider (src/shared/providers/log-storage/constants.ts).
+
+Parameters:
+  Environment:
+    Type: String
+    AllowedValues: [staging, prod]
+    Description: Ambiente dono da tabela.
+
+Conditions:
+  IsProd: !Equals [!Ref Environment, prod]
+
+Resources:
+  LogRecordsTable:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: !Sub orfanatonib-log-records-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - { AttributeName: pk, AttributeType: S }
+        - { AttributeName: sk, AttributeType: S }
+        - { AttributeName: gsi1pk, AttributeType: S }
+        - { AttributeName: gsi1sk, AttributeType: S }
+      KeySchema:
+        - { AttributeName: pk, KeyType: HASH }
+        - { AttributeName: sk, KeyType: RANGE }
+      GlobalSecondaryIndexes:
+        - IndexName: gsi1-request
+          KeySchema:
+            - { AttributeName: gsi1pk, KeyType: HASH }
+            - { AttributeName: gsi1sk, KeyType: RANGE }
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: expiresAtEpochSeconds
+        Enabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: !If [IsProd, true, false]
+      Tags:
+        - { Key: Application, Value: orfanatonib }
+        - { Key: Environment, Value: !Ref Environment }
+        - { Key: Purpose, Value: observability-audit-log-records }
+        - { Key: ManagedBy, Value: cloudformation }
+
+Outputs:
+  TableName:
+    Value: !Ref LogRecordsTable
+    Description: Valor de LOG_DYNAMODB_TABLE_NAME.
+  TableArn:
+    Value: !GetAtt LogRecordsTable.Arn
+    Description: ARN para a política IAM (iam-policy.json).

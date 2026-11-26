@@ -1,36 +1,51 @@
 import {
-  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
   Logger,
-} from '@nestjs/common';
+} from "@nestjs/common";
 import {
   DataSource,
   EntityManager,
-  In,
   Repository,
   SelectQueryBuilder,
-} from 'typeorm';
-import { InjectRepository } from '@nestjs/typeorm';
+} from "typeorm";
+import { InjectRepository } from "@nestjs/typeorm";
 
-import { CreateShelterDto } from '../dto/create-shelter.dto';
-import { UpdateShelterDto } from '../dto/update-shelter.dto';
-import { QuerySheltersDto } from '../dto/query-shelters.dto';
+import { CreateShelterDto } from "../dto/create-shelter.dto";
+import { UpdateShelterDto } from "../dto/update-shelter.dto";
+import { QuerySheltersDto } from "../dto/query-shelters.dto";
 
-import { ShelterEntity } from '../entities/shelter.entity/shelter.entity';
-import { AddressEntity } from 'src/shelter/address/entities/address.entity/address.entity';
-import { LeaderProfileEntity } from 'src/shelter/leader-profile/entities/leader-profile.entity/leader-profile.entity';
-import { MemberProfileEntity } from 'src/shelter/member-profile/entities/member-profile.entity/member-profile.entity';
-import { TeamEntity } from 'src/shelter/team/entities/team.entity';
-import { UserEntity } from 'src/core/user/entities/user.entity';
-import { ShelterSelectOptionDto, toShelterSelectOption } from '../dto/shelter-select-option.dto';
-import { RouteEntity } from 'src/infrastructure/route/route-page.entity';
-import { MediaItemEntity } from 'src/shared/media/media-item/media-item.entity';
-import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
-import { ShelterTeamSelectOptionDto, toShelterTeamSelectOption } from '../dto/shelter-team-select-option.dto';
+import { ShelterEntity } from "../entities/shelter.entity/shelter.entity";
+import { AddressEntity } from "src/shelter/address/entities/address.entity/address.entity";
+import { LeaderProfileEntity } from "src/shelter/leader-profile/entities/leader-profile.entity/leader-profile.entity";
+import { MemberProfileEntity } from "src/shelter/member-profile/entities/member-profile.entity/member-profile.entity";
+import { TeamEntity } from "src/shelter/team/entities/team.entity";
+import { UserEntity } from "src/core/user/entities/user.entity";
+import {
+  ShelterSelectOptionDto,
+  toShelterSelectOption,
+} from "../dto/shelter-select-option.dto";
+import { RouteEntity } from "src/infrastructure/route/route-page.entity";
+import { UserRole } from "src/core/auth/auth.types";
+import {
+  ShelterAccessContext,
+  ProfileRow,
+  ShelterRow,
+  TeamRow,
+} from "../types";
+import { SHELTER_ROUTE_ENTITY_TYPE } from "../constants";
+import {
+  createdRange,
+  escapeLike,
+  normalizeSearch,
+} from "src/shared/list-query/list-query.util";
+import {
+  ShelterTeamSelectOptionDto,
+  toShelterTeamSelectOption,
+} from "../dto/shelter-team-select-option.dto";
 
-type RoleCtx = { role?: string; userId?: string | null };
+type RoleCtx = ShelterAccessContext;
 
 @Injectable()
 export class SheltersRepository {
@@ -56,54 +71,55 @@ export class SheltersRepository {
 
     @InjectRepository(RouteEntity)
     private readonly routeRepo: Repository<RouteEntity>,
+  ) {}
 
-    @InjectRepository(MediaItemEntity)
-    private readonly mediaRepo: Repository<MediaItemEntity>,
-
-    private readonly s3Service: AwsS3Service,
-  ) { }
-
-  private buildShelterBaseQB(manager?: EntityManager): SelectQueryBuilder<ShelterEntity> {
-    const repo = manager ? manager.getRepository(ShelterEntity) : this.shelterRepo;
+  private buildShelterBaseQB(
+    manager?: EntityManager,
+  ): SelectQueryBuilder<ShelterEntity> {
+    const repo = manager
+      ? manager.getRepository(ShelterEntity)
+      : this.shelterRepo;
     return repo
-      .createQueryBuilder('shelter')
-      .leftJoinAndSelect('shelter.address', 'address')
-      .leftJoinAndSelect('shelter.teams', 'teams')
-      .leftJoinAndSelect('teams.leaders', 'leaders')
-      .leftJoinAndSelect('teams.members', 'members')
-      .leftJoin('leaders.user', 'leaderUser')
+      .createQueryBuilder("shelter")
+      .leftJoinAndSelect("shelter.address", "address")
+      .leftJoinAndSelect("shelter.teams", "teams")
+      .leftJoinAndSelect("teams.leaders", "leaders")
+      .leftJoinAndSelect("teams.members", "members")
+      .leftJoin("leaders.user", "leaderUser")
       .addSelect([
-        'leaderUser.id',
-        'leaderUser.name',
-        'leaderUser.email',
-        'leaderUser.phone',
-        'leaderUser.active',
-        'leaderUser.completed',
-        'leaderUser.commonUser',
+        "leaderUser.id",
+        "leaderUser.name",
+        "leaderUser.email",
+        "leaderUser.phone",
+        "leaderUser.active",
+        "leaderUser.completed",
+        "leaderUser.commonUser",
       ])
-      .leftJoin('members.user', 'memberUser')
+      .leftJoin("members.user", "memberUser")
       .addSelect([
-        'memberUser.id',
-        'memberUser.name',
-        'memberUser.email',
-        'memberUser.phone',
-        'memberUser.active',
-        'memberUser.completed',
-        'memberUser.commonUser',
+        "memberUser.id",
+        "memberUser.name",
+        "memberUser.email",
+        "memberUser.phone",
+        "memberUser.active",
+        "memberUser.completed",
+        "memberUser.commonUser",
       ]);
   }
 
-  private applyRoleFilter(qb: SelectQueryBuilder<ShelterEntity>, ctx?: RoleCtx) {
-    const role = ctx?.role?.toLowerCase();
-    const userId = ctx?.userId;
-    if (!role || role === 'admin' || !userId) return;
+  private applyRoleFilter(
+    qb: SelectQueryBuilder<ShelterEntity>,
+    ctx?: RoleCtx,
+  ) {
+    const { role, userId } = ctx ?? { role: null, userId: null };
+    if (!role || role === UserRole.ADMIN || !userId) return;
 
-    if (role === 'leader') {
-      qb.andWhere('leaderUser.id = :uid', { uid: userId }).distinct(true);
-    } else if (role === 'member') {
-      qb.andWhere('memberUser.id = :uid', { uid: userId }).distinct(true);
+    if (role === UserRole.LEADER) {
+      qb.andWhere("leaderUser.id = :uid", { uid: userId }).distinct(true);
+    } else if (role === UserRole.MEMBER) {
+      qb.andWhere("memberUser.id = :uid", { uid: userId }).distinct(true);
     } else {
-      qb.andWhere('1 = 0');
+      qb.andWhere("1 = 0");
     }
   }
 
@@ -114,40 +130,46 @@ export class SheltersRepository {
     const {
       page = 1,
       limit = 10,
-      sort = 'name',
-      order = 'ASC',
+      sort = "name",
+      order = "ASC",
       searchString,
       shelterName,
+      city,
+      state,
+      createdFrom,
+      createdTo,
     } = q;
 
     const sortMap: Record<string, string> = {
-      name: 'shelter.name',
-      createdAt: 'shelter.createdAt',
-      updatedAt: 'shelter.updatedAt',
-      city: 'address.city',
-      state: 'address.state',
+      name: "shelter.name",
+      createdAt: "shelter.createdAt",
+      updatedAt: "shelter.updatedAt",
+      city: "address.city",
+      state: "address.state",
     };
 
-    const orderBy = sortMap[sort] ?? 'shelter.name';
-    const orderDir = (order || 'ASC').toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+    const orderBy = sortMap[sort] ?? "shelter.name";
+    const orderDir = (order || "ASC").toUpperCase() === "DESC" ? "DESC" : "ASC";
 
     const idQb = this.shelterRepo
-      .createQueryBuilder('shelter')
-      .leftJoin('shelter.address', 'address')
-      .leftJoin('shelter.teams', 'teams')
-      .leftJoin('teams.leaders', 'leaders')
-      .leftJoin('leaders.user', 'leaderUser')
-      .leftJoin('teams.members', 'members')
-      .leftJoin('members.user', 'memberUser')
-      .select('shelter.id', 'id')
-      .addSelect(orderBy, 'orderField')
+      .createQueryBuilder("shelter")
+      .leftJoin("shelter.address", "address")
+      .leftJoin("shelter.teams", "teams")
+      .leftJoin("teams.leaders", "leaders")
+      .leftJoin("leaders.user", "leaderUser")
+      .leftJoin("teams.members", "members")
+      .leftJoin("members.user", "memberUser")
+      .select("shelter.id", "id")
+      .addSelect(orderBy, "orderField")
       .distinct(true);
 
     this.applyRoleFilter(idQb, ctx);
 
     if (shelterName?.trim()) {
       const like = `%${shelterName.trim()}%`;
-      idQb.andWhere('LOWER(shelter.name) LIKE LOWER(:shelterName)', { shelterName: like });
+      idQb.andWhere("LOWER(shelter.name) LIKE LOWER(:shelterName)", {
+        shelterName: like,
+      });
     } else if (searchString?.trim()) {
       const like = `%${searchString.trim()}%`;
       idQb.andWhere(
@@ -171,14 +193,34 @@ export class SheltersRepository {
               AND LOWER(tu.name) LIKE LOWER(:searchString)
           )
         )`,
-        { searchString: like }
+        { searchString: like },
       );
     }
+
+    const cityTerm = normalizeSearch(city);
+    if (cityTerm) {
+      idQb.andWhere("LOWER(address.city) LIKE LOWER(:cityTerm) ESCAPE '\\\\'", {
+        cityTerm: `%${escapeLike(cityTerm)}%`,
+      });
+    }
+    const stateTerm = normalizeSearch(state);
+    if (stateTerm) {
+      idQb.andWhere(
+        "LOWER(address.state) LIKE LOWER(:stateTerm) ESCAPE '\\\\'",
+        { stateTerm: `%${escapeLike(stateTerm)}%` },
+      );
+    }
+    const { from, to } = createdRange({ createdFrom, createdTo });
+    if (from)
+      idQb.andWhere("shelter.createdAt >= :createdFrom", { createdFrom: from });
+    if (to) idQb.andWhere("shelter.createdAt <= :createdTo", { createdTo: to });
 
     const totalQb = idQb.clone();
     const total = await totalQb.getCount();
 
-    idQb.orderBy('orderField', orderDir as 'ASC' | 'DESC')
+    idQb
+      .orderBy("orderField", orderDir)
+      .addOrderBy("shelter.id", "ASC")
       .offset((page - 1) * limit)
       .limit(limit);
 
@@ -188,11 +230,11 @@ export class SheltersRepository {
       return { items: [], total };
     }
 
-    const ids = shelterIds.map(row => row.id);
+    const ids = (shelterIds as Array<{ id: string }>).map((row) => row.id);
     const itemsQb = this.buildShelterBaseQB()
-      .where('shelter.id IN (:...ids)', { ids })
-      .orderBy(orderBy, orderDir as 'ASC' | 'DESC')
-      .addOrderBy('teams.numberTeam', 'ASC');
+      .where("shelter.id IN (:...ids)", { ids })
+      .orderBy(orderBy, orderDir)
+      .addOrderBy("teams.numberTeam", "ASC");
 
     const items = await itemsQb.getMany();
 
@@ -201,8 +243,8 @@ export class SheltersRepository {
 
   async findAllSimple(ctx?: RoleCtx): Promise<ShelterEntity[]> {
     const qb = this.buildShelterBaseQB()
-      .orderBy('shelter.name', 'ASC')
-      .addOrderBy('teams.numberTeam', 'ASC');
+      .orderBy("shelter.name", "ASC")
+      .addOrderBy("teams.numberTeam", "ASC");
 
     this.applyRoleFilter(qb, ctx);
 
@@ -211,23 +253,26 @@ export class SheltersRepository {
 
   async findShelterIdsForLeader(userId: string): Promise<string[]> {
     const result = await this.shelterRepo
-      .createQueryBuilder('shelter')
-      .innerJoin('shelter.teams', 'team')
-      .innerJoin('team.leaders', 'leader')
-      .innerJoin('leader.user', 'leaderUser')
-      .where('leaderUser.id = :userId', { userId })
-      .select('DISTINCT shelter.id', 'id')
+      .createQueryBuilder("shelter")
+      .innerJoin("shelter.teams", "team")
+      .innerJoin("team.leaders", "leader")
+      .innerJoin("leader.user", "leaderUser")
+      .where("leaderUser.id = :userId", { userId })
+      .select("DISTINCT shelter.id", "id")
       .getRawMany();
 
-    return result.map((row: any) => row.id);
+    return (result as Array<{ id: string }>).map((row) => row.id);
   }
 
-  async findOneOrFailForResponse(id: string, ctx?: RoleCtx): Promise<ShelterEntity | null> {
+  async findOneOrFailForResponse(
+    id: string,
+    ctx?: RoleCtx,
+  ): Promise<ShelterEntity | null> {
     const qb = this.buildShelterBaseQB()
-      .where('shelter.id = :id', { id })
-      .orderBy('shelter.name', 'ASC')
-      .addOrderBy('teams.numberTeam', 'ASC')
-      .addOrderBy('members.createdAt', 'ASC');
+      .where("shelter.id = :id", { id })
+      .orderBy("shelter.name", "ASC")
+      .addOrderBy("teams.numberTeam", "ASC")
+      .addOrderBy("members.createdAt", "ASC");
     this.applyRoleFilter(qb, ctx);
 
     return qb.getOne();
@@ -237,28 +282,38 @@ export class SheltersRepository {
     manager: EntityManager,
     id: string,
   ): Promise<ShelterEntity> {
-    const shelterData = await manager.query(`
+    const shelterData = await this.rawRows<ShelterRow>(
+      manager,
+      `
       SELECT s.id, s.name, s.description, s.teamsQuantity, s.createdAt, s.updatedAt, s.address_id,
              a.id as address_id, a.street, a.number, a.district, a.city, a.state, a.postalCode, a.complement, a.createdAt as address_createdAt, a.updatedAt as address_updatedAt
       FROM shelters s
       LEFT JOIN addresses a ON a.id = s.address_id
       WHERE s.id = ?
-    `, [id]);
+    `,
+      [id],
+    );
 
     if (!shelterData.length) {
-      throw new NotFoundException('Shelter not found');
+      throw new NotFoundException("Shelter not found");
     }
 
     const shelter = shelterData[0];
 
-    const teamsData = await manager.query(`
+    const teamsData = await this.rawRows<TeamRow>(
+      manager,
+      `
       SELECT t.id, t.numberTeam, t.description, t.createdAt, t.updatedAt
       FROM teams t
       WHERE t.shelter_id = ?
       ORDER BY t.numberTeam ASC
-    `, [id]);
+    `,
+      [id],
+    );
 
-    const leadersData = await manager.query(`
+    const leadersData = await this.rawRows<ProfileRow>(
+      manager,
+      `
       SELECT lp.id, lp.active, lp.createdAt, lp.updatedAt, lp.user_id,
              u.id as user_id, u.name, u.email, u.phone, u.active as user_active, u.completed, u.commonUser, u.role,
              t.id as team_id, t.numberTeam as team_numberTeam
@@ -267,9 +322,13 @@ export class SheltersRepository {
       JOIN leader_teams lt ON lt.leader_id = lp.id
       JOIN teams t ON t.id = lt.team_id
       WHERE t.shelter_id = ?
-    `, [id]);
+    `,
+      [id],
+    );
 
-    const membersData = await manager.query(`
+    const membersData = await this.rawRows<ProfileRow>(
+      manager,
+      `
       SELECT tp.id, tp.active, tp.createdAt, tp.updatedAt, tp.user_id, tp.team_id,
              u.id as user_id, u.name, u.email, u.phone, u.active as user_active, u.completed, u.commonUser, u.role,
              t.id as team_id, t.numberTeam as team_numberTeam
@@ -277,13 +336,15 @@ export class SheltersRepository {
       JOIN users u ON u.id = tp.user_id
       JOIN teams t ON t.id = tp.team_id
       WHERE t.shelter_id = ?
-    `, [id]);
+    `,
+      [id],
+    );
 
     const shelterEntity = new ShelterEntity();
     shelterEntity.id = shelter.id;
     shelterEntity.name = shelter.name;
-    shelterEntity.description = shelter.description;
-    shelterEntity.teamsQuantity = shelter.teamsQuantity;
+    shelterEntity.description = shelter.description ?? undefined;
+    shelterEntity.teamsQuantity = shelter.teamsQuantity ?? undefined;
     shelterEntity.createdAt = shelter.createdAt;
     shelterEntity.updatedAt = shelter.updatedAt;
 
@@ -291,12 +352,12 @@ export class SheltersRepository {
       const addressEntity = new AddressEntity();
       addressEntity.id = shelter.address_id;
       addressEntity.street = shelter.street;
-      addressEntity.number = shelter.number;
+      addressEntity.number = shelter.number ?? undefined;
       addressEntity.district = shelter.district;
-      addressEntity.city = shelter.city;
-      addressEntity.state = shelter.state;
+      addressEntity.city = shelter.city ?? "";
+      addressEntity.state = shelter.state ?? "";
       addressEntity.postalCode = shelter.postalCode;
-      addressEntity.complement = shelter.complement;
+      addressEntity.complement = shelter.complement ?? undefined;
       addressEntity.createdAt = shelter.address_createdAt;
       addressEntity.updatedAt = shelter.address_updatedAt;
       shelterEntity.address = addressEntity;
@@ -306,14 +367,14 @@ export class SheltersRepository {
       const teamEntity = new TeamEntity();
       teamEntity.id = teamData.id;
       teamEntity.numberTeam = teamData.numberTeam;
-      teamEntity.description = teamData.description;
+      teamEntity.description = teamData.description ?? undefined;
       teamEntity.createdAt = teamData.createdAt;
       teamEntity.updatedAt = teamData.updatedAt;
       teamEntity.shelter = shelterEntity;
 
       const teamLeaders = leadersData
-        .filter((ld: any) => ld.team_id === teamData.id)
-        .map((leaderData: any) => {
+        .filter((ld: ProfileRow) => ld.team_id === teamData.id)
+        .map((leaderData: ProfileRow) => {
           const leaderEntity = new LeaderProfileEntity();
           leaderEntity.id = leaderData.id;
           leaderEntity.active = leaderData.active;
@@ -335,8 +396,8 @@ export class SheltersRepository {
         });
 
       const teamMembers = membersData
-        .filter((td: any) => td.team_id === teamData.id)
-        .map((memberData: any) => {
+        .filter((td: ProfileRow) => td.team_id === teamData.id)
+        .map((memberData: ProfileRow) => {
           const memberEntity = new MemberProfileEntity();
           memberEntity.id = memberData.id;
           memberEntity.active = memberData.active;
@@ -365,27 +426,73 @@ export class SheltersRepository {
     return shelterEntity;
   }
 
-  async list(ctx?: RoleCtx, showAddress = true): Promise<ShelterSelectOptionDto[]> {
-    const qb = this.buildShelterBaseQB().orderBy('shelter.name', 'ASC');
+  async list(
+    ctx?: RoleCtx,
+    showAddress = true,
+  ): Promise<ShelterSelectOptionDto[]> {
+    const qb = this.buildShelterBaseQB().orderBy("shelter.name", "ASC");
     this.applyRoleFilter(qb, ctx);
     const items = await qb.getMany();
-    return items.map(s => toShelterSelectOption(s, showAddress));
+    return items.map((s) => toShelterSelectOption(s, showAddress));
   }
 
   async listTeamsForPublic(): Promise<ShelterTeamSelectOptionDto[]> {
     const teams = await this.teamRepo.find({
-      relations: ['shelter'],
+      relations: { shelter: true },
       order: {
-        shelter: {
-          name: 'ASC',
-        } as any,
-        numberTeam: 'ASC',
-      } as any,
+        shelter: { name: "ASC" },
+        numberTeam: "ASC",
+      },
     });
 
     return teams
-      .filter(team => !!team.shelter)
-      .map(team => toShelterTeamSelectOption(team));
+      .filter((team) => !!team.shelter)
+      .map((team) => toShelterTeamSelectOption(team));
+  }
+
+  /** Campos do endereço que podem ser copiados para um registro novo. */
+  private toNewAddressData(
+    address: NonNullable<UpdateShelterDto["address"]>,
+  ): Partial<AddressEntity> {
+    return {
+      street: address.street,
+      number: address.number,
+      district: address.district,
+      city: address.city,
+      state: address.state,
+      postalCode: address.postalCode,
+      complement: address.complement,
+    };
+  }
+
+  /**
+   * `manager.query` devolve `any`. Este é o único ponto do módulo onde o
+   * resultado cru é narrado para a forma que a consulta realmente retorna.
+   */
+  private async rawRows<TRow>(
+    manager: EntityManager,
+    sql: string,
+    params: unknown[],
+  ): Promise<TRow[]> {
+    const rows: unknown = await manager.query(sql, params);
+    return Array.isArray(rows) ? (rows as TRow[]) : [];
+  }
+
+  /** Executa `work` numa única transação, para o caso de uso não tocar TypeORM. */
+  runInTransaction<TResult>(
+    work: (manager: EntityManager) => Promise<TResult>,
+  ): Promise<TResult> {
+    return this.dataSource.transaction(work);
+  }
+
+  save(
+    shelter: ShelterEntity,
+    manager?: EntityManager,
+  ): Promise<ShelterEntity> {
+    const repo = manager
+      ? manager.withRepository(this.shelterRepo)
+      : this.shelterRepo;
+    return repo.save(shelter);
   }
 
   async createShelter(dto: CreateShelterDto): Promise<ShelterEntity> {
@@ -405,18 +512,24 @@ export class SheltersRepository {
 
       try {
         await shelterRepo.save(shelter);
-      } catch (e: any) {
-        if (e?.code === 'ER_DUP_ENTRY' || e?.code === '23505') {
-          throw new ConflictException('A Shelter with this name already exists');
+      } catch (error: unknown) {
+        const code = (error as { code?: string })?.code;
+        if (code === "ER_DUP_ENTRY" || code === "23505") {
+          throw new ConflictException(
+            "A Shelter with this name already exists",
+          );
         }
-        throw e;
+        throw error;
       }
 
       return shelter;
     });
   }
 
-  async updateShelter(id: string, dto: UpdateShelterDto): Promise<ShelterEntity> {
+  async updateShelter(
+    id: string,
+    dto: UpdateShelterDto,
+  ): Promise<ShelterEntity> {
     return this.dataSource.transaction(async (manager) => {
       const shelterRepo = manager.withRepository(this.shelterRepo);
       const addressRepo = manager.withRepository(this.addressRepo);
@@ -425,46 +538,51 @@ export class SheltersRepository {
         where: { id },
         relations: { address: true },
       });
-      if (!shelter) throw new NotFoundException('Shelter not found');
+      if (!shelter) throw new NotFoundException("Shelter not found");
 
-      if (dto.name !== undefined) shelter.name = dto.name as any;
+      if (dto.name !== undefined) shelter.name = dto.name;
       if (dto.description !== undefined) shelter.description = dto.description;
-      if (dto.teamsQuantity !== undefined) shelter.teamsQuantity = dto.teamsQuantity;
+      if (dto.teamsQuantity !== undefined)
+        shelter.teamsQuantity = dto.teamsQuantity;
 
       if (dto.address) {
         if (shelter.address) {
-          const addressUpdate: any = {};
-          if (dto.address.street !== undefined) addressUpdate.street = dto.address.street;
-          if (dto.address.number !== undefined) addressUpdate.number = dto.address.number;
-          if (dto.address.district !== undefined) addressUpdate.district = dto.address.district;
-          if (dto.address.city !== undefined) addressUpdate.city = dto.address.city;
-          if (dto.address.state !== undefined) addressUpdate.state = dto.address.state;
-          if (dto.address.postalCode !== undefined) addressUpdate.postalCode = dto.address.postalCode;
-          if (dto.address.complement !== undefined) addressUpdate.complement = dto.address.complement;
+          const addressUpdate: Partial<AddressEntity> = {};
+          if (dto.address.street !== undefined)
+            addressUpdate.street = dto.address.street;
+          if (dto.address.number !== undefined)
+            addressUpdate.number = dto.address.number;
+          if (dto.address.district !== undefined)
+            addressUpdate.district = dto.address.district;
+          if (dto.address.city !== undefined)
+            addressUpdate.city = dto.address.city;
+          if (dto.address.state !== undefined)
+            addressUpdate.state = dto.address.state;
+          if (dto.address.postalCode !== undefined)
+            addressUpdate.postalCode = dto.address.postalCode;
+          if (dto.address.complement !== undefined)
+            addressUpdate.complement = dto.address.complement;
 
           Object.assign(shelter.address, addressUpdate);
           await addressRepo.save(shelter.address);
         } else {
-          const { id, createdAt, updatedAt, ...addressData } = dto.address as any;
-          const newAddress = addressRepo.create(addressData);
-          const savedAddress = await addressRepo.save(newAddress);
-          shelter.address = Array.isArray(savedAddress) ? savedAddress[0] : savedAddress;
+          // Endereço novo: id e timestamps nascem no banco, não vêm do payload.
+          const newAddress = addressRepo.create(
+            this.toNewAddressData(dto.address),
+          );
+          shelter.address = await addressRepo.save(newAddress);
         }
       }
 
       await shelterRepo.save(shelter);
 
-
       return this.findOneOrFailForResponseTx(manager, shelter.id);
     });
   }
 
-
   async deleteById(id: string): Promise<void> {
     await this.dataSource.transaction(async (manager) => {
       const txShelter = manager.withRepository(this.shelterRepo);
-      const txMember = manager.withRepository(this.memberProfileRepo);
-      const txLeader = manager.withRepository(this.leaderRepo);
       const txAddress = manager.withRepository(this.addressRepo);
       const txTeam = manager.withRepository(this.teamRepo);
 
@@ -472,21 +590,20 @@ export class SheltersRepository {
         where: { id },
         relations: { address: true },
       });
-      if (!shelter) throw new NotFoundException('Shelter not found');
+      if (!shelter) throw new NotFoundException("Shelter not found");
 
       const teams = await txTeam.find({
         where: { shelter: { id } },
       });
 
       for (const team of teams) {
-        await manager.query(
-          `DELETE FROM leader_teams WHERE team_id = ?`,
-          [team.id]
-        );
+        await manager.query(`DELETE FROM leader_teams WHERE team_id = ?`, [
+          team.id,
+        ]);
 
         await manager.query(
           `UPDATE member_profiles SET team_id = NULL WHERE team_id = ?`,
-          [team.id]
+          [team.id],
         );
       }
 
@@ -494,33 +611,19 @@ export class SheltersRepository {
         await txTeam.remove(teams);
       }
 
-      const txMedia = manager.withRepository(this.mediaRepo);
-      const mediaItems = await txMedia.find({
-        where: { targetId: id, targetType: 'ShelterEntity' },
-      });
-      if (mediaItems.length > 0) {
-        for (const media of mediaItems) {
-          if (media.isLocalFile && media.url) {
-            try {
-              await this.s3Service.delete(media.url);
-            } catch (error: any) {
-              this.logger.warn(`Error deleting file from S3: ${error.message}`);
-            }
-          }
-        }
-        await txMedia.remove(mediaItems);
-      }
+      // A ordem importa: `shelters.routeId` é ON DELETE CASCADE, então apagar a
+      // rota antes levaria o abrigo junto; e o endereço é RESTRICT, então só sai
+      // depois do abrigo.
+      const addressId = shelter.address?.id;
+      await txShelter.delete(shelter.id);
 
       const txRoute = manager.withRepository(this.routeRepo);
       const route = await txRoute.findOne({
-        where: { entityType: 'shelterPage', entityId: id },
+        where: { entityType: SHELTER_ROUTE_ENTITY_TYPE, entityId: id },
       });
       if (route) {
         await txRoute.remove(route);
       }
-
-      const addressId = shelter.address?.id;
-      await txShelter.delete(shelter.id);
 
       if (addressId) {
         await txAddress.delete(addressId);
@@ -528,33 +631,31 @@ export class SheltersRepository {
     });
   }
 
-
-  async userHasAccessToShelter(shelterId: string, ctx?: RoleCtx): Promise<boolean> {
-    const role = ctx?.role?.toLowerCase();
-    const userId = ctx?.userId;
-    if (!role || role === 'admin') return true;
+  async userHasAccessToShelter(
+    shelterId: string,
+    ctx?: RoleCtx,
+  ): Promise<boolean> {
+    const { role = null, userId = null } = ctx ?? {};
+    if (!role || role === UserRole.ADMIN) return true;
     if (!userId) return false;
-
-    if (role !== 'leader') return false;
+    if (role !== UserRole.LEADER) return false;
 
     const qb = this.shelterRepo
-      .createQueryBuilder('shelter')
-      .leftJoin('shelter.teams', 'teams')
-      .leftJoin('teams.leaders', 'leaders')
-      .leftJoin('leaders.user', 'leaderUser')
-      .where('shelter.id = :shelterId', { shelterId })
-      .andWhere('leaderUser.id = :uid', { uid: userId });
+      .createQueryBuilder("shelter")
+      .leftJoin("shelter.teams", "teams")
+      .leftJoin("teams.leaders", "leaders")
+      .leftJoin("leaders.user", "leaderUser")
+      .where("shelter.id = :shelterId", { shelterId })
+      .andWhere("leaderUser.id = :uid", { uid: userId });
 
-    const hasGetExists = typeof (qb as any).getExists === 'function';
-    return hasGetExists ? !!(await (qb as any).getExists()) : (await qb.getCount()) > 0;
+    return (await qb.getCount()) > 0;
   }
 
   async getLeaderProfileIdByUserId(userId: string): Promise<string | null> {
     const leader = await this.leaderRepo.findOne({
-      where: { user: { id: userId } as any },
+      where: { user: { id: userId } },
       select: { id: true },
     });
     return leader?.id ?? null;
   }
-
 }

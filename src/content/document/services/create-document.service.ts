@@ -3,18 +3,18 @@ import {
   Logger,
   BadRequestException,
   InternalServerErrorException,
-} from '@nestjs/common';
-import { DataSource, QueryRunner } from 'typeorm';
-import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
-import { RouteService } from 'src/infrastructure/route/route.service';
-import { RouteType } from 'src/infrastructure/route/route-page.entity';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
-import { MediaType } from 'src/shared/media/media-item/media-item.entity';
-import { MediaTargetType } from 'src/shared/media/media-target-type.enum';
-import { CreateDocumentDto } from '../dto/create-document.dto';
-import { DocumentDto } from '../dto/document-response.dto';
-import { DocumentRepository } from '../document.repository';
-import { DocumentEntity } from '../entities/document.entity';
+} from "@nestjs/common";
+import { DataSource, QueryRunner } from "typeorm";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
+import { RouteType } from "src/infrastructure/route/route-page.entity";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { MediaType } from "src/shared/media/media-item/media-item.entity";
+import { MediaTargetType } from "src/shared/media/media-target-type.enum";
+import { CreateDocumentDto } from "../dto/create-document.dto";
+import { DocumentDto } from "../dto/document-response.dto";
+import { DocumentRepository } from "../document.repository";
+import { DocumentEntity } from "../entities/document.entity";
 
 @Injectable()
 export class CreateDocumentService {
@@ -26,7 +26,7 @@ export class CreateDocumentService {
     private readonly s3Service: AwsS3Service,
     private readonly routeService: RouteService,
     private readonly mediaProcessor: MediaItemProcessor,
-  ) { }
+  ) {}
 
   async createDocument(
     dto: CreateDocumentDto,
@@ -35,21 +35,27 @@ export class CreateDocumentService {
     const runner = this.dataSource.createQueryRunner();
     await runner.connect();
     await runner.startTransaction();
+    // Objetos já enviados ao bucket: o banco desfaz no rollback, o bucket não.
+    const uploadedUrls: string[] = [];
 
     try {
       const savedDoc = await this.persistDocument(runner, dto);
-      const route = await this.attachRoute(runner, savedDoc, dto);
-      const media = await this.processMedia(runner, savedDoc.id, dto, file);
+      await this.attachRoute(runner, savedDoc, dto);
+      const media = await this.processMedia(
+        savedDoc.id,
+        dto,
+        file,
+        uploadedUrls,
+      );
 
       await runner.commitTransaction();
 
       return DocumentDto.fromEntity(savedDoc, media);
     } catch (err) {
       await runner.rollbackTransaction();
-      this.logger.error('Transaction rolled back', err.stack);
-      throw new BadRequestException(
-        `Error creating document: ${err.message}`,
-      );
+      await this.discardUploads(uploadedUrls);
+      this.logger.error("Transaction rolled back", err.stack);
+      throw new BadRequestException(`Error creating document: ${err.message}`);
     } finally {
       await runner.release();
     }
@@ -75,22 +81,22 @@ export class CreateDocumentService {
   ): Promise<void> {
     const path = await this.routeService.generateAvailablePath(
       dto.name,
-      'documento_',
+      "documento_",
     );
 
     const route = await this.routeService.createRouteWithManager(
       runner.manager,
       {
         title: dto.name,
-        subtitle: dto.media.title || '',
-        description: dto.description || '',
+        subtitle: dto.media.title || "",
+        description: dto.description || "",
         path,
         type: RouteType.DOC,
         entityId: document.id,
         idToFetch: document.id,
-        entityType: 'Document',
+        entityType: "Document",
         image:
-          'https://bucket-orfanato-galeria.s3.us-east-2.amazonaws.com/uploads/img_card.jpg',
+          "https://bucket-orfanato-galeria.s3.us-east-2.amazonaws.com/uploads/img_card.jpg",
         public: false,
       },
     );
@@ -99,23 +105,36 @@ export class CreateDocumentService {
     await runner.manager.save(document);
   }
 
+  /** Remove do bucket o que foi enviado numa tentativa que não chegou ao commit. */
+  private async discardUploads(urls: readonly string[]): Promise<void> {
+    for (const url of urls) {
+      try {
+        await this.s3Service.delete(url);
+      } catch (error: unknown) {
+        const reason = error instanceof Error ? error.message : String(error);
+        this.logger.error(`Objeto órfão no bucket (${url}): ${reason}`);
+      }
+    }
+  }
+
   private async processMedia(
-    runner: QueryRunner,
     documentId: string,
     dto: CreateDocumentDto,
-    file?: Express.Multer.File,
+    file: Express.Multer.File | undefined,
+    uploadedUrls: string[],
   ) {
-    let mediaUrl = dto.media.url?.trim() || '';
+    let mediaUrl = dto.media.url?.trim() || "";
     let originalName = dto.media.originalName;
     let size = dto.media.size;
 
     if (dto.media.isLocalFile) {
       if (!file) {
-        throw new BadRequestException('Required file not sent.');
+        throw new BadRequestException("Required file not sent.");
       }
 
       try {
         mediaUrl = await this.s3Service.upload(file);
+        uploadedUrls.push(mediaUrl);
         originalName = file.originalname;
         size = file.size;
       } catch (error) {
@@ -123,7 +142,7 @@ export class CreateDocumentService {
           `Error uploading file: ${file.originalname}`,
           error.stack,
         );
-        throw new InternalServerErrorException('File upload failed.');
+        throw new InternalServerErrorException("File upload failed.");
       }
     }
 
@@ -134,7 +153,7 @@ export class CreateDocumentService {
         mediaType: MediaType.DOCUMENT,
         uploadType: dto.media.uploadType,
         platformType: dto.media.platformType,
-        fileField: dto.media.fileField ?? 'file',
+        fileField: dto.media.fileField ?? "file",
         isLocalFile: dto.media.isLocalFile,
         url: mediaUrl,
         originalName,

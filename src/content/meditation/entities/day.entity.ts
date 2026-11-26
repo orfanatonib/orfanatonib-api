@@ -1,31 +1,31 @@
-import { Column, Entity, ManyToOne } from 'typeorm';
-import { MeditationEntity } from '../../meditation/entities/meditation.entity';
-import { BaseEntity } from 'src/shared/entity/base.entity';
+import { Column, Entity, ManyToOne } from "typeorm";
+import { MeditationEntity } from "../../meditation/entities/meditation.entity";
+import { BaseEntity } from "src/shared/entity/base.entity";
 
 export enum WeekDay {
-  Monday = 'Monday',
-  Tuesday = 'Tuesday',
-  Wednesday = 'Wednesday',
-  Thursday = 'Thursday',
-  Friday = 'Friday',
+  Monday = "Monday",
+  Tuesday = "Tuesday",
+  Wednesday = "Wednesday",
+  Thursday = "Thursday",
+  Friday = "Friday",
 }
 
-@Entity('meditation_days')
+@Entity("meditation_days")
 export class DayEntity extends BaseEntity {
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: WeekDay,
   })
   day: WeekDay;
 
-  @Column('text')
+  @Column("text")
   verse: string;
 
   @Column()
   topic: string;
 
   @ManyToOne(() => MeditationEntity, (meditation) => meditation.days, {
-    onDelete: 'CASCADE',
+    onDelete: "CASCADE",
   })
   meditation: MeditationEntity;
 }

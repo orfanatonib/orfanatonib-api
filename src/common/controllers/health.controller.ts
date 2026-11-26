@@ -1,59 +1,67 @@
-import { Controller, Get, Logger } from '@nestjs/common';
+import { Controller, Get, ServiceUnavailableException } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
+import { DataSource } from "typeorm";
 
-interface HealthCheckResponse {
-  status: 'ok' | 'error';
+import {
+  HEALTH_READINESS_TIMEOUT_MS,
+  HealthReadiness,
+  HealthStatus,
+} from "./health.types";
+
+export interface HealthLiveness {
+  status: HealthStatus;
   timestamp: string;
   uptime: number;
-  memory: {
-    used: number;
-    total: number;
-    percentage: number;
-  };
-  version: string;
+  /** "fake" quando o LLM é simulado (E2E); os testes de geração só rodam nesse modo. */
+  aiProviderMode: string;
 }
 
-@Controller('health')
+@Controller("health")
 export class HealthController {
+  constructor(
+    private readonly dataSource: DataSource,
+    private readonly config: ConfigService,
+  ) {}
+
+  /** Liveness: o processo responde. Não depende de banco nem mede memória. */
   @Get()
-  getHealth(): HealthCheckResponse {
-    const memUsage = process.memoryUsage();
-    const totalMem = memUsage.heapTotal;
-    const usedMem = memUsage.heapUsed;
-    const memPercentage = ((usedMem / totalMem) * 100);
-
-    if (memPercentage > 90) {
-      throw new Error('High memory usage detected');
-    }
-
+  getHealth(): HealthLiveness {
     return {
-      status: 'ok',
+      status: HealthStatus.OK,
       timestamp: new Date().toISOString(),
       uptime: process.uptime(),
-      memory: {
-        used: usedMem,
-        total: totalMem,
-        percentage: Math.round(memPercentage * 100) / 100,
-      },
-      version: process.env.npm_package_version || '1.0.0',
+      aiProviderMode:
+        this.config.get<string>("AI_PROVIDER_MODE") === "fake"
+          ? "fake"
+          : "live",
     };
   }
 
-  @Get('detailed')
-  async getDetailedHealth(): Promise<any> {
-    const basicHealth = this.getHealth();
-
+  /** Readiness: o banco responde dentro do prazo. */
+  @Get("ready")
+  async getReadiness(): Promise<HealthReadiness> {
+    const startedAt = Date.now();
+    try {
+      await Promise.race([
+        this.dataSource.query("SELECT 1"),
+        new Promise<never>((_, reject) =>
+          setTimeout(
+            () => reject(new Error("timeout")),
+            HEALTH_READINESS_TIMEOUT_MS,
+          ).unref(),
+        ),
+      ]);
+    } catch {
+      throw new ServiceUnavailableException({
+        status: HealthStatus.UNAVAILABLE,
+        checks: { database: HealthStatus.UNAVAILABLE },
+      });
+    }
     return {
-      ...basicHealth,
-      services: {
-        database: 'unknown',
-        cache: 'unknown',
-        externalApis: 'unknown',
-      },
-      environment: {
-        nodeVersion: process.version,
-        environment: process.env.NODE_ENV || 'development',
-        platform: process.platform,
-      },
+      status: HealthStatus.OK,
+      timestamp: new Date().toISOString(),
+      checks: { database: HealthStatus.OK },
+      durationMs: Date.now() - startedAt,
     };
   }
 }

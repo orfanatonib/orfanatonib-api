@@ -1,0 +1,83 @@
+{
+  "info": {
+    "name": "Notifications API Collection",
+    "description": "Prévias de e-mail (somente admin). Nada é enviado. Envio: SMTP do Gmail via fila email_outbox; flags email_*.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "template_key",
+      "value": "password-reset"
+    }
+  ],
+  "item": [
+    {
+      "name": "Prévias - lista",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/email-previews",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "email-previews"
+          ]
+        },
+        "description": "200 admin; 401 anônimo; 403 membro/líder"
+      }
+    },
+    {
+      "name": "Prévia - HTML",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/email-previews/{{template_key}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "email-previews",
+            "{{template_key}}"
+          ]
+        },
+        "description": "200 HTML; 404 chave inexistente"
+      }
+    },
+    {
+      "name": "Prévia - texto",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/email-previews/{{template_key}}/text",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "email-previews",
+            "{{template_key}}",
+            "text"
+          ]
+        },
+        "description": "200 texto; 404 chave inexistente"
+      }
+    }
+  ]
+}

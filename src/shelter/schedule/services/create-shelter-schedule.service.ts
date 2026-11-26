@@ -1,11 +1,20 @@
-import { Injectable, Logger, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
-import { ShelterScheduleRepository } from '../shelter-schedule.repository';
-import { CreateShelterScheduleDto } from '../dto/create-shelter-schedule.dto';
-import { ShelterScheduleEntity } from '../entities/shelter-schedule.entity';
-import { EventRepository } from 'src/content/event/event.repository';
-import { EventAudience, EventType } from 'src/content/event/entities/event.entity';
-import { TeamsService } from 'src/shelter/team/services/teams.service';
-import { CreateEventService } from 'src/content/event/services/create-event-service';
+import {
+  Injectable,
+  Logger,
+  NotFoundException,
+  ConflictException,
+} from "@nestjs/common";
+import { ShelterScheduleRepository } from "../shelter-schedule.repository";
+import { CreateShelterScheduleDto } from "../dto/create-shelter-schedule.dto";
+import { ShelterScheduleEntity } from "../entities/shelter-schedule.entity";
+import { GetTeamsService } from "src/shelter/team/services/get-teams.service";
+import { ShelterScheduleEventService } from "./shelter-schedule-event.service";
+
+import type { ShelterAccessContext } from "src/shelter/shelter/types";
+import {
+  assertCanAttemptScheduleWrite,
+  assertCanManageScheduleIn,
+} from "../utils/schedule-access.util";
 
 @Injectable()
 export class CreateShelterScheduleService {
@@ -13,24 +22,43 @@ export class CreateShelterScheduleService {
 
   constructor(
     private readonly scheduleRepo: ShelterScheduleRepository,
-    private readonly eventRepo: EventRepository,
-    private readonly teamsService: TeamsService,
-    private readonly createEventService: CreateEventService,
-  ) { }
+    private readonly getTeamsService: GetTeamsService,
+    private readonly scheduleEventService: ShelterScheduleEventService,
+  ) {}
+
+  /** Entrada HTTP: admin, ou líder do abrigo da equipe informada. */
+  async executeAs(
+    actor: ShelterAccessContext,
+    dto: CreateShelterScheduleDto,
+  ): Promise<ShelterScheduleEntity> {
+    assertCanAttemptScheduleWrite(actor);
+    const team = await this.getTeamsService.findOneEntity(dto.teamId);
+    if (!team) {
+      throw new NotFoundException(`Team with ID ${dto.teamId} not found`);
+    }
+    await assertCanManageScheduleIn(
+      actor,
+      team.shelter.id,
+      this.getTeamsService,
+    );
+    return this.execute(dto);
+  }
 
   async execute(dto: CreateShelterScheduleDto): Promise<ShelterScheduleEntity> {
     this.logger.log(`Creating shelter schedule for team ${dto.teamId}`);
 
-    const team = await this.teamsService.findOneEntity(dto.teamId);
-
+    const team = await this.getTeamsService.findOneEntity(dto.teamId);
     if (!team) {
       throw new NotFoundException(`Team with ID ${dto.teamId} not found`);
     }
 
-    const existingSchedule = await this.scheduleRepo.findByTeamIdAndVisitNumber(dto.teamId, dto.visitNumber);
+    const existingSchedule = await this.scheduleRepo.findByTeamIdAndVisitNumber(
+      dto.teamId,
+      dto.visitNumber,
+    );
     if (existingSchedule) {
       throw new ConflictException(
-        `A schedule for this team with visit number ${dto.visitNumber} already exists. Cannot create duplicate visit.`
+        `A schedule for this team with visit number ${dto.visitNumber} already exists. Cannot create duplicate visit.`,
       );
     }
 
@@ -44,19 +72,7 @@ export class CreateShelterScheduleService {
       team: { id: dto.teamId },
     });
 
-    if (this.isValidDate(dto.visitDate)) {
-      await this.createVisitEvent(schedule, dto, team);
-      this.logger.log(`Visit event created for schedule ${schedule.id}`);
-    }
-
-    if (this.isValidDate(dto.meetingDate)) {
-      await this.createMeetingEvent(schedule, dto, team);
-      this.logger.log(`Meeting event created for schedule ${schedule.id}`);
-    }
-
-    if (!this.isValidDate(dto.visitDate) && !this.isValidDate(dto.meetingDate)) {
-      this.logger.log(`Skipping event creation - no valid dates provided`);
-    }
+    await this.scheduleEventService.syncEventsForCreate(schedule, dto, team);
 
     this.logger.log(`Shelter schedule created with ID ${schedule.id}`);
 
@@ -65,69 +81,5 @@ export class CreateShelterScheduleService {
       throw new NotFoundException(`Failed to retrieve created schedule`);
     }
     return fullSchedule;
-  }
-
-  private isValidDate(date: string | undefined): boolean {
-    if (!date || typeof date !== 'string' || date.trim() === '') {
-      return false;
-    }
-
-    const parsedDate = new Date(date);
-    return !isNaN(parsedDate.getTime());
-  }
-
-  private async createVisitEvent(
-    schedule: ShelterScheduleEntity,
-    dto: CreateShelterScheduleDto,
-    team: any,
-  ): Promise<void> {
-    const shelter = team.shelter;
-    const address = shelter?.address;
-    const visitLocation = address?.street
-      ? `${address.street}, ${address.number || 's/n'} - ${address.city || ''}, ${address.state || ''}`.trim()
-      : shelter?.name || 'Local a definir';
-
-    const teamInfo = `Equipe ${team.numberTeam} - ${shelter?.name || 'Abrigo'}`;
-    const visitTitle = `Visita - ${teamInfo}`;
-
-    try {
-      await this.createEventService.create({
-        title: visitTitle,
-        description: `${dto.lessonContent}\n\n${teamInfo}`,
-        date: dto.visitDate!,
-        location: visitLocation,
-        audience: EventAudience.MEMBERS,
-        eventType: EventType.VISIT,
-        shelterSchedule: { id: schedule.id },
-      });
-    } catch (error) {
-      this.logger.error(`Error creating visit event for schedule`, error.stack);
-      throw error;
-    }
-  }
-
-  private async createMeetingEvent(
-    schedule: ShelterScheduleEntity,
-    dto: CreateShelterScheduleDto,
-    team: any,
-  ): Promise<void> {
-    const shelter = team.shelter;
-    const teamInfo = `Equipe ${team.numberTeam} - ${shelter.name}`;
-    const meetingTitle = `Reunião - ${teamInfo}`;
-
-    try {
-      await this.createEventService.create({
-        title: meetingTitle,
-        description: `${dto.observation || 'Reunião de planejamento'}\n\n${teamInfo}`,
-        date: dto.meetingDate!,
-        location: dto.meetingRoom || 'NIB - Nova Igreja Batista',
-        audience: EventAudience.MEMBERS,
-        eventType: EventType.MEETING,
-        shelterSchedule: { id: schedule.id },
-      });
-    } catch (error) {
-      this.logger.error(`Error creating meeting event for schedule`, error.stack);
-      throw error;
-    }
   }
 }

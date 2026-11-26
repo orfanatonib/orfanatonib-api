@@ -1,8 +1,8 @@
-import { Entity, Column, OneToOne, JoinColumn } from 'typeorm';
-import { RouteEntity } from 'src/infrastructure/route/route-page.entity';
-import { BaseEntity } from 'src/shared/entity/base.entity';
+import { Entity, Column, OneToOne, JoinColumn } from "typeorm";
+import { RouteEntity } from "src/infrastructure/route/route-page.entity";
+import { BaseEntity } from "src/shared/entity/base.entity";
 
-@Entity('videos_pages')
+@Entity("videos_pages")
 export class VideosPage extends BaseEntity {
   @Column()
   name: string;
@@ -10,13 +10,13 @@ export class VideosPage extends BaseEntity {
   @Column()
   public: boolean;
 
-  @Column({ type: 'text' })
+  @Column({ type: "text" })
   description: string;
 
   @OneToOne(() => RouteEntity, {
     cascade: true,
     eager: true,
-    onDelete: 'CASCADE',
+    onDelete: "CASCADE",
   })
   @JoinColumn()
   route: RouteEntity;

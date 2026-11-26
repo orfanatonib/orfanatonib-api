@@ -1,126 +1,102 @@
 name: Deploy Production Orfanato API
 
+# Produção = Super Stack (EC2, docker compose, profile "orfanato"), NÃO ECS.
+# O banco é o container `mysql` da própria stack; migrations rodam na EC2 com a imagem nova,
+# depois de um dump verificado, via scripts/deploy/remote-deploy.sh (mesmo código do deploy local).
+
 on:
   push:
     branches: ["main"]
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Só valida (build/push, env, dump verificado, status das migrations); não altera produção"
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy-production-orfanato
   cancel-in-progress: false
 
 permissions:
+  id-token: write
   contents: read
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: prod-orfanato-nib-api
-  ECS_SERVICE: prod-orfanato-nib-api
-  ECS_CLUSTER: prod-cluster
-  CONTAINER_NAME: orfanato-nib-api
-  APP_PORT: 3001
+  ECR: 614946928663.dkr.ecr.us-east-1.amazonaws.com
+  REPO: prod-orfanato-nib-api
+  HEALTH_URL: https://orfanato-nib-api.rodolfo-silva.com/health
 
 jobs:
   deploy:
-    name: Build, Push and Deploy to ECS
+    name: Build, Push e Deploy na Super Stack
     runs-on: ubuntu-latest
-
+    timeout-minutes: 45
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
 
-      - name: Install dependencies
+      - name: Instalar dependências
         run: npm ci
 
-      - name: Build project
+      - name: Build
         run: npm run build
 
-      # 🔐 Credenciais de DEPLOY (Conta onde está o ECS/ECR)
-      - name: Configure AWS credentials (Deploy Account)
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Testes unitários
+        run: npx jest --runInBand --silent
+        env:
+          NODE_OPTIONS: --max-old-space-size=2048
+
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.ALB_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.ALB_AWS_SECRET_ACCESS_KEY }}
+          role-to-assume: arn:aws:iam::614946928663:role/super-stack-prod-deploy-orfanato
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Build, tag, and push image to Amazon ECR
-        id: build-image
+      - name: Baseline do Juri (vizinho na mesma EC2)
+        run: curl -fsS --connect-timeout 10 --max-time 20 https://api.juri-pilot.com/healthcheck/deep >/dev/null
+
+      - name: Login no ECR
+        run: aws ecr get-login-password | docker login --username AWS --password-stdin $ECR
+
+      - name: Build arm64 e push (tag = SHA do commit)
+        run: |
+          docker buildx build --platform linux/arm64 -f Dockerfile \
+            -t $ECR/$REPO:${{ github.sha }}-arm64 --push .
+
+      - name: Deploy via SSM (env, dump verificado, migrations, troca, readiness, rollback)
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          IMAGE_TAG: ${{ github.sha }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
         run: |
-          docker build -f DockerFile -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
-          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+          IMAGE="$ECR/$REPO:${{ github.sha }}-arm64"
+          mapfile -t INSTANCES < <(aws ec2 describe-instances \
+            --filters "Name=tag:Project,Values=super-stack-prod" "Name=instance-state-name,Values=running" \
+            --query 'Reservations[].Instances[].InstanceId' --output text | tr '\t' '\n' | sed '/^$/d')
+          test "${#INSTANCES[@]}" -eq 1
+          INSTANCE=${INSTANCES[0]}
+          REQ_B64=$(base64 -w0 scripts/deploy/required-env.txt)
+          SCRIPT_B64=$(base64 -w0 scripts/deploy/remote-deploy.sh)
+          CMD="echo $SCRIPT_B64 | base64 -d > /tmp/orfanato-remote-deploy.sh && DRY_RUN=$DRY_RUN REQUIRED_ENV_B64=$REQ_B64 bash /tmp/orfanato-remote-deploy.sh $IMAGE; rc=\$?; rm -f /tmp/orfanato-remote-deploy.sh; exit \$rc"
+          CMD_ID=$(aws ssm send-command --document-name AWS-RunShellScript --instance-ids "$INSTANCE" \
+            --timeout-seconds 1800 --comment "deploy-orfanato ${{ github.sha }}" \
+            --parameters "commands=[\"$CMD\"]" --query 'Command.CommandId' --output text)
+          aws ssm wait command-executed --command-id "$CMD_ID" --instance-id "$INSTANCE" || true
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$INSTANCE" \
+            --query '[Status,StandardOutputContent,StandardErrorContent]' --output text
+          aws ssm get-command-invocation --command-id "$CMD_ID" --instance-id "$INSTANCE" \
+            --query Status --output text | grep -qx Success
 
-      - name: Download task definition
-        run: |
-          aws ecs describe-task-definition --task-definition ${{ env.ECS_SERVICE }} --query taskDefinition > task-definition.json
+      - name: Verificação externa (health via Caddy)
+        if: ${{ !inputs.dry_run }}
+        run: curl -fsS --retry 5 --retry-delay 5 "$HEALTH_URL"
 
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: task-definition.json
-          container-name: ${{ env.CONTAINER_NAME }}
-          image: ${{ steps.build-image.outputs.image }}
-          environment-variables: |
-            ENVIRONMENT=production
-            PORT=${{ env.APP_PORT }}
-            DB_HOST=${{ secrets.DB_HOST }}
-            DB_PORT=${{ secrets.DB_PORT }}
-            DB_USERNAME=${{ secrets.DB_USERNAME }}
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            DB_NAME=${{ secrets.DB_NAME }}
-            AWS_REGION=${{ env.AWS_REGION }}
-            AWS_ACCESS_KEY_ID=${{ secrets.APP_AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY=${{ secrets.APP_AWS_SECRET_ACCESS_KEY }}
-            AWS_S3_BUCKET_NAME=${{ secrets.AWS_S3_BUCKET_NAME }}
-            CONTACT_EMAIL_LOGO_URL=${{ secrets.CONTACT_EMAIL_LOGO_URL }}
-            SES_DEFAULT_FROM=${{ secrets.SES_DEFAULT_FROM }}
-            JWT_SECRET=${{ secrets.JWT_SECRET }}
-            JWT_EXPIRES_IN=${{ secrets.JWT_EXPIRES_IN }}
-            JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}
-            JWT_REFRESH_EXPIRES_IN=${{ secrets.JWT_REFRESH_EXPIRES_IN }}
-            TWILIO_ACCOUNT_SID=${{ secrets.TWILIO_ACCOUNT_SID }}
-            TWILIO_AUTH_TOKEN=${{ secrets.TWILIO_AUTH_TOKEN }}
-            TWILIO_WHATSAPP_FROM=${{ secrets.TWILIO_WHATSAPP_FROM }}
-            TWILIO_WHATSAPP_TO=${{ secrets.TWILIO_WHATSAPP_TO }}
-            FEED_ORFANATO_PAGE_ID=${{ secrets.FEED_ORFANATO_PAGE_ID }}
-            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-            OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
-
-      - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: ${{ env.ECS_SERVICE }}
-          cluster: ${{ env.ECS_CLUSTER }}
-          wait-for-steady-state: true
-          force-new-deployment: true
-
-      - name: Ensure service is running (scale up from 0)
-        run: |
-          aws ecs update-service --cluster ${{ env.ECS_CLUSTER }} --service ${{ env.ECS_SERVICE }} --desired-count 1 > /dev/null
-
-
-      - name: Deployment Summary
-        run: |
-          echo "============================================"
-          echo "   ✅ Deploy ECS Producao Orfanato - OK!"
-          echo "============================================"
-          echo "  Cluster : ${{ env.ECS_CLUSTER }}"
-          echo "  Servico : ${{ env.ECS_SERVICE }}"
-          echo "  Imagem  : ${{ steps.build-image.outputs.image }}"
-          echo "  URL     : http://orfanato-nib-api.rodolfo-silva.com"
+      - name: Juri depois da tentativa de deploy
+        if: ${{ always() }}
+        run: curl -fsS --connect-timeout 10 --max-time 20 https://api.juri-pilot.com/healthcheck/deep >/dev/null

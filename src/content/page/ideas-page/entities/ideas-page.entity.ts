@@ -1,24 +1,24 @@
 import { BaseEntity } from "src/shared/entity/base.entity";
 import { Column, Entity, JoinColumn, OneToMany, OneToOne } from "typeorm";
-import { IdeasSectionEntity } from "../../ideas-section/entites/ideas-section.entity";
+import { IdeasSectionEntity } from "../../ideas-section/entities/ideas-section.entity";
 import { RouteEntity } from "src/infrastructure/route/route-page.entity";
 
-@Entity({ name: 'ideas_pages' })
+@Entity({ name: "ideas_pages" })
 export class IdeasPageEntity extends BaseEntity {
   @Column({ length: 255 })
   title: string;
 
-  @Column({ length: 255, default: '' })
+  @Column({ length: 255, default: "" })
   subtitle?: string;
 
-  @Column('text')
+  @Column("text")
   description: string;
 
   @Column({ default: false })
   public: boolean;
 
   @OneToMany(() => IdeasSectionEntity, (section) => section.page, {
-    cascade: ['insert', 'update', 'remove'],
+    cascade: ["insert", "update", "remove"],
     eager: true,
   })
   sections: IdeasSectionEntity[];
@@ -26,7 +26,7 @@ export class IdeasPageEntity extends BaseEntity {
   @OneToOne(() => RouteEntity, {
     cascade: true,
     eager: true,
-    onDelete: 'CASCADE',
+    onDelete: "CASCADE",
   })
   @JoinColumn()
   route: RouteEntity | null;

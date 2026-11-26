@@ -1,19 +1,48 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
-import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
-import { MediaType, UploadType } from 'src/shared/media/media-item/media-item.entity';
-import { GetUsersService } from './get-user.service';
-import { UserErrorMessages, UserLogs } from '../constants/user.constants';
+import { BadRequestException, Injectable, Logger } from "@nestjs/common";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import {
+  MediaItemEntity,
+  MediaType,
+  UploadType,
+} from "src/shared/media/media-item/media-item.entity";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
+import { GetUsersService } from "./get-user.service";
+import { UserErrorMessages, UserLogs } from "../constants/user.constants";
+import { KeyedQueue } from "src/common/utils/keyed-queue";
+
+const USER_MEDIA_TARGET = "UserEntity";
+const USER_MEDIA_ENTITY = "User";
+
+export interface UserImageBody {
+  imageData?: string | UserImageMediaDto;
+  title?: string;
+  description?: string;
+  uploadType?: UploadType | string;
+  url?: string;
+  isLocalFile?: boolean;
+  fieldKey?: string;
+}
+
+interface UserImageMediaDto {
+  title?: string;
+  description?: string;
+  uploadType?: UploadType | string;
+  url?: string;
+  isLocalFile?: boolean;
+  fieldKey?: string;
+}
 
 @Injectable()
 export class UpdateUserImageService {
   private readonly logger = new Logger(UpdateUserImageService.name);
 
+  private readonly imageQueue = new KeyedQueue();
+
   constructor(
     private readonly getUsersService: GetUsersService,
     private readonly mediaItemProcessor: MediaItemProcessor,
-    private readonly s3Service: AwsS3Service,
-  ) { }
+    private readonly mediaStorage: MediaStorageService,
+  ) {}
 
   mapFiles(files: Express.Multer.File[]): Record<string, Express.Multer.File> {
     const filesDict: Record<string, Express.Multer.File> = {};
@@ -24,35 +53,21 @@ export class UpdateUserImageService {
   }
 
   private validateImageFile(file: Express.Multer.File): void {
-    if (!file.mimetype || !file.mimetype.startsWith('image/')) {
+    if (!file.mimetype || !file.mimetype.startsWith("image/")) {
       throw new BadRequestException(
-        `Tipo de arquivo inválido. Apenas imagens são permitidas. Tipo recebido: ${file.mimetype || 'desconhecido'}`,
+        `Tipo de arquivo inválido. Apenas imagens são permitidas. Tipo recebido: ${file.mimetype || "desconhecido"}`,
       );
     }
   }
 
-  async updateUserImage(
-    userId: string,
-    body: any,
-    files: Express.Multer.File[],
-  ) {
-    await this.getUsersService.findOne(userId);
-
-    let mediaDto: {
-      title?: string;
-      description?: string;
-      uploadType?: UploadType;
-      url?: string;
-      isLocalFile?: boolean;
-      fieldKey?: string;
-    };
-
+  private parseMediaDto(body: UserImageBody): UserImageMediaDto {
     if (body.imageData) {
-      mediaDto = typeof body.imageData === 'string'
-        ? JSON.parse(body.imageData)
+      return typeof body.imageData === "string"
+        ? (JSON.parse(body.imageData) as UserImageMediaDto)
         : body.imageData;
-    } else if (body.title || body.url) {
-      mediaDto = {
+    }
+    if (body.title || body.url) {
+      return {
         title: body.title,
         description: body.description,
         uploadType: body.uploadType,
@@ -60,124 +75,141 @@ export class UpdateUserImageService {
         isLocalFile: body.isLocalFile,
         fieldKey: body.fieldKey,
       };
-    } else {
-      throw new BadRequestException(UserErrorMessages.IMAGE_DATA_REQUIRED);
     }
+    throw new BadRequestException(UserErrorMessages.IMAGE_DATA_REQUIRED);
+  }
 
+  private resolveUploadType(
+    dto: UserImageMediaDto,
+    hasFile: boolean,
+  ): UploadType {
+    if (dto.uploadType) {
+      return String(dto.uploadType).toLowerCase() === "upload"
+        ? UploadType.UPLOAD
+        : UploadType.LINK;
+    }
+    return hasFile ? UploadType.UPLOAD : UploadType.LINK;
+  }
+
+  private pickFile(
+    dto: UserImageMediaDto,
+    filesDict: Record<string, Express.Multer.File>,
+  ): Express.Multer.File {
+    const fieldKey = dto.fieldKey || "file";
+    const file = filesDict[fieldKey];
+    if (!file) {
+      throw new BadRequestException(
+        `Arquivo não encontrado para upload. FieldKey: ${fieldKey}, Arquivos disponíveis: ${Object.keys(filesDict).join(", ")}`,
+      );
+    }
+    this.validateImageFile(file);
+    return file;
+  }
+
+  /**
+   * Ordem segura para o S3: envia o novo → grava no banco → só então apaga o
+   * antigo. Se o envio ou a gravação falham, o antigo continua referenciado e
+   * o novo é descartado (nunca fica objeto órfão nem referência quebrada).
+   */
+  updateUserImage(
+    userId: string,
+    body: UserImageBody,
+    files: Express.Multer.File[],
+  ) {
+    // Uma troca por usuário de cada vez: duas simultâneas deixariam um objeto órfão no bucket.
+    return this.imageQueue.run(userId, () =>
+      this.applyUserImage(userId, body, files),
+    );
+  }
+
+  private async applyUserImage(
+    userId: string,
+    body: UserImageBody,
+    files: Express.Multer.File[],
+  ) {
+    await this.getUsersService.findOne(userId);
+
+    const mediaDto = this.parseMediaDto(body);
     const filesDict = this.mapFiles(files);
     const hasFile = files.length > 0;
-
-    let uploadTypeValue: UploadType;
-    if (mediaDto.uploadType) {
-      const normalized = String(mediaDto.uploadType).toLowerCase();
-      uploadTypeValue = normalized === 'upload' ? UploadType.UPLOAD : UploadType.LINK;
-    } else {
-      uploadTypeValue = hasFile ? UploadType.UPLOAD : UploadType.LINK;
-    }
+    const uploadType = this.resolveUploadType(mediaDto, hasFile);
 
     const existingMedia = await this.mediaItemProcessor.findMediaItemByTarget(
       userId,
-      'UserEntity',
+      USER_MEDIA_TARGET,
     );
 
-    if (existingMedia) {
-      const media = this.mediaItemProcessor.buildBaseMediaItem(
-        {
-          ...mediaDto,
-          mediaType: MediaType.IMAGE,
-          uploadType: uploadTypeValue,
-        },
-        userId,
-        'UserEntity',
-      );
+    const media = this.mediaItemProcessor.buildBaseMediaItem(
+      {
+        ...mediaDto,
+        mediaType: MediaType.IMAGE,
+        uploadType,
+        ...(existingMedia
+          ? {}
+          : {
+              title: mediaDto.title || "Foto do Usuário",
+              description:
+                mediaDto.description || "Imagem de perfil do usuário",
+            }),
+      },
+      userId,
+      USER_MEDIA_TARGET,
+    );
 
-      const hasOldLocalFile = existingMedia.isLocalFile && existingMedia.url;
-
-      if (hasFile) {
-        const fieldKey = mediaDto.fieldKey || 'file';
-        const file = filesDict[fieldKey];
-        if (!file) {
-          throw new BadRequestException(
-            `Arquivo não encontrado para upload. FieldKey: ${fieldKey}, Arquivos disponíveis: ${Object.keys(filesDict).join(', ')}`,
-          );
-        }
-
-        this.validateImageFile(file);
-
-        if (hasOldLocalFile) {
-          try {
-            await this.s3Service.delete(existingMedia.url);
-            this.logger.log(`Arquivo antigo deletado do S3: ${existingMedia.url}`);
-          } catch (error) {
-            this.logger.warn(`Não foi possível deletar o arquivo antigo do S3: ${existingMedia.url}`, error);
-          }
-        }
-
-        media.uploadType = UploadType.UPLOAD;
-        media.url = await this.s3Service.upload(file);
-        media.isLocalFile = true;
-        media.originalName = file.originalname;
-        media.size = file.size;
-      } else if (mediaDto.url) {
-        if (hasOldLocalFile) {
-          try {
-            await this.s3Service.delete(existingMedia.url);
-            this.logger.log(`Arquivo antigo deletado do S3 ao mudar para link: ${existingMedia.url}`);
-          } catch (error) {
-            this.logger.warn(`Não foi possível deletar o arquivo antigo do S3: ${existingMedia.url}`, error);
-          }
-        }
-
-        media.uploadType = UploadType.LINK;
-        media.url = mediaDto.url;
-        media.isLocalFile = false;
-      } else {
-        throw new BadRequestException(UserErrorMessages.URL_OR_FILE_REQUIRED);
-      }
-
-      await this.mediaItemProcessor.upsertMediaItem(existingMedia.id, media);
-    } else {
-      const media = this.mediaItemProcessor.buildBaseMediaItem(
-        {
-          ...mediaDto,
-          mediaType: MediaType.IMAGE,
-          uploadType: uploadTypeValue,
-          title: mediaDto.title || 'Foto do Usuário',
-          description: mediaDto.description || 'Imagem de perfil do usuário',
-        },
-        userId,
-        'UserEntity',
-      );
-
-      if (hasFile) {
-        const fieldKey = mediaDto.fieldKey || 'file';
-        const file = filesDict[fieldKey];
-        if (!file) {
-          throw new BadRequestException(
-            `Arquivo não encontrado para upload. FieldKey: ${fieldKey}, Arquivos disponíveis: ${Object.keys(filesDict).join(', ')}`,
-          );
-        }
-
-        this.validateImageFile(file);
-
-        media.uploadType = UploadType.UPLOAD;
-        media.url = await this.s3Service.upload(file);
-        media.isLocalFile = true;
-        media.originalName = file.originalname;
-        media.size = file.size;
-      } else if (mediaDto.url) {
-        media.uploadType = UploadType.LINK;
-        media.url = mediaDto.url;
-        media.isLocalFile = false;
-      } else {
-        throw new BadRequestException(UserErrorMessages.URL_OR_FILE_REQUIRED);
-      }
-
-      await this.mediaItemProcessor.saveMediaItem(media);
+    if (!hasFile && !mediaDto.url) {
+      throw new BadRequestException(UserErrorMessages.URL_OR_FILE_REQUIRED);
     }
+
+    const batch = this.mediaStorage.newBatch();
+    try {
+      if (hasFile) {
+        const file = this.pickFile(mediaDto, filesDict);
+        await this.mediaStorage.uploadAll(
+          [
+            {
+              file,
+              mediaType: MediaType.IMAGE,
+              entity: USER_MEDIA_ENTITY,
+              ownerId: userId,
+            },
+          ],
+          batch,
+        );
+        const [uploaded] = batch.objects;
+        media.uploadType = UploadType.UPLOAD;
+        media.url = uploaded.url;
+        media.storageKey = uploaded.key;
+        media.isLocalFile = true;
+        media.originalName = file.originalname;
+        media.size = file.size;
+      } else {
+        media.uploadType = UploadType.LINK;
+        media.url = mediaDto.url ?? "";
+        media.isLocalFile = false;
+      }
+
+      if (existingMedia) {
+        await this.mediaItemProcessor.upsertMediaItem(existingMedia.id, media);
+      } else {
+        await this.mediaItemProcessor.saveMediaItem(media);
+      }
+    } catch (error) {
+      await batch.discard();
+      throw error;
+    }
+    batch.commit();
+
+    await this.removePrevious(existingMedia);
 
     this.logger.log(UserLogs.IMAGE_UPDATED(userId));
     return this.getUsersService.findOne(userId);
   }
-}
 
+  private async removePrevious(
+    existing: MediaItemEntity | null,
+  ): Promise<void> {
+    if (existing?.isLocalFile && existing.url) {
+      await this.mediaStorage.deleteAfterCommit([existing.url]);
+    }
+  }
+}

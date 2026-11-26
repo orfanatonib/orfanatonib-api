@@ -1,31 +1,43 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  VersionColumn,
+} from "typeorm";
 
-@Entity('feature_flags')
+@Entity("feature_flags")
 export class FeatureFlagEntity {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
+  @PrimaryGeneratedColumn("uuid")
+  id: string;
 
-    @Column({ unique: true, length: 255 })
-    key: string;
+  @Column({ unique: true, length: 255 })
+  key: string;
 
-    @Column({ length: 255 })
-    name: string;
+  @Column({ length: 255 })
+  name: string;
 
-    @Column({ type: 'text', nullable: true })
-    description: string;
+  @Column({ type: "text", nullable: true })
+  description: string | null;
 
-    @Column({ default: false })
-    enabled: boolean;
+  @Column({ default: false })
+  enabled: boolean;
 
-    @Column({ length: 50, nullable: true })
-    environment: string;
+  /** Flag de fábrica: não pode ser renomeada nem removida (desligue-a). */
+  @Column({ name: "protected", type: "boolean", default: false })
+  isProtected: boolean;
 
-    @Column({ type: 'json', nullable: true })
-    metadata: Record<string, any>;
+  /** Controle otimista: incrementado a cada escrita. */
+  @VersionColumn({ default: 1 })
+  version: number;
 
-    @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
+  @Column({ type: "json", nullable: true })
+  metadata: Record<string, unknown> | null;
 
-    @UpdateDateColumn({ name: 'updated_at' })
-    updatedAt: Date;
+  @CreateDateColumn({ name: "created_at" })
+  createdAt: Date;
+
+  @UpdateDateColumn({ name: "updated_at" })
+  updatedAt: Date;
 }

@@ -1,262 +1,179 @@
-# 🏠 Shelters Module
+# 🏠 Módulo Shelters (Abrigos)
 
-## 📋 Visão Geral
+Os abrigos do orfanato: dados, endereço, equipes, foto principal e a rota
+pública da página do abrigo.
 
-O módulo Shelters gerencia os abrigos do sistema de orfanato, incluindo informações de localização, horários e vinculação com líderes.
-
-## 🏗️ Estrutura
-
-### Entidades
-- **ShelterEntity** - Dados do abrigo
-- **AddressEntity** - Endereço do abrigo (relacionamento)
-- **LeaderProfileEntity** - Líder responsável (relacionamento)
-
-### Relacionamentos
-```
-Shelter -> Address (1:1)
-Shelter -> LeaderProfile (N:1) - Um abrigo tem um líder principal
-Shelter -> MemberProfile (1:N) - Um abrigo pode ter múltiplos professores
-```
-
-## 🚀 Endpoints
-
-### 📋 Listagem e Busca
-- `GET /shelters` - Lista paginada com filtros
-- `GET /shelters/simple` - Lista simplificada
-- `GET /shelters/:id` - Busca por ID
-
-### 🔧 Criação e Gerenciamento
-- `POST /shelters` - Criar novo abrigo
-- `PATCH /shelters/:id` - Atualizar abrigo
-- `DELETE /shelters/:id` - Deletar abrigo
-
-## 📊 Filtros Disponíveis
-
-### Query Parameters
-- `page` - Número da página (padrão: 1)
-- `limit` - Itens por página (padrão: 12, máximo: 100)
-- `sort` - Campo de ordenação (`name`, `createdAt`, `updatedAt`, `city`, `state`)
-- `order` - Direção (`asc`, `desc`)
-- `addressSearchString` - Busca por endereço
-- `userSearchString` - Busca por usuários (líderes/professores)
-- `shelterSearchString` - Busca por nome do abrigo
-
-## 🔐 Autenticação e Autorização
-
-### Roles Permitidos
-- **admin** - Acesso total
-- **coordinator** (leader) - Acesso aos próprios abrigos
-- **member** - Acesso aos abrigos onde trabalha
-
-### Headers Obrigatórios
-```
-Authorization: Bearer {access_token}
-Content-Type: application/json
-```
-
-## 📝 Exemplos de Uso
-
-### Listar Shelters com Paginação
-```bash
-GET /shelters?page=1&limit=12&sort=name&order=asc
-```
-
-### Filtrar por Endereço
-```bash
-GET /shelters?addressSearchString=Rio de Janeiro
-```
-
-### Filtrar por Nome do Abrigo
-```bash
-GET /shelters?shelterSearchString=Central
-```
-
-### Criar Novo Abrigo
-```bash
-POST /shelters
-Content-Type: application/json
-
-{
-  "name": "Abrigo Nova Esperança",
-  "address": {
-    "street": "Rua das Flores, 123",
-    "district": "Centro",
-    "city": "São Paulo",
-    "state": "SP",
-    "postalCode": "01234-567"
-  }
-}
-```
-
-### Atualizar Abrigo
-```bash
-PATCH /shelters/uuid-shelter-id
-Content-Type: application/json
-
-{
-  "name": "Abrigo Nova Esperança Atualizado"
-}
-```
-
-## 📊 Respostas da API
-
-### Sucesso - Lista Paginada (200)
-```json
-{
-  "items": [
-    {
-      "id": "uuid-shelter",
-      "name": "Abrigo Central",
-      "address": {
-        "id": "uuid-address",
-        "street": "Rua das Flores, 123",
-        "district": "Centro",
-        "city": "São Paulo",
-        "state": "SP",
-        "postalCode": "01234-567"
-      },
-      "leader": {
-        "id": "uuid-leader",
-        "user": {
-          "id": "uuid-leader-user",
-          "name": "Maria Santos",
-          "email": "maria@example.com",
-          "phone": "+5511888888888",
-          "active": true,
-          "completed": true,
-          "commonUser": false
-        }
-      },
-      "members": [
-        {
-          "id": "uuid-member",
-          "user": {
-            "id": "uuid-member-user",
-            "name": "João Silva",
-            "email": "joao@example.com",
-            "phone": "+5511999999999",
-            "active": true,
-            "completed": true,
-            "commonUser": false
-          }
-        }
-      ],
-      "createdAt": "2025-09-27T21:00:00.000Z",
-      "updatedAt": "2025-09-27T21:00:00.000Z"
-    }
-  ],
-  "total": 1,
-  "page": 1,
-  "limit": 12
-}
-```
-
-### Sucesso - Criação (201)
-```json
-{
-  "id": "uuid-shelter",
-  "name": "Abrigo Nova Esperança",
-  "address": {
-    "id": "uuid-address",
-    "street": "Rua das Flores, 123",
-    "district": "Centro",
-    "city": "São Paulo",
-    "state": "SP",
-    "postalCode": "01234-567"
-  },
-  "leader": null,
-  "members": [],
-  "createdAt": "2025-09-27T21:00:00.000Z",
-  "updatedAt": "2025-09-27T21:00:00.000Z"
-}
-```
-
-### Erro - Shelter Não Encontrado (404)
-```json
-{
-  "statusCode": 404,
-  "message": "Shelter não encontrado",
-  "error": "Not Found"
-}
-```
-
-### Erro - Validação (400)
-```json
-{
-  "statusCode": 400,
-  "message": [
-    "name should not be empty",
-    "name should not be empty"
-  ],
-  "error": "Bad Request"
-}
-```
-
-## 🧪 Testes
-
-### Scripts Disponíveis
-- `tests/shelters/test-shelter-crud.js` - Teste CRUD básico
-- `tests/shelters/test-shelter-filters.js` - Teste de filtros
-
-### Executar Testes
-```bash
-node tests/shelters/test-shelter-crud.js
-node tests/shelters/test-shelter-filters.js
-```
-
-## 🤖 Automações
-
-### Scripts Disponíveis
-- `automations/shelters/create-shelters-automation.js` - Criação em massa
-
-### Executar Automação
-```bash
-node automations/shelters/create-shelters-automation.js
-```
-
-## 📁 Arquivos Relacionados
-
-### Código Fonte
-- `src/modules/shelters/controller/shelters.controller.ts`
-- `src/modules/shelters/services/shelters.service.ts`
-- `src/modules/shelters/repositories/shelters.repository.ts`
-- `src/modules/shelters/dto/` - DTOs de request e response
-- `src/modules/shelters/entities/shelter.entity.ts`
-
-### Documentação
-- `docs/Shelters_API_Collection.postman_collection.json`
-- `docs/Shelters_API_Documentation.md`
-
-### Resultados de Automações
-- `docs/shelters/results/created-shelters-2025-09-27.json` - Criação de abrigos
-
-## 🔄 Histórico de Mudanças
-
-### v1.2.0 - Refatoração Completa
-- ✅ Removido campo `number` (não usado mais)
-- ✅ Removido campo `weekday` (não usado mais)
-- ✅ Adicionado campo `name` obrigatório
-- ✅ Atualizado filtros para usar `name` em vez de `number`
-- ✅ Corrigido relacionamentos com líderes e professores
-- ✅ Atualizada collection do Postman
-
-### v1.1.0 - Funcionalidades Básicas
-- ✅ CRUD completo de shelters
-- ✅ Vinculação com endereços
-- ✅ Paginação e filtros
-- ✅ Autenticação e autorização
-
-## 📋 Campos da Entidade
-
-### ShelterEntity
-- `id` - UUID único
-- `name` - Nome do abrigo (obrigatório)
-- `address` - Relacionamento com AddressEntity
-- `leader` - Relacionamento com LeaderProfileEntity
-- `members` - Relacionamento com MemberProfileEntity[]
-- `createdAt` - Data de criação
-- `updatedAt` - Data de atualização
+- **Contrato dos endpoints**: [`Shelters_API_Documentation.md`](./Shelters_API_Documentation.md)
+- **Diagrama de fluxo**: [`docs/diagrams/flow/shelter/shelter-flow.puml`](../../diagrams/flow/shelter/shelter-flow.puml)
 
 ---
 
-**Módulo Shelters - Sistema de Orfanato** 🏠
+## 📁 Estrutura
+
+```text
+src/shelter/shelter/
+├── shelters.module.ts
+├── shelters.controller.ts          # só HTTP: parse do multipart e ator do token
+├── constants.ts                    # campos multipart, prefixo/entityType da rota, mensagens
+├── types.ts                        # escopo do ator, dicionário de arquivos, linhas do SQL cru
+├── dto/
+│   ├── create-shelter.dto.ts
+│   ├── update-shelter.dto.ts
+│   ├── query-shelters.dto.ts
+│   ├── shelter.response.dto.ts
+│   ├── shelter-paginated-response.dto.ts
+│   ├── shelter-select-option.dto.ts
+│   ├── shelter-team-select-option.dto.ts
+│   └── shelter-teams-quantity-response.dto.ts
+├── entities/shelter.entity/shelter.entity.ts
+├── mappers/shelter.mapper.ts       # entidade → DTO, incluindo a visibilidade do endereço
+├── repositories/shelters.repository.ts
+├── services/
+│   ├── create-shelters.service.ts
+│   ├── get-shelters.service.ts
+│   ├── update-shelters.service.ts
+│   ├── delete-shelters.service.ts
+│   ├── shelter-media.service.ts    # foto do abrigo e fotos de perfil das equipes
+│   ├── shelter-route.service.ts    # a rota pública do abrigo
+│   └── shelter-teams.service.ts    # numeração e reconciliação das equipes
+└── utils/
+    ├── shelter-access.util.ts      # ator a partir da requisição, regras de escopo
+    ├── shelter-payload.util.ts     # parse e validação do JSON multipart
+    └── shelter-transform.util.ts   # helpers de @Transform dos DTOs
+```
+
+---
+
+## 🔐 Quem enxerga o quê
+
+O escopo **nunca** vem do corpo da requisição: o controller resolve
+`ShelterAccessContext` a partir do token com `toShelterAccessContext(request)` e
+passa esse contrato aos casos de uso, que ficam livres de HTTP.
+
+| Papel | Listagem administrativa (`GET /shelters`) | Escrita | Lista simples |
+|-------|-------------------------------------------|---------|---------------|
+| `admin` | todos os abrigos | ✅ | todos |
+| `leader` | só os abrigos que lidera | ✅ editar/remover só os dele; **criar ❌ `403`** (só o admin cria) | só os dele |
+| `member` | ❌ `403` | ❌ `403` | só os dele |
+| sem papel | ❌ `403` | ❌ `403` | nenhum |
+
+Um abrigo **fora do escopo do ator responde `404`, não `403`** — a existência do
+registro não vaza para quem não deveria alcançá-lo.
+
+---
+
+## 🧩 Os três colaboradores
+
+O módulo tinha a mesma regra escrita três vezes — uma em cada operação. Hoje
+cada assunto tem um dono:
+
+- **`ShelterMediaService`** — a foto principal do abrigo e as fotos de perfil de
+  quem está nas equipes. Anexa tudo em **uma consulta por alvo**, não uma por
+  pessoa. Quando há mais de uma mídia para o mesmo alvo, a mais recente vence.
+  Substituir um upload apaga o arquivo anterior do bucket; falhar nessa limpeza
+  não aborta a operação que o usuário pediu.
+- **`ShelterRouteService`** — a rota pública. A criação, a atualização e a troca
+  de imagem montavam a rota cada uma do seu jeito, **inclusive com três grafias
+  diferentes de `entityType`** (`shelterPage`, `ShelterPage`, `ShelterEntity`),
+  o que deixava a consulta de exclusão sem casar com o que a criação gravava.
+  Agora há uma constante só: `SHELTER_ROUTE_ENTITY_TYPE`.
+  A **exclusão** é a exceção: ela não passa por aqui. `shelters.routeId` é
+  `ON DELETE CASCADE`, então apagar a rota antes apagaria o abrigo — a remoção
+  inteira acontece na transação do repositório, na ordem abrigo → rota →
+  endereço (o endereço é `RESTRICT`).
+- **`ShelterTeamsService`** — a numeração. Um abrigo com `teamsQuantity` N tem
+  exatamente as equipes `1..N`; o payload só personaliza as que quiser. A
+  criação e a atualização compartilham a mesma validação (número fora da faixa,
+  número repetido, membro em duas equipes).
+
+---
+
+## 📦 Multipart
+
+O abrigo chega como `multipart/form-data` com o JSON num campo de texto, que o
+`ValidationPipe` global **não enxerga**. Por isso o parse e a validação
+acontecem no transporte, antes do caso de uso:
+
+```ts
+const dto = parseShelterPayload(body, CreateShelterDto);
+```
+
+| Campo | Uso |
+|-------|-----|
+| `shelterData` | JSON do abrigo (`POST`, `PUT`). Os campos soltos no body também são aceitos |
+| `mediaData` | JSON da mídia (`PATCH /:id/media`). `title`/`url` soltos também são aceitos |
+| qualquer arquivo | indexado por `fieldname`; o `fieldKey` do payload escolhe qual |
+
+Payload ausente ou inválido responde `400` com a categoria `RULE` e a lista de
+campos que falharam.
+
+---
+
+## 🚀 Endpoints
+
+| Rota | Guard | Observação |
+|------|-------|------------|
+| `GET /shelters` | JWT | paginada; admin e líder |
+| `GET /shelters/simple` | JWT | aberta também ao membro, no escopo dele |
+| `GET /shelters/list` | JWT | opções de seleção |
+| `GET /shelters/list-teams` | — | pública |
+| `GET /shelters/:id` | JWT | |
+| `GET /shelters/:id/teams-quantity` | JWT | |
+| `POST /shelters` | JWT | multipart; **só admin**. É atômico: se equipes, foto ou rota falham, abrigo, endereço, equipes e mídia são desfeitos |
+| `PUT /shelters/:id` | JWT | substituição completa: `teamsQuantity` é obrigatório |
+| `PATCH /shelters/:id/media` | JWT | troca só a foto principal |
+| `DELETE /shelters/:id` | JWT | limpa mídia e rota antes de remover |
+
+### Envelope da listagem
+
+`GET /shelters` responde `{ items, total, page, limit, pageCount }`. Difere do
+`PaginatedResponseDto` compartilhado (`data`/`meta`) porque este é o contrato que
+o frontend já consome; a convergência está registrada como débito.
+
+### Endereço atrás de flag
+
+O endereço do abrigo só vai na resposta quando a feature flag
+`FeatureFlagKeys.SHELTER_ADDRESS` está ligada. A decisão é aplicada no mapper,
+em um ponto só (`applyAddressVisibility`).
+
+---
+
+## 🤝 Contrato com outros módulos
+
+O repositório **não é exportado**. Quem precisa de abrigo fala com os serviços:
+
+```ts
+// src/shelter/leader-profile/services/leader-profiles.service.ts
+const shelterIds = await this.getSheltersService.findShelterIdsForLeader(userId);
+```
+
+| Contrato | Para quê |
+|----------|----------|
+| `GetSheltersService.existsForActor(id, actor)` | o abrigo existe **e** o ator o alcança, sem expor o payload |
+| `GetSheltersService.findShelterIdsForLeader(userId)` | os abrigos que um líder lidera |
+| `GetSheltersService.findEntityOrFail(id, actor)` | lookup compartilhado pelos casos de uso de escrita |
+
+---
+
+## 🧪 Testes
+
+```bash
+npx jest src/shelter/shelter
+```
+
+14 suítes, cobrindo controller, os quatro casos de uso, os três
+colaboradores, o repositório, os mappers e os utils. Cobertura do módulo acima de
+90% em statements, branches, funções e linhas.
+
+Os testes unitários **não bastam**: os três defeitos mais graves do módulo (o
+`DELETE` que cascateava, o `POST` com mídia respondendo 500 e a foto ausente na
+resposta da criação) só apareceram exercitando o stack local de verdade.
+
+---
+
+## 📌 Débitos conhecidos
+
+- `ShelterPaginatedResponseDto` ainda não usa o envelope compartilhado
+  `PaginatedResponseDto`.
+- `LeaderProfilesService` ainda injeta `Repository<ShelterEntity>` direto para a
+  leitura da lista de abrigos do líder; isso pertence a um contrato deste módulo.

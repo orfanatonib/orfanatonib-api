@@ -1,7 +1,7 @@
 # Guia de Tratamento de Erros - API Orfanato NIB
 
-**📅 Última atualização:** Janeiro 2026
-**🔧 Estado atual:** Rate limiting e timeout temporariamente desabilitados
+**📅 Última atualização:** Novembro 2026
+**🔧 Estado atual:** rate limiting removido (decisão do solicitante); timeout de requisição removido; `requestId` gerado no servidor
 **📝 Sem Swagger:** Documentação manual mantida atualizada
 
 ## Visão Geral
@@ -14,8 +14,12 @@ Esta API possui um sistema robusto e profissional de tratamento de erros, projet
 
 - ✅ **Swagger removido** - Sem dependências desnecessárias
 - ✅ **Logs simplificados** - Só mostra erros, console limpo
-- ⚠️ **Rate limiting desabilitado** - Temporariamente para estabilidade
-- ⚠️ **Timeout desabilitado** - Temporariamente para estabilidade
+- ✅ **`requestId` do servidor** - UUID gerado por requisição (AsyncLocalStorage), igual ao cabeçalho `X-Request-Id`; o valor enviado pelo cliente é **ignorado**
+- ✅ **Sem vazamento** - a resposta nunca traz stack nem SQL; o `path` e o log **não ecoam a query string**; IP e User-Agent não são gravados
+- ✅ **`details.code`** - código estável opcional (`FEATURE_DISABLED`, `LOG_9101`, `LOG_9102`, `VAL_4005`…) para o front decidir a mensagem
+- ✅ **Auditoria e log técnico** - o filtro registra a falha (`docs/modules/observability-audit`)
+- ❌ **Rate limiting removido** - decisão do solicitante; reavaliar no futuro
+- ❌ **Timeout removido** - o middleware antigo estava morto e lançava dentro de `setTimeout`
 - ✅ **Build limpo** - Sem warnings ou erros
 - ✅ **Código enxuto** - Imports e dependências otimizadas
 
@@ -30,7 +34,7 @@ Todos os erros da API seguem este formato JSON:
   "error": "Bad Request",
   "category": "RULE",
   "timestamp": "2024-01-15T10:30:00.000Z",
-  "path": "/api/users",
+  "path": "/users",
   "requestId": "550e8400-e29b-41d4-a716-446655440000",
   "correlationId": "corr-1705312200000-abc123def",
   "details": {
@@ -49,8 +53,8 @@ Todos os erros da API seguem este formato JSON:
 | `error` | string | Nome do erro HTTP (Bad Request, Unauthorized, etc.) |
 | `category` | string | Categoria do erro (ver seção de categorias) |
 | `timestamp` | string | Data/hora ISO do erro |
-| `path` | string | Endpoint onde o erro ocorreu |
-| `requestId` | string | ID único da requisição (para rastreamento) |
+| `path` | string | Endpoint onde o erro ocorreu, **sem query string** |
+| `requestId` | string | UUID gerado pelo servidor; igual ao cabeçalho `X-Request-Id` (para rastreamento e para achar o registro na auditoria) |
 | `correlationId` | string | ID de correlação (para debugging interno) |
 | `details` | object | Detalhes adicionais específicos do erro (opcional) |
 
@@ -252,48 +256,29 @@ Todos os erros da API seguem este formato JSON:
 }
 ```
 
-## Rate Limiting (Limitação de Taxa)
+### Falha no envio por Gmail SMTP
 
-**⚠️ ATUALMENTE DESABILITADO:** Os middlewares de rate limiting estão temporariamente desabilitados para estabilidade. Quando reabilitados, implementarão:
-
-### Limites por Tipo de Operação (Quando Ativo)
-
-| Operação | Limite | Janela de Tempo |
-|----------|--------|-----------------|
-| **Geral** | 1000 requests | 15 minutos |
-| **Autenticação** | 5 tentativas | 15 minutos |
-| **Escrita (POST/PUT/PATCH/DELETE)** | 50 operações | 5 minutos |
-| **Upload de Arquivos** | 10 uploads | 1 hora |
-
-### Headers de Rate Limiting (Quando Ativo)
-
-```http
-X-RateLimit-Limit: 1000
-X-RateLimit-Remaining: 999
-X-RateLimit-Reset: 1705313100
-Retry-After: 900  // Aparece quando limite excedido
-```
-
-## Timeouts
-
-**⚠️ ATUALMENTE DESABILITADO:** Os middlewares de timeout estão temporariamente desabilitados. Quando reabilitados:
-
-- **Timeout padrão:** 30 segundos
-- Se uma requisição exceder este tempo, retorna erro 408 Request Timeout
+Quando um envio obrigatório continua falhando depois das tentativas para erros
+transitórios, o provider lança uma exceção de processo. A resposta HTTP mantém o
+envelope global e não expõe credenciais, destinatários nem a resposta bruta do
+servidor SMTP:
 
 ```json
 {
-  "statusCode": 408,
-  "message": "Request timeout after 30000ms",
-  "error": "Request Timeout",
-  "category": "SERVER",
-  "details": {
-    "url": "/api/shelters",
-    "method": "GET",
-    "timeout": 30000
-  }
+  "statusCode": 500,
+  "message": "Não foi possível enviar o e-mail. Tente novamente mais tarde.",
+  "error": "PROCESS",
+  "category": "PROCESS"
 }
 ```
+
+## Limitação de taxa
+
+**Removida por decisão do solicitante** (não implementada; reavaliar no futuro). A API não tem middleware de rate limit nem variáveis `RATE_LIMIT_*`/`TRUST_PROXY_HOPS`. Resta apenas a regra de negócio dos comentários do feed (`429` com `FEED_COMMENT_MESSAGES.RATE_LIMITED`).
+
+## Timeouts
+
+Não há timeout global de requisição na aplicação (o middleware antigo foi removido por ser código morto e por lançar dentro de `setTimeout`). O prazo de cada chamada é do balanceador/cliente; a readiness (`/health/ready`) tem prazo próprio.
 
 ## Headers Importantes
 
@@ -302,14 +287,12 @@ Retry-After: 900  // Aparece quando limite excedido
 ```http
 Authorization: Bearer <token>
 Content-Type: application/json
-X-Request-ID: <uuid>  // Opcional, usado para rastreamento
 ```
 
 ### Response Headers
 
 ```http
-X-Request-ID: 550e8400-e29b-41d4-a716-446655440000  // Mesmo ID da request (sempre presente)
-// Headers de rate limiting ausentes (middleware desabilitado)
+X-Request-Id: 550e8400-e29b-41d4-a716-446655440000  // gerado pelo servidor; igual ao `requestId` do corpo de erro (sempre presente)
 ```
 
 ## Logging e Monitoramento
@@ -428,29 +411,6 @@ try {
 }
 ```
 
-### Tratamento de Rate Limiting
-
-**⚠️ ATUALMENTE DESABILITADO:** Quando reabilitado, usar:
-
-```typescript
-// Interceptador axios para rate limiting
-axios.interceptors.response.use(
-  response => response,
-  error => {
-    if (error.response?.status === 429) {
-      const retryAfter = error.response.data.details?.retryAfter || 60;
-      toast.error(`Muitas tentativas. Tente novamente em ${retryAfter} segundos.`);
-
-      // Opcional: implementar retry automático
-      return new Promise(resolve => {
-        setTimeout(() => resolve(axios(error.config)), retryAfter * 1000);
-      });
-    }
-    return Promise.reject(error);
-  }
-);
-```
-
 ### Tratamento de Autenticação
 
 ```typescript
@@ -553,10 +513,9 @@ Inclui verificações de conectividade com banco de dados e serviços externos.
 3. **Implemente retry automático** apenas para erros 5xx
 4. **Não tente novamente automaticamente** para erros 4xx
 5. **Valide dados no frontend** antes de enviar para reduzir erros 400
-6. **Rate limiting:** Atualmente desabilitado - implementar quando reabilitado
-7. **Implemente loading states** para operações que podem demorar
-8. **Log erros de servidor** para debugging, mas não exponha detalhes sensíveis
-9. **Console limpo:** A API não polui logs com requests normais
+6. **Implemente loading states** para operações que podem demorar
+7. **Log erros de servidor** para debugging, mas não exponha detalhes sensíveis
+8. **Console limpo:** A API não polui logs com requests normais
 
 ## Suporte e Debugging
 
@@ -568,3 +527,12 @@ Para reportar problemas:
 4. Mencione o navegador e versão utilizados
 
 **Contato para suporte técnico:** Use o `correlationId` em comunicações com a equipe de backend.
+
+## Atualização — limitação de taxa removida
+
+O middleware `RateLimitingMiddleware`, a dependência `express-rate-limit`, as variáveis `RATE_LIMIT_*` e `TRUST_PROXY_HOPS` foram removidos por decisão do solicitante ("esquece, não implemente; no futuro a gente vê"). O IP do cliente não era usado por mais nada (log estruturado e auditoria não o gravam).
+
+
+## Código do erro exibido ao usuário (front)
+
+O app mostra ao usuário `Código do erro: <requestId>` no aviso do erro e em "Detalhes técnicos"; o valor é o `requestId` do corpo, igual ao cabeçalho `X-Request-Id`, e é o que o suporte usa para achar o log. Coberto por `orfanatonib-app/e2e/live/http-errors/http-errors.ui.spec.ts` (404 real, sem mock).

@@ -1,0 +1,144 @@
+@startuml shelter-flow
+title Fluxo do módulo Shelters — API Orfanato NIB
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam ParticipantBorderColor #37474F
+
+actor "Admin / Líder\n(orfanatonib-app)" as Client
+participant "SheltersController" as Controller
+participant "toShelterAccessContext\n(utils)" as Access
+participant "parseShelterPayload\n(utils)" as Payload
+participant "CreateSheltersService" as CreateSvc
+participant "GetSheltersService" as GetSvc
+participant "UpdateSheltersService" as UpdateSvc
+participant "DeleteSheltersService" as DeleteSvc
+participant "ShelterTeamsService" as TeamsSvc
+participant "ShelterMediaService" as MediaSvc
+participant "ShelterRouteService" as RouteSvc
+participant "TeamsService\n(shelter/team)" as Teams
+participant "MediaItemProcessor\n(shared)" as Processor
+participant "RouteService\n(infrastructure)" as Route
+participant "AwsS3Service" as S3
+database "SheltersRepository\n(TypeORM)" as Repo
+
+== Entrada ==
+Client -> Controller : multipart/form-data\n(shelterData + arquivos)
+activate Controller
+Controller -> Controller : JwtAuthGuard
+Controller -> Access : toShelterAccessContext(request)
+note right of Access
+  O escopo vem do token, nunca
+  do corpo da requisição.
+  { userId, role } → ShelterAccessContext
+end note
+Access --> Controller : ator
+Controller -> Payload : parseShelterPayload(body, Dto)
+note right of Payload
+  O ValidationPipe global não enxerga
+  o JSON dentro do campo multipart.
+  DTO inválido = 400 (categoria RULE).
+end note
+Payload --> Controller : DTO validado
+Controller -> Controller : toFilesDict(files)
+
+== POST /shelters ==
+Controller -> CreateSvc : execute(dto, ator, files)
+activate CreateSvc
+CreateSvc -> CreateSvc : assertCanManageShelters(ator)
+CreateSvc -> Repo : createShelter(dto)
+note right of Repo
+  Abrigo e endereço gravados
+  na mesma transação.
+  Nome duplicado = 409.
+end note
+Repo --> CreateSvc : abrigo
+CreateSvc -> TeamsSvc : createForShelter(id, quantidade, equipes)
+TeamsSvc -> TeamsSvc : indexByNumber → faixa, duplicata, membro repetido
+loop 1..N
+  TeamsSvc -> Teams : create(CreateTeamDto)
+end
+CreateSvc -> MediaSvc : upsertMainPhoto(id, mídia, arquivos)
+MediaSvc -> S3 : upload(file)
+MediaSvc -> Processor : saveMediaItem
+MediaSvc --> CreateSvc : url da imagem
+CreateSvc -> Repo : runInTransaction
+activate Repo
+CreateSvc -> RouteSvc : createForShelter(manager, abrigo, descrição, url)
+RouteSvc -> Route : generateAvailablePath(nome, "abrigo_")
+RouteSvc -> Route : createRouteWithManager(entityType = shelterPage)
+CreateSvc -> Repo : save(abrigo, manager)
+deactivate Repo
+CreateSvc -> GetSvc : findEntityOrFail(id, ator)
+CreateSvc --> Controller : abrigo recarregado
+deactivate CreateSvc
+
+== GET /shelters ==
+Controller -> GetSvc : findAllPaginated(query, ator)
+activate GetSvc
+GetSvc -> GetSvc : assertCanManageShelters(ator)
+GetSvc -> Repo : findAllPaginated(query, ator)
+note right of Repo
+  applyRoleFilter:
+  admin vê tudo; líder e membro
+  são filtrados pelo próprio id.
+end note
+Repo --> GetSvc : { items, total }
+GetSvc -> MediaSvc : attachShelterPhotos(items)
+MediaSvc -> Processor : findManyMediaItemsByTargets (1 consulta)
+GetSvc -> GetSvc : feature flag SHELTER_ADDRESS
+GetSvc --> Controller : { items, total, page, limit, pageCount }
+deactivate GetSvc
+
+== PUT /shelters/:id ==
+Controller -> UpdateSvc : execute(id, dto, ator, files)
+activate UpdateSvc
+UpdateSvc -> GetSvc : findEntityOrFail(id, ator)
+note right of GetSvc
+  Fora do escopo do ator = 404,
+  não 403.
+end note
+UpdateSvc -> Repo : updateShelter(id, dto)
+UpdateSvc -> TeamsSvc : syncForShelter(...) [se mudou]
+TeamsSvc -> Teams : remove / update / create
+UpdateSvc -> MediaSvc : upsertMainPhoto [só com fonte nova]
+note right of MediaSvc
+  Sem arquivo e sem url a mídia não é
+  regravada — um update de nome não
+  reenviaria a imagem nem apagaria
+  o arquivo anterior do bucket.
+end note
+UpdateSvc -> RouteSvc : syncWithShelter(abrigo, mudanças, url)
+RouteSvc -> Route : upsertRoute (só os campos que mudaram)
+UpdateSvc --> Controller : abrigo recarregado
+deactivate UpdateSvc
+
+== PATCH /shelters/:id/media ==
+Controller -> UpdateSvc : updateMedia(id, mídia, ator, files)
+UpdateSvc -> MediaSvc : upsertMainPhoto
+MediaSvc -> S3 : delete(url anterior) + upload(novo)
+UpdateSvc -> RouteSvc : syncWithShelter(abrigo, {}, url)
+
+== DELETE /shelters/:id ==
+Controller -> DeleteSvc : execute(id, ator)
+activate DeleteSvc
+DeleteSvc -> GetSvc : findEntityOrFail(id, ator)
+DeleteSvc -> MediaSvc : removeAllForShelter(id)
+MediaSvc -> S3 : delete(cada arquivo local)
+MediaSvc -> Processor : deleteMediaItems
+DeleteSvc -> RouteSvc : removeForShelter(id)
+RouteSvc -> Route : removeRouteByEntity(shelterPage, id)
+DeleteSvc -> Repo : deleteById(id)
+note right of Repo
+  Transação: desvincula equipes,
+  limpa mídia e rota residuais,
+  remove abrigo e endereço.
+end note
+DeleteSvc --> Controller : { message }
+deactivate DeleteSvc
+
+Controller --> Client : ShelterResponseDto\n(endereço conforme a feature flag)
+deactivate Controller
+
+@enduml

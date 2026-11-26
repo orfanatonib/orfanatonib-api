@@ -1,5 +1,11 @@
-import { Exclude, Expose, Transform, Type, plainToInstance } from 'class-transformer';
-import { MemberProfileEntity } from '../entities/member-profile.entity/member-profile.entity';
+import {
+  Exclude,
+  Expose,
+  Transform,
+  Type,
+  plainToInstance,
+} from "class-transformer";
+import { MemberProfileEntity } from "../entities/member-profile.entity/member-profile.entity";
 
 @Exclude()
 class ProfileImageMiniDto {
@@ -19,7 +25,7 @@ export class MemberSimpleListDto {
   memberProfileId!: string;
 
   @Expose()
-  @Transform(({ obj }) => obj.user?.name || obj.user?.email || '—')
+  @Transform(({ obj }) => obj.user?.name || obj.user?.email || "—")
   name!: string;
 
   @Expose()
@@ -32,5 +38,9 @@ export class MemberSimpleListDto {
   vinculado!: boolean;
 }
 
-export const toMemberSimple = (entity: MemberProfileEntity): MemberSimpleListDto =>
-  plainToInstance(MemberSimpleListDto, entity, { excludeExtraneousValues: true });
+export const toMemberSimple = (
+  entity: MemberProfileEntity,
+): MemberSimpleListDto =>
+  plainToInstance(MemberSimpleListDto, entity, {
+    excludeExtraneousValues: true,
+  });

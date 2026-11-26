@@ -1,0 +1,133 @@
+@startuml visit-material-page-flow
+title Fluxo do módulo Visit Material Pages — API Orfanato NIB
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam ParticipantBorderColor #37474F
+
+actor "Admin\n(orfanatonib-app)" as Client
+participant "VisitMaterialsPageController" as Controller
+participant "parseVisitMaterialPayload\n(utils)" as Payload
+participant "CreateVisitMaterialPageService" as CreateSvc
+participant "UpdateVisitMaterialPageService" as UpdateSvc
+participant "GetVisitMaterialPageService" as GetSvc
+participant "DeleteVisitMaterialPageService" as DeleteSvc
+participant "SetCurrentVisitMaterialPageService" as CurrentSvc
+participant "VisitMaterialMediaService" as MediaSvc
+participant "MediaItemProcessor\n(shared)" as Processor
+participant "RouteService\n(infrastructure)" as RouteSvc
+participant "AwsS3Service" as S3
+database "VisitMaterialsPageRepository\n(TypeORM)" as Repo
+
+== Entrada multipart ==
+Client -> Controller : multipart/form-data\n(visitMaterialsPageData + arquivos)
+activate Controller
+Controller -> Controller : JwtAuthGuard (+ AdminRoleGuard na escrita)
+Controller -> Payload : parseVisitMaterialPayload(raw, Dto)
+note right of Payload
+  O ValidationPipe global não enxerga
+  o JSON dentro do campo multipart,
+  então o parse e a validação ficam
+  no controller. DTO inválido = 400.
+end note
+Payload --> Controller : DTO validado
+Controller -> Controller : toFilesDict(files)
+
+== POST /visit-material-pages ==
+Controller -> CreateSvc : execute(dto, files)
+activate CreateSvc
+CreateSvc -> MediaSvc : toPolymorphicItems(acervos)
+note right of MediaSvc
+  Falha aqui (fieldKey ausente)
+  acontece ANTES da transação.
+end note
+CreateSvc -> Repo : runInTransaction
+activate Repo
+CreateSvc -> Repo : create + save (página)
+CreateSvc -> RouteSvc : generateAvailablePath + createRouteWithManager
+CreateSvc -> Repo : save (página com rota)
+CreateSvc -> Processor : processMediaItemsPolymorphic
+Processor -> S3 : upload dos arquivos
+deactivate Repo
+CreateSvc --> Controller : VisitMaterialsPageResponseDTO
+deactivate CreateSvc
+
+== PATCH /visit-material-pages/:id ==
+Controller -> UpdateSvc : execute(id, dto, files)
+activate UpdateSvc
+UpdateSvc -> GetSvc : findEntityOrFail(id)
+UpdateSvc -> RouteSvc : findRouteByEntityId(id)
+alt página ou rota inexistente
+  UpdateSvc --> Controller : ResourceNotFoundException (404)
+end
+UpdateSvc -> MediaSvc : findGroupedByPage(id)
+note right of MediaSvc
+  Uma consulta só, agrupada por tipo,
+  no lugar de quatro consultas iguais.
+end note
+loop para cada acervo (vídeo, documento, imagem, áudio)
+  UpdateSvc -> MediaSvc : removeMissing(armazenados, recebidos)
+  MediaSvc -> S3 : delete dos removidos
+end
+loop para cada item recebido
+  alt item tem id
+    UpdateSvc -> MediaSvc : upsert(item, tipo)
+  else item novo
+    UpdateSvc -> MediaSvc : add(item, tipo)
+  end
+end
+UpdateSvc -> RouteSvc : upsertRoute (preserva public/current)
+UpdateSvc -> Repo : runInTransaction → save (página)
+UpdateSvc --> Controller : VisitMaterialsPageResponseDTO
+deactivate UpdateSvc
+
+== GET /visit-material-pages e /:id ==
+Controller -> GetSvc : findAll(query) / findOne(id)
+GetSvc -> Repo : findAll(filtros) / findById(id)
+GetSvc -> Processor : findManyMediaItemsByTargets (uma consulta)
+GetSvc --> Controller : DTO(s) com os quatro acervos
+
+== GET /visit-material-pages/current-material ==
+Controller -> GetSvc : findCurrentWeek()
+GetSvc -> Repo : findCurrentWeek()
+alt nenhuma página marcada
+  GetSvc --> Controller : null (200)
+else
+  GetSvc --> Controller : VisitMaterialsPageResponseDTO
+end
+
+== POST /visit-material-pages/current-material/:id ==
+Controller -> CurrentSvc : execute(id)
+activate CurrentSvc
+CurrentSvc -> GetSvc : findEntityOrFail(id)
+CurrentSvc -> Repo : findCurrentWeek()
+CurrentSvc -> Repo : runInTransaction\n(despromove a anterior + promove a nova)
+CurrentSvc --> Controller : VisitMaterialsPageResponseDTO
+deactivate CurrentSvc
+
+== DELETE /visit-material-pages/:id ==
+Controller -> DeleteSvc : execute(id)
+activate DeleteSvc
+DeleteSvc -> GetSvc : findEntityOrFail(id)
+note right of DeleteSvc
+  Resolvido fora do try: página
+  inexistente continua 404, não
+  vira falha genérica.
+end note
+DeleteSvc -> MediaSvc : findAllByPage(id)
+DeleteSvc -> Processor : deleteMediaItems
+Processor -> S3 : delete dos arquivos locais
+DeleteSvc -> Repo : runInTransaction\n(remove rota + remove página)
+DeleteSvc --> Controller : void
+deactivate DeleteSvc
+
+Controller --> Client : resposta / envelope de erro padrão
+deactivate Controller
+
+note over CreateSvc, DeleteSvc
+  Falha de infraestrutura vira ProcessException (500).
+  Exceções de aplicação (404, 400) sobem preservadas.
+end note
+
+@enduml

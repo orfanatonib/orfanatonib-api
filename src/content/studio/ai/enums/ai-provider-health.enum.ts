@@ -1,0 +1,6 @@
+export enum AiProviderHealth {
+  HEALTHY = "HEALTHY",
+  DEGRADED = "DEGRADED",
+  UNAVAILABLE = "UNAVAILABLE",
+  UNKNOWN = "UNKNOWN",
+}

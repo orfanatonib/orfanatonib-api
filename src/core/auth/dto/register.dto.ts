@@ -1,6 +1,13 @@
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
-import { Transform } from 'class-transformer';
-import { UserRole } from '../auth.types';
+import {
+  IsEmail,
+  IsIn,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MinLength,
+} from "class-validator";
+import { Transform } from "class-transformer";
+import { GRANTABLE_ROLES, GrantableRole } from "../auth.types";
 
 export class RegisterUserDto {
   @IsString()
@@ -21,8 +28,9 @@ export class RegisterUserDto {
   @MinLength(6)
   password: string;
 
-  @IsEnum(UserRole)
-  role: UserRole;
+  /** Só member ou leader: admin nunca é concedido por esta rota. */
+  @IsIn(GRANTABLE_ROLES)
+  role: GrantableRole;
 
   @IsOptional()
   @IsString()

@@ -1,0 +1,42 @@
+@startuml
+title Content Studio - protected foundation
+
+actor Administrator
+participant "Frontend" as Frontend
+participant "JWT + admin guard" as Auth
+participant "Feature flag guard" as Flag
+participant "Catalog service" as Catalog
+participant "Deployment config" as Config
+
+Administrator -> Frontend: Open /adm/estudio
+Frontend -> Auth: GET /content-studio/catalog
+Auth -> Flag: authenticated administrator
+Flag -> Catalog: content-studio enabled
+Catalog --> Frontend: versioned audiences, stages, capabilities
+
+Administrator -> Frontend: Open provider configuration
+Frontend -> Auth: GET /ai-management/providers
+Auth -> Flag: authenticated administrator
+Flag -> Config: provider-admin enabled
+Config --> Frontend: safe metadata only\n(no secret values)
+
+note right of Catalog
+No generation, persistence or
+publication occurs on GET.
+end note
+
+Administrator -> Frontend: Choose audience (Baby, children, teens, adults)
+Frontend -> Auth: POST /content-studio/packages { audience, theme, ... }
+Auth -> Flag: authenticated administrator
+Flag -> "Create package service": content-studio enabled
+"Create package service" -> "Package repository": selected audience catalog\n(omitted audience: legacy four-track package)
+"Package repository" --> Frontend: persisted package and stages
+Administrator -> Frontend: Select stage, edit fields, preview, save
+Frontend -> Auth: PATCH stage content
+note over Frontend
+Old multi-audience packages retain category navigation.
+Drafts stay separate per stage while switching categories.
+end note
+
+@enduml
+

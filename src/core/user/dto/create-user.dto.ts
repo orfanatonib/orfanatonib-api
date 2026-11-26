@@ -1,4 +1,12 @@
-import { IsEmail, IsEnum, IsOptional, IsString, MinLength } from "class-validator";
+import {
+  IsBoolean,
+  IsEmail,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MinLength,
+} from "class-validator";
+import { StrictBoolean } from "src/common/decorators/strict-boolean.decorator";
 import { UserRole } from "src/core/auth/auth.types";
 
 export class CreateUserDto {
@@ -19,11 +27,17 @@ export class CreateUserDto {
   role?: UserRole;
 
   @IsOptional()
+  @StrictBoolean()
+  @IsBoolean()
   completed?: boolean;
 
   @IsOptional()
+  @StrictBoolean()
+  @IsBoolean()
   commonUser?: boolean;
 
   @IsOptional()
+  @StrictBoolean()
+  @IsBoolean()
   active?: boolean;
 }

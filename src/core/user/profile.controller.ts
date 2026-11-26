@@ -8,20 +8,22 @@ import {
   Logger,
   UploadedFiles,
   UseInterceptors,
-} from '@nestjs/common';
-import { AnyFilesInterceptor } from '@nestjs/platform-express';
-import { Request } from 'express';
-import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
-import { AuthContextService } from 'src/core/auth/services/auth-context.service';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { UpdateOwnProfileDto } from './dto/update-own-profile.dto';
-import { ChangePasswordService } from './services/change-password.service';
-import { UpdateOwnProfileService } from './services/update-own-profile.service';
-import { UpdateUserImageService } from './services/update-user-image.service';
-import { GetUsersService } from './services/get-user.service';
+} from "@nestjs/common";
+import { AnyFilesInterceptor } from "@nestjs/platform-express";
+import type { UserImageBody } from "./services/update-user-image.service";
+import { USER_IMAGE_UPLOAD_OPTIONS } from "./constants/user.constants";
+import { Request } from "express";
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { AuthContextService } from "src/core/auth/services/auth-context.service";
+import { ChangePasswordDto } from "./dto/change-password.dto";
+import { UpdateOwnProfileDto } from "./dto/update-own-profile.dto";
+import { ChangePasswordService } from "./services/change-password.service";
+import { UpdateOwnProfileService } from "./services/update-own-profile.service";
+import { UpdateUserImageService } from "./services/update-user-image.service";
+import { GetUsersService } from "./services/get-user.service";
 
 @UseGuards(JwtAuthGuard)
-@Controller('profile')
+@Controller("profile")
 export class ProfileController {
   private readonly logger = new Logger(ProfileController.name);
 
@@ -31,7 +33,7 @@ export class ProfileController {
     private readonly updateOwnProfileService: UpdateOwnProfileService,
     private readonly changePasswordService: ChangePasswordService,
     private readonly updateUserImageService: UpdateUserImageService,
-  ) { }
+  ) {}
 
   @Get()
   async getOwnProfile(@Req() req: Request) {
@@ -55,7 +57,7 @@ export class ProfileController {
     return this.getUsersService.findOneForProfile(userId);
   }
 
-  @Patch('password')
+  @Patch("password")
   async changePassword(
     @Req() req: Request,
     @Body() dto: ChangePasswordDto,
@@ -69,22 +71,27 @@ export class ProfileController {
     return result;
   }
 
-  @Patch('image')
-  @UseInterceptors(AnyFilesInterceptor())
+  @Patch("image")
+  @UseInterceptors(AnyFilesInterceptor(USER_IMAGE_UPLOAD_OPTIONS))
   async updateOwnImage(
     @Req() req: Request,
     @UploadedFiles() files: Express.Multer.File[] = [],
-    @Body('imageData') imageDataRaw?: string,
-    @Body() body?: any,
+    @Body("imageData") imageDataRaw?: string,
+    @Body() body?: UserImageBody,
   ) {
     const payload = await this.authContextService.getPayloadFromRequest(req);
     const userId = payload.sub;
 
     this.logger.log(`Updating own profile image: ${userId}`);
-    const bodyToProcess = imageDataRaw ? { imageData: imageDataRaw } : (body || {});
-    await this.updateUserImageService.updateUserImage(userId, bodyToProcess, files);
+    const bodyToProcess = imageDataRaw
+      ? { imageData: imageDataRaw }
+      : body || {};
+    await this.updateUserImageService.updateUserImage(
+      userId,
+      bodyToProcess,
+      files,
+    );
     this.logger.log(`Own profile image updated successfully: ${userId}`);
     return this.getUsersService.findOneForProfile(userId);
   }
 }
-

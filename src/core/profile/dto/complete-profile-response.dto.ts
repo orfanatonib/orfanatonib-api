@@ -31,6 +31,8 @@ export class CompleteProfileResponseDto {
   phone: string;
   name: string;
   role: string;
+  /** Data do cadastro (só na listagem do admin/líder). */
+  createdAt?: string;
   personalData?: PersonalDataResponseDto;
   preferences?: UserPreferencesResponseDto;
   image?: ProfileImageDto | null;

@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
-import { RouteEntity, RouteType } from './route-page.entity';
+import { Injectable } from "@nestjs/common";
+import { DataSource, EntityManager, Repository } from "typeorm";
+import { RouteEntity, RouteType } from "./route-page.entity";
 
 @Injectable()
 export class RouteRepository extends Repository<RouteEntity> {
@@ -10,7 +10,7 @@ export class RouteRepository extends Repository<RouteEntity> {
 
   async findAllRoutes(): Promise<RouteEntity[]> {
     return this.find({
-      order: { createdAt: 'ASC' },
+      order: { createdAt: "ASC" },
     });
   }
 
@@ -29,26 +29,39 @@ export class RouteRepository extends Repository<RouteEntity> {
     return this.findOne({ where: { path } });
   }
 
-  async findByEntity(entityType: string, entityId: string): Promise<RouteEntity | null> {
+  async findByEntity(
+    entityType: string,
+    entityId: string,
+  ): Promise<RouteEntity | null> {
     return this.findOne({ where: { entityType, entityId } });
   }
 
-  async createRoute(path: string, entityType: string, entityId: string, description: string, type: RouteType): Promise<RouteEntity> {
+  async createRoute(
+    path: string,
+    entityType: string,
+    entityId: string,
+    description: string,
+    type: RouteType,
+  ): Promise<RouteEntity> {
     const route = this.create({
       path,
       entityType,
       entityId,
       description,
-      type
+      type,
     });
     return this.save(route);
   }
 
-  async upsertRoute(routeId: string, updateData: Partial<RouteEntity>): Promise<RouteEntity> {
-    const route = await this.save({
+  async upsertRoute(
+    routeId: string,
+    updateData: Partial<RouteEntity>,
+    manager?: EntityManager,
+  ): Promise<RouteEntity> {
+    const repo = manager ? manager.getRepository(RouteEntity) : this;
+    return repo.save({
       ...updateData,
       id: routeId,
     });
-    return route;
   }
 }

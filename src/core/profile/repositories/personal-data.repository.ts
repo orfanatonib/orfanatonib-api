@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
-import { PersonalData } from '../entities/personal-data.entity';
+import { Injectable } from "@nestjs/common";
+import { DataSource, Repository } from "typeorm";
+import { PersonalData } from "../entities/personal-data.entity";
 
 @Injectable()
 export class PersonalDataRepository extends Repository<PersonalData> {
@@ -12,8 +12,13 @@ export class PersonalDataRepository extends Repository<PersonalData> {
     return this.findOne({ where: { userId } });
   }
 
-  async createForUser(userId: string, data: Partial<PersonalData>): Promise<PersonalData> {
-    const { userId: _, ...cleanData } = data;
+  async createForUser(
+    userId: string,
+    data: Partial<PersonalData>,
+  ): Promise<PersonalData> {
+    // `userId` do corpo é ignorado: o dono vem do argumento.
+    const cleanData: typeof data = { ...data };
+    delete cleanData.userId;
     const personalData = this.create({
       ...cleanData,
       userId,
@@ -21,15 +26,14 @@ export class PersonalDataRepository extends Repository<PersonalData> {
     return this.save(personalData);
   }
 
-  async updateByUserId(userId: string, data: Partial<PersonalData>): Promise<PersonalData | null> {
+  async updateByUserId(
+    userId: string,
+    data: Partial<PersonalData>,
+  ): Promise<PersonalData | null> {
     if (!data || Object.keys(data).length === 0) {
       return this.findByUserId(userId);
     }
     await this.update({ userId }, data);
     return this.findByUserId(userId);
-  }
-
-  async deleteByUserId(userId: string): Promise<void> {
-    await this.delete({ userId });
   }
 }

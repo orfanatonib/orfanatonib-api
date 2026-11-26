@@ -1,21 +1,39 @@
-import { Body, Controller, Post, Logger } from '@nestjs/common';
-import { AcceptedChristService } from '../services/accepted-christ.service';
-import { CreateAcceptedChristDto } from '../dtos/create-accepted-christ.dto';
-import { AcceptedChristEntity } from '../entities/accepted-christ.entity';
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { Body, Controller, Post, Logger, Req, UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { CreateAcceptedChristService } from "../services/create-accepted-christ.service";
+import { CreateAcceptedChristDto } from "../dto/create-accepted-christ.dto";
+import { AcceptedChristResponseDto } from "../dto/accepted-christ-response.dto";
+import type { AuthenticatedRequest } from "src/core/auth/auth.types";
+import { toShelterAccessContext } from "src/shelter/shelter/utils/shelter-access.util";
 
-@Controller('accepted-christs')
+/** Registro de decisão por pessoa logada (a tela de pagela); nunca público. */
+@Controller("accepted-christs")
+@UseGuards(JwtAuthGuard)
 export class AcceptedChristController {
   private readonly logger = new Logger(AcceptedChristController.name);
 
-  constructor(private readonly acceptedChristService: AcceptedChristService) {}
+  constructor(
+    private readonly createAcceptedChristService: CreateAcceptedChristService,
+  ) {}
 
+  @FeatureFlag(FeatureFlagKeys.ACCEPTED_CHRISTS)
+  @UseGuards(FeatureFlagGuard)
   @Post()
   async create(
+    @Req() req: AuthenticatedRequest,
     @Body() dto: CreateAcceptedChristDto,
-  ): Promise<AcceptedChristEntity> {
-    this.logger.log('Creating new accepted christ record');
-    const result = await this.acceptedChristService.create(dto);
-    this.logger.log(`Accepted christ record created successfully: ${result.id}`);
+  ): Promise<AcceptedChristResponseDto> {
+    this.logger.log("Creating new accepted christ record");
+    const result = await this.createAcceptedChristService.createAs(
+      toShelterAccessContext(req),
+      dto,
+    );
+    this.logger.log(
+      `Accepted christ record created successfully: ${result.id}`,
+    );
     return result;
   }
 }

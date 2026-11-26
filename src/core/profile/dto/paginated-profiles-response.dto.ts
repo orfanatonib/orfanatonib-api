@@ -1,4 +1,4 @@
-import { CompleteProfileResponseDto } from './complete-profile-response.dto';
+import { CompleteProfileResponseDto } from "./complete-profile-response.dto";
 
 export class PaginationMetaDto {
   currentPage: number;

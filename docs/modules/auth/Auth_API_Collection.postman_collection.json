@@ -136,7 +136,7 @@
             "google"
           ]
         },
-        "description": "Endpoint para fazer login com Google OAuth"
+        "description": "Endpoint para fazer login com Google OAuth. Para conta nova/pendente a resposta traz `newUser: true` e o `completionToken` que `POST /auth/complete-register` exige (guarde em `completion_token`)."
       },
       "event": [
         {
@@ -200,7 +200,7 @@
             "refresh"
           ]
         },
-        "description": "Endpoint para renovar o access token usando o refresh token"
+        "description": "Renova o par de tokens (rotação: o refresh antigo deixa de valer). Chamado pelo interceptor de 401 do front (`src/config/axiosConfig.ts`), nunca por tela."
       },
       "event": [
         {
@@ -400,7 +400,7 @@
             "register"
           ]
         },
-        "description": "Endpoint para registrar um novo usuário"
+        "description": "Endpoint para registrar um novo usuário. `role` só aceita `member` ou `leader`: `admin` (ou qualquer outro valor) => 400 e nada é criado. Ninguém vira admin pela API (cadastro, `POST/PUT /users`, complete-register): a promoção é feita direto no banco (ver README do módulo)."
       },
       "response": [
         {
@@ -449,7 +449,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"email\": \"joao@example.com\",\n  \"name\": \"João Silva\",\n  \"phone\": \"+5511999999999\",\n  \"password\": \"password123\",\n  \"role\": \"leader\"\n}"
+          "raw": "{\n  \"completionToken\": \"{{completion_token}}\",\n  \"name\": \"João Silva\",\n  \"phone\": \"+5511999999999\",\n  \"password\": \"password123\",\n  \"role\": \"leader\"\n}"
         },
         "url": {
           "raw": "{{base_url}}/auth/complete-register",
@@ -461,7 +461,7 @@
             "complete-register"
           ]
         },
-        "description": "Endpoint para completar o registro de um usuário"
+        "description": "Completa o cadastro de quem entrou pelo Google (conta `completed=false`). A identidade vem do `completionToken` devolvido por `POST /auth/google` (prova de posse da conta Google; JWT de propósito `complete_register`, ≈15 min, uso único porque a conta passa a `completed=true`) — o e-mail NÃO é aceito no corpo (400). Token ausente/inválido/expirado/de outro propósito, conta inexistente ou já completa respondem o MESMO 401 genérico (não revela quais e-mails existem). `role` só `member` ou `leader` (admin => 400). Chamado pela rota `/cadastrar-google` (`features/auth/api.ts` `apiCompleteRegister`); o front guarda o token só em memória. Flag `public_registration`."
       },
       "response": [
         {
@@ -476,7 +476,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"joao@example.com\",\n  \"name\": \"João Silva\",\n  \"phone\": \"+5511999999999\",\n  \"password\": \"password123\",\n  \"role\": \"leader\"\n}"
+              "raw": "{\n  \"completionToken\": \"{{completion_token}}\",\n  \"name\": \"João Silva\",\n  \"phone\": \"+5511999999999\",\n  \"password\": \"password123\",\n  \"role\": \"leader\"\n}"
             },
             "url": {
               "raw": "{{base_url}}/auth/complete-register",
@@ -497,6 +497,144 @@
           "body": "{\n  \"id\": \"user_id\",\n  \"name\": \"João Silva\",\n  \"email\": \"joao@example.com\",\n  \"phone\": \"+5511999999999\",\n  \"active\": true,\n  \"completed\": true,\n  \"commonUser\": false,\n  \"role\": \"leader\",\n  \"createdAt\": \"2024-01-01T00:00:00.000Z\",\n  \"updatedAt\": \"2024-01-01T00:00:00.000Z\"\n}"
         }
       ]
+    },
+    {
+      "name": "Verify Email",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/verify-email",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "verify-email"
+          ]
+        },
+        "description": "Confirma o e-mail com o token do link `/verificar-email/:token`. Uso único: reusar devolve 400. Público, sem flag.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{verification_token}}\"\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Resend Verification",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/resend-verification",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "resend-verification"
+          ]
+        },
+        "description": "Reenvia o link de confirmação. Resposta idêntica para e-mail existente, inexistente ou já confirmado (não revela contas). Público, sem flag.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"joao@example.com\"\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Forgot Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/forgot-password",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "forgot-password"
+          ]
+        },
+        "description": "Resposta SEMPRE igual (201, mesmo corpo, genérica: \"Se o e-mail estiver cadastrado, enviaremos as instruções…\"), exista o e-mail ou não. O token e o e-mail são processados em segundo plano e só para conta existente e completa (um por conta: o pedido novo invalida o anterior). Flag `password_recovery`: desligada => 403 FEATURE_DISABLED.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"joao@example.com\"\n}"
+        }
+      },
+      "response": []
+    },
+    {
+      "name": "Validate Reset Token",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/auth/reset-password/validate?token={{reset_token}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "reset-password",
+            "validate"
+          ],
+          "query": [
+            {
+              "key": "token",
+              "value": "{{reset_token}}"
+            }
+          ]
+        },
+        "description": "Confere o token do link `/recuperar-senha/:token` sem consumi-lo. Flag `password_recovery`."
+      },
+      "response": []
+    },
+    {
+      "name": "Reset Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/reset-password",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "reset-password"
+          ]
+        },
+        "description": "Troca a senha com o token (uso único: reusar => 400). Flag `password_recovery`.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{reset_token}}\",\n  \"newPassword\": \"NovaSenha#123\"\n}"
+        }
+      },
+      "response": []
     }
   ],
   "variable": [
@@ -509,6 +647,16 @@
       "key": "access_token",
       "value": "",
       "description": "Token de acesso JWT"
+    },
+    {
+      "key": "verification_token",
+      "value": "",
+      "description": "Token do link enviado por e-mail (em dev/E2E: SELECT em email_verification_tokens / password_reset_tokens)"
+    },
+    {
+      "key": "reset_token",
+      "value": "",
+      "description": "Token do link enviado por e-mail (em dev/E2E: SELECT em email_verification_tokens / password_reset_tokens)"
     }
   ]
 }

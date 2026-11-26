@@ -147,6 +147,8 @@ A collection completa está disponível em:
 
 ## ⚠️ Mudanças Importantes
 
+**2026-11-22 — `PUT /member-profiles/:memberId` (alocar membro em equipe):** é uma operação só (`TeamsRepository.assignMemberToTeam`, transação): membro ou abrigo inexistente → `404` sem gravar nada (nenhuma equipe nasce); equipe do número pedido é criada se não existir; repetir o pedido é idempotente (`200`, sem equipe duplicada). O e-mail `team-assignment-changed` (flag `email_team_assignment_changed`) sai **só quando a equipe mudou de fato** (antes saía a cada chamada). `GET /member-profiles/simple` lista apenas membros **sem equipe** (o seletor de quem ainda pode ser alocado); `GET /member-profiles` conta só membros de usuário ativo.
+
 ### v1.2.0 - Refatoração para Shelters
 
 Renomeado `club` para `shelter` em todos os endpoints e DTOs.

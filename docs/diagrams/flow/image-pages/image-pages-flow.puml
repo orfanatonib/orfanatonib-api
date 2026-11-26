@@ -1,0 +1,58 @@
+@startuml image-pages-flow
+title Galerias de imagens - criar, atualizar e apagar (S3 sem órfão)
+
+actor Admin
+participant "ImageController" as C
+participant "Create/Update/Delete\nImagePageService" as S
+participant "ImagePageTransactionRepository" as T
+database MySQL
+participant "MediaItemProcessor /\nUpdateImagePageMediaService" as M
+participant "S3" as S3
+participant "MediaStorageService" as Q
+
+== Criar ==
+Admin -> C : POST /image-pages (imageData + arquivos)
+C -> S : createImagePage
+S -> S : todo upload declarado tem arquivo? (senão 400)
+S -> T : run(tx)
+T -> MySQL : página, rota, seções
+S -> M : mídias de cada seção
+M -> S3 : upload
+alt falha em qualquer etapa
+  T -> MySQL : rollback
+  S -> M : remove linhas e objetos já criados
+  M -> S3 : delete
+else sucesso
+  T -> MySQL : commit
+end
+
+== Atualizar ==
+Admin -> C : PATCH /image-pages/:id
+C -> S : updateImagePage
+S -> T : run(tx)
+T -> MySQL : seções e linhas de mídia
+S -> M : sobe arquivos novos
+M -> S3 : upload (registrado no MediaChangeLog)
+alt falha
+  T -> MySQL : rollback
+  S -> M : descarta uploads sem referência
+else sucesso
+  T -> MySQL : commit
+  S -> Q : deleteAfterCommit(objetos antigos)
+  Q -> S3 : delete (falha vai para media_cleanup_queue)
+end
+
+== Apagar ==
+Admin -> C : DELETE /image-pages/:id
+C -> S : removePage (403 se galeria do feed)
+S -> T : run(tx)
+T -> MySQL : remove rota e página
+alt falha
+  T -> MySQL : rollback (mídia e objetos permanecem)
+else sucesso
+  T -> MySQL : commit
+  S -> M : remove linhas de mídia
+  S -> Q : deleteAfterCommit(objetos)
+  Q -> S3 : delete
+end
+@enduml

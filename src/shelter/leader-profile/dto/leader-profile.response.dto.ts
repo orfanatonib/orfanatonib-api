@@ -1,5 +1,11 @@
-import { Exclude, Expose, Type, Transform, plainToInstance } from 'class-transformer';
-import { LeaderProfileEntity } from '../entities/leader-profile.entity/leader-profile.entity';
+import {
+  Exclude,
+  Expose,
+  Type,
+  Transform,
+  plainToInstance,
+} from "class-transformer";
+import { LeaderProfileEntity } from "../entities/leader-profile.entity/leader-profile.entity";
 
 @Exclude()
 export class ProfileImageMiniDto {
@@ -103,7 +109,7 @@ export class LeaderResponseDto {
       if (!team || !team.shelter) continue;
 
       const shelterId = team.shelter.id;
-      
+
       if (!sheltersMap.has(shelterId)) {
         sheltersMap.set(shelterId, {
           id: team.shelter.id,
@@ -115,7 +121,7 @@ export class LeaderResponseDto {
 
       const shelter = sheltersMap.get(shelterId)!;
 
-      shelter.teams!.push({
+      shelter.teams.push({
         id: team.id,
         numberTeam: team.numberTeam,
         description: team.description,
@@ -123,8 +129,8 @@ export class LeaderResponseDto {
 
       if (team.members && Array.isArray(team.members)) {
         for (const member of team.members) {
-          if (!shelter.members!.some(t => t.id === member.id)) {
-            shelter.members!.push({
+          if (!shelter.members.some((t) => t.id === member.id)) {
+            shelter.members.push({
               id: member.id,
               active: member.active,
               user: member.user,
@@ -145,8 +151,12 @@ export class LeaderResponseDto {
 }
 
 export function toLeaderDto(entity: LeaderProfileEntity): LeaderResponseDto {
-  return plainToInstance(LeaderResponseDto, entity, { excludeExtraneousValues: true });
+  return plainToInstance(LeaderResponseDto, entity, {
+    excludeExtraneousValues: true,
+  });
 }
 export function toLeaderMini(entity: LeaderProfileEntity): LeaderMiniDto {
-  return plainToInstance(LeaderMiniDto, entity, { excludeExtraneousValues: true });
+  return plainToInstance(LeaderMiniDto, entity, {
+    excludeExtraneousValues: true,
+  });
 }

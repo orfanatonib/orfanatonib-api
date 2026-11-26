@@ -1,0 +1,97 @@
+@startuml sheltered-flow
+title Fluxo do módulo Sheltered (acolhidos) — API Orfanato NIB
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam ParticipantBorderColor #37474F
+
+actor "Cliente\n(orfanatonib-app)" as Client
+participant "ShelteredController" as Controller
+participant "toShelteredAccessContext\n(utils)" as AccessUtil
+participant "GetShelteredService" as GetService
+participant "CreateShelteredService" as CreateService
+participant "UpdateShelteredService" as UpdateService
+participant "DeleteShelteredService" as DeleteService
+participant "ShelteredShelterAccessService" as ShelterAccess
+participant "GetSheltersService\n(módulo shelters)" as SheltersService
+participant "AddressesService\n(módulo address)" as AddressesService
+database "ShelteredRepository\n(TypeORM)" as Repo
+
+== Autenticação e escopo ==
+Client -> Controller : requisição + Bearer JWT
+activate Controller
+Controller -> Controller : JwtAuthGuard popula request.user
+Controller -> AccessUtil : toShelteredAccessContext(request)
+AccessUtil --> Controller : { userId, role }\nrole desconhecido vira null
+
+== GET /sheltered e GET /sheltered/simple ==
+Controller -> GetService : findAll(query, actor)
+activate GetService
+GetService -> Repo : findAllPaginated(query, actor)
+Repo -> Repo : applyRoleFilter\n(admin: sem filtro;\nleader/member: join teams)
+Repo -> Repo : filtros parametrizados +\nordenação pela allowlist
+Repo --> GetService : { items, total }
+GetService --> Controller : PaginatedResponseDto<ShelteredResponseDto>
+deactivate GetService
+
+== POST /sheltered ==
+Controller -> CreateService : execute(dto, actor)
+activate CreateService
+alt dto.shelterId informado
+  CreateService -> ShelterAccess : assertReachable(shelterId, actor)
+  ShelterAccess -> SheltersService : existsForActor(shelterId, ctx)
+  SheltersService --> ShelterAccess : boolean
+  alt abrigo inexistente ou fora do escopo
+    ShelterAccess --> CreateService : ResourceNotFoundException (404)
+  end
+end
+CreateService -> AddressesService : create(address) [opcional]
+AddressesService --> CreateService : AddressEntity (não persistida)
+CreateService -> Repo : save(sheltered)\nendereço em cascade = escrita única
+Repo --> CreateService : entidade persistida
+CreateService -> GetService : findEntityOrFail(id, actor)
+CreateService --> Controller : ShelteredResponseDto
+deactivate CreateService
+
+== PUT /sheltered/:id e PATCH /sheltered/:id/status ==
+Controller -> UpdateService : execute(id, dto, actor)
+activate UpdateService
+UpdateService -> GetService : findEntityOrFail(id, actor)
+alt registro inexistente ou fora do escopo
+  GetService --> UpdateService : ResourceNotFoundException (404)
+end
+UpdateService -> UpdateService : applyScalarChanges\n(apenas campos enviados)
+alt shelterId === null
+  UpdateService -> UpdateService : desvincula o abrigo
+else shelterId informado
+  UpdateService -> ShelterAccess : assertReachable(shelterId, actor)
+end
+alt address === null
+  UpdateService -> UpdateService : desvincula o endereço
+else address informado
+  UpdateService -> AddressesService : merge(existente) ou create(novo)
+end
+UpdateService -> Repo : save(entity)
+UpdateService --> Controller : ShelteredResponseDto
+deactivate UpdateService
+
+== DELETE /sheltered/:id ==
+Controller -> DeleteService : execute(id, actor)
+activate DeleteService
+DeleteService -> GetService : findEntityOrFail(id, actor)
+DeleteService -> Repo : deleteById(id)
+DeleteService --> Controller : void
+deactivate DeleteService
+
+Controller --> Client : resposta / envelope de erro padrão
+deactivate Controller
+
+note right of Repo
+  Toda leitura passa por applyRoleFilter.
+  Um registro fora do escopo do ator é
+  indistinguível de um inexistente (404),
+  para não vazar sua existência.
+end note
+
+@enduml

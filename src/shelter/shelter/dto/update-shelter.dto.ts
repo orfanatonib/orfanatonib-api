@@ -2,7 +2,6 @@ import {
   IsOptional,
   IsUUID,
   IsString,
-  ValidateIf,
   ValidateNested,
   IsArray,
   ArrayUnique,
@@ -11,9 +10,13 @@ import {
   IsEnum,
   IsNumber,
   Min,
-} from 'class-validator';
-import { Type, Transform } from 'class-transformer';
-import { UploadType, PlatformType } from 'src/shared/media/media-item/media-item.entity';
+} from "class-validator";
+import { Type, Transform } from "class-transformer";
+import { normalizeUploadType } from "../utils/shelter-transform.util";
+import {
+  UploadType,
+  PlatformType,
+} from "src/shared/media/media-item/media-item.entity";
 
 export class AddressPatchDto {
   @IsOptional() @IsString() id?: string;
@@ -34,13 +37,7 @@ export class MediaItemDto {
   @IsOptional() @IsString() description?: string;
   @IsOptional()
   @IsEnum(UploadType)
-  @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      const normalized = value.toLowerCase();
-      return normalized === 'upload' ? UploadType.UPLOAD : normalized === 'link' ? UploadType.LINK : value;
-    }
-    return value;
-  })
+  @Transform(({ value }: { value?: unknown }) => normalizeUploadType(value))
   uploadType?: UploadType;
   @IsOptional() @IsEnum(PlatformType) platformType?: PlatformType;
   @IsOptional() @IsString() url?: string;
@@ -73,13 +70,17 @@ export class TeamInputDto {
 }
 
 export class UpdateShelterDto {
-  @IsOptional() @IsString() @Length(2, 255)
+  @IsOptional()
+  @IsString()
+  @Length(2, 255)
   name?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   description?: string;
 
-  @IsNumber() @IsNumber({}, { message: 'teamsQuantity deve ser um número' })
+  /** O PUT é uma substituição completa: o abrigo sempre declara suas equipes. */
+  @IsNumber({}, { message: "teamsQuantity deve ser um número" })
   @Min(1)
   teamsQuantity!: number;
 

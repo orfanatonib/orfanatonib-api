@@ -1,41 +1,136 @@
-import { Injectable } from '@nestjs/common';
-import { DataSource, Repository } from 'typeorm';
-import { FeatureFlagEntity } from './entities/feature-flag.entity';
+import { Injectable } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { Repository, SelectQueryBuilder } from "typeorm";
+
+import {
+  FEATURE_FLAGS_DEFAULT_LIMIT,
+  FEATURE_FLAGS_DEFAULT_PAGE,
+  FEATURE_FLAG_DEFAULT_ORDER,
+  FEATURE_FLAG_DEFAULT_SORT,
+  FEATURE_FLAG_SORT_COLUMNS,
+} from "./constants";
+import { QueryFeatureFlagsDto } from "./dto/query-feature-flags.dto";
+import { FeatureFlagEntity } from "./entities/feature-flag.entity";
 
 @Injectable()
-export class FeatureFlagsRepository extends Repository<FeatureFlagEntity> {
-    constructor(private dataSource: DataSource) {
-        super(FeatureFlagEntity, dataSource.createEntityManager());
+export class FeatureFlagsRepository {
+  constructor(
+    @InjectRepository(FeatureFlagEntity)
+    private readonly repository: Repository<FeatureFlagEntity>,
+  ) {}
+
+  private applyFilters(
+    queryBuilder: SelectQueryBuilder<FeatureFlagEntity>,
+    query: QueryFeatureFlagsDto,
+  ): void {
+    const search = query.searchString?.trim();
+    if (search) {
+      queryBuilder.andWhere(
+        `(
+          LOWER(flag.key) LIKE LOWER(:search) OR
+          LOWER(flag.name) LIKE LOWER(:search) OR
+          LOWER(flag.description) LIKE LOWER(:search)
+        )`,
+        { search: `%${search}%` },
+      );
     }
 
-    async findByKey(key: string): Promise<FeatureFlagEntity | null> {
-        return this.findOne({ where: { key } });
+    if (query.enabled !== undefined) {
+      queryBuilder.andWhere("flag.enabled = :enabled", {
+        enabled: query.enabled,
+      });
     }
+  }
 
-    async findByEnvironment(environment: string): Promise<FeatureFlagEntity[]> {
-        return this.find({ where: { environment } });
-    }
+  async findAllPaginated(
+    query: QueryFeatureFlagsDto,
+  ): Promise<{ items: FeatureFlagEntity[]; total: number }> {
+    const page = query.page ?? FEATURE_FLAGS_DEFAULT_PAGE;
+    const limit = query.limit ?? FEATURE_FLAGS_DEFAULT_LIMIT;
+    const sort = query.sort ?? FEATURE_FLAG_DEFAULT_SORT;
+    const order = query.order ?? FEATURE_FLAG_DEFAULT_ORDER;
 
-    async isEnabled(key: string, environment?: string): Promise<boolean> {
-        const query = this.createQueryBuilder('ff')
-            .where('ff.key = :key', { key })
-            .andWhere('ff.enabled = :enabled', { enabled: true });
+    const queryBuilder = this.repository.createQueryBuilder("flag");
+    this.applyFilters(queryBuilder, query);
+    queryBuilder
+      .orderBy(FEATURE_FLAG_SORT_COLUMNS[sort], order)
+      .skip((page - 1) * limit)
+      .take(limit);
 
-        if (environment) {
-            query.andWhere('(ff.environment = :environment OR ff.environment IS NULL)', { environment });
-        }
+    const [items, total] = await queryBuilder.getManyAndCount();
+    return { items, total };
+  }
 
-        const flag = await query.getOne();
-        return !!flag;
-    }
+  async findAllFiltered(
+    query: QueryFeatureFlagsDto,
+  ): Promise<FeatureFlagEntity[]> {
+    const sort = query.sort ?? FEATURE_FLAG_DEFAULT_SORT;
+    const order = query.order ?? FEATURE_FLAG_DEFAULT_ORDER;
+    const queryBuilder = this.repository.createQueryBuilder("flag");
 
-    async toggleFlag(key: string): Promise<FeatureFlagEntity> {
-        const flag = await this.findByKey(key);
-        if (!flag) {
-            throw new Error(`Feature flag with key "${key}" not found`);
-        }
+    this.applyFilters(queryBuilder, query);
+    queryBuilder.orderBy(FEATURE_FLAG_SORT_COLUMNS[sort], order);
+    return queryBuilder.getMany();
+  }
 
-        flag.enabled = !flag.enabled;
-        return this.save(flag);
-    }
+  async findAll(): Promise<FeatureFlagEntity[]> {
+    return this.repository.find({ order: { name: "ASC" } });
+  }
+
+  async findByKey(key: string): Promise<FeatureFlagEntity | null> {
+    return this.repository.findOne({ where: { key } });
+  }
+
+  async findEnabledState(key: string): Promise<boolean | null> {
+    const flag = await this.repository.findOne({ where: { key } });
+    return flag?.enabled ?? null;
+  }
+
+  create(data: Partial<FeatureFlagEntity>): FeatureFlagEntity {
+    return this.repository.create(data);
+  }
+
+  async save(flag: FeatureFlagEntity): Promise<FeatureFlagEntity> {
+    return this.repository.save(flag);
+  }
+
+  /**
+   * Liga/desliga só se a versão ainda for a esperada (atômico no banco).
+   * `false` = ninguém foi alterado (versão desatualizada).
+   */
+  async setEnabledIfVersion(
+    id: string,
+    enabled: boolean,
+    expectedVersion: number,
+  ): Promise<boolean> {
+    const result = await this.repository
+      .createQueryBuilder()
+      .update(FeatureFlagEntity)
+      .set({ enabled, version: () => "version + 1" })
+      .where("id = :id AND version = :expectedVersion", {
+        id,
+        expectedVersion,
+      })
+      .execute();
+    return (result.affected ?? 0) > 0;
+  }
+
+  /** Preenche `protected` nas flags de fábrica criadas antes da coluna. */
+  async markProtected(keys: readonly string[]): Promise<number> {
+    if (keys.length === 0) return 0;
+    const result = await this.repository
+      .createQueryBuilder()
+      .update(FeatureFlagEntity)
+      .set({ isProtected: true })
+      .where("`key` IN (:...keys) AND `protected` = :flag", {
+        keys: [...keys],
+        flag: false,
+      })
+      .execute();
+    return result.affected ?? 0;
+  }
+
+  async remove(flag: FeatureFlagEntity): Promise<void> {
+    await this.repository.remove(flag);
+  }
 }

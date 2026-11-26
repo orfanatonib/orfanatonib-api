@@ -106,9 +106,20 @@ docs/
 
 ---
 
+### 🎚️ Feature flags
+**Controle de disponibilidade e público dos recursos**
+- CRUD administrativo com busca, filtros, paginação e estatísticas
+- Mapa público resolvido conforme a sessão
+- Catálogo de fábrica sincronizado sem sobrescrever ajustes administrativos
+
+📁 [`modules/feature-flags/`](./modules/feature-flags/)
+
+---
+
 ## 📖 Guias Gerais
 
 A pasta [`guides/`](./guides/) contém:
+- ✅ Configuração de envio de e-mail pelo Gmail SMTP
 - ✅ Resumos de automações
 - ✅ Guias de refatoração
 - ✅ Exemplos de uso

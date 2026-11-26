@@ -1,29 +1,31 @@
 import {
   Injectable,
-  Logger,
   NotFoundException,
   BadRequestException,
-} from '@nestjs/common';
-import { DataSource } from 'typeorm';
-import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
-import { RouteService } from 'src/infrastructure/route/route.service';
-import { RouteType, RouteEntity } from 'src/infrastructure/route/route-page.entity';
-import { DocumentRepository } from '../document.repository';
-import { UpdateDocumentDto } from '../dto/update-document.dto';
-import { DocumentEntity } from '../entities/document.entity';
+} from "@nestjs/common";
+import { DataSource } from "typeorm";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
+import { RouteService } from "src/infrastructure/route/services/route.service";
+import {
+  RouteType,
+  RouteEntity,
+} from "src/infrastructure/route/route-page.entity";
+import { DocumentRepository } from "../document.repository";
+import { UpdateDocumentDto } from "../dto/update-document.dto";
+import { DocumentEntity } from "../entities/document.entity";
 
 @Injectable()
 export class UpdateDocumentService {
-  private readonly logger = new Logger(UpdateDocumentService.name);
-
   constructor(
     private readonly dataSource: DataSource,
     private readonly documentRepo: DocumentRepository,
     private readonly s3Service: AwsS3Service,
     private readonly mediaProcessor: MediaItemProcessor,
     private readonly routeService: RouteService,
-  ) { }
+    private readonly mediaStorage: MediaStorageService,
+  ) {}
 
   async execute(
     id: string,
@@ -32,13 +34,50 @@ export class UpdateDocumentService {
   ): Promise<DocumentEntity> {
     const existingDocument = await this.documentRepo.findOneWithRelations(id);
     if (!existingDocument) {
-      throw new NotFoundException('Document not found.');
+      throw new NotFoundException("Document not found.");
     }
 
     if (!dto.media) {
-      throw new BadRequestException('Media data is required.');
+      throw new BadRequestException("Media data is required.");
     }
 
+    // Ordem segura: o objeto novo sobe antes, o antigo só é apagado DEPOIS do commit.
+    // Apagar dentro da transação deixava o banco apontando para um objeto inexistente
+    // se qualquer passo seguinte falhasse e a transação voltasse.
+    const uploadedUrls: string[] = [];
+    const staleUrls: string[] = [];
+    const uploadTracked = async (f: Express.Multer.File): Promise<string> => {
+      const url = await this.s3Service.upload(f);
+      uploadedUrls.push(url);
+      return url;
+    };
+
+    let saved: DocumentEntity;
+    try {
+      saved = await this.runUpdate(
+        existingDocument,
+        dto,
+        file,
+        uploadTracked,
+        staleUrls,
+      );
+    } catch (error: unknown) {
+      // Falha: o NOVO some do bucket (o antigo segue referenciado). Falha de remoção vai para a fila de limpeza.
+      await this.mediaStorage.deleteAfterCommit(uploadedUrls);
+      throw error;
+    }
+    // Sucesso: só agora o antigo sai do bucket (depois do commit).
+    await this.mediaStorage.deleteAfterCommit(staleUrls);
+    return saved;
+  }
+
+  private async runUpdate(
+    existingDocument: DocumentEntity,
+    dto: UpdateDocumentDto & { isLocalFile?: boolean },
+    file: Express.Multer.File | undefined,
+    uploadTracked: (f: Express.Multer.File) => Promise<string>,
+    staleUrls: string[],
+  ): Promise<DocumentEntity> {
     return await this.dataSource.transaction(async (manager) => {
       const updatedDocument = manager.merge(DocumentEntity, existingDocument, {
         name: dto.name,
@@ -61,22 +100,25 @@ export class UpdateDocumentService {
 
       const existingMedia = await this.mediaProcessor.findMediaItemsByTarget(
         savedDocument.id,
-        'document',
+        "document",
       );
 
       const isReplacingMedia = !dto.media.id;
 
       if (isReplacingMedia) {
-        const filesDict = file ? { [dto.media.fileField ?? 'file']: file } : {};
+        const filesDict = file ? { [dto.media.fileField ?? "file"]: file } : {};
 
         await this.mediaProcessor.cleanAndReplaceMediaItems(
           [
             {
               title: dto.media.title ?? savedDocument.name,
-              description: dto.media.description ?? `Document: ${savedDocument.name}`,
+              description:
+                dto.media.description ?? `Document: ${savedDocument.name}`,
               mediaType: dto.media.mediaType,
               uploadType: dto.media.uploadType,
-              platformType: dto.media.isLocalFile ? undefined : dto.media.platformType,
+              platformType: dto.media.isLocalFile
+                ? undefined
+                : dto.media.platformType,
               url: dto.media.url,
               originalName: dto.media.originalName,
               size: dto.media.size,
@@ -85,11 +127,14 @@ export class UpdateDocumentService {
             },
           ],
           savedDocument.id,
-          'document',
+          "document",
           filesDict,
           existingMedia,
-          (url) => this.s3Service.delete(url),
-          (file) => this.s3Service.upload(file),
+          (url) => {
+            staleUrls.push(url);
+            return Promise.resolve();
+          },
+          (f) => uploadTracked(f),
         );
       } else if (existingMedia.length > 0) {
         const mediaToUpdate = existingMedia[0];
@@ -100,25 +145,33 @@ export class UpdateDocumentService {
         const isNowUpload = dto.media.isLocalFile === true;
 
         if (wasUpload && isNowLink && mediaToUpdate.url) {
-          await this.s3Service.delete(mediaToUpdate.url);
+          staleUrls.push(mediaToUpdate.url);
         }
 
-        if (wasLink && isNowUpload) {
-          if (!file) {
-            throw new BadRequestException('Upload file is required when changing to upload.');
-          }
-          const newUrl = await this.s3Service.upload(file);
+        if (isNowUpload && file) {
+          // Arquivo novo enviado com o id da mídia: troca o arquivo na MESMA linha. O antigo (se havia) só sai
+          // do bucket depois do commit; antes esse arquivo era ignorado em silêncio (200 sem trocar nada).
+          const newUrl = await uploadTracked(file);
+          if (wasUpload && mediaToUpdate.url) staleUrls.push(mediaToUpdate.url);
           dto.media.url = newUrl;
           dto.media.originalName = file.originalname;
           dto.media.size = file.size;
+        } else if (wasLink && isNowUpload) {
+          throw new BadRequestException(
+            "Upload file is required when changing to upload.",
+          );
         }
 
         mediaToUpdate.title = dto.media.title ?? mediaToUpdate.title;
-        mediaToUpdate.description = dto.media.description ?? mediaToUpdate.description;
+        mediaToUpdate.description =
+          dto.media.description ?? mediaToUpdate.description;
         mediaToUpdate.uploadType = dto.media.uploadType;
-        mediaToUpdate.platformType = dto.media.isLocalFile ? undefined : dto.media.platformType;
+        mediaToUpdate.platformType = dto.media.isLocalFile
+          ? undefined
+          : dto.media.platformType;
         mediaToUpdate.url = dto.media.url ?? mediaToUpdate.url;
-        mediaToUpdate.originalName = dto.media.originalName ?? mediaToUpdate.originalName;
+        mediaToUpdate.originalName =
+          dto.media.originalName ?? mediaToUpdate.originalName;
         mediaToUpdate.size = dto.media.size ?? mediaToUpdate.size;
         mediaToUpdate.isLocalFile = dto.media.isLocalFile;
 
@@ -137,14 +190,15 @@ export class UpdateDocumentService {
     const routeData: Partial<RouteEntity> = {
       title: documentData.name,
       subtitle: documentData.subtitle ?? documentData.name,
-      description: documentData.description ?? '',
+      description: documentData.description ?? "",
       idToFetch: documentId,
-      entityType: 'Document',
+      entityType: "Document",
       entityId: documentId,
       public: false,
       type: RouteType.PAGE,
-      path: 'documento_',
-      image: 'https://bucket-orfanato-galeria.s3.us-east-2.amazonaws.com/uploads/img_card.jpg',
+      path: "documento_",
+      image:
+        "https://bucket-orfanato-galeria.s3.us-east-2.amazonaws.com/uploads/img_card.jpg",
     };
 
     return this.routeService.upsertRoute(routeId, routeData);

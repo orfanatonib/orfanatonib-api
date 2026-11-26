@@ -1,9 +1,21 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { Request } from 'express';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { JwtPayload, UserRole } from '../auth.types';
+import { Injectable } from "@nestjs/common";
+import { Request } from "express";
+import { JwtService } from "@nestjs/jwt";
+import { ConfigService } from "@nestjs/config";
+import { UnauthenticatedException } from "src/common/exceptions";
+import { JwtPayload, UserRole } from "../auth.types";
+import { AuthErrorMessages } from "../constants/auth.constants";
+import { RequestTokenCarriers } from "../types";
+import { extractBearerToken, normalizeRole } from "../utils/auth-token.util";
+import { readJwtSecret } from "../utils/jwt-secret.util";
 
+/**
+ * Lê o ator a partir da requisição para quem não passa pelo `JwtAuthGuard` —
+ * rotas que respondem diferente para anônimo e autenticado.
+ *
+ * Quem já usa o guard deve ler `request.user` (`AuthenticatedRequest`) em vez
+ * de decodificar o token de novo.
+ */
 @Injectable()
 export class AuthContextService {
   constructor(
@@ -12,45 +24,30 @@ export class AuthContextService {
   ) {}
 
   getTokenFromRequest(req: Request): string | null {
-    const auth = req.headers['authorization'] || req.headers['Authorization'];
-    if (typeof auth === 'string') {
-      const [scheme, token] = auth.split(' ');
-      if (scheme?.toLowerCase() === 'bearer' && token) return token.trim();
-    }
-
-    const cookies = (req as any).cookies || {};
-    if (cookies['access_token']) return String(cookies['access_token']);
-    if (cookies['auth_token']) return String(cookies['auth_token']);
-
-    const q: any = (req as any).query || {};
-    if (q['access_token']) return String(q['access_token']);
-
-    return null;
-    }
+    return extractBearerToken(req as unknown as RequestTokenCarriers);
+  }
 
   async verifyToken(token: string): Promise<JwtPayload> {
-    const secret =
-      this.config.get<string>('JWT_SECRET') ??
-      process.env.JWT_SECRET ??
-      '';
-    if (!secret) {
-      throw new UnauthorizedException('JWT secret not configured');
-    }
+    const secret = readJwtSecret(this.config);
+
     const payload = await this.jwt.verifyAsync<JwtPayload>(token, { secret });
     return this.normalizePayload(payload);
   }
 
   decodeToken(token: string): JwtPayload | null {
-    const payload = this.jwt.decode(token) as JwtPayload | null;
+    const payload = this.jwt.decode<JwtPayload | null>(token);
     return payload ? this.normalizePayload(payload) : null;
   }
 
   async getPayloadFromRequest(req: Request): Promise<JwtPayload> {
     const token = this.getTokenFromRequest(req);
-    if (!token) throw new UnauthorizedException('Token missing');
+    if (!token) {
+      throw new UnauthenticatedException(AuthErrorMessages.TOKEN_MISSING);
+    }
     return this.verifyToken(token);
   }
 
+  /** Igual ao anterior, mas devolve `null` em vez de lançar. */
   async tryGetPayload(req: Request): Promise<JwtPayload | null> {
     try {
       return await this.getPayloadFromRequest(req);
@@ -60,58 +57,31 @@ export class AuthContextService {
   }
 
   async getUserId(req: Request): Promise<string | null> {
-    const p = await this.tryGetPayload(req);
-    return p?.sub ?? null;
+    return (await this.tryGetPayload(req))?.sub ?? null;
   }
 
   async getEmail(req: Request): Promise<string | null> {
-    const p = await this.tryGetPayload(req);
-    return p?.email ?? null;
+    return (await this.tryGetPayload(req))?.email ?? null;
   }
 
   async getRole(req: Request): Promise<UserRole | null> {
-    const p = await this.tryGetPayload(req);
-    return (p?.role as UserRole) ?? null;
+    const payload = await this.tryGetPayload(req);
+    return normalizeRole(payload?.role) ?? null;
   }
 
   async isAdmin(req: Request): Promise<boolean> {
-    const role = await this.getRole(req);
-    return role === UserRole.ADMIN;
+    return (await this.getRole(req)) === UserRole.ADMIN;
   }
 
   async isMember(req: Request): Promise<boolean> {
-    const role = await this.getRole(req);
-    return role === UserRole.MEMBER;
+    return (await this.getRole(req)) === UserRole.MEMBER;
   }
 
-  async isCoordinator(req: Request): Promise<boolean> {
-    const role = await this.getRole(req);
-    return role === UserRole.LEADER;
-  }
-
-    async isLoggedIn(req: Request): Promise<boolean> {
-    const token = this.getTokenFromRequest(req);
-    if (!token) return false;
-
-    try {
-      await this.verifyToken(token);
-      return true;
-    } catch {
-      return false;
-    }
+  async isLoggedIn(req: Request): Promise<boolean> {
+    return (await this.tryGetPayload(req)) !== null;
   }
 
   private normalizePayload(payload: JwtPayload): JwtPayload {
-    const role = this.normalizeRole(payload.role);
-    return { ...payload, role };
-  }
-
-  private normalizeRole(role?: string | UserRole): UserRole | undefined {
-    if (!role) return undefined;
-    const r = String(role).toLowerCase();
-    if (r === UserRole.ADMIN) return UserRole.ADMIN;
-    if (r === UserRole.MEMBER) return UserRole.MEMBER;
-    if (r === UserRole.LEADER) return UserRole.LEADER;
-    return undefined;
+    return { ...payload, role: normalizeRole(payload.role) };
   }
 }

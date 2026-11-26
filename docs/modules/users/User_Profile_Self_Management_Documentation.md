@@ -224,8 +224,6 @@ fetch('/profile/password', {
 
 Atualiza a imagem de perfil do usuário autenticado. Suporta upload de arquivo ou URL externa.
 
-> 📖 **Documentação completa**: Veja [Users_Image_Endpoint_Documentation.md](./Users_Image_Endpoint_Documentation.md) para detalhes completos sobre este endpoint.
-
 #### Request
 
 **Método:** `PATCH`  
@@ -275,7 +273,7 @@ Retorna a entidade `UserEntity` atualizada (mesma estrutura do endpoint `/profil
 |----------------|----------------|------------------|------------|
 | **Atualizar Perfil** | `PUT /users/:id` | `PATCH /profile` | Próprio: apenas name, email, phone |
 | **Alterar Senha** | `PUT /users/:id` (com password) | `PATCH /profile/password` | Próprio: requer senha atual |
-| **Atualizar Imagem** | `PATCH /users/:id/image` | `PATCH /profile/image` | Mesmo comportamento |
+| **Atualizar Imagem** | — (removido) | `PATCH /profile/image` | Mesmo comportamento |
 | **Alterar Role** | ✅ Permitido | ❌ Não permitido | Apenas admin |
 | **Ativar/Desativar** | ✅ Permitido | ❌ Não permitido | Apenas admin |
 | **Alterar completed** | ✅ Permitido | ❌ Não permitido | Apenas admin |
@@ -397,7 +395,6 @@ Retorna a entidade `UserEntity` atualizada (mesma estrutura do endpoint `/profil
 
 - ✅ Sempre use HTTPS em produção
 - ✅ Tokens JWT devem ter expiração adequada
-- ✅ Implemente rate limiting para evitar abuso
 - ✅ Logue tentativas de alteração de senha
 - ✅ Considere 2FA para alterações críticas (futuro)
 
@@ -701,7 +698,6 @@ const ProfileSettings = () => {
 ## 🔗 Endpoints Relacionados
 
 - **Admin Endpoints**: Ver [Users_API_Documentation.md](./Users_API_Documentation.md)
-- **Imagem de Perfil**: Ver [Users_Image_Endpoint_Documentation.md](./Users_Image_Endpoint_Documentation.md)
 - **Autenticação**: Ver [Auth_API_Documentation.md](../auth/Auth_API_Documentation.md)
 
 ---

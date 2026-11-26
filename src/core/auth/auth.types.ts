@@ -1,10 +1,17 @@
-import { Request } from 'express';
+import { Request } from "express";
 
 export enum UserRole {
-  ADMIN = 'admin',
-  MEMBER = 'member',
-  LEADER = 'leader',
+  ADMIN = "admin",
+  MEMBER = "member",
+  LEADER = "leader",
 }
+
+/**
+ * Papéis que a API concede. `admin` fica de fora de propósito: só se promove
+ * alguém a admin direto no banco (ver README do módulo de auth).
+ */
+export const GRANTABLE_ROLES = [UserRole.MEMBER, UserRole.LEADER] as const;
+export type GrantableRole = (typeof GRANTABLE_ROLES)[number];
 
 export type JwtPayload = {
   sub: string;
@@ -20,4 +27,18 @@ export type AuthRequest = Request & {
     role?: UserRole | string;
     email?: string;
   };
+};
+
+/**
+ * Shape produced by `JwtStrategy.validate` and attached to `request.user`
+ * by `JwtAuthGuard`. Prefer it over re-decoding the token in a controller.
+ */
+export type AuthenticatedUser = {
+  userId: string;
+  email?: string;
+  role?: UserRole | string;
+};
+
+export type AuthenticatedRequest = Request & {
+  user?: AuthenticatedUser;
 };

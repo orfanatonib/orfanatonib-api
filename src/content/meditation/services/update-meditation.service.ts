@@ -4,15 +4,16 @@ import {
   BadRequestException,
   NotFoundException,
   ConflictException,
-} from '@nestjs/common';
-import { DataSource } from 'typeorm';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
-import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
-import { MeditationRepository } from '../meditation.repository';
-import { UpdateMeditationDto } from '../dto/update-meditation.dto';
-import { MeditationEntity } from '../entities/meditation.entity';
-import { DayEntity } from '../entities/day.entity';
-import { MediaTargetType } from 'src/shared/media/media-target-type.enum';
+} from "@nestjs/common";
+import { DataSource } from "typeorm";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { MediaStorageService } from "src/shared/media/storage/media-storage.service";
+import { MeditationRepository } from "../meditation.repository";
+import { UpdateMeditationDto } from "../dto/update-meditation.dto";
+import { MeditationEntity } from "../entities/meditation.entity";
+import { DayEntity } from "../entities/day.entity";
+import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 
 @Injectable()
 export class UpdateMeditationService {
@@ -23,26 +24,34 @@ export class UpdateMeditationService {
     private readonly dataSource: DataSource,
     private readonly mediaItemProcessor: MediaItemProcessor,
     private readonly s3Service: AwsS3Service,
-  ) { }
+    private readonly mediaStorage: MediaStorageService,
+  ) {}
 
   async update(
     id: string,
     dto: UpdateMeditationDto & { isLocalFile?: boolean },
     file?: Express.Multer.File,
   ): Promise<MeditationEntity> {
-
     const existing = await this.meditationRepo.findOneWithRelations(id);
-    if (!existing) throw new NotFoundException('Meditation not found');
+    if (!existing) throw new NotFoundException("Meditation not found");
 
-    const startDate = dto.startDate ? parseDateAsLocal(dto.startDate) : existing.startDate;
-    const endDate = dto.endDate ? parseDateAsLocal(dto.endDate) : existing.endDate;
+    const startDate = dto.startDate
+      ? parseDateAsLocal(dto.startDate)
+      : existing.startDate;
+    const endDate = dto.endDate
+      ? parseDateAsLocal(dto.endDate)
+      : existing.endDate;
 
     if (dto.startDate && startDate.getDay() !== 1) {
-      throw new BadRequestException('startDate deve ser uma segunda-feira (Monday)');
+      throw new BadRequestException(
+        "startDate deve ser uma segunda-feira (Monday)",
+      );
     }
 
     if (dto.endDate && endDate.getDay() !== 5) {
-      throw new BadRequestException('endDate deve ser uma sexta-feira (Friday)');
+      throw new BadRequestException(
+        "endDate deve ser uma sexta-feira (Friday)",
+      );
     }
 
     const all = await this.meditationRepo.findAllWithRelations();
@@ -58,17 +67,61 @@ export class UpdateMeditationService {
     });
 
     if (hasConflict) {
-      throw new ConflictException('Conflict with another existing meditation.');
+      throw new ConflictException("Conflict with another existing meditation.");
     }
 
+    // Ordem segura: o objeto novo sobe antes; o antigo só sai do bucket DEPOIS do commit.
+    // Se a transação falha, o NOVO é descartado e o antigo segue referenciado.
+    const uploadedUrls: string[] = [];
+    const staleUrls: string[] = [];
+    let saved: MeditationEntity;
+    try {
+      saved = await this.runUpdate(
+        existing,
+        dto,
+        file,
+        startDate,
+        endDate,
+        uploadedUrls,
+        staleUrls,
+      );
+    } catch (error: unknown) {
+      await this.mediaStorage.deleteAfterCommit(uploadedUrls);
+      throw error;
+    }
+    await this.mediaStorage.deleteAfterCommit(staleUrls);
+    return saved;
+  }
+
+  private async runUpdate(
+    existing: MeditationEntity,
+    dto: UpdateMeditationDto & { isLocalFile?: boolean },
+    file: Express.Multer.File | undefined,
+    startDate: Date,
+    endDate: Date,
+    uploadedUrls: string[],
+    staleUrls: string[],
+  ): Promise<MeditationEntity> {
     return await this.dataSource.transaction(async (manager) => {
+      // Trava a meditação até o fim da transação: edições simultâneas se enfileiram e a segunda enxerga a mídia
+      // que a primeira gravou (sem isso as duas trocam o mesmo arquivo e um objeto novo vira órfão no bucket).
+      const locked = await manager
+        .createQueryBuilder(MeditationEntity, "meditation")
+        .setLock("pessimistic_write")
+        .where("meditation.id = :id", { id: existing.id })
+        .getOne();
+      if (!locked) throw new NotFoundException("Meditation not found");
+
       const updatedMeditation = manager.merge(MeditationEntity, existing, {
         ...dto,
         startDate,
         endDate,
       });
 
-      const savedMeditation = await manager.save(MeditationEntity, updatedMeditation);
+      const savedMeditation = await manager.save(
+        MeditationEntity,
+        updatedMeditation,
+      );
 
       if (dto.days) {
         await manager.remove(DayEntity, existing.days);
@@ -84,7 +137,8 @@ export class UpdateMeditationService {
             id: dto.media.id,
             title: dto.media.title ?? savedMeditation.topic,
             description:
-              dto.media.description ?? `Material da meditação: ${savedMeditation.topic}`,
+              dto.media.description ??
+              `Material da meditação: ${savedMeditation.topic}`,
             mediaType: dto.media.mediaType,
             uploadType: dto.media.uploadType,
             platformType: dto.media.isLocalFile ? null : dto.media.platformType,
@@ -92,27 +146,34 @@ export class UpdateMeditationService {
             originalName: dto.media.originalName,
             size: dto.media.size,
             isLocalFile: dto.media.isLocalFile,
-            fileField: dto.media.fieldKey ?? 'file',
-            public: false
+            fileField: dto.media.fieldKey ?? "file",
+            public: false,
           },
         ];
 
-        const filesDict = file ? { [dto.media.fieldKey ?? 'file']: file } : {};
-        const existingMedia = await this.mediaItemProcessor.findMediaItemsByTarget(
-          savedMeditation.id,
-          MediaTargetType.Meditation,
-        );
+        const filesDict = file ? { [dto.media.fieldKey ?? "file"]: file } : {};
+        const existingMedia =
+          await this.mediaItemProcessor.findMediaItemsByTarget(
+            savedMeditation.id,
+            MediaTargetType.Meditation,
+          );
 
-        const [mediaEntity] = await this.mediaItemProcessor.cleanAndReplaceMediaItems(
+        await this.mediaItemProcessor.cleanAndReplaceMediaItems(
           mediaItemsInput,
           savedMeditation.id,
           MediaTargetType.Meditation,
           filesDict,
           existingMedia,
-          (url) => this.s3Service.delete(url),
-          (file) => this.s3Service.upload(file),
+          (url) => {
+            staleUrls.push(url);
+            return Promise.resolve();
+          },
+          async (f) => {
+            const url = await this.s3Service.upload(f);
+            uploadedUrls.push(url);
+            return url;
+          },
         );
-
       }
 
       return savedMeditation;
@@ -121,6 +182,6 @@ export class UpdateMeditationService {
 }
 
 function parseDateAsLocal(dateStr: string): Date {
-  const [year, month, day] = dateStr.split('-').map(Number);
+  const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day);
 }

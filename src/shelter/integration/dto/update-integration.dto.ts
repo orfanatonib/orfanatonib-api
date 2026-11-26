@@ -1,63 +1,70 @@
-import { IsString, IsBoolean, IsInt, IsOptional, ValidateNested, IsArray } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsString,
+  IsBoolean,
+  IsInt,
+  IsOptional,
+  ValidateNested,
+  IsArray,
+} from "class-validator";
+import { Type } from "class-transformer";
 
 export class MediaItemDto {
-    @IsOptional()
-    @IsString()
-    id?: string;
+  @IsOptional()
+  @IsString()
+  id?: string;
 
-    @IsOptional()
-    @IsString()
-    title?: string;
+  @IsOptional()
+  @IsString()
+  title?: string;
 
-    @IsOptional()
-    @IsString()
-    description?: string;
+  @IsOptional()
+  @IsString()
+  description?: string;
 
-    @IsOptional()
-    @IsString()
-    url?: string;
+  @IsOptional()
+  @IsString()
+  url?: string;
 
-    @IsOptional()
-    @IsString()
-    fieldKey?: string;
+  @IsOptional()
+  @IsString()
+  fieldKey?: string;
 
-    @IsOptional()
-    isLocalFile?: boolean;
+  @IsOptional()
+  isLocalFile?: boolean;
 }
 
 export class UpdateIntegrationDto {
-    @IsOptional()
-    @IsString()
-    name?: string;
+  @IsOptional()
+  @IsString()
+  name?: string;
 
-    @IsOptional()
-    @IsString()
-    phone?: string;
+  @IsOptional()
+  @IsString()
+  phone?: string;
 
-    @IsOptional()
-    @IsString()
-    gaLeader?: string;
+  @IsOptional()
+  @IsString()
+  gaLeader?: string;
 
-    @IsOptional()
-    @IsBoolean()
-    baptized?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  baptized?: boolean;
 
-    @IsOptional()
-    @IsInt()
-    churchYears?: number;
+  @IsOptional()
+  @IsInt()
+  churchYears?: number;
 
-    @IsOptional()
-    @IsString()
-    previousMinistry?: string;
+  @IsOptional()
+  @IsString()
+  previousMinistry?: string;
 
-    @IsOptional()
-    @IsInt()
-    integrationYear?: number;
+  @IsOptional()
+  @IsInt()
+  integrationYear?: number;
 
-    @IsOptional()
-    @IsArray()
-    @ValidateNested({ each: true })
-    @Type(() => MediaItemDto)
-    images?: MediaItemDto[];
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MediaItemDto)
+  images?: MediaItemDto[];
 }

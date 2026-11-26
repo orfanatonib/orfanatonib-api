@@ -34,6 +34,7 @@ docs/
 │   ├── leader-profiles/
 │   ├── member-profiles/
 │   ├── sheltered/
+│   ├── feature-flags/
 │   └── pagelas/
 └── guides/                                # Guias gerais
 ```
@@ -219,9 +220,14 @@ docs/
 
 ## 📖 8. Guias Gerais
 
+Antes dos guias, consulte também o módulo de
+[`feature-flags`](./modules/feature-flags/README.md), que documenta o painel,
+os públicos e o mapa consumido pelo frontend.
+
 Documentação transversal e guias de automação.
 
 ### Arquivos
+- [`guides/GMAIL_SMTP_CONFIGURATION.md`](./guides/GMAIL_SMTP_CONFIGURATION.md) - Configuração de envio pelo Gmail SMTP
 - [`guides/COLLECTIONS_README.md`](./guides/COLLECTIONS_README.md)
 - [`guides/DOCUMENTATION_README.md`](./guides/DOCUMENTATION_README.md)
 - [`guides/RESUMO_ATUALIZACAO_COLLECTIONS.md`](./guides/RESUMO_ATUALIZACAO_COLLECTIONS.md)

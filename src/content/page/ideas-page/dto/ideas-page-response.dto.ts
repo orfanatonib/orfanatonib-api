@@ -1,16 +1,17 @@
-import { RouteEntity } from 'src/infrastructure/route/route-page.entity';
+import { RouteEntity } from "src/infrastructure/route/route-page.entity";
 import {
   MediaItemEntity,
   PlatformType,
   MediaType,
   UploadType,
-} from 'src/shared/media/media-item/media-item.entity';
-import { IdeasSectionEntity } from '../../ideas-section/entites/ideas-section.entity';
-import { IdeasPageEntity } from '../entities/ideas-page.entity';
+} from "src/shared/media/media-item/media-item.entity";
+import { IdeasSectionEntity } from "../../ideas-section/entities/ideas-section.entity";
+import { IdeasPageEntity } from "../entities/ideas-page.entity";
 
 export class IdeasRouteDto {
   title: string;
-  public: boolean;
+  /** Sempre `false`: a rota da página de ideias é privada (dados legados com `true` são ignorados). */
+  public: false;
   subtitle: string;
   image: string;
   idToFetch: string;
@@ -23,7 +24,7 @@ export class IdeasRouteDto {
   static fromEntity(route: RouteEntity): IdeasRouteDto {
     return {
       title: route.title,
-      public: route.public,
+      public: false,
       subtitle: route.subtitle,
       image: route.image,
       idToFetch: route.idToFetch,
@@ -103,12 +104,16 @@ export class IdeasSectionResponseDto {
       public: section.public,
       createdAt: section.createdAt,
       updatedAt: section.updatedAt,
-      medias: mediaItems.map(IdeasMediaItemResponseDto.fromEntity),
-      user: section.user ? {
-        email: section.user.email,
-        phone: section.user.phone,
-        name: formatUserName(section.user.name),
-      } : undefined,
+      medias: mediaItems.map((item) =>
+        IdeasMediaItemResponseDto.fromEntity(item),
+      ),
+      user: section.user
+        ? {
+            email: section.user.email,
+            phone: section.user.phone,
+            name: formatUserName(section.user.name),
+          }
+        : undefined,
     };
   }
 }
@@ -118,12 +123,10 @@ export class IdeasPageResponseDto {
   title: string;
   subtitle: string;
   description: string;
-  public: boolean;
   createdAt: Date;
   updatedAt: Date;
   route: IdeasRouteDto;
   sections: IdeasSectionResponseDto[];
-
 
   static fromEntity(
     page: IdeasPageEntity,
@@ -138,9 +141,8 @@ export class IdeasPageResponseDto {
     return {
       id: page.id,
       title: page.title,
-      subtitle: page.subtitle || '',
+      subtitle: page.subtitle || "",
       description: page.description,
-      public: page.public,
       createdAt: page.createdAt,
       updatedAt: page.updatedAt,
       route: IdeasRouteDto.fromEntity(page.route),

@@ -1,17 +1,20 @@
-import { Module, forwardRef } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { Module, forwardRef } from "@nestjs/common";
+import { TypeOrmModule } from "@nestjs/typeorm";
 
-import { MemberProfilesRepository } from './repositories/member-profiles.repository';
-import { MemberProfilesService } from './services/member-profiles.service';
-import { MemberProfilesController } from './member-profiles.controller';
+import { MemberProfilesRepository } from "./repositories/member-profiles.repository";
+import { GetMemberProfilesService } from "./services/get-member-profiles.service";
+import { CreateMemberProfileService } from "./services/create-member-profile.service";
+import { UpdateMemberProfileService } from "./services/update-member-profile.service";
+import { DeleteMemberProfileService } from "./services/delete-member-profile.service";
+import { MemberProfilesController } from "./member-profiles.controller";
 
-import { MemberProfileEntity } from './entities/member-profile.entity/member-profile.entity';
-import { LeaderProfilesModule } from '../leader-profile/leader-profiles.module';
-import { SheltersModule } from '../shelter/shelters.module';
-import { UserModule } from 'src/core/user/user.module';
-import { AuthModule } from 'src/core/auth/auth.module';
-import { TeamsModule } from '../team/teams.module';
-import { MediaModule } from 'src/shared/media/media.module';
+import { MemberProfileEntity } from "./entities/member-profile.entity/member-profile.entity";
+import { LeaderProfilesModule } from "../leader-profile/leader-profiles.module";
+import { SheltersModule } from "../shelter/shelters.module";
+import { UserModule } from "src/core/user/user.module";
+import { AuthModule } from "src/core/auth/auth.module";
+import { TeamsModule } from "../team/teams.module";
+import { MediaModule } from "src/shared/media/media.module";
 
 @Module({
   imports: [
@@ -24,7 +27,20 @@ import { MediaModule } from 'src/shared/media/media.module';
     MediaModule,
   ],
   controllers: [MemberProfilesController],
-  providers: [MemberProfilesRepository, MemberProfilesService],
-  exports: [MemberProfilesRepository, MemberProfilesService, TypeOrmModule],
+  providers: [
+    MemberProfilesRepository,
+    GetMemberProfilesService,
+    CreateMemberProfileService,
+    UpdateMemberProfileService,
+    DeleteMemberProfileService,
+  ],
+  exports: [
+    MemberProfilesRepository,
+    GetMemberProfilesService,
+    CreateMemberProfileService,
+    UpdateMemberProfileService,
+    DeleteMemberProfileService,
+    TypeOrmModule,
+  ],
 })
-export class MemberProfilesModule { }
+export class MemberProfilesModule {}

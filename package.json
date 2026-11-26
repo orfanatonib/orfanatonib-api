@@ -12,6 +12,17 @@
     "start:staging": "dotenv -e env/staging.env -- nest start --watch",
     "start:prod": "dotenv -e env/prod.env -- nest start --watch",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint:fix": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "lint:check": "eslint \"src/app*.ts\" \"src/main.ts\" \"src/config/**/*.ts\" \"src/common/controllers/**/*.ts\"",
+    "diagrams:generate": "node scripts/generate-diagrams.js",
+    "dynamodb:local:ensure-table": "node --require ts-node/register/transpile-only --require tsconfig-paths/register scripts/dynamodb-local/ensure-table.ts",
+    "logs:doctor": "node --require ts-node/register/transpile-only --require tsconfig-paths/register scripts/logs-doctor/logs-doctor.ts",
+    "db:migration:revert": "node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d database/data-source.ts",
+    "db:migration:deploy": "node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d database/data-source.ts",
+    "db:local:migration:generate": "dotenv -e env/local.env -- node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d database/data-source.ts",
+    "db:local:migration:deploy": "dotenv -e env/local.env -- node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d database/data-source.ts",
+    "db:local:migration:revert": "dotenv -e env/local.env -- node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d database/data-source.ts",
+    "db:local:migration:status": "dotenv -e env/local.env -- node -r ts-node/register -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:show -d database/data-source.ts",
     "test": "dotenv -e env/local.env -- jest",
     "test:watch": "dotenv -e env/local.env -- jest --watch",
     "test:cov": "dotenv -e env/local.env -- jest --coverage",
@@ -23,11 +34,14 @@
     "test:auto:leaders": "dotenv -e env/local.env -- node test/automations/leader-profiles/leader-profiles-complete-automation.js",
     "test:auto:members": "dotenv -e env/local.env -- node test/automations/member-profiles/member-profiles-complete-automation.js",
     "test:auto:sheltered": "dotenv -e env/local.env -- node test/automations/sheltered/sheltered-complete-automation.js",
-    "test:auto:pagelas": "dotenv -e env/local.env -- node test/automations/pagelas/pagelas-complete-automation.js"
+    "test:auto:pagelas": "dotenv -e env/local.env -- node test/automations/pagelas/pagelas-complete-automation.js",
+    "seed:local": "dotenv -e env/local.env -- node scripts/seed-local-credentials.js"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1172.0",
     "@aws-sdk/client-s3": "^3.758.0",
-    "@aws-sdk/client-ses": "^3.782.0",
+    "@aws-sdk/lib-dynamodb": "^3.1172.0",
+    "@aws-sdk/s3-request-presigner": "^3.956.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.1",
     "@nestjs/core": "^11.0.1",
@@ -35,20 +49,26 @@
     "@nestjs/mapped-types": "*",
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.11",
+    "@nestjs/schedule": "^6.1.3",
     "@nestjs/typeorm": "^11.0.0",
+    "@smithy/credential-provider-imds": "^4.5.2",
     "@types/uuid": "^10.0.0",
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.2",
+    "bullmq": "^5.81.5",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.1",
-    "express-rate-limit": "^8.2.1",
+    "docx": "^9.7.1",
     "google-auth-library": "^10.2.0",
+    "ioredis": "^5.11.1",
     "multer": "^1.4.5-lts.1",
     "mysql2": "^3.12.0",
+    "nodemailer": "^10.0.3",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1",
-    "twilio": "^5.5.1",
+    "sharp": "^0.35.5",
     "typeorm": "^0.3.21",
     "uuid": "^13.0.0"
   },
@@ -65,6 +85,7 @@
     "@types/jest": "^29.5.14",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.10.7",
+    "@types/nodemailer": "^8.0.1",
     "@types/passport-jwt": "^4.0.1",
     "@types/supertest": "^6.0.2",
     "dotenv-cli": "^11.0.0",
@@ -73,6 +94,7 @@
     "eslint-plugin-prettier": "^5.2.2",
     "globals": "^16.0.0",
     "jest": "^29.7.0",
+    "jszip": "^3.10.1",
     "pg": "^8.16.3",
     "prettier": "^3.4.2",
     "source-map-support": "^0.5.21",
@@ -99,6 +121,48 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "coverageThreshold": {
+      "global": {
+        "statements": 80,
+        "branches": 64,
+        "functions": 68,
+        "lines": 80
+      },
+      "./src/content/page/ideas-section/services/": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "./src/content/page/ideas-section/mappers/": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "./src/content/page/ideas-section/utils/": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "./src/content/studio/": {
+        "statements": 69,
+        "branches": 54,
+        "functions": 59,
+        "lines": 70
+      }
+    },
+    "testEnvironment": "node",
+    "coveragePathIgnorePatterns": [
+      "\\.fixtures\\.ts$"
+    ],
+    "moduleDirectories": [
+      "node_modules",
+      "<rootDir>/.."
+    ],
+    "setupFiles": [
+      "reflect-metadata"
+    ]
   }
 }

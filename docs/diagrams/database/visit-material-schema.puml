@@ -1,0 +1,60 @@
+@startuml visit-material-schema
+title Visit Material Pages - database schema
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam EntityBorderColor #37474F
+
+entity "visit_material_pages" as pages {
+  * id : uuid
+  --
+  sourceLessonId : varchar(36)? <<unique>>
+  title : varchar
+  subtitle : text
+  testament : enum (OLD_TESTAMENT, NEW_TESTAMENT)
+  currentWeek : boolean
+  description : text
+  routeId : uuid
+  createdAt : datetime
+  updatedAt : datetime
+}
+
+entity "visit_material_sections" as sections {
+  * id : uuid
+  --
+  page_id : varchar(36) <<FK, cascade>>
+  category : enum (BABY, CHILD, TEEN, ADULT)
+  title : varchar(180)?
+  description : text?
+  position : smallint
+  createdAt : datetime
+  updatedAt : datetime
+  ..
+  unique (page_id, category)
+}
+
+entity "media_items" as media {
+  * id : uuid
+  --
+  title : varchar
+  description : text
+  mediaType : enum (VIDEO, DOCUMENT, IMAGE, AUDIO)
+  uploadType : enum
+  url : varchar
+  targetId : varchar
+  targetType : varchar
+}
+
+note right of media
+  Polimórfica. Mídias de "Geral":
+  targetType = VisitMaterialsPage, targetId = pages.id.
+  Mídias de uma categoria:
+  targetType = VisitMaterialsSection, targetId = sections.id.
+end note
+
+pages ||--o{ sections : page_id
+pages ||..o{ media : "Geral (targetId)"
+sections ||..o{ media : "categoria (targetId)"
+
+@enduml

@@ -1,99 +1,127 @@
 import {
+  Body,
   Controller,
-  Post,
-  Patch,
   Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
-  Body,
+  ParseUUIDPipe,
+  Patch,
+  Post,
   Query,
   UploadedFiles,
-  UseInterceptors,
-  Logger,
   UseGuards,
-} from '@nestjs/common';
-import { AnyFilesInterceptor } from '@nestjs/platform-express';
+  UseInterceptors,
+} from "@nestjs/common";
+import { AnyFilesInterceptor } from "@nestjs/platform-express";
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
 
-import { VisitMaterialsPageResponseDTO } from './dto/visit-material-response.dto';
-import { VisitMaterialsPageCreateService } from './services/VisitMaterialsPageCreateService';
-import { VisitMaterialsPageUpdateService } from './services/VisitMaterialsPageUpdateService';
-import { VisitMaterialsPageGetService } from './services/VisitMaterialsPageGetService';
-import { VisitMaterialsPageRemoveService } from './services/VisitMaterialsPageRemoveService';
-import { QueryVisitMaterialsPageDto } from './dto/query-visit-material-pages.dto';
+import { PaginatedResponseDto } from "src/shared/dto/paginated-response.dto";
+import { CreateVisitMaterialsPageDto } from "./dto/create-visit-material-page.dto";
+import { UpdateVisitMaterialsPageDto } from "./dto/update-visit-material-page.dto";
+import { QueryVisitMaterialsPageDto } from "./dto/query-visit-material-pages.dto";
+import { VisitMaterialsPageResponseDTO } from "./dto/visit-material-page-response.dto";
+import { CreateVisitMaterialPageService } from "./services/create-visit-material-page.service";
+import { GetVisitMaterialPageService } from "./services/get-visit-material-page.service";
+import { UpdateVisitMaterialPageService } from "./services/update-visit-material-page.service";
+import { DeleteVisitMaterialPageService } from "./services/delete-visit-material-page.service";
+import { SetCurrentVisitMaterialPageService } from "./services/set-current-visit-material-page.service";
+import {
+  parseVisitMaterialPayload,
+  toFilesDict,
+} from "./utils/visit-material-payload.util";
+import { VISIT_MATERIAL_PAYLOAD_FIELD } from "./constants";
+import { MEDIA_PAGE_UPLOAD_OPTIONS } from "src/shared/media/storage/upload-limits.constants";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
 
-import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
-import { AdminRoleGuard } from 'src/core/auth/guards/role-guard';
-
-@Controller('visit-material-pages')
+@Controller("visit-material-pages")
 @UseGuards(JwtAuthGuard)
 export class VisitMaterialsPageController {
-  private readonly logger = new Logger(VisitMaterialsPageController.name);
-
   constructor(
-    private readonly createService: VisitMaterialsPageCreateService,
-    private readonly updateService: VisitMaterialsPageUpdateService,
-    private readonly removeService: VisitMaterialsPageRemoveService,
-    private readonly getService: VisitMaterialsPageGetService,
-  ) { }
+    private readonly createService: CreateVisitMaterialPageService,
+    private readonly getService: GetVisitMaterialPageService,
+    private readonly updateService: UpdateVisitMaterialPageService,
+    private readonly deleteService: DeleteVisitMaterialPageService,
+    private readonly setCurrentService: SetCurrentVisitMaterialPageService,
+  ) {}
 
-  @UseGuards(AdminRoleGuard)
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @Post()
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseGuards(AdminRoleGuard)
+  @UseInterceptors(AnyFilesInterceptor(MEDIA_PAGE_UPLOAD_OPTIONS))
   async create(
     @UploadedFiles() files: Express.Multer.File[],
-    @Body('visitMaterialsPageData') raw: string,
+    @Body(VISIT_MATERIAL_PAYLOAD_FIELD) raw: string,
   ): Promise<VisitMaterialsPageResponseDTO> {
-    this.logger.log('Creating new visit material page');
-    const result = await this.createService.createFromRaw(raw, files);
-    this.logger.log(`Visit material page created successfully: ${result.id}`);
-    return result;
+    // The payload rides a multipart text field, so the global ValidationPipe
+    // never sees it; parsing and validating it stays a transport concern.
+    const dto = parseVisitMaterialPayload(raw, CreateVisitMaterialsPageDto);
+    return this.createService.execute(dto, toFilesDict(files));
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
+  @Patch(":id")
   @UseGuards(AdminRoleGuard)
-  @Patch(':id')
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(MEDIA_PAGE_UPLOAD_OPTIONS))
   async update(
-    @Param('id') id: string,
+    @Param("id", new ParseUUIDPipe()) id: string,
     @UploadedFiles() files: Express.Multer.File[],
-    @Body('visitMaterialsPageData') raw: string,
+    @Body(VISIT_MATERIAL_PAYLOAD_FIELD) raw: string,
   ): Promise<VisitMaterialsPageResponseDTO> {
-    this.logger.log(`Updating visit material page: ${id}`);
-    const result = await this.updateService.updateFromRaw(id, raw, files);
-    this.logger.log(`Visit material page updated successfully: ${id}`);
-    return result;
+    const dto = parseVisitMaterialPayload(raw, UpdateVisitMaterialsPageDto);
+    return this.updateService.execute(id, dto, toFilesDict(files));
   }
 
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
+  @Delete(":id")
+  @HttpCode(HttpStatus.NO_CONTENT)
   @UseGuards(AdminRoleGuard)
-  @Delete(':id')
-  async remove(@Param('id') id: string): Promise<void> {
-    this.logger.log(`Deleting visit material page: ${id}`);
-    await this.removeService.removeVisitMaterial(id);
-    this.logger.log(`Visit material page deleted successfully: ${id}`);
+  async remove(@Param("id", new ParseUUIDPipe()) id: string): Promise<void> {
+    await this.deleteService.execute(id);
   }
 
+  @FeatureFlag(FeatureFlagKeys.VISIT_MATERIALS)
+  @UseGuards(FeatureFlagGuard)
   @Get()
   async findAll(
     @Query() query: QueryVisitMaterialsPageDto,
-  ): Promise<VisitMaterialsPageResponseDTO[]> {
-    return this.getService.findAllPagesWithMedia(query);
+  ): Promise<
+    | VisitMaterialsPageResponseDTO[]
+    | PaginatedResponseDto<VisitMaterialsPageResponseDTO>
+  > {
+    return this.getService.findAll(query);
   }
 
-  @Get('/current-material')
-  async getCurrentMaterial() {
-    return this.getService.getCurrentWeek();
+  @FeatureFlag(FeatureFlagKeys.VISIT_MATERIALS)
+  @UseGuards(FeatureFlagGuard)
+  @Get("current-material")
+  async findCurrentMaterial(): Promise<VisitMaterialsPageResponseDTO | null> {
+    return this.getService.findCurrentWeek();
   }
 
-  @Get(':id')
-  async findOne(@Param('id') id: string): Promise<VisitMaterialsPageResponseDTO> {
-    return this.getService.findPageWithMedia(id);
+  @FeatureFlag(FeatureFlagKeys.PAGE_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
+  @Post("current-material/:id")
+  @UseGuards(AdminRoleGuard)
+  async setCurrentMaterial(
+    @Param("id", new ParseUUIDPipe()) id: string,
+  ): Promise<VisitMaterialsPageResponseDTO> {
+    return this.setCurrentService.execute(id);
   }
 
-  @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  @Post('/current-material/:id')
-  async setCurrentMaterial(@Param('id') id: string): Promise<any> {
-    this.logger.log(`Setting current material: ${id}`);
-    const result = await this.getService.setCurrentWeek(id);
-    this.logger.log(`Current material set successfully: ${id}`);
-    return result;
+  @FeatureFlag(FeatureFlagKeys.VISIT_MATERIALS)
+  @UseGuards(FeatureFlagGuard)
+  @Get(":id")
+  async findOne(
+    @Param("id", new ParseUUIDPipe()) id: string,
+  ): Promise<VisitMaterialsPageResponseDTO> {
+    return this.getService.findOne(id);
   }
 }

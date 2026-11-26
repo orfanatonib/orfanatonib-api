@@ -1,4 +1,4 @@
-import { VisitReportEntity } from '../entities/visit-report.entity';
+import { VisitReportEntity } from "../entities/visit-report.entity";
 
 export class VisitReportResponseDto {
   id: string;
@@ -72,8 +72,8 @@ export class VisitReportResponseDto {
         description: team.description,
         leaders: leaders.map((leader) => ({
           id: leader.id,
-          name: leader.user?.name || '',
-          email: leader.user?.email || '',
+          name: leader.user?.name || "",
+          email: leader.user?.email || "",
         })),
       },
       shelter: {

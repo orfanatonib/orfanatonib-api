@@ -17,19 +17,42 @@ User -> MemberProfile (1:0..1) - Usuário pode ter perfil de professor
 User -> LeaderProfile (1:0..1) - Usuário pode ter perfil de líder
 ```
 
-## 🚀 Endpoints
+## 🚀 Endpoints (estado atual — plano 07)
 
-### 📋 Listagem e Busca
-- `GET /users` - Lista paginada com filtros
-- `GET /users/simple` - Lista simplificada
-- `GET /users/:id` - Busca por ID
+Flag = `@FeatureFlag` do handler; "só papel" = sem flag (decide apenas o guard).
 
-### 🔧 Criação e Gerenciamento
-- `POST /users` - Criar novo usuário
-- `PATCH /users/:id` - Atualizar usuário
-- `PATCH /users/:id/activate` - Ativar usuário
-- `PATCH /users/:id/deactivate` - Desativar usuário
-- `DELETE /users/:id` - Deletar usuário
+| Verbo | Rota | Quem | Flag |
+|---|---|---|---|
+| POST | `/users` | admin | `user_management` |
+| GET | `/users` | admin (a lista **não traz admins**) | `user_management` |
+| GET | `/users/simple` | admin | `user_management` |
+| GET | `/users/simple-for-select` | admin, líder | só papel |
+| GET | `/users/:id`, `/users/:id/profile` | admin | `user_management` |
+| PUT | `/users/:id` | admin | `user_management` |
+| DELETE | `/users/:id` | admin (404 se não existe) | `user_management` |
+| GET / PATCH | `/profile` | qualquer sessão (só o próprio) | só papel |
+| PATCH | `/profile/password`, `/profile/image` | qualquer sessão (só o próprio) | só papel |
+| POST | `/profiles` | qualquer sessão (cria/atualiza o PRÓPRIO) | `user_management` **ou** `member_area` |
+| GET | `/profiles` | admin, líder (líder só enxerga a própria equipe) | `user_management` **ou** `leader_management` |
+| GET | `/profiles/me`, PUT `/profiles/me` | qualquer sessão (só o próprio) | só papel |
+| GET / PUT | `/profiles/:id` | admin | `user_management` |
+
+Garantias (cobertas por Jest e pela matriz E2E `user-profile`, 177/177):
+- Nenhuma resposta traz `password` nem `refreshToken` (`toSafeUser`).
+- `POST/PUT /profiles*` gravam dados pessoais e preferências numa **única transação** (`ProfileWriteRepository`); a data de nascimento é gravada como o mesmo dia em qualquer fuso do servidor (`parseBirthDate`).
+- `POST /users` desfaz o usuário recém-criado se o perfil de líder/membro não puder ser criado; `DELETE /users/:id` apaga perfis e usuário primeiro e a foto depois (falha na limpeza da foto é registrada, não desfaz a exclusão).
+- `active`, `completed` e `commonUser` só aceitam booleano de verdade (antes `"false"` virava `true` pela conversão implícita).
+- A troca da foto de um mesmo usuário é serializada por usuário (`KeyedQueue`): duas trocas simultâneas não deixam objeto órfão no bucket. Vale por instância da API.
+- O dono vem sempre do token: `id`/`userId` no corpo de `/profiles`, `/profile` e `/profile/password` é 400.
+
+> A seção "Endpoints" antiga (PATCH `/users/:id`, `activate`, `deactivate`) descrevia rotas que não existem; os exemplos abaixo são históricos.
+
+### Endpoints removidos (decisão do solicitante)
+- `PATCH /users/:id/image` e `DELETE /profiles/:id` foram **removidos** por não terem chamador no front. A foto continua sendo trocada pelo próprio usuário em `PATCH /profile/image`; para apagar dados de perfil de outro usuário, use `PUT /profiles/:id` ou `DELETE /users/:id`.
+
+### Riscos conhecidos
+- `DELETE /users/:id` remove os perfis de líder/membro antes de apagar o usuário, sem transação entre módulos: uma falha do banco nesse meio deixa o usuário sem o perfil do papel.
+- A fila por usuário da foto não protege duas instâncias da API ao mesmo tempo (exigiria lock no banco).
 
 ## 📊 Filtros Disponíveis
 

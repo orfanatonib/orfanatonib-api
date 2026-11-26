@@ -1,67 +1,82 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe, Logger } from '@nestjs/common';
-import { AppModule } from './app.module';
-import { GlobalExceptionFilter } from './common/filters';
-import { LoggingInterceptor } from './common/interceptors';
-import { RateLimitingMiddleware, TimeoutMiddleware } from './common/middlewares';
+import type { NestExpressApplication } from "@nestjs/platform-express";
+import { NestFactory } from "@nestjs/core";
+import type { NextFunction, Request, Response } from "express";
+import { ValidationPipe, Logger } from "@nestjs/common";
+import { AppModule } from "./app.module";
+import { StructuredLoggerService } from "./core/observability/providers/structured-logger.service";
+import { writeBootstrapFailure } from "./core/observability/utils/bootstrap-failure.utils";
+import { RuleException } from "./common/exceptions";
+import { DEPLOYED_ENVIRONMENTS } from "./config/env.constants";
+import { createCorsOptions, parseAllowedOrigins } from "./config/cors.config";
 
 async function bootstrap() {
-  const logger = new Logger('Bootstrap');
+  const logger = new Logger("Bootstrap");
 
   try {
-    const app = await NestFactory.create(AppModule, {
-      logger: ['error', 'warn', 'log', 'debug', 'verbose'],
+    const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+      logger: ["error", "warn", "log", "debug", "verbose"],
+      bufferLogs: true,
     });
+    app.useLogger(app.get(StructuredLoggerService));
+    // O documento rico do Estúdio (TipTap) pode passar dos 100 KB padrão do Express.
+    app.useBodyParser("json", { limit: "4mb" });
 
-    app.enableCors({
-      origin: true,
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-      credentials: true,
-    });
+    const { origins } = parseAllowedOrigins(process.env.CORS_ALLOWED_ORIGINS);
+    const environment =
+      process.env.ENVIRONMENT || process.env.NODE_ENV || "local";
+    if (origins.length === 0 && DEPLOYED_ENVIRONMENTS.includes(environment)) {
+      logger.warn(
+        "CORS_ALLOWED_ORIGINS não definida: qualquer origem é aceita com credenciais. Defina a lista de origens do front.",
+      );
+    }
+    app.enableCors(createCorsOptions(origins));
 
-    app.use((req, res, next) => {
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('X-Frame-Options', 'DENY');
-      res.setHeader('X-XSS-Protection', '1; mode=block');
-      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    app.use((_req: Request, res: Response, next: NextFunction) => {
+      res.setHeader("X-Content-Type-Options", "nosniff");
+      res.setHeader("X-Frame-Options", "DENY");
+      res.setHeader("Referrer-Policy", "no-referrer");
+      res.setHeader(
+        "Strict-Transport-Security",
+        "max-age=31536000; includeSubDomains",
+      );
       next();
     });
 
-    app.useGlobalFilters(new GlobalExceptionFilter());
-    app.useGlobalInterceptors(new LoggingInterceptor());
+    // Filtro e interceptor globais são providers do AppModule (APP_FILTER/APP_INTERCEPTOR).
+    // Encerramento gracioso pelos hooks do Nest (SIGINT/SIGTERM fecham o app).
+    app.enableShutdownHooks();
 
-    app.useGlobalPipes(new ValidationPipe({
-      transform: true,
-      transformOptions: {
-        enableImplicitConversion: true,
-      },
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      forbidUnknownValues: false,
-      disableErrorMessages: false,
-      validationError: {
-        target: false,
-        value: false,
-      },
-      exceptionFactory: (errors) => {
-        const formattedErrors = errors.map(error => ({
-          field: error.property,
-          constraints: error.constraints,
-          children: error.children?.map(child => ({
-            field: child.property,
-            constraints: child.constraints,
-          })),
-        }));
+    app.useGlobalPipes(
+      new ValidationPipe({
+        transform: true,
+        transformOptions: {
+          enableImplicitConversion: true,
+        },
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        forbidUnknownValues: false,
+        disableErrorMessages: false,
+        validationError: {
+          target: false,
+          value: false,
+        },
+        exceptionFactory: (errors) => {
+          const formattedErrors = errors.map((error) => ({
+            field: error.property,
+            constraints: error.constraints,
+            children: error.children?.map((child) => ({
+              field: child.property,
+              constraints: child.constraints,
+            })),
+          }));
 
-        return {
-          statusCode: 400,
-          message: 'Validation failed',
-          error: 'Bad Request',
-          category: 'RULE',
-          details: formattedErrors,
-        } as any;
-      },
-    }));
+          // Precisa ser uma exceção, não um objeto simples: o Nest lança o que
+          // esta função devolve, e um objeto cru não é classificável pelo
+          // GlobalExceptionFilter — virava 500 "Unknown error occurred".
+          return new RuleException("Validation failed", formattedErrors);
+        },
+      }),
+    );
 
     const port = process.env.PORT ?? 3000;
 
@@ -69,23 +84,11 @@ async function bootstrap() {
 
     logger.log(`🚀 Application started successfully on port ${port}`);
     logger.log(`📊 Health check available at: http://localhost:${port}/health`);
-
-    process.on('SIGINT', async () => {
-      logger.log('🛑 Received SIGINT, shutting down gracefully...');
-      await app.close();
-      process.exit(0);
-    });
-
-    process.on('SIGTERM', async () => {
-      logger.log('🛑 Received SIGTERM, shutting down gracefully...');
-      await app.close();
-      process.exit(0);
-    });
-
   } catch (error) {
-    logger.error('❌ Failed to start application', error);
+    logger.error("❌ Failed to start application", error);
+    writeBootstrapFailure(error);
     process.exit(1);
   }
 }
 
-bootstrap();
+void bootstrap();

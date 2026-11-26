@@ -1,0 +1,46 @@
+@startuml video-pages-flow
+title Fluxo do módulo Video Pages — API Orfanato NIB
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam ParticipantBorderColor #37474F
+
+actor "Admin" as Client
+participant "VideosPageController" as Controller
+participant "Create/Update/Delete\nVideosPageService" as Service
+participant "VideoPageMediaService" as Media
+participant "MediaStorageService\n(UploadBatch)" as Storage
+database "VideosPageRepository\n(TypeORM)" as Repo
+participant "S3" as S3
+
+== Atualizar (PATCH /video-pages/:id) ==
+Client -> Controller : multipart: videosPageData + arquivos
+Controller -> Controller : JwtAuthGuard + AdminRoleGuard\nFeatureFlagGuard (page_management)\nvalidação do DTO (400)
+Controller -> Service : execute(id, dto, arquivos)
+Service -> Repo : findById (404 se não existe)
+Service -> Repo : runInTransaction
+activate Repo
+Repo -> Repo : lockPage (FOR UPDATE)\nfindMedia (já dentro da transação)
+Service -> Repo : removeMedia (linhas que saíram)
+Service -> Media : materialize(cada vídeo)
+Media -> Storage : uploadAll (arquivo novo)
+Storage -> S3 : putObject (chave única)
+Service -> Repo : saveMedia / savePage
+Repo --> Service : commit
+deactivate Repo
+alt commit confirmado
+  Service -> Storage : batch.commit()
+  Service -> Storage : deleteAfterCommit(objetos antigos)
+  Storage -> S3 : deleteKey (falha -> media_cleanup_queue)
+else falha em qualquer passo
+  Service -> Storage : batch.discard() (novos saem do bucket)
+  note right : antigos intactos e referenciados\nlog só com a causa, sem stack
+end
+
+== Criar / Apagar ==
+note over Service, Repo
+  Criar: página + rota + mídia numa transação; objetos novos só ficam se ela confirmar.
+  Apagar: linhas + página + rota numa transação; objetos saem do bucket depois do commit.
+end note
+@enduml

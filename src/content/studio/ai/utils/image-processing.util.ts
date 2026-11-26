@@ -1,0 +1,147 @@
+import * as sharpModule from "sharp";
+
+/**
+ * O projeto compila sem `esModuleInterop`: `import sharp from "sharp"` vira `sharp_1.default(...)` e quebra.
+ * Pega o módulo como função, seja qual for a forma de empacotamento.
+ */
+const sharp = ((sharpModule as unknown as { default?: typeof sharpModule })
+  .default ?? sharpModule) as unknown as typeof sharpModule.default;
+
+import { ContentVisualOrientation } from "../../enums/content-visual.enums";
+
+/** Proporção do lado maior sobre o menor de uma folha A4 (297 × 210 mm). */
+export const A4_RATIO = Math.SQRT2;
+
+export interface ProcessedImage {
+  readonly bytes: Buffer;
+  readonly width: number;
+  readonly height: number;
+  readonly mediaType: "image/png";
+}
+
+/**
+ * Recorta a imagem ao centro para a proporção do A4 na orientação escolhida (o gerador devolve 2:3 ou 3:2) e
+ * normaliza para PNG. Nada é esticado: só some a sobra de uma das bordas.
+ */
+export async function cropToA4(
+  input: Uint8Array,
+  orientation: ContentVisualOrientation,
+): Promise<ProcessedImage> {
+  const image = sharp(Buffer.from(input));
+  const { width = 0, height = 0 } = await image.metadata();
+  if (!width || !height) throw new Error("Imagem inválida");
+  const portrait = orientation === ContentVisualOrientation.PORTRAIT;
+  const targetRatio = portrait ? 1 / A4_RATIO : A4_RATIO; // largura / altura
+  const ratio = width / height;
+  let cropWidth = width;
+  let cropHeight = height;
+  if (ratio > targetRatio) cropWidth = Math.round(height * targetRatio);
+  else cropHeight = Math.round(width / targetRatio);
+  const left = Math.floor((width - cropWidth) / 2);
+  const top = Math.floor((height - cropHeight) / 2);
+  const { data, info } = await image
+    .extract({ left, top, width: cropWidth, height: cropHeight })
+    .png()
+    .toBuffer({ resolveWithObject: true });
+  return {
+    bytes: data,
+    width: info.width,
+    height: info.height,
+    mediaType: "image/png",
+  };
+}
+
+/** Lado maior da imagem enviada como referência: o bastante para copiar a forma, sem gastar entrada à toa. */
+const REFERENCE_MAX_SIDE = 1024;
+
+/** Reduz uma imagem já gerada para servir de referência de outra (PNG, sem ampliar). */
+export async function toReferenceImage(input: Uint8Array): Promise<Buffer> {
+  return sharp(Buffer.from(input))
+    .resize({
+      width: REFERENCE_MAX_SIDE,
+      height: REFERENCE_MAX_SIDE,
+      fit: "inside",
+      withoutEnlargement: true,
+    })
+    .png()
+    .toBuffer();
+}
+
+/**
+ * Ajusta à A4 SEM cortar nada (infográfico compilado, em que título e quadro final ficam nas pontas): quando a
+ * imagem é mais "magra" que a A4, estende as laterais repetindo a cor da borda; quando é mais "larga", estende
+ * em cima e embaixo do mesmo jeito.
+ */
+export async function padToA4(
+  input: Uint8Array,
+  orientation: ContentVisualOrientation,
+  /** Folha de fundo branco (peças e folha de instruções da fixação): a sobra é branca, sem repetir a borda. */
+  whiteFill = false,
+): Promise<ProcessedImage> {
+  const image = sharp(Buffer.from(input));
+  const { width = 0, height = 0 } = await image.metadata();
+  if (!width || !height) throw new Error("Imagem inválida");
+  const portrait = orientation === ContentVisualOrientation.PORTRAIT;
+  const targetRatio = portrait ? 1 / A4_RATIO : A4_RATIO;
+  const targetWidth = Math.max(width, Math.round(height * targetRatio));
+  const targetHeight = Math.max(height, Math.round(width / targetRatio));
+  const horizontal = Math.floor((targetWidth - width) / 2);
+  const vertical = Math.floor((targetHeight - height) / 2);
+  const { data, info } = await image
+    .extend({
+      left: horizontal,
+      right: targetWidth - width - horizontal,
+      top: vertical,
+      bottom: targetHeight - height - vertical,
+      ...(whiteFill
+        ? { background: { r: 255, g: 255, b: 255, alpha: 1 } }
+        : { extendWith: "copy" as const }),
+    })
+    .png()
+    .toBuffer({ resolveWithObject: true });
+  return {
+    bytes: data,
+    width: info.width,
+    height: info.height,
+    mediaType: "image/png",
+  };
+}
+
+/** Largura e altura (px) de uma imagem. */
+export async function imageDimensions(
+  input: Uint8Array,
+): Promise<{ width: number; height: number }> {
+  const { width = 0, height = 0 } = await sharp(Buffer.from(input)).metadata();
+  if (!width || !height) throw new Error("Imagem inválida");
+  return { width, height };
+}
+
+/** Proporção (largura / altura) da capa do card do material. */
+export const COVER_RATIO = 3 / 2;
+
+/** Recorte central para a proporção 3:2 da capa; devolve PNG. Nada é esticado. */
+export async function cropToCover(input: Uint8Array): Promise<ProcessedImage> {
+  const image = sharp(Buffer.from(input));
+  const { width = 0, height = 0 } = await image.metadata();
+  if (!width || !height) throw new Error("Imagem inválida");
+  let cropWidth = width;
+  let cropHeight = height;
+  if (width / height > COVER_RATIO)
+    cropWidth = Math.round(height * COVER_RATIO);
+  else cropHeight = Math.round(width / COVER_RATIO);
+  const { data, info } = await image
+    .extract({
+      left: Math.floor((width - cropWidth) / 2),
+      top: Math.floor((height - cropHeight) / 2),
+      width: cropWidth,
+      height: cropHeight,
+    })
+    .png()
+    .toBuffer({ resolveWithObject: true });
+  return {
+    bytes: data,
+    width: info.width,
+    height: info.height,
+    mediaType: "image/png",
+  };
+}

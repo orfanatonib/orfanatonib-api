@@ -1,0 +1,37 @@
+@startuml content-studio-fun-images
+title Estúdio Orfanato — imagens da fixação e da brincadeira (folha + peças)
+
+start
+:Texto gerado e validado
+(fixação: peças = trechos do versículo,
+brincadeira: kit de peças com figura e texto curto);
+:Enfileira o job de imagens da versão;
+:Monta os pedidos de imagem
+- compilado-NN: folha de instruções (A4 paisagem)
+- peca-NN: uma por peça
+- peca-referencia (só fixação)
+- jogo2-peca-NN (2ª brincadeira das crianças);
+partition "Peças com a mesma forma" {
+  :Gera a folha e a PRIMEIRA peça de cada jogo
+  (sem imagem de referência);
+  :Guarda no bucket e registra o slot;
+  :Para cada peça seguinte:
+  lê a primeira peça guardada e reduz a 1024 px;
+  if (referência disponível?) then (sim)
+    :Gera pela edição de imagem
+    (prompt + referência + regra de copiar a forma);
+  else (não)
+    :Gera só pelo prompt;
+  endif
+}
+:Ajusta à A4 sem cortar (fundo branco na paisagem);
+:Marca o job como concluído
+(parcial se alguma peça falhou);
+stop
+
+note right
+Refazer uma peça avulsa usa a primeira já guardada;
+refazer a primeira usa a segunda.
+Conteúdo antigo, sem peças, mantém a imagem única.
+end note
+@enduml

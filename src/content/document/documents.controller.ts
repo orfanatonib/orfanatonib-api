@@ -13,23 +13,33 @@ import {
   Logger,
   UseGuards,
   HttpException,
-} from '@nestjs/common';
-import { AnyFilesInterceptor } from '@nestjs/platform-express';
-import { plainToInstance } from 'class-transformer';
-import { validateOrReject } from 'class-validator';
+  Query,
+} from "@nestjs/common";
+import { AnyFilesInterceptor } from "@nestjs/platform-express";
 
-import { CreateDocumentDto } from './dto/create-document.dto';
-import { UpdateDocumentDto } from './dto/update-document.dto';
+/** Documentos: 1 arquivo de até 25 MB (MIME validado ao migrar para MediaStorageService). */
+const DOCUMENT_UPLOAD_OPTIONS = {
+  limits: { fileSize: 25 * 1024 * 1024, files: 5 },
+} as const;
+import { plainToInstance } from "class-transformer";
+import { validateOrReject } from "class-validator";
 
-import { CreateDocumentService } from './services/create-document.service';
-import { UpdateDocumentService } from './services/update-document.service';
-import { GetDocumentService } from './services/get-document.service';
-import { DeleteDocumentService } from './services/delete-document.service';
+import { CreateDocumentDto } from "./dto/create-document.dto";
+import { UpdateDocumentDto } from "./dto/update-document.dto";
+import { QueryDocumentDto } from "./dto/query-document.dto";
 
-import { JwtAuthGuard } from 'src/core/auth/guards/jwt-auth.guard';
-import { AdminRoleGuard } from 'src/core/auth/guards/role-guard';
+import { CreateDocumentService } from "./services/create-document.service";
+import { UpdateDocumentService } from "./services/update-document.service";
+import { GetDocumentService } from "./services/get-document.service";
+import { DeleteDocumentService } from "./services/delete-document.service";
 
-@Controller('documents')
+import { JwtAuthGuard } from "src/core/auth/guards/jwt-auth.guard";
+import { AdminRoleGuard } from "src/core/auth/guards/role-guard";
+import { FeatureFlagGuard } from "src/core/feature-flags/guards/feature-flag.guard";
+import { FeatureFlag } from "src/core/feature-flags/decorators/feature-flag.decorator";
+import { FeatureFlagKeys } from "src/core/feature-flags/enums/feature-flag-keys.enum";
+
+@Controller("documents")
 export class DocumentsController {
   private readonly logger = new Logger(DocumentsController.name);
 
@@ -38,14 +48,16 @@ export class DocumentsController {
     private readonly updateService: UpdateDocumentService,
     private readonly getService: GetDocumentService,
     private readonly deleteService: DeleteDocumentService,
-  ) { }
+  ) {}
 
+  @FeatureFlag(FeatureFlagKeys.DOCUMENT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
   @Post()
-  @UseInterceptors(AnyFilesInterceptor())
+  @UseInterceptors(AnyFilesInterceptor(DOCUMENT_UPLOAD_OPTIONS))
   async create(
     @UploadedFiles() files: Express.Multer.File[],
-    @Body('documentData') documentDataRaw?: string,
+    @Body("documentData") documentDataRaw?: string,
   ) {
     if (!documentDataRaw) {
       throw new BadRequestException('Field "documentData" not sent.');
@@ -60,37 +72,56 @@ export class DocumentsController {
       if (error instanceof HttpException) {
         throw error;
       }
-      this.logger.error('Error processing document data', error);
-      throw new BadRequestException('Error processing document data.');
+      this.logger.error("Error processing document data", error);
+      throw new BadRequestException("Error processing document data.");
     }
 
     const file = dto.media?.fileField
       ? files?.find((f) => f.fieldname === dto.media.fileField)
       : undefined;
 
-    this.logger.log('Creating new document');
+    this.logger.log("Creating new document");
     const result = await this.createService.createDocument(dto, file);
     this.logger.log(`Document created successfully: ${result.id}`);
     return result;
   }
 
+  /** Documentos são do material interno (área do membro): exigem sessão. */
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.DOCUMENTS_LIBRARY,
+      FeatureFlagKeys.DOCUMENT_MANAGEMENT,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
+  @UseGuards(JwtAuthGuard)
   @Get()
-  async findAll() {
-    return this.getService.findAll();
+  async findAll(@Query() query: QueryDocumentDto) {
+    return this.getService.findAll(query);
   }
 
-  @Get(':id')
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+  @FeatureFlag({
+    anyOf: [
+      FeatureFlagKeys.DOCUMENTS_LIBRARY,
+      FeatureFlagKeys.DOCUMENT_MANAGEMENT,
+    ],
+  })
+  @UseGuards(FeatureFlagGuard)
+  @UseGuards(JwtAuthGuard)
+  @Get(":id")
+  async findOne(@Param("id", ParseUUIDPipe) id: string) {
     return this.getService.findOne(id);
   }
 
+  @FeatureFlag(FeatureFlagKeys.DOCUMENT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  @Patch(':id')
-  @UseInterceptors(AnyFilesInterceptor())
+  @Patch(":id")
+  @UseInterceptors(AnyFilesInterceptor(DOCUMENT_UPLOAD_OPTIONS))
   async update(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param("id", ParseUUIDPipe) id: string,
     @UploadedFiles() files: Express.Multer.File[],
-    @Body('documentData') documentDataRaw?: string,
+    @Body("documentData") documentDataRaw?: string,
   ) {
     if (!documentDataRaw) {
       throw new BadRequestException('Field "documentData" not sent.');
@@ -106,8 +137,8 @@ export class DocumentsController {
       if (error instanceof HttpException) {
         throw error;
       }
-      this.logger.error('Error processing document data', error);
-      throw new BadRequestException('Error processing document data.');
+      this.logger.error("Error processing document data", error);
+      throw new BadRequestException("Error processing document data.");
     }
 
     const file = dto.media?.fileField
@@ -120,9 +151,11 @@ export class DocumentsController {
     return result;
   }
 
+  @FeatureFlag(FeatureFlagKeys.DOCUMENT_MANAGEMENT)
+  @UseGuards(FeatureFlagGuard)
   @UseGuards(JwtAuthGuard, AdminRoleGuard)
-  @Delete(':id')
-  async remove(@Param('id', ParseUUIDPipe) id: string) {
+  @Delete(":id")
+  async remove(@Param("id", ParseUUIDPipe) id: string) {
     this.logger.log(`Deleting document: ${id}`);
     await this.deleteService.execute(id);
     this.logger.log(`Document deleted successfully: ${id}`);

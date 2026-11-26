@@ -6,6 +6,9 @@ Esta pasta contém resumos de automações, refatorações e atualizações real
 
 ## 📁 Resumos Disponíveis
 
+### Banco de dados
+- [TypeORM migrations](TYPEORM_MIGRATIONS.md) - geração, baseline, deploy e rollback
+
 ### 🏠 Refatoração de Shelters
 - `REFATORACAO_SHELTER_COMPLETA.md` - Refatoração completa do módulo Shelters
 

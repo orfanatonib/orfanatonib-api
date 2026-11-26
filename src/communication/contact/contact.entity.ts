@@ -1,9 +1,8 @@
-import { BaseEntity } from 'src/shared/entity/base.entity';
-import { Entity, Column } from 'typeorm';
+import { BaseEntity } from "src/shared/entity/base.entity";
+import { Entity, Column } from "typeorm";
 
-@Entity('contacts')
+@Entity("contacts")
 export class ContactEntity extends BaseEntity {
-
   @Column()
   name: string;
 
@@ -13,9 +12,9 @@ export class ContactEntity extends BaseEntity {
   @Column()
   phone: string;
 
-  @Column('text')
+  @Column("text")
   message: string;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: "boolean", default: false })
   read: boolean;
 }

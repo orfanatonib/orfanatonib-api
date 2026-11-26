@@ -1,0 +1,27 @@
+@startuml notify-admins
+title Sininho - evento do Estúdio avisa todos os administradores
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+
+actor "Quem produz/revisa" as actor
+participant "Serviço do Estúdio\n(Orfanato ou Clubinho)" as studio
+participant "StudioNotificationService /\nLessonNotificationService" as notifier
+participant "CreateInboxNotificationService" as inbox
+participant "GetUsersService" as users
+database "inbox_notifications" as db
+actor "Admin (navegador)" as admin
+participant "GET /notifications/me/summary\n(30 s, 2 min em aba escondida)" as summary
+
+actor -> studio : envia, devolve, aprova, publica...
+studio -> studio : grava a operação (transação do Estúdio)
+studio -> notifier : evento concluído (fora da transação)
+notifier -> inbox : notifyAdmins(tipo, alvo, dedupeKey)
+inbox -> users : findAdminIds() (ativos)
+inbox -> db : INSERT IGNORE 1 aviso por admin\n(UQ recipientId + dedupeKey)
+note right of inbox : Nunca lança: falha vira log\ne a operação de origem segue
+admin -> summary : polling (backoff; para em 401/403/404)
+summary --> admin : unreadCount + revision
+admin -> admin : revision mudou -> recarrega a lista
+admin -> db : PATCH /notifications/me/:id/read | read-all\n(idempotente)
+@enduml

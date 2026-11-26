@@ -1,27 +1,27 @@
-import { BaseEntity } from 'src/shared/entity/base.entity';
-import { Entity, Column } from 'typeorm';
-import { FeedbackCategory } from './feedback-category.enum';
+import { BaseEntity } from "src/shared/entity/base.entity";
+import { Entity, Column } from "typeorm";
+import { FeedbackCategory } from "./feedback-category.enum";
 
-@Entity('site_feedbacks')
+@Entity("site_feedbacks")
 export class SiteFeedbackEntity extends BaseEntity {
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: "varchar", length: 100 })
   name: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: "text", nullable: true })
   email?: string;
 
-  @Column({ type: 'int' })
+  @Column({ type: "int" })
   rating: number;
 
-  @Column({ type: 'text' })
+  @Column({ type: "text" })
   comment: string;
 
   @Column({
-    type: 'enum',
+    type: "enum",
     enum: FeedbackCategory,
   })
   category: FeedbackCategory;
 
-  @Column({ type: 'boolean', default: false })
+  @Column({ type: "boolean", default: false })
   read: boolean;
 }

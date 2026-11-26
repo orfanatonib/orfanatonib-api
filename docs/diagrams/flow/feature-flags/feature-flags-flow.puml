@@ -1,0 +1,93 @@
+@startuml feature-flags-flow
+title Fluxo do módulo Feature Flags — Orfanato NIB
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam ParticipantBorderColor #37474F
+
+actor "Visitante / Usuário" as Client
+actor "Admin" as Admin
+participant "App React\n(featureFlags slice)" as App
+participant "FeatureFlagsController" as Controller
+participant "GetFeatureFlagsService" as GetSvc
+participant "CreateFeatureFlagService" as CreateSvc
+participant "UpdateFeatureFlagService" as UpdateSvc
+participant "FeatureFlagGuard" as Guard
+participant "EmailDispatchService\n(notificações)" as Dispatch
+database "feature_flags" as DB
+
+== Boot: conferência do catálogo ==
+CreateSvc -> CreateSvc : onModuleInit
+CreateSvc -> DB : cria o que falta do catálogo
+note right of CreateSvc
+  Não toca no que já existe:
+  o estado escolhido pelo
+  operador é preservado.
+  Falha aqui não impede o boot.
+end note
+CreateSvc -> DB : remove as aposentadas\n(event-email-notifications)
+
+== Consumo pela interface (rota pública) ==
+Client -> App : abre a aplicação
+App -> Controller : GET /feature-flags/map
+activate Controller
+Controller -> Controller : papel do token, se houver
+Controller -> GetSvc : getFlagsMap(papel)
+activate GetSvc
+alt mapa memorizado (TTL 60s)
+  GetSvc --> Controller : mapa em cache
+else
+  GetSvc -> DB : findAll()
+  GetSvc -> GetSvc : descarta as internas (email-*)
+  note right of GetSvc
+    A rota é pública: devolvia o
+    catálogo inteiro a anônimos,
+    inclusive o estado do envio
+    de e-mail.
+  end note
+  GetSvc -> GetSvc : isTargetedForRole por flag
+end
+deactivate GetSvc
+Controller --> App : { "shelter-address": true, ... }
+deactivate Controller
+App -> App : slice featureFlags\n(falha = padrões locais)
+note right of App
+  FeatureFlagRoute espera a
+  primeira busca terminar:
+  "ainda não carregou" não é
+  "desabilitado".
+end note
+
+== Consumo pelo servidor ==
+Guard -> GetSvc : isEnabled(chave, ambiente)
+note right of Guard
+  @FeatureFlag('chave')
+  Desligada = 403 nomeando
+  a funcionalidade.
+end note
+Dispatch -> GetSvc : isEnabledOrDefault('email-delivery', true)
+Dispatch -> GetSvc : isEnabledOrDefault('email-<tipo>', true)
+note right of Dispatch
+  Padrão LIGADO: isEnabled
+  devolveria false para flag
+  inexistente e silenciaria a
+  recuperação de senha.
+end note
+
+== Gestão pelo painel ==
+Admin -> Controller : PATCH /feature-flags/:key/toggle
+activate Controller
+Controller -> UpdateSvc : toggle(chave)
+UpdateSvc -> DB : grava
+UpdateSvc -> GetSvc : invalidate(chave)
+note right of GetSvc
+  Descarta o booleano daquela
+  chave E o mapa inteiro:
+  o mapa é por papel, não
+  por chave.
+end note
+Controller --> Admin : flag atualizada
+deactivate Controller
+
+@enduml

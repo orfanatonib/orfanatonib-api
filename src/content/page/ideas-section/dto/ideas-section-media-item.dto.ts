@@ -4,13 +4,15 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-} from 'class-validator';
+} from "class-validator";
 import {
   PlatformType,
   UploadType,
-} from 'src/shared/media/media-item/media-item.entity';
-import { IdeasSectionMediaType } from '../enums/ideas-section-media-type.enum';
+} from "src/shared/media/media-item/media-item.entity";
 
+import { IdeasSectionMediaType } from "../enums/ideas-section-media-type.enum";
+
+/** Uma mídia da seção, como o formulário a envia. */
 export class IdeasSectionMediaItemDto {
   @IsOptional()
   @IsString({ message: 'O campo "id" da mídia deve ser uma string.' })
@@ -24,23 +26,27 @@ export class IdeasSectionMediaItemDto {
   @IsString({ message: 'O campo "description" da mídia deve ser uma string.' })
   description?: string;
 
-  @IsEnum(UploadType, { message: 'O campo "uploadType" deve ser "upload" ou "link".' })
-  uploadType: UploadType;
-
-  @IsEnum(IdeasSectionMediaType, { 
-    message: 'O campo "mediaType" deve ser "video", "document" ou "image".' 
+  @IsEnum(UploadType, {
+    message: 'O campo "uploadType" deve ser "upload" ou "link".',
   })
-  mediaType: IdeasSectionMediaType;
+  uploadType!: UploadType;
+
+  @IsEnum(IdeasSectionMediaType, {
+    message: 'O campo "mediaType" deve ser "video", "document" ou "image".',
+  })
+  mediaType!: IdeasSectionMediaType;
 
   @IsBoolean({ message: 'O campo "isLocalFile" deve ser booleano.' })
-  isLocalFile: boolean;
+  isLocalFile!: boolean;
 
   @IsOptional()
   @IsString({ message: 'O campo "url" deve ser uma string.' })
   url?: string;
 
   @IsOptional()
-  @IsEnum(PlatformType, { message: 'O campo "platformType" deve conter uma plataforma válida.' })
+  @IsEnum(PlatformType, {
+    message: 'O campo "platformType" deve conter uma plataforma válida.',
+  })
   platformType?: PlatformType;
 
   @IsOptional()
@@ -54,8 +60,4 @@ export class IdeasSectionMediaItemDto {
   @IsOptional()
   @IsNumber({}, { message: 'O campo "size" deve ser um número.' })
   size?: number;
-
-  @IsOptional()
-  @IsString({ message: 'O campo "fileField" deve ser uma string.' })
-  fileField?: string;
 }

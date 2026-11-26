@@ -1,19 +1,19 @@
-import { BaseEntity } from 'src/shared/entity/base.entity';
-import { Entity, Column } from 'typeorm';
+import { BaseEntity } from "src/shared/entity/base.entity";
+import { Entity, Column } from "typeorm";
 
 export enum RouteType {
-  PAGE = 'page',
-  DOC = 'doc',
-  IMAGE = 'image',  
-  OTHER = 'other',
+  PAGE = "page",
+  DOC = "doc",
+  IMAGE = "image",
+  OTHER = "other",
 }
 
-@Entity('routes')
+@Entity("routes")
 export class RouteEntity extends BaseEntity {
   @Column()
   title: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: "text" })
   subtitle: string;
 
   @Column({ default: true })
@@ -21,25 +21,25 @@ export class RouteEntity extends BaseEntity {
 
   @Column({ default: false })
   current?: boolean;
-  
-  @Column({ type: 'varchar', nullable: true })
+
+  @Column({ type: "varchar", nullable: true })
   image: string;
 
   @Column()
   idToFetch: string;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
+  @Column({ type: "varchar", length: 255, unique: true })
   path: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: "varchar", length: 100 })
   entityType: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: "text" })
   description: string;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: "uuid" })
   entityId: string;
 
-  @Column({ type: 'enum', enum: RouteType })
+  @Column({ type: "enum", enum: RouteType })
   type: RouteType;
 }

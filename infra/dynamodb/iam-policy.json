@@ -1,0 +1,27 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "OrfanatoLogRecordsReadWrite",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:PutItem",
+        "dynamodb:GetItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:Query"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:<REGIAO>:<ID_DA_CONTA>:table/orfanatonib-log-records-<staging|prod>",
+        "arn:aws:dynamodb:<REGIAO>:<ID_DA_CONTA>:table/orfanatonib-log-records-<staging|prod>/index/gsi1-request"
+      ]
+    },
+    {
+      "Sid": "OrfanatoLogRecordsDoctor",
+      "Effect": "Allow",
+      "Action": ["dynamodb:DescribeTable", "dynamodb:DescribeTimeToLive"],
+      "Resource": "arn:aws:dynamodb:<REGIAO>:<ID_DA_CONTA>:table/orfanatonib-log-records-<staging|prod>"
+    }
+  ]
+}

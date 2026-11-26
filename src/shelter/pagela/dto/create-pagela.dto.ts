@@ -1,5 +1,15 @@
-import { IsBoolean, IsDateString, IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsBoolean,
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Max,
+  Min,
+} from "class-validator";
+import { Type } from "class-transformer";
+import { StrictBoolean } from "src/common/decorators/strict-boolean.decorator";
 
 export class CreatePagelaDto {
   @IsUUID()
@@ -23,6 +33,8 @@ export class CreatePagelaDto {
   @Max(9999)
   year?: number;
 
+  // Mantém o valor cru: com a conversão implícita, "talvez" viraria `true` antes do `@IsBoolean`.
+  @StrictBoolean()
   @IsBoolean()
   present: boolean;
 

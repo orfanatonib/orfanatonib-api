@@ -1,5 +1,15 @@
-import { IsOptional, IsString, IsInt, Min, IsIn } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsOptional,
+  IsString,
+  IsInt,
+  Min,
+  Max,
+  IsIn,
+  IsDateString,
+  MaxLength,
+} from "class-validator";
+import { LIST_QUERY_SEARCH_MAX } from "src/shared/list-query/list-query.dto";
+import { Type } from "class-transformer";
 
 export class QueryProfilesDto {
   @IsOptional()
@@ -18,6 +28,14 @@ export class QueryProfilesDto {
   @IsString()
   q?: string;
 
+  /** Mesmo que `q` (nome ou e-mail), com o nome que as demais listagens administrativas usam. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(LIST_QUERY_SEARCH_MAX, {
+    message: `search aceita no máximo ${LIST_QUERY_SEARCH_MAX} caracteres`,
+  })
+  search?: string;
+
   @IsOptional()
   @IsString()
   name?: string;
@@ -28,7 +46,7 @@ export class QueryProfilesDto {
 
   @IsOptional()
   @IsString()
-  @IsIn(['admin', 'member', 'leader'])
+  @IsIn(["admin", "member", "leader"])
   role?: string;
 
   @IsOptional()
@@ -43,13 +61,39 @@ export class QueryProfilesDto {
   @IsString()
   favoriteColor?: string;
 
+  /** Gênero cadastrado nos dados pessoais (igualdade exata, ex.: `Feminino`). */
   @IsOptional()
   @IsString()
-  @IsIn(['name', 'email', 'createdAt', 'birthDate'])
-  sortBy?: string = 'name';
+  gender?: string;
+
+  /** Mês de aniversário (1 a 12), pela data de nascimento dos dados pessoais. */
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  birthMonth?: number;
+
+  /** Início do intervalo de cadastro (inclusivo), `AAAA-MM-DD`. */
+  @IsOptional()
+  @IsDateString(
+    { strict: true },
+    { message: "createdFrom deve ser AAAA-MM-DD" },
+  )
+  createdFrom?: string;
+
+  /** Fim do intervalo de cadastro (inclusivo, dia inteiro), `AAAA-MM-DD`. */
+  @IsOptional()
+  @IsDateString({ strict: true }, { message: "createdTo deve ser AAAA-MM-DD" })
+  createdTo?: string;
 
   @IsOptional()
   @IsString()
-  @IsIn(['ASC', 'DESC'])
-  order?: 'ASC' | 'DESC' = 'ASC';
+  @IsIn(["name", "email", "createdAt", "birthDate"])
+  sortBy?: string = "name";
+
+  @IsOptional()
+  @IsString()
+  @IsIn(["ASC", "DESC"])
+  order?: "ASC" | "DESC" = "ASC";
 }

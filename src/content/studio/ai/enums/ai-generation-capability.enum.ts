@@ -1,0 +1,4 @@
+export enum AiGenerationCapability {
+  TEXT_STRUCTURED = "TEXT_STRUCTURED",
+  IMAGE_GENERATION = "IMAGE_GENERATION",
+}

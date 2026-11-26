@@ -1,15 +1,28 @@
-import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { FeatureFlagEntity } from './entities/feature-flag.entity';
-import { FeatureFlagsRepository } from './feature-flags.repository';
-import { FeatureFlagsService } from './feature-flags.service';
-import { FeatureFlagsController } from './feature-flags.controller';
-import { FeatureFlagGuard } from './guards/feature-flag.guard';
+import { Global, Module } from "@nestjs/common";
 
+import { AuthModule } from "../auth/auth.module";
+import { FeatureFlagsController } from "./feature-flags.controller";
+import { FeatureFlagsCoreModule } from "./feature-flags-core.module";
+import { FeatureFlagGuard } from "./guards/feature-flag.guard";
+import { CreateFeatureFlagService } from "./services/create-feature-flag.service";
+import { DeleteFeatureFlagService } from "./services/delete-feature-flag.service";
+import { UpdateFeatureFlagService } from "./services/update-feature-flag.service";
+
+/**
+ * Global: o `FeatureFlagGuard` é usado por `@UseGuards` em dezenas de
+ * controllers e precisa resolver `GetFeatureFlagsService` e
+ * `AuthContextService` no módulo de cada um.
+ */
+@Global()
 @Module({
-    imports: [TypeOrmModule.forFeature([FeatureFlagEntity])],
-    controllers: [FeatureFlagsController],
-    providers: [FeatureFlagsRepository, FeatureFlagsService, FeatureFlagGuard],
-    exports: [FeatureFlagsService, FeatureFlagGuard],
+  imports: [FeatureFlagsCoreModule, AuthModule],
+  controllers: [FeatureFlagsController],
+  providers: [
+    CreateFeatureFlagService,
+    UpdateFeatureFlagService,
+    DeleteFeatureFlagService,
+    FeatureFlagGuard,
+  ],
+  exports: [FeatureFlagsCoreModule, FeatureFlagGuard, AuthModule],
 })
-export class FeatureFlagsModule { }
+export class FeatureFlagsModule {}

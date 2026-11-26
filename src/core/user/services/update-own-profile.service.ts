@@ -3,17 +3,17 @@ import {
   Injectable,
   Logger,
   NotFoundException,
-} from '@nestjs/common';
-import { UserRepository } from '../user.repository';
-import { UpdateOwnProfileDto } from '../dto/update-own-profile.dto';
-import { UserEntity } from '../entities/user.entity';
-import { UserErrorMessages, UserLogs } from '../constants/user.constants';
+} from "@nestjs/common";
+import { UserRepository } from "../user.repository";
+import { UpdateOwnProfileDto } from "../dto/update-own-profile.dto";
+import { UserEntity } from "../entities/user.entity";
+import { UserErrorMessages, UserLogs } from "../constants/user.constants";
 
 @Injectable()
 export class UpdateOwnProfileService {
   private readonly logger = new Logger(UpdateOwnProfileService.name);
 
-  constructor(private readonly userRepo: UserRepository) { }
+  constructor(private readonly userRepo: UserRepository) {}
 
   async updateOwnProfile(
     userId: string,
@@ -47,4 +47,3 @@ export class UpdateOwnProfileService {
     return updatedUser;
   }
 }
-

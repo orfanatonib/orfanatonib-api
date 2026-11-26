@@ -1,4 +1,4 @@
 export enum DecisionType {
-  ACCEPTED = 'ACCEPTED',
-  RECONCILED = 'RECONCILED',
+  ACCEPTED = "ACCEPTED",
+  RECONCILED = "RECONCILED",
 }

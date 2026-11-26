@@ -49,7 +49,6 @@ cloudformation/ec2/params-prod.json
 cloudformation/ec2/params-staging.json
 cloudformation/rds/params.json
 cloudformation/s3/params.json
-cloudformation/ses/params.json
 
 # Misc
 .env
@@ -58,3 +57,5 @@ cloudformation/ses/params.json
 *.pem
 *.key
 
+# Auditoria em arquivo (OBS_/AUDIT_STORAGE=file; só local)
+/audit/

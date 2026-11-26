@@ -1,0 +1,39 @@
+@startuml ideas-pages-flow
+title Fluxo do módulo Ideas Pages — API Orfanato NIB
+
+skinparam shadowing false
+skinparam defaultFontName Helvetica
+skinparam ArrowColor #37474F
+skinparam ParticipantBorderColor #37474F
+
+actor "Admin" as Client
+participant "IdeasPageController" as Controller
+participant "Create/UpdateIdeasPageService" as Service
+participant "IdeasPageMediaSyncService" as Sync
+participant "MediaStorageService\n(UploadBatch)" as Storage
+database "IdeasPageWriteRepository\n(transação)" as Repo
+participant "RouteService" as Route
+
+Client -> Controller : multipart: ideasMaterialsPageData + arquivos
+Controller -> Controller : JwtAuthGuard + AdminRoleGuard + FeatureFlag(page_management)
+Controller -> Service : dto validado + arquivos
+Service -> Repo : lockPage (só na atualização)
+Service -> Storage : uploadAll (MIME, assinatura, tamanho, chave única)
+Service -> Repo : página, seções e linhas de mídia (mesma transação)
+Service -> Sync : sincroniza mídia da seção (atualização)
+Service -> Route : cria/atualiza a rota
+alt commit
+  Service -> Storage : batch.commit()
+  Service -> Storage : deleteAfterCommit(arquivos substituídos/removidos)
+else falha em qualquer passo
+  Repo --> Service : rollback
+  Service -> Storage : batch.discard() (objetos enviados)
+  note right : antigos seguem referenciados
+end
+Service --> Controller : IdeasPageResponseDto
+Controller --> Client : 201 / 200 / 404 / 400
+
+== Leitura (sempre privada) ==
+Client -> Controller : GET /ideas-pages[/:id]
+Controller -> Controller : JwtAuthGuard (visitante 401) + ideas_sharing (403 se desligada)
+@enduml

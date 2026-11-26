@@ -1,20 +1,24 @@
 import {
+  errorStack,
+  validationMessage,
+} from "src/common/utils/validation-message.util";
+import {
   Inject,
   Injectable,
   Logger,
   BadRequestException,
   ConflictException,
   HttpException,
-} from '@nestjs/common';
-import { RouteService } from 'src/infrastructure/route/route.service';
-import { RouteType } from 'src/infrastructure/route/route-page.entity';
-import { MediaType } from 'src/shared/media/media-item/media-item.entity';
-import { MediaItemProcessor } from 'src/shared/media/media-item-processor';
-import { MeditationRepository } from '../meditation.repository';
-import { AwsS3Service } from 'src/infrastructure/aws/aws-s3.service';
-import { CreateMeditationDto } from '../dto/create-meditation.dto';
-import { MeditationEntity } from '../entities/meditation.entity';
-import { MediaTargetType } from 'src/shared/media/media-target-type.enum';
+} from "@nestjs/common";
+import { RouteService } from "src/infrastructure/route/services/route.service";
+import { RouteType } from "src/infrastructure/route/route-page.entity";
+import { MediaType } from "src/shared/media/media-item/media-item.entity";
+import { MediaItemProcessor } from "src/shared/media/media-item-processor";
+import { MeditationRepository } from "../meditation.repository";
+import { AwsS3Service } from "src/infrastructure/aws/services/aws-s3.service";
+import { CreateMeditationDto } from "../dto/create-meditation.dto";
+import { MeditationEntity } from "../entities/meditation.entity";
+import { MediaTargetType } from "src/shared/media/media-target-type.enum";
 
 @Injectable()
 export class CreateMeditationService {
@@ -26,20 +30,23 @@ export class CreateMeditationService {
     private readonly s3Service: AwsS3Service,
     private readonly routeService: RouteService,
     private readonly mediaItemProcessor: MediaItemProcessor,
-  ) { }
+  ) {}
 
   async create(
     dto: CreateMeditationDto,
     file?: Express.Multer.File,
   ): Promise<MeditationEntity> {
+    // O que já foi gravado fora de qualquer transação: se um passo seguinte falhar,
+    // desfazemos à mão para não deixar meditação sem mídia/rota nem objeto órfão no bucket.
+    const created: { meditationId?: string; uploadedUrl?: string } = {};
     try {
       const startDate = parseDateAsLocal(dto.startDate);
       const endDate = parseDateAsLocal(dto.endDate);
 
       if (startDate.getDay() !== 1)
-        throw new BadRequestException('startDate must be a Monday');
+        throw new BadRequestException("startDate must be a Monday");
       if (endDate.getDay() !== 5)
-        throw new BadRequestException('endDate must be a Friday');
+        throw new BadRequestException("endDate must be a Friday");
 
       const existing = await this.meditationRepo.findAllWithRelations();
       const hasConflict = existing.some((m) => {
@@ -53,25 +60,27 @@ export class CreateMeditationService {
       });
 
       if (hasConflict) {
-        throw new ConflictException('Duplicate meditation date detected (409)');
+        throw new ConflictException("Duplicate meditation date detected (409)");
       }
 
       const meditation = this.meditationRepo.create({
         topic: dto.topic,
-        startDate: dto.startDate,
-        endDate: dto.endDate,
-        days: dto.days,
+        startDate: startDate,
+        endDate: endDate,
+        days: dto.days.map(({ day, verse, topic }) => ({ day, verse, topic })),
       });
 
       const savedMeditation = await this.meditationRepo.save(meditation);
+      created.meditationId = savedMeditation.id;
 
-      let mediaUrl = dto.media.url?.trim() || '';
+      let mediaUrl = dto.media.url?.trim() || "";
       let originalName = dto.media.originalName;
       let size = dto.media.size;
 
       if (dto.media.isLocalFile) {
-        if (!file) throw new BadRequestException('File not sent.');
+        if (!file) throw new BadRequestException("File not sent.");
         mediaUrl = await this.s3Service.upload(file);
+        created.uploadedUrl = mediaUrl;
         originalName = file.originalname;
         size = file.size;
       }
@@ -83,7 +92,7 @@ export class CreateMeditationService {
           mediaType: MediaType.DOCUMENT,
           uploadType: dto.media.uploadType,
           platformType: dto.media.platformType ?? null,
-          fileField: 'file',
+          fileField: "file",
           isLocalFile: dto.media.isLocalFile,
           url: mediaUrl,
           originalName,
@@ -97,31 +106,66 @@ export class CreateMeditationService {
 
       await this.routeService.createRoute({
         title: savedMeditation.topic,
-        subtitle: '',
+        subtitle: "",
         idToFetch: savedMeditation.id,
         entityType: MediaTargetType.Meditation,
         description: `Weekly meditation from ${dto.startDate} to ${dto.endDate}`,
         entityId: savedMeditation.id,
         type: RouteType.DOC,
-        prefix: 'meditacao_',
-        image: 'https://bucket-orfanato-galeria.s3.amazonaws.com/uploads/img_card.jpg',
+        prefix: "meditacao_",
+        image:
+          "https://bucket-orfanato-galeria.s3.amazonaws.com/uploads/img_card.jpg",
         public: false,
       });
 
       return savedMeditation;
     } catch (error) {
+      await this.undoPartialCreate(created);
       if (error instanceof HttpException) {
         throw error;
       }
-      this.logger.error('Error creating meditation', error.stack);
+      this.logger.error("Error creating meditation", errorStack(error));
       throw new BadRequestException(
-        error?.message || 'Unexpected error creating meditation.',
+        validationMessage(error, "Unexpected error creating meditation."),
       );
+    }
+  }
+
+  /** Melhor esforço: falha ao desfazer é registrada, e o erro original continua sendo o devolvido. */
+  private async undoPartialCreate(created: {
+    meditationId?: string;
+    uploadedUrl?: string;
+  }): Promise<void> {
+    const { meditationId, uploadedUrl } = created;
+    try {
+      if (meditationId) {
+        const media = await this.mediaItemProcessor.findMediaItemsByTarget(
+          meditationId,
+          MediaTargetType.Meditation,
+        );
+        if (media.length > 0) {
+          await this.mediaItemProcessor.deleteMediaItems(media, (url: string) =>
+            this.s3Service.delete(url),
+          );
+        } else if (uploadedUrl) {
+          await this.s3Service.delete(uploadedUrl);
+        }
+        await this.routeService.removeRouteByEntity(
+          MediaTargetType.Meditation,
+          meditationId,
+        );
+        await this.meditationRepo.delete(meditationId);
+      } else if (uploadedUrl) {
+        await this.s3Service.delete(uploadedUrl);
+      }
+    } catch (error: unknown) {
+      const reason = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Falha ao desfazer a criação parcial: ${reason}`);
     }
   }
 }
 
 function parseDateAsLocal(dateStr: string): Date {
-  const [year, month, day] = dateStr.split('-').map(Number);
+  const [year, month, day] = dateStr.split("-").map(Number);
   return new Date(year, month - 1, day);
 }

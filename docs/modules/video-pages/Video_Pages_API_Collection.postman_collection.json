@@ -1,0 +1,194 @@
+{
+  "info": {
+    "name": "Video Pages API Collection",
+    "description": "Páginas de vídeos. Escrita só admin (flag page_management); leitura pública (anyOf public_videos|training_videos|page_management): visitante só vê páginas públicas. Upload: 10 arquivos de até 200 MB (MP4/WebM/MOV).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "{{base_url}}",
+      "type": "string"
+    },
+    {
+      "key": "page_id",
+      "value": ""
+    },
+    {
+      "key": "media_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Video Pages",
+      "item": [
+        {
+          "name": "Criar página (admin)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/video-pages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "video-pages"
+              ]
+            },
+            "description": "Multipart: campo videosPageData (JSON) + arquivos `video-<n>` referenciados por fieldKey. 400 payload/arquivo inválido, 401 sem token, 403 membro/líder ou flag desligada (FEATURE_DISABLED).",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "videosPageData",
+                  "value": "{\"title\":\"Treinamento\",\"description\":\"Vídeos de formação\",\"public\":true,\"videos\":[{\"uploadType\":\"link\",\"mediaType\":\"video\",\"isLocalFile\":false,\"platformType\":\"youtube\",\"url\":\"https://youtu.be/abc123\",\"title\":\"Boas-vindas\",\"description\":\"Introdução\"}]}",
+                  "type": "text"
+                },
+                {
+                  "key": "video-0",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Listar páginas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/video-pages",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "video-pages"
+              ]
+            },
+            "description": "Público. Visitante recebe só `public: true`; com sessão, todas. 403 FEATURE_DISABLED com as três flags desligadas.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Detalhe da página",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/video-pages/{{page_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "video-pages",
+                "{{page_id}}"
+              ]
+            },
+            "description": "Público. 404 se não existir ou se não for pública para visitante.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Atualizar página (admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/video-pages/{{page_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "video-pages",
+                "{{page_id}}"
+              ]
+            },
+            "description": "Multipart como no POST (com `id`). Mídia ausente da lista é removida; arquivo antigo só sai do bucket depois do commit. 404 página ou mídia de outra página; 400 validação.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "videosPageData",
+                  "value": "{\"id\":\"{{page_id}}\",\"title\":\"Treinamento\",\"description\":\"Atualizado\",\"public\":true,\"videos\":[{\"id\":\"{{media_id}}\",\"uploadType\":\"link\",\"mediaType\":\"video\",\"isLocalFile\":false,\"platformType\":\"youtube\",\"url\":\"https://youtu.be/abc123\",\"title\":\"Boas-vindas\",\"description\":\"Introdução\"}]}",
+                  "type": "text"
+                },
+                {
+                  "key": "video-0",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Excluir página (admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/video-pages/{{page_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "video-pages",
+                "{{page_id}}"
+              ]
+            },
+            "description": "Remove página, rota, linhas de mídia e objetos do S3. 404 se não existir; 401/403 sem permissão.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{access_token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

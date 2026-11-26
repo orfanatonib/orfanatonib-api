@@ -1,4 +1,7 @@
-import { PagelaEntity } from '../entities/pagela.entity';
+import { PagelaEntity } from "../entities/pagela.entity";
+
+const toIso = (value: Date | string): string =>
+  value instanceof Date ? value.toISOString() : value;
 
 export class ShelteredMiniDto {
   id: string;
@@ -36,8 +39,8 @@ export class PagelaResponseDto {
   static fromEntity(e: PagelaEntity): PagelaResponseDto {
     return {
       id: e.id,
-      createdAt: (e as any).createdAt?.toISOString?.() ?? (e as any).createdAt,
-      updatedAt: (e as any).updatedAt?.toISOString?.() ?? (e as any).updatedAt,
+      createdAt: toIso(e.createdAt),
+      updatedAt: toIso(e.updatedAt),
       sheltered: {
         id: e.sheltered?.id,
         name: e.sheltered?.name,
