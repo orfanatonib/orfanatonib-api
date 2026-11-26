@@ -1,3 +1,4 @@
+import { GeneratePackageCoverService } from "./services/generate-package-cover.service";
 import { GetStageImagesService } from "./services/get-stage-images.service";
 import { RequestStageImagesService } from "./services/request-stage-images.service";
 import { ContentAudience } from "./enums/content-audience.enum";
@@ -45,7 +46,15 @@ describe("ContentStudioController", () => {
   let mockRequestStageChanges: jest.Mocked<RequestStageChangesService>;
   let mockResolveReviewComment: jest.Mocked<ResolveReviewCommentService>;
 
+  let mockCovers: jest.Mocked<
+    Pick<GeneratePackageCoverService, "start" | "isGenerating">
+  >;
+
   beforeEach(async () => {
+    mockCovers = {
+      start: jest.fn(),
+      isGenerating: jest.fn().mockReturnValue(false),
+    };
     mockGetCatalog = { execute: jest.fn() } as any;
     mockCreatePackage = { execute: jest.fn() } as any;
     mockGetPackages = { findAll: jest.fn(), findOne: jest.fn() } as any;
@@ -106,6 +115,7 @@ describe("ContentStudioController", () => {
           provide: RequestStageImagesService,
           useValue: { execute: jest.fn() },
         },
+        { provide: GeneratePackageCoverService, useValue: mockCovers },
       ],
     })
       .overrideGuard(FeatureFlagGuard)
@@ -167,6 +177,8 @@ describe("ContentStudioController", () => {
     );
     expect(res.id).toBe(pkg.id);
     expect(mockCreatePackage.execute).toHaveBeenCalledWith(dto, "user-1");
+    // A capa nasce junto com o material.
+    expect(mockCovers.start).toHaveBeenCalledWith(pkg.id);
   });
 
   it("should throw UnauthenticatedException when user id missing", async () => {

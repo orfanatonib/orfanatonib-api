@@ -437,11 +437,12 @@ suite("Atomicidade da publicação (MySQL real)", () => {
         generationSnapshot: null,
         createdById: USER_ID,
       });
+      // Concluir um item devolvido já o reenvia sozinho, em nome de quem concluiu.
       await stageContent.completeProductionStage({
         packageId: id,
         stageId: lastStageId,
+        actorId: "producer-2",
       });
-      await review.submitPackageForReview(id, [BABY], "producer-2");
 
       const history = (await dataSource.query(
         "SELECT d.decision AS decision, d.reviewerId AS actor, v.versionNumber AS versionNumber FROM content_review_decisions d JOIN content_versions v ON v.id = d.version_id WHERE d.stage_id = ? ORDER BY d.decidedAt, d.createdAt",

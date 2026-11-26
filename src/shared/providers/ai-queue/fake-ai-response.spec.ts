@@ -22,10 +22,24 @@ import {
   AI_FAKE_TEXT,
 } from './constants';
 import { AiQueueRequest } from './types';
-import {
-  IDEA_JUDGE_SCHEMA,
-  IDEA_TEXT_SCHEMA,
-} from 'src/modules/pages/ideas-section-ai/schemas';
+
+/** Schemas de exemplo (saída estruturada estrita, como os provedores exigem). */
+const strings = { type: 'array', items: { type: 'string' } };
+const strictObject = (properties: Record<string, unknown>) => ({
+  type: 'object',
+  additionalProperties: false,
+  properties,
+  required: Object.keys(properties),
+});
+const IDEA_TEXT_SCHEMA = strictObject({
+  title: { type: 'string' },
+  description: { type: 'string' },
+  changes: strings,
+});
+const IDEA_JUDGE_SCHEMA = strictObject({
+  preservesEssence: { type: 'boolean' },
+  violations: strings,
+});
 
 jest.mock('axios');
 const httpRequest = jest.spyOn(axios, 'request');

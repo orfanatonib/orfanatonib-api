@@ -1,3 +1,4 @@
+import { weekMaterialOriginMarker } from "../publication/utils";
 import { LessonImagePurpose } from "../providers/lesson-llm.types";
 import type {
   LessonLlmGenerationInput,
@@ -2107,7 +2108,7 @@ describe("LessonDraftService workflow safety", () => {
         {
           id: "existing-page-id-99",
           title: "Semana 1",
-          description: "Material completo. [origem:licao:lesson-recover]",
+          description: `Material completo. ${weekMaterialOriginMarker("lesson-recover")}`,
         },
       ],
       total: 1,
@@ -2394,7 +2395,16 @@ describe("LessonDraftService workflow safety", () => {
     } as unknown as LessonEntity;
 
     repo.findLessonById.mockResolvedValue(lesson);
-    await localService.service.delete("lesson-own-1");
+    // O bucket "próprio" é o das URLs do cenário, não o do ambiente de quem roda.
+    const environmentBucket = process.env.AWS_S3_BUCKET_NAME;
+    process.env.AWS_S3_BUCKET_NAME = "studio-bucket";
+    try {
+      await localService.service.delete("lesson-own-1");
+    } finally {
+      if (environmentBucket === undefined)
+        delete process.env.AWS_S3_BUCKET_NAME;
+      else process.env.AWS_S3_BUCKET_NAME = environmentBucket;
+    }
 
     expect(deletedUrls).toEqual([ownedUrl]);
   });

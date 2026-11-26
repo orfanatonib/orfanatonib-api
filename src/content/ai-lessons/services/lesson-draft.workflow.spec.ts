@@ -1,3 +1,4 @@
+import { weekMaterialOriginMarker } from "../publication/utils";
 import { LessonImageBriefOrigin } from "../enums/lesson-image-brief.enum";
 import { readImageBrief } from "../utils/lesson-image-brief.utils";
 import { LESSON_IMAGE_REGENERATION } from "../constants/lesson-image-regeneration.constants";
@@ -281,7 +282,7 @@ describe("LessonDraftService studio workflow", () => {
       );
       repo.findLessonById.mockResolvedValue(lesson);
       weekMaterialsGet.findAllPaginated.mockResolvedValue({
-        data: [{ id: "forged", description: `[origem:licao:${LESSON_ID}]` }],
+        data: [{ id: "forged", description: weekMaterialOriginMarker(LESSON_ID) }],
       });
       weekMaterials.createWeekMaterialsPage.mockResolvedValue({ id: "page-1" });
       spyOnRender();
@@ -449,7 +450,9 @@ describe("LessonDraftService studio workflow", () => {
       expect(dto.pageDescription).toBe(
         "Material completo para crianças de 3 a 11 anos — semana 7, revisado e aprovado.",
       );
-      expect(dto.pageDescription).not.toContain("[origem:licao:");
+      expect(dto.pageDescription).not.toContain(
+        weekMaterialOriginMarker(LESSON_ID),
+      );
       expect(dto.sourceLessonId).toBe(lesson.id);
       // A rota é endereçada pela semana e pelo público, para não colidir.
       expect(options).toMatchObject({ routePathSource: "Semana 7 Crianças" });
